@@ -91,31 +91,52 @@ export type Database = {
       }
       customers: {
         Row: {
+          apellido: string | null
+          cantidad_runas: number | null
+          comuna: string | null
           created_at: string | null
+          direccion: string | null
           email: string | null
           id: string
           name: string | null
+          numeracion: string | null
           phone: string | null
           rut: string | null
+          ultima_compra: string | null
           updated_at: string | null
+          valor_cliente: number | null
         }
         Insert: {
+          apellido?: string | null
+          cantidad_runas?: number | null
+          comuna?: string | null
           created_at?: string | null
+          direccion?: string | null
           email?: string | null
           id?: string
           name?: string | null
+          numeracion?: string | null
           phone?: string | null
           rut?: string | null
+          ultima_compra?: string | null
           updated_at?: string | null
+          valor_cliente?: number | null
         }
         Update: {
+          apellido?: string | null
+          cantidad_runas?: number | null
+          comuna?: string | null
           created_at?: string | null
+          direccion?: string | null
           email?: string | null
           id?: string
           name?: string | null
+          numeracion?: string | null
           phone?: string | null
           rut?: string | null
+          ultima_compra?: string | null
           updated_at?: string | null
+          valor_cliente?: number | null
         }
         Relationships: []
       }

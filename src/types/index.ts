@@ -40,9 +40,16 @@ export interface Product {
 export interface Customer {
   id: string;
   name?: string;
+  apellido?: string;
   phone?: string;
   rut?: string;
   email?: string;
+  direccion?: string;
+  numeracion?: string;
+  comuna?: string;
+  ultima_compra?: string;
+  cantidad_runas?: number;
+  valor_cliente?: number;
   created_at: string;
   updated_at: string;
 }
