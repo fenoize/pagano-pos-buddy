@@ -73,21 +73,20 @@ export function useAuth() {
 
       console.log('User found, verifying password...');
       
-      // For the default admin user, check if password is plaintext (for initial setup)
+      // Check if password is hashed or plain text
       let isValidPassword = false;
       
-      if (userData.username === 'administrador' && password === '12345678') {
-        // For the default admin, allow direct password comparison or bcrypt
+      // First, try direct comparison (for plain text passwords)
+      if (userData.pass_hash === password) {
+        isValidPassword = true;
+      } else {
+        // If direct comparison fails, try bcrypt (for hashed passwords)
         try {
           isValidPassword = await bcrypt.compare(password, userData.pass_hash);
         } catch (bcryptError) {
-          console.log('bcrypt failed, trying direct comparison');
-          // If bcrypt fails, try direct comparison for initial setup
-          isValidPassword = userData.pass_hash === password;
+          console.log('bcrypt comparison failed, password might be plain text');
+          isValidPassword = false;
         }
-      } else {
-        // For other users, use bcrypt
-        isValidPassword = await bcrypt.compare(password, userData.pass_hash);
       }
 
       console.log('Password validation result:', isValidPassword);
