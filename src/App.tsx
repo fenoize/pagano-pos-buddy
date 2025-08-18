@@ -9,6 +9,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Products from "./pages/Products";
+import NewSale from "./pages/NewSale";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,7 +72,7 @@ const App = () => (
             <Route path="/nueva-venta" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <div>Nueva Venta - En desarrollo</div>
+                  <NewSale />
                 </AppLayout>
               </ProtectedRoute>
             } />
@@ -98,7 +100,7 @@ const App = () => (
             <Route path="/productos" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <div>Productos - En desarrollo</div>
+                  <Products />
                 </AppLayout>
               </ProtectedRoute>
             } />
