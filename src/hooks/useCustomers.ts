@@ -228,6 +228,7 @@ export function useCustomers() {
         .from('customers')
         .insert({
           ...customerData,
+          fecha_nacimiento: customerData.fecha_nacimiento || null,
           estado_cliente: customerData.estado_cliente || 'Activo',
           created_by_user_id: user?.id,
           updated_by_user_id: user?.id
@@ -306,6 +307,7 @@ export function useCustomers() {
         .from('customers')
         .update({
           ...customerData,
+          fecha_nacimiento: customerData.fecha_nacimiento === '' ? null : customerData.fecha_nacimiento,
           updated_by_user_id: user?.id
         })
         .eq('id', id)
@@ -406,6 +408,82 @@ export function useCustomers() {
     fetchCustomers();
   }, [canViewCustomers]);
 
+  const exportCustomersCSV = async () => {
+    if (!canViewCustomers) {
+      toast({
+        title: "Error",
+        description: "No tienes permisos para exportar clientes",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select(`
+          nombres,
+          apellidos,
+          email,
+          phone,
+          rut,
+          fecha_nacimiento,
+          estado_cliente,
+          valor_cliente,
+          cantidad_runas,
+          ultima_compra,
+          created_at
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Crear CSV content
+      const headers = ['Nombres', 'Apellidos', 'Email', 'Teléfono', 'RUT', 'Fecha Nacimiento', 'Estado', 'Valor Cliente', 'Runas', 'Última Compra', 'Fecha Registro'];
+      const csvContent = [
+        headers.join(','),
+        ...data.map(customer => [
+          customer.nombres || '',
+          customer.apellidos || '',
+          customer.email || '',
+          customer.phone || '',
+          customer.rut || '',
+          customer.fecha_nacimiento || '',
+          customer.estado_cliente || '',
+          customer.valor_cliente || '0',
+          customer.cantidad_runas || '0',
+          customer.ultima_compra ? new Date(customer.ultima_compra).toLocaleDateString() : '',
+          customer.created_at ? new Date(customer.created_at).toLocaleDateString() : ''
+        ].join(','))
+      ].join('\n');
+
+      // Descargar archivo
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `clientes_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Clientes exportados correctamente",
+      });
+    } catch (error) {
+      console.error('Error exporting customers:', error);
+      toast({
+        title: "Error",
+        description: "Error al exportar clientes",
+        variant: "destructive"
+      });
+    }
+  };
+
   return {
     customers,
     loading,
@@ -418,6 +496,7 @@ export function useCustomers() {
     updateCustomer,
     deleteCustomer,
     searchCustomers,
-    calculateRunasSaldo
+    calculateRunasSaldo,
+    exportCustomersCSV
   };
 }

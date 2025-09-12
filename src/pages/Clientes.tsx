@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, MapPin, CreditCard } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, MapPin, CreditCard, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +32,8 @@ export default function Clientes() {
     totalCount,
     canManageCustomers,
     fetchCustomers,
-    deleteCustomer
+    deleteCustomer,
+    exportCustomersCSV
   } = useCustomers();
 
   // Auto-fetch when filters change
@@ -99,12 +100,22 @@ export default function Clientes() {
             Gestiona tu base de clientes y su historial de compras
           </p>
         </div>
-        {canManageCustomers && (
-          <Button onClick={() => setIsNewCustomerModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Cliente
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={exportCustomersCSV}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Exportar CSV
           </Button>
-        )}
+          {canManageCustomers && (
+            <Button onClick={() => setIsNewCustomerModalOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Cliente
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}
