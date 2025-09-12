@@ -52,7 +52,9 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-primary text-primary-foreground font-medium" : "hover:bg-accent hover:text-accent-foreground";
+    isActive 
+      ? "bg-primary text-primary-foreground font-semibold shadow-sm" 
+      : "text-primary hover:bg-primary hover:text-primary-foreground transition-colors";
 
   const canAccessRoute = (roles: AppRole[]) => {
     return user?.role && roles.includes(user.role);
@@ -69,8 +71,8 @@ export function AppSidebar() {
     >
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-bold">
-            {!isCollapsed && "Paganos POS"}
+          <SidebarGroupLabel className="text-primary font-bold text-center">
+            {!isCollapsed ? "Paganos POS" : "P"}
           </SidebarGroupLabel>
 
           <SidebarGroupContent>
@@ -80,10 +82,16 @@ export function AppSidebar() {
                 .map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls}>
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
+                     <NavLink 
+                       to={item.url} 
+                       end 
+                       className={({ isActive }) => 
+                         `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${getNavCls({ isActive })}`
+                       }
+                     >
+                       <item.icon className="h-4 w-4 shrink-0" />
+                       {!isCollapsed && <span>{item.title}</span>}
+                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -102,15 +110,15 @@ export function AppSidebar() {
                   <div>{user.role}</div>
                 </div>
               )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleLogout}
-                className="justify-start p-2"
-              >
-                <LogOut className="h-4 w-4" />
-                {!isCollapsed && <span className="ml-2">Cerrar Sesión</span>}
-              </Button>
+               <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 onClick={handleLogout}
+                 className="justify-start p-2 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+               >
+                 <LogOut className="h-4 w-4" />
+                 {!isCollapsed && <span className="ml-2">Cerrar Sesión</span>}
+               </Button>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
