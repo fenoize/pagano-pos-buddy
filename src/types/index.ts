@@ -91,7 +91,7 @@ export interface Customer {
 export interface OrderItem {
   productId: string;
   productName: string;
-  size: 'simple' | 'doble' | 'triple';
+  size: 'simple' | 'doble' | 'triple' | 'cuádruple';
   priceKind: 'combo' | 'only';
   basePrice: number;
   quantity: number;

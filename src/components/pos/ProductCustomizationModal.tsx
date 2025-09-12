@@ -48,6 +48,14 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
     }
   }, [isOpen, product.id]);
 
+  // Reset to valid variant when price type changes
+  useEffect(() => {
+    const availableVariants = getVariants();
+    if (!availableVariants.includes(selectedVariant)) {
+      setSelectedVariant(availableVariants[0] as Variant);
+    }
+  }, [selectedPriceType]);
+
   const fetchProductExtrasAndModifiers = async () => {
     try {
       // Obtener categorías del producto
@@ -98,24 +106,36 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   };
 
   const getVariants = (): string[] => {
-    const catStr = (product.category || '').toString().toLowerCase();
-    const hasHamburguesasCategory =
-      product.categories?.some((cat: any) => cat?.name?.toString().toLowerCase().includes('hamburguesa')) ||
-      catStr.includes('hamburguesa');
-
-    if (hasHamburguesasCategory) {
-      const prices: any = product.prices || {};
-      const priceType = prices[selectedPriceType] || {};
-      const all = ['simple', 'doble', 'triple', 'cuádruple'];
-      const available = all.filter((v) => priceType[v] !== undefined && priceType[v] !== null);
-      return available.length > 0 ? available : ['simple'];
-    }
-    return ['simple'];
+    const prices: any = product.prices || {};
+    const priceType = prices[selectedPriceType] || {};
+    
+    // Check all possible variants and their spellings
+    const variantMappings = [
+      { key: 'simple', variants: ['simple'] },
+      { key: 'doble', variants: ['doble'] },
+      { key: 'triple', variants: ['triple'] },
+      { key: 'cuádruple', variants: ['cuádruple', 'cuadruple'] }
+    ];
+    
+    const available = variantMappings
+      .filter(({ variants }) => 
+        variants.some(v => priceType[v] !== undefined && priceType[v] !== null)
+      )
+      .map(({ key }) => key);
+    
+    return available.length > 0 ? available : ['simple'];
   };
 
   const getBasePrice = () => {
     const prices = product.prices as any;
-    return prices[selectedPriceType][selectedVariant] || 0;
+    const priceType = prices[selectedPriceType] || {};
+    
+    // Try both spellings for cuádruple
+    if (selectedVariant === 'cuádruple') {
+      return priceType['cuádruple'] || priceType['cuadruple'] || 0;
+    }
+    
+    return priceType[selectedVariant] || 0;
   };
 
   const getExtrasTotal = () => {
