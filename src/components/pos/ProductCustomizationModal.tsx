@@ -213,200 +213,200 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Personalizar {product.name}</DialogTitle>
           <DialogDescription className="sr-only">Selecciona tamaño, extras y notas para el producto.</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="customize" className="w-full">
-          <TabsContent value="customize" className="space-y-6">
-            {/* Tipo de precio */}
+        {/* Scrollable customization area */}
+        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+          {/* Tipo de precio */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Tipo de Precio</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant={selectedPriceType === 'combo' ? 'default' : 'outline'}
+                  onClick={() => setSelectedPriceType('combo')}
+                >
+                  Combo (con papas)
+                </Button>
+                <Button
+                  variant={selectedPriceType === 'only' ? 'default' : 'outline'}
+                  onClick={() => setSelectedPriceType('only')}
+                >
+                  Solo hamburguesa
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Variantes */}
+          {getVariants().length > 1 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Tipo de Precio</CardTitle>
+                <CardTitle className="text-lg">Tamaño</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant={selectedPriceType === 'combo' ? 'default' : 'outline'}
-                    onClick={() => setSelectedPriceType('combo')}
-                  >
-                    Combo (con papas)
-                  </Button>
-                  <Button
-                    variant={selectedPriceType === 'only' ? 'default' : 'outline'}
-                    onClick={() => setSelectedPriceType('only')}
-                  >
-                    Solo hamburguesa
-                  </Button>
+                  {getVariants().map((variant) => (
+                    <Button
+                      key={variant}
+                      variant={selectedVariant === variant ? 'default' : 'outline'}
+                      onClick={() => setSelectedVariant(variant as Variant)}
+                      className="capitalize"
+                    >
+                      {variant}
+                    </Button>
+                  ))}
                 </div>
               </CardContent>
             </Card>
+          )}
 
-            {/* Variantes */}
-            {getVariants().length > 1 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Tamaño</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    {getVariants().map((variant) => (
-                      <Button
-                        key={variant}
-                        variant={selectedVariant === variant ? 'default' : 'outline'}
-                        onClick={() => setSelectedVariant(variant as Variant)}
-                        className="capitalize"
-                      >
-                        {variant}
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Extras */}
-            {extras.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Extras</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {extras.map((extra) => (
-                      <div key={extra.id} className="flex justify-between items-center p-3 border rounded-lg">
-                        <div>
-                          <span className="font-medium">{extra.name}</span>
-                          <span className="text-sm text-muted-foreground ml-2">
-                            {formatPrice(extra.price)}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleExtraChange(extra.id, -1)}
-                            disabled={(selectedExtras[extra.id] || 0) === 0}
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                          <span className="w-8 text-center">
-                            {selectedExtras[extra.id] || 0}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleExtraChange(extra.id, 1)}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Modificadores */}
-            {modifiers.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Modificaciones</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {modifiers.map((modifier) => (
-                      <div
-                        key={modifier.id}
-                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                          selectedModifiers.includes(modifier.id)
-                            ? 'bg-primary/10 border-primary'
-                            : 'hover:bg-muted/50'
-                        }`}
-                        onClick={() => toggleModifier(modifier.id)}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">{modifier.name}</span>
-                          {modifier.price > 0 && (
-                            <span className="text-sm text-muted-foreground">
-                              {formatPrice(modifier.price)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Notas especiales */}
+          {/* Extras */}
+          {extras.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Notas Especiales</CardTitle>
+                <CardTitle className="text-lg">Extras</CardTitle>
               </CardHeader>
               <CardContent>
-                <Textarea
-                  placeholder="Instrucciones especiales para la preparación..."
-                  value={specialNotes}
-                  onChange={(e) => setSpecialNotes(e.target.value)}
-                  rows={3}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Cantidad */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Cantidad</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    disabled={quantity <= 1}
-                  >
-                    <Minus className="w-4 h-4" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-20 text-center"
-                    min="1"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => setQuantity(quantity + 1)}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
+                <div className="space-y-3">
+                  {extras.map((extra) => (
+                    <div key={extra.id} className="flex justify-between items-center p-3 border rounded-lg">
+                      <div>
+                        <span className="font-medium">{extra.name}</span>
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {formatPrice(extra.price)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleExtraChange(extra.id, -1)}
+                          disabled={(selectedExtras[extra.id] || 0) === 0}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <span className="w-8 text-center">
+                          {selectedExtras[extra.id] || 0}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleExtraChange(extra.id, 1)}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
+          )}
 
-            {/* Total y botones */}
-            <div className="flex justify-between items-center pt-4 border-t">
-              <div className="text-xl font-bold">
-                Total: {formatPrice(getTotalPrice())}
-              </div>
-              
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={onClose}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleAddToCart}>
-                  Agregar al Carrito
-                </Button>
-              </div>
+          {/* Modificadores */}
+          {modifiers.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Modificaciones</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {modifiers.map((modifier) => (
+                    <div
+                      key={modifier.id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedModifiers.includes(modifier.id)
+                          ? 'bg-primary/10 border-primary'
+                          : 'hover:bg-muted/50'
+                      }`}
+                      onClick={() => toggleModifier(modifier.id)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{modifier.name}</span>
+                        {modifier.price > 0 && (
+                          <span className="text-sm text-muted-foreground">
+                            {formatPrice(modifier.price)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Notas especiales */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Notas Especiales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Instrucciones especiales para la preparación..."
+                value={specialNotes}
+                onChange={(e) => setSpecialNotes(e.target.value)}
+                rows={3}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Fixed bottom action bar */}
+        <div className="border-t bg-background pt-4 space-y-4">
+          {/* Cantidad */}
+          <div className="flex items-center justify-between">
+            <Label className="text-lg font-semibold">Cantidad</Label>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                disabled={quantity <= 1}
+              >
+                <Minus className="w-4 h-4" />
+              </Button>
+              <Input
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-16 text-center"
+                min="1"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setQuantity(quantity + 1)}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+
+          {/* Total y botones */}
+          <div className="flex justify-between items-center">
+            <div className="text-xl font-bold">
+              Total: {formatPrice(getTotalPrice())}
+            </div>
+            
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button onClick={handleAddToCart}>
+                Agregar al Carrito
+              </Button>
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
