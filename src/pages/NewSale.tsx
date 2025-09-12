@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useCashSession } from '@/hooks/useCashSession';
+import { CashSessionStatus } from '@/components/cash/CashSessionStatus';
 import CustomerSearchStep from '@/components/pos/CustomerSearchStep';
 import FulfillmentStep from '@/components/pos/FulfillmentStep';
 import ProductGrid from '@/components/pos/ProductGrid';
@@ -29,6 +31,7 @@ export default function NewSale() {
   const [runaValue, setRunaValue] = useState(1000);
   const { toast } = useToast();
   const { user } = useAuthContext();
+  const { hasActiveSession } = useCashSession();
 
   const total = cartItems.reduce((sum, item) => {
     const extrasTotal = item.extras.reduce((extraSum, extra) => extraSum + (extra.price * (extra.quantity || 1)), 0);
@@ -137,6 +140,16 @@ export default function NewSale() {
   };
 
   const handleCheckout = () => {
+    // Check if session is active for Cajero role
+    if (user?.role === 'Cajero' && !hasActiveSession()) {
+      toast({
+        title: "Turno cerrado",
+        description: "Debes abrir un turno antes de realizar ventas.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setShowPaymentModal(true);
   };
 
@@ -310,17 +323,26 @@ export default function NewSale() {
                 items={cartItems}
                 onUpdateQuantity={updateItemQuantity}
                 onRemoveItem={removeItem}
-                onCheckout={() => {
-                  if (cartItems.length === 0) {
-                    toast({
-                      title: "Error",
-                      description: "Agrega productos al carrito",
-                      variant: "destructive"
-                    });
-                    return;
-                  }
-                  setCurrentStep(2);
-                }}
+                  onCheckout={() => {
+                    if (cartItems.length === 0) {
+                      toast({
+                        title: "Error",
+                        description: "Agrega productos al carrito",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    // Check session before proceeding
+                    if (user?.role === 'Cajero' && !hasActiveSession()) {
+                      toast({
+                        title: "Turno cerrado",
+                        description: "Debes abrir un turno antes de realizar ventas.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    setCurrentStep(2);
+                  }}
               />
               
               {/* Runas Calculator */}
@@ -366,6 +388,9 @@ export default function NewSale() {
 
   return (
     <div className="space-y-6">
+      {/* Cash Session Status - Show for Cajero and Administrador */}
+      <CashSessionStatus />
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Nueva Venta - {getStepTitle()}</h1>

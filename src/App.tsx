@@ -9,12 +9,14 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Products from "./pages/Products";
-import NewSale from "./pages/NewSale";
-import Sales from "./pages/Sales";
-import Kitchen from "./pages/Kitchen";
-import NotFound from "./pages/NotFound";
+import Dashboard from '@/pages/Dashboard';
+import NewSale from '@/pages/NewSale';
+import Sales from '@/pages/Sales';
+import Kitchen from '@/pages/Kitchen';
+import Users from '@/pages/Users';
+import Products from '@/pages/Products';
+import ConfiguracionPage from '@/pages/ConfiguracionPage';
+import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
 
@@ -133,14 +135,14 @@ const App = () => (
             <Route path="/usuarios" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <div>Usuarios - En desarrollo</div>
+                  <Users />
                 </AppLayout>
               </ProtectedRoute>
             } />
             <Route path="/configuracion" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <div>Configuración - En desarrollo</div>
+                  <ConfiguracionPage />
                 </AppLayout>
               </ProtectedRoute>
             } />

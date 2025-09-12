@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, ShoppingCart, Clock, DollarSign } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
+import { CajeroDashboard } from '@/components/dashboard/CajeroDashboard';
 
 interface DashboardStats {
   totalSales: number;
@@ -16,6 +17,18 @@ interface DashboardStats {
 }
 
 export default function Dashboard() {
+  const { user } = useAuthContext();
+
+  // Show role-specific dashboard
+  if (user?.role === 'Cajero') {
+    return <CajeroDashboard />;
+  }
+
+  // Default dashboard for other roles
+  return <DefaultDashboard />;
+}
+
+function DefaultDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalSales: 0,
     salesCount: 0,

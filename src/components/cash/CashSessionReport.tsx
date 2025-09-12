@@ -1,0 +1,473 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Download, Eye, Calendar, Search, Filter } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { CashSession, User, AppRole } from '@/types';
+
+// Map old database role names to new app role names
+const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
+  const mapping: Record<string, AppRole> = {
+    'Caja': 'Cajero',
+    'Cocina': 'Cocinero',
+    'Reparto': 'Repartidor'
+  };
+  return mapping[dbRole] as AppRole || dbRole as AppRole;
+};
+
+interface CashSessionWithUser extends CashSession {
+  user?: User;
+  summary?: {
+    totalSales: number;
+    totalCash: number;
+    totalMP: number;
+    totalPOS: number;
+    ingresos: number;
+    egresos: number;
+    expectedCash: number;
+    difference: number;
+  };
+}
+
+export function CashSessionReport() {
+  const [sessions, setSessions] = useState<CashSessionWithUser[]>([]);
+  const [filteredSessions, setFilteredSessions] = useState<CashSessionWithUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
+  const [filters, setFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    userId: 'all',
+    status: 'all', // 'all', 'open', 'closed'
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [sessions, filters, searchTerm]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Load sessions and users separately
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('cash_sessions')
+        .select('*')
+        .order('opened_at', { ascending: false });
+
+      if (sessionsError) throw sessionsError;
+
+      // Load users for filter
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, username, role, active, created_at, updated_at')
+        .eq('active', true)
+        .in('role', ['Administrador', 'Cajero'])
+        .order('username');
+
+      if (usersError) throw usersError;
+
+      // Map users to sessions
+      const userMap = new Map(usersData?.map(user => [user.id, user]) || []);
+
+      // Calculate summaries for closed sessions
+      const sessionsWithSummary = await Promise.all(
+        (sessionsData || []).map(async (session) => {
+          if (session.closed_at) {
+            try {
+              // Get orders from this session
+              const { data: orders } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('created_by_user_id', session.user_id)
+                .gte('created_at', session.opened_at)
+                .lte('created_at', session.closed_at)
+                .eq('status', 'Entregado');
+
+              // Get cash movements
+              const { data: movements } = await supabase
+                .from('cash_movements')
+                .select('*')
+                .eq('session_id', session.id);
+
+              // Calculate totals
+              const totalSales = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
+              const totalCash = orders?.reduce((sum, order) => sum + order.payment_efectivo, 0) || 0;
+              const totalMP = orders?.reduce((sum, order) => sum + order.payment_mp, 0) || 0;
+              const totalPOS = orders?.reduce((sum, order) => sum + order.payment_pos, 0) || 0;
+
+              const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
+              const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
+
+              const expectedCash = session.opening_cash + totalCash + ingresos - egresos;
+              const difference = (session.closing_cash || 0) - expectedCash;
+
+              return {
+                ...session,
+                user: userMap.get(session.user_id),
+                summary: {
+                  totalSales,
+                  totalCash,
+                  totalMP,
+                  totalPOS,
+                  ingresos,
+                  egresos,
+                  expectedCash,
+                  difference
+                }
+              };
+            } catch (error) {
+              console.error('Error calculating session summary:', error);
+              return {
+                ...session,
+                user: userMap.get(session.user_id)
+              };
+            }
+          }
+          return {
+            ...session,
+            user: userMap.get(session.user_id)
+          };
+        })
+      );
+
+      setSessions(sessionsWithSummary as CashSessionWithUser[]);
+      setUsers(usersData?.map(user => ({
+        ...user,
+        role: mapDatabaseRoleToApp(user.role)
+      })) || []);
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los turnos.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...sessions];
+
+    // Filter by date range
+    if (filters.dateFrom) {
+      filtered = filtered.filter(session => 
+        new Date(session.opened_at) >= new Date(filters.dateFrom)
+      );
+    }
+    if (filters.dateTo) {
+      filtered = filtered.filter(session => 
+        new Date(session.opened_at) <= new Date(filters.dateTo + 'T23:59:59')
+      );
+    }
+
+    // Filter by user
+    if (filters.userId !== 'all') {
+      filtered = filtered.filter(session => session.user_id === filters.userId);
+    }
+
+    // Filter by status
+    if (filters.status === 'open') {
+      filtered = filtered.filter(session => !session.closed_at);
+    } else if (filters.status === 'closed') {
+      filtered = filtered.filter(session => session.closed_at);
+    }
+
+    // Filter by search term (username)
+    if (searchTerm) {
+      filtered = filtered.filter(session => 
+        session.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredSessions(filtered);
+  };
+
+  const exportToCSV = () => {
+    const headers = [
+      'Fecha Apertura',
+      'Usuario',
+      'Hora Apertura',
+      'Hora Cierre',
+      'Efectivo Inicial',
+      'Efectivo Final',
+      'Ventas Totales',
+      'Efectivo Ventas',
+      'MP/Transfer',
+      'POS',
+      'Ingresos',
+      'Egresos',
+      'Diferencia'
+    ];
+
+    const csvData = filteredSessions.map(session => [
+      new Date(session.opened_at).toLocaleDateString('es-CL'),
+      session.user?.username || '-',
+      new Date(session.opened_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+      session.closed_at 
+        ? new Date(session.closed_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+        : 'Abierto',
+      session.opening_cash,
+      session.closing_cash || 0,
+      session.summary?.totalSales || 0,
+      session.summary?.totalCash || 0,
+      session.summary?.totalMP || 0,
+      session.summary?.totalPOS || 0,
+      session.summary?.ingresos || 0,
+      session.summary?.egresos || 0,
+      session.summary?.difference || 0
+    ]);
+
+    const csvContent = [headers, ...csvData]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `cierres-caja-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Exportación exitosa",
+      description: "El reporte ha sido descargado."
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold text-foreground">
+          Reporte de Cierres de Caja
+        </h1>
+        <p className="text-muted-foreground">
+          Historial y análisis de turnos de caja
+        </p>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+              <Label htmlFor="dateFrom">Desde</Label>
+              <Input
+                id="dateFrom"
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="dateTo">Hasta</Label>
+              <Input
+                id="dateTo"
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="userId">Usuario</Label>
+              <Select value={filters.userId} onValueChange={(value) => setFilters(prev => ({ ...prev, userId: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los usuarios" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los usuarios</SelectItem>
+                  {users.map(user => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.username} ({user.role})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="status">Estado</Label>
+              <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="closed">Cerrados</SelectItem>
+                  <SelectItem value="open">Abiertos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="search">Buscar Usuario</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Buscar..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Turnos de Caja</CardTitle>
+              <CardDescription>
+                {filteredSessions.length} de {sessions.length} turnos
+              </CardDescription>
+            </div>
+            <Button onClick={exportToCSV} disabled={loading || filteredSessions.length === 0}>
+              <Download className="w-4 h-4 mr-2" />
+              Exportar CSV
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Usuario</TableHead>
+                  <TableHead>Fecha/Hora</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Efectivo Inicial</TableHead>
+                  <TableHead>Efectivo Final</TableHead>
+                  <TableHead>Ventas</TableHead>
+                  <TableHead>Diferencia</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      Cargando turnos...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredSessions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      No se encontraron turnos
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredSessions.map((session) => (
+                    <TableRow key={session.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{session.user?.username}</div>
+                          <div className="text-sm text-muted-foreground">{session.user?.role}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div>{formatDate(session.opened_at)}</div>
+                          {session.closed_at && (
+                            <div className="text-sm text-muted-foreground">
+                              Cerrado: {new Date(session.closed_at).toLocaleTimeString('es-CL', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={session.closed_at ? "secondary" : "default"}>
+                          {session.closed_at ? "Cerrado" : "Abierto"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {formatCurrency(session.opening_cash)}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {session.closing_cash !== null ? formatCurrency(session.closing_cash) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {session.summary ? (
+                          <div>
+                            <div className="font-medium">{formatCurrency(session.summary.totalSales)}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Efectivo: {formatCurrency(session.summary.totalCash)}
+                            </div>
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {session.summary?.difference !== undefined ? (
+                          <span className={`font-medium ${
+                            session.summary.difference === 0 
+                              ? 'text-green-600' 
+                              : session.summary.difference > 0 
+                                ? 'text-blue-600' 
+                                : 'text-red-600'
+                          }`}>
+                            {session.summary.difference > 0 && '+'}
+                            {formatCurrency(session.summary.difference)}
+                          </span>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
