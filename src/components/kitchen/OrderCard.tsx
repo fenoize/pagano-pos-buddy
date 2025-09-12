@@ -20,9 +20,10 @@ interface OrderCardProps {
   order: Order;
   config: KDSConfig;
   onStatusChange: (orderId: string, status: OrderStatus) => void;
+  compact?: boolean;
 }
 
-export function OrderCard({ order, config, onStatusChange }: OrderCardProps) {
+export function OrderCard({ order, config, onStatusChange, compact = false }: OrderCardProps) {
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
 
   useEffect(() => {
@@ -92,40 +93,48 @@ export function OrderCard({ order, config, onStatusChange }: OrderCardProps) {
     return `${mins}m`;
   };
 
+  const cardMinHeight = compact ? 'min-h-[280px]' : 
+    config.cardSize === 'large' ? 'min-h-[400px]' : 'min-h-[320px]';
+
   return (
-    <Card className={`${getCardColor()} ${cardSizeClasses[config.cardSize]}`}>
-      <CardHeader className="pb-3">
+    <Card className={`${getCardColor()} ${cardSizeClasses[config.cardSize]} transition-all duration-300 ${cardMinHeight}`}>
+      <CardHeader className={compact ? "pb-2 px-3" : "pb-3"}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="text-2xl font-bold text-primary">#{order.order_number}</div>
+            <div className={`font-bold text-primary ${compact ? 'text-lg' : 'text-2xl'}`}>
+              #{order.order_number}
+            </div>
             {order.fulfillment === 'delivery' && (
-              <MapPin className="w-4 h-4 text-muted-foreground" />
+              <MapPin className={`text-muted-foreground ${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
             )}
             {order.fulfillment === 'retiro' && (
-              <Package className="w-4 h-4 text-muted-foreground" />
+              <Package className={`text-muted-foreground ${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant={getStatusColor(order.status)}>
+            <Badge 
+              variant={getStatusColor(order.status)}
+              className={compact ? "text-xs px-2 py-0.5" : ""}
+            >
               {order.status}
             </Badge>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="w-3 h-3" />
+            <div className={`flex items-center gap-1 text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
+              <Clock className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
               <span className="font-mono">{formatElapsedTime()}</span>
             </div>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className={`space-y-3 ${compact ? 'px-3 py-2' : 'space-y-4'}`}>
         {/* Customer Info */}
         {order.customer && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <User className="w-3 h-3" />
+          <div className={`flex items-center gap-2 text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
+            <User className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
             <span>{order.customer.name} {order.customer.apellido}</span>
             {order.customer.phone && (
               <>
-                <Phone className="w-3 h-3" />
+                <Phone className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
                 <span>{order.customer.phone}</span>
               </>
             )}
@@ -133,21 +142,21 @@ export function OrderCard({ order, config, onStatusChange }: OrderCardProps) {
         )}
 
         {/* Items */}
-        <div className="space-y-2">
+        <div className={compact ? "space-y-1.5" : "space-y-2"}>
           {order.items.map((item, index) => (
-            <div key={index} className="bg-background/50 p-2 rounded border">
+            <div key={index} className={`bg-background/50 rounded border ${compact ? 'p-1.5' : 'p-2'}`}>
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="font-medium">
+                  <div className={`font-medium ${compact ? 'text-xs' : ''}`}>
                     {item.quantity}x {item.productName} - {item.size}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className={`text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
                     {item.priceKind === 'combo' ? 'Combo' : 'Solo'}
                   </div>
                   
                   {/* Extras */}
                   {item.extras.length > 0 && (
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className={`text-muted-foreground mt-1 ${compact ? 'text-xs' : 'text-xs'}`}>
                       Extras: {item.extras.map(extra => 
                         `${extra.quantity || 1}x ${extra.label}`
                       ).join(', ')}
@@ -156,15 +165,15 @@ export function OrderCard({ order, config, onStatusChange }: OrderCardProps) {
 
                   {/* Modifiers */}
                   {item.modifiers.length > 0 && (
-                    <div className="text-xs text-muted-foreground">
+                    <div className={`text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
                       Modificadores: {item.modifiers.map(mod => mod.name).join(', ')}
                     </div>
                   )}
 
                   {/* Notes */}
                   {item.notes && (
-                    <div className="flex items-start gap-1 text-xs text-muted-foreground mt-1">
-                      <MessageSquare className="w-3 h-3 mt-0.5" />
+                    <div className={`flex items-start gap-1 text-muted-foreground mt-1 ${compact ? 'text-xs' : 'text-xs'}`}>
+                      <MessageSquare className={`${compact ? 'w-3 h-3' : 'w-3 h-3'} mt-0.5`} />
                       <span className="italic">{item.notes}</span>
                     </div>
                   )}
@@ -175,46 +184,48 @@ export function OrderCard({ order, config, onStatusChange }: OrderCardProps) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className={`flex gap-2 ${compact ? 'gap-1' : 'gap-2'}`}>
           {canPause && (
             <Button
               variant="outline"
-              size="sm"
+              size={compact ? "sm" : "sm"}
               onClick={() => onStatusChange(order.id, 'En pausa')}
             >
-              Pausar
+              <span className={compact ? 'text-xs' : ''}>Pausar</span>
             </Button>
           )}
           
           {canResume && (
             <Button
               variant="default"
-              size="sm"
+              size={compact ? "sm" : "sm"}
               onClick={() => onStatusChange(order.id, 'En preparación')}
             >
-              Reanudar
+              <span className={compact ? 'text-xs' : ''}>Reanudar</span>
             </Button>
           )}
 
           {nextStatus && (
             <Button
               variant="default"
-              size="sm"
+              size={compact ? "sm" : "sm"}
               onClick={() => onStatusChange(order.id, nextStatus)}
               className="flex-1"
             >
-              {nextStatus === 'En preparación' && 'Iniciar'}
-              {nextStatus === 'Listo' && 'Marcar Listo'}
-              {nextStatus === 'Entregado' && 'Entregar'}
+              <span className={compact ? 'text-xs' : ''}>
+                {nextStatus === 'En preparación' && 'Iniciar'}
+                {nextStatus === 'Listo' && 'Marcar Listo'}
+                {nextStatus === 'Entregado' && 'Entregar'}
+              </span>
             </Button>
           )}
         </div>
 
         {/* Delivery Info */}
         {order.fulfillment === 'delivery' && (order.delivery_address || order.delivery_comuna) && (
-          <div className="text-xs text-muted-foreground pt-2 border-t">
+          <div className={`text-muted-foreground pt-2 border-t ${compact ? 'text-xs' : 'text-xs'}`}>
             <div className="flex items-start gap-1">
-              <MapPin className="w-3 h-3 mt-0.5" />
+              <MapPin className={`${compact ? 'w-3 h-3' : 'w-3 h-3'} mt-0.5`} />
               <div>
                 {order.delivery_address} {order.delivery_number}, {order.delivery_comuna}
               </div>
@@ -223,7 +234,7 @@ export function OrderCard({ order, config, onStatusChange }: OrderCardProps) {
         )}
 
         {/* Timestamp */}
-        <div className="text-xs text-muted-foreground text-right pt-2 border-t">
+        <div className={`text-muted-foreground text-right pt-2 border-t ${compact ? 'text-xs' : 'text-xs'}`}>
           Creado {formatDistanceToNow(new Date(order.created_at), { 
             addSuffix: true, 
             locale: es 

@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AuthProvider, useAuthContext } from "@/contexts/AuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
+import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
@@ -36,6 +37,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppLayout({ children }: { children: React.ReactNode }) {
+  const { isExpanded } = useKitchenExpanded();
+  const isKitchenRoute = window.location.pathname === '/cocina';
+  
+  // If on kitchen route and expanded, render without layout
+  if (isKitchenRoute && isExpanded) {
+    return <>{children}</>;
+  }
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
