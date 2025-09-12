@@ -55,6 +55,8 @@ export function useUsers() {
 
   const createUser = async (userData: {
     username: string;
+    full_name: string;
+    email: string;
     password: string;
     role: AppRole;
   }) => {
@@ -67,6 +69,8 @@ export function useUsers() {
         .from('users')
         .insert({
           username: userData.username,
+          full_name: userData.full_name,
+          email: userData.email,
           pass_hash: hashedPassword,
           role: mapAppRoleToDatabase(userData.role) as any,
           active: true
@@ -84,11 +88,15 @@ export function useUsers() {
 
   const updateUser = async (userId: string, userData: {
     username?: string;
+    full_name?: string;
+    email?: string;
     role?: AppRole;
   }) => {
     try {
       const updateData: any = {};
       if (userData.username) updateData.username = userData.username;
+      if (userData.full_name !== undefined) updateData.full_name = userData.full_name;
+      if (userData.email !== undefined) updateData.email = userData.email;
       if (userData.role) updateData.role = mapAppRoleToDatabase(userData.role);
       
       const { data, error } = await supabase

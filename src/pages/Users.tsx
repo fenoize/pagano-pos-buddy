@@ -232,6 +232,7 @@ export default function Users() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Usuario</TableHead>
+                  <TableHead>Nombre</TableHead>
                   <TableHead>Rol</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Creado</TableHead>
@@ -241,20 +242,32 @@ export default function Users() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={6} className="text-center py-8">
                       Cargando usuarios...
                     </TableCell>
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={6} className="text-center py-8">
                       No se encontraron usuarios
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredUsers.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.username}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{user.username}</div>
+                          {user.email && (
+                            <div className="text-sm text-muted-foreground">{user.email}</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{user.full_name || '-'}</div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge className={getRoleColor(user.role)}>{user.role}</Badge>
                       </TableCell>

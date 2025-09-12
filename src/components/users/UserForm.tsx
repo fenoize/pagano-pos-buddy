@@ -31,6 +31,8 @@ interface UserFormProps {
 export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormProps) {
   const [formData, setFormData] = useState({
     username: '',
+    full_name: '',
+    email: '',
     password: '',
     role: 'Cajero' as AppRole,
   });
@@ -45,12 +47,16 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
       if (editingUser) {
         setFormData({
           username: editingUser.username,
+          full_name: editingUser.full_name || '',
+          email: editingUser.email || '',
           password: '',
           role: editingUser.role,
         });
       } else {
         setFormData({
           username: '',
+          full_name: '',
+          email: '',
           password: '',
           role: 'Cajero',
         });
@@ -95,6 +101,8 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
         // Update user
         await updateUser(editingUser.id, {
           username: formData.username,
+          full_name: formData.full_name,
+          email: formData.email,
           role: formData.role,
         });
         toast({
@@ -105,6 +113,8 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
         // Create new user
         await createUser({
           username: formData.username,
+          full_name: formData.full_name,
+          email: formData.email,
           password: formData.password,
           role: formData.role,
         });
@@ -189,6 +199,29 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
               value={formData.username}
               onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
               placeholder="Ingresa el nombre de usuario"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="full_name">Nombre Completo</Label>
+            <Input
+              id="full_name"
+              value={formData.full_name}
+              onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+              placeholder="Ingresa el nombre completo"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Correo Electrónico</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="correo@ejemplo.com"
               disabled={loading}
             />
           </div>

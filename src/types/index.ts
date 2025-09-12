@@ -11,6 +11,8 @@ export type CashMovementType = 'ingreso' | 'egreso';
 export interface User {
   id: string;
   username: string;
+  full_name?: string;
+  email?: string;
   role: AppRole;
   active: boolean;
   created_at: string;
