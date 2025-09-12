@@ -101,7 +101,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
                                     product.category === 'hamburguesas';
     
     if (hasHamburguesasCategory) {
-      return ['simple', 'doble', 'triple'] as const;
+      return ['simple', 'doble', 'triple', 'cuádruple'] as const;
     }
     return ['simple'] as const;
   };
@@ -192,10 +192,6 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
         </DialogHeader>
 
         <Tabs defaultValue="customize" className="w-full">
-          <TabsList className="grid w-full grid-cols-1">
-            <TabsTrigger value="customize">Personalizar Producto</TabsTrigger>
-          </TabsList>
-
           <TabsContent value="customize" className="space-y-6">
             {/* Tipo de precio */}
             <Card>
@@ -227,7 +223,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
                   <CardTitle className="text-lg">Tamaño</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     {getVariants().map((variant) => (
                       <Button
                         key={variant}
