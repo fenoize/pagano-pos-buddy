@@ -66,7 +66,7 @@ export default function NewSale() {
     }
   };
 
-  const handleCustomerNext = () => {
+  const handleMenuNext = () => {
     setCurrentStep(2);
   };
 
@@ -78,6 +78,10 @@ export default function NewSale() {
 
   const handleFulfillmentNext = () => {
     setCurrentStep(3);
+  };
+
+  const handleCustomerNext = () => {
+    handleCheckout();
   };
 
   const handleProductClick = (product: Product) => {
@@ -119,14 +123,6 @@ export default function NewSale() {
   };
 
   const handleCheckout = () => {
-    if (cartItems.length === 0) {
-      toast({
-        title: "Error",
-        description: "Agrega productos al carrito",
-        variant: "destructive"
-      });
-      return;
-    }
     setShowPaymentModal(true);
   };
 
@@ -284,22 +280,6 @@ export default function NewSale() {
     switch (currentStep) {
       case 1:
         return (
-          <CustomerSearchStep
-            customer={customer}
-            onCustomerChange={setCustomer}
-            onNext={handleCustomerNext}
-          />
-        );
-      case 2:
-        return (
-          <FulfillmentStep
-            fulfillment={fulfillment}
-            onFulfillmentChange={handleFulfillmentChange}
-            onNext={handleFulfillmentNext}
-          />
-        );
-      case 3:
-        return (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Products Grid */}
             <div className="lg:col-span-2">
@@ -315,7 +295,17 @@ export default function NewSale() {
                 items={cartItems}
                 onUpdateQuantity={updateItemQuantity}
                 onRemoveItem={removeItem}
-                onCheckout={handleCheckout}
+                onCheckout={() => {
+                  if (cartItems.length === 0) {
+                    toast({
+                      title: "Error",
+                      description: "Agrega productos al carrito",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  setCurrentStep(2);
+                }}
               />
               
               {/* Runas Calculator */}
@@ -329,6 +319,22 @@ export default function NewSale() {
             </div>
           </div>
         );
+      case 2:
+        return (
+          <FulfillmentStep
+            fulfillment={fulfillment}
+            onFulfillmentChange={handleFulfillmentChange}
+            onNext={handleFulfillmentNext}
+          />
+        );
+      case 3:
+        return (
+          <CustomerSearchStep
+            customer={customer}
+            onCustomerChange={setCustomer}
+            onNext={handleCustomerNext}
+          />
+        );
       default:
         return null;
     }
@@ -336,9 +342,9 @@ export default function NewSale() {
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 1: return 'Cliente';
+      case 1: return 'Menú';
       case 2: return 'Modalidad de Entrega';
-      case 3: return 'Productos';
+      case 3: return 'Cliente';
       default: return 'Nueva Venta';
     }
   };

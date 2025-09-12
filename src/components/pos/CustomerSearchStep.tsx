@@ -223,7 +223,7 @@ export default function CustomerSearchStep({ customer, onCustomerChange, onNext 
           {/* Continue Button */}
           {(customer.name || customer.id) && (
             <Button onClick={onNext} className="w-full" size="lg">
-              Continuar
+              Ir al Pago
             </Button>
           )}
         </CardContent>

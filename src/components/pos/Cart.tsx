@@ -114,7 +114,7 @@ export default function Cart({ items, onUpdateQuantity, onRemoveItem, onCheckout
               disabled={items.length === 0}
               size="lg"
             >
-              Pagar Pedido {formatPrice(total)}
+              Continuar a Entrega {formatPrice(total)}
             </Button>
           </>
         )}
