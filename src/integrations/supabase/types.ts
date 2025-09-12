@@ -472,6 +472,8 @@ export type Database = {
         Row: {
           active: boolean | null
           created_at: string | null
+          email: string | null
+          full_name: string | null
           id: string
           pass_hash: string
           role: Database["public"]["Enums"]["app_role"]
@@ -481,6 +483,8 @@ export type Database = {
         Insert: {
           active?: boolean | null
           created_at?: string | null
+          email?: string | null
+          full_name?: string | null
           id?: string
           pass_hash: string
           role?: Database["public"]["Enums"]["app_role"]
@@ -490,6 +494,8 @@ export type Database = {
         Update: {
           active?: boolean | null
           created_at?: string | null
+          email?: string | null
+          full_name?: string | null
           id?: string
           pass_hash?: string
           role?: Database["public"]["Enums"]["app_role"]
