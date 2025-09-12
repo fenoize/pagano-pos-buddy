@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,6 +23,8 @@ interface ProductModifier {
   price: number;
 }
 
+type Variant = 'simple' | 'doble' | 'triple' | 'cuádruple';
+
 interface ProductCustomizationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,7 +33,7 @@ interface ProductCustomizationModalProps {
 }
 
 export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, product }: ProductCustomizationModalProps) {
-  const [selectedVariant, setSelectedVariant] = useState<'simple' | 'doble' | 'triple'>('simple');
+  const [selectedVariant, setSelectedVariant] = useState<Variant>('simple');
   const [selectedPriceType, setSelectedPriceType] = useState<'combo' | 'only'>('combo');
   const [selectedExtras, setSelectedExtras] = useState<Record<string, number>>({});
   const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
@@ -95,15 +97,20 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
     }).format(price);
   };
 
-  const getVariants = () => {
-    // Verificar si el producto tiene la categoría "hamburguesas"
-    const hasHamburguesasCategory = product.categories?.some(cat => cat.name === 'hamburguesas') || 
-                                    product.category === 'hamburguesas';
-    
+  const getVariants = (): string[] => {
+    const catStr = (product.category || '').toString().toLowerCase();
+    const hasHamburguesasCategory =
+      product.categories?.some((cat: any) => cat?.name?.toString().toLowerCase().includes('hamburguesa')) ||
+      catStr.includes('hamburguesa');
+
     if (hasHamburguesasCategory) {
-      return ['simple', 'doble', 'triple', 'cuádruple'] as const;
+      const prices: any = product.prices || {};
+      const priceType = prices[selectedPriceType] || {};
+      const all = ['simple', 'doble', 'triple', 'cuádruple'];
+      const available = all.filter((v) => priceType[v] !== undefined && priceType[v] !== null);
+      return available.length > 0 ? available : ['simple'];
     }
-    return ['simple'] as const;
+    return ['simple'];
   };
 
   const getBasePrice = () => {
@@ -189,6 +196,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Personalizar {product.name}</DialogTitle>
+          <DialogDescription className="sr-only">Selecciona tamaño, extras y notas para el producto.</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="customize" className="w-full">
@@ -228,7 +236,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
                       <Button
                         key={variant}
                         variant={selectedVariant === variant ? 'default' : 'outline'}
-                        onClick={() => setSelectedVariant(variant)}
+                        onClick={() => setSelectedVariant(variant as Variant)}
                         className="capitalize"
                       >
                         {variant}
