@@ -18,9 +18,9 @@ export interface User {
 }
 
 export interface Product {
-  id: string;
+  id?: string;
   name: string;
-  category: string;
+  category?: string;
   image_url?: string;
   prices: {
     combo: {
@@ -37,8 +37,38 @@ export interface Product {
     };
   };
   active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
+  categories?: Category[];
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductExtra {
+  id: string;
+  name: string;
+  price: number;
+  category_id?: string;
+  active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductModifier {
+  id: string;
+  name: string;
+  price: number;
+  product_id?: string;
+  active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Customer {

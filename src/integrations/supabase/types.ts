@@ -68,6 +68,33 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       config: {
         Row: {
           id: string
@@ -241,40 +268,76 @@ export type Database = {
           },
         ]
       }
+      product_categories: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          id: string
+          product_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          id?: string
+          product_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_categories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_extras: {
         Row: {
           active: boolean | null
+          category_id: string | null
           created_at: string | null
           id: string
           name: string
           price: number
-          product_id: string | null
           updated_at: string | null
         }
         Insert: {
           active?: boolean | null
+          category_id?: string | null
           created_at?: string | null
           id?: string
           name: string
           price?: number
-          product_id?: string | null
           updated_at?: string | null
         }
         Update: {
           active?: boolean | null
+          category_id?: string | null
           created_at?: string | null
           id?: string
           name?: string
           price?: number
-          product_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "product_extras_product_id_fkey"
-            columns: ["product_id"]
+            foreignKeyName: "product_extras_category_id_fkey"
+            columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]
@@ -285,6 +348,7 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
+          price: number | null
           product_id: string | null
           updated_at: string | null
         }
@@ -293,6 +357,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           name: string
+          price?: number | null
           product_id?: string | null
           updated_at?: string | null
         }
@@ -301,6 +366,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
+          price?: number | null
           product_id?: string | null
           updated_at?: string | null
         }

@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Product, OrderItem } from '@/types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Product } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Plus, Minus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ProductExtra {
   id: string;
@@ -19,66 +20,72 @@ interface ProductExtra {
 interface ProductModifier {
   id: string;
   name: string;
+  price: number;
 }
 
 interface ProductCustomizationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddToCart: (item: Omit<OrderItem, 'productId' | 'productName'>) => void;
+  onAddToCart: (item: any) => void;
   product: Product;
 }
 
-export default function ProductCustomizationModal({
-  isOpen,
-  onClose,
-  onAddToCart,
-  product
-}: ProductCustomizationModalProps) {
-  const [selectedVariant, setSelectedVariant] = useState<string>('simple');
-  const [priceType, setPriceType] = useState<'combo' | 'only'>('combo');
+export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, product }: ProductCustomizationModalProps) {
+  const [selectedVariant, setSelectedVariant] = useState<'simple' | 'doble' | 'triple'>('simple');
+  const [selectedPriceType, setSelectedPriceType] = useState<'combo' | 'only'>('combo');
+  const [selectedExtras, setSelectedExtras] = useState<Record<string, number>>({});
+  const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
+  const [specialNotes, setSpecialNotes] = useState('');
+  const [quantity, setQuantity] = useState(1);
   const [extras, setExtras] = useState<ProductExtra[]>([]);
   const [modifiers, setModifiers] = useState<ProductModifier[]>([]);
-  const [selectedExtras, setSelectedExtras] = useState<{[key: string]: number}>({});
-  const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
-  const [notes, setNotes] = useState('');
-  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
-    if (isOpen && product) {
+    if (isOpen && product.id) {
       fetchProductExtrasAndModifiers();
-      resetForm();
     }
-  }, [isOpen, product]);
-
-  const resetForm = () => {
-    setSelectedVariant('simple');
-    setPriceType('combo');
-    setSelectedExtras({});
-    setSelectedModifiers([]);
-    setNotes('');
-    setQuantity(1);
-  };
+  }, [isOpen, product.id]);
 
   const fetchProductExtrasAndModifiers = async () => {
     try {
+      // Obtener categorías del producto
+      const { data: productCategories } = await supabase
+        .from('product_categories')
+        .select('category_id')
+        .eq('product_id', product.id);
+
+      const categoryIds = productCategories?.map(pc => pc.category_id) || [];
+
       const [extrasRes, modifiersRes] = await Promise.all([
         supabase
           .from('product_extras')
           .select('*')
-          .eq('product_id', product.id)
+          .in('category_id', categoryIds.length > 0 ? categoryIds : [''])
           .eq('active', true),
         supabase
           .from('product_modifiers')
           .select('*')
           .eq('product_id', product.id)
-          .eq('active', true)
+          .eq('active', true),
       ]);
 
-      if (extrasRes.data) setExtras(extrasRes.data);
-      if (modifiersRes.data) setModifiers(modifiersRes.data);
+      if (extrasRes.error) throw extrasRes.error;
+      if (modifiersRes.error) throw modifiersRes.error;
+
+      setExtras(extrasRes.data || []);
+      setModifiers(modifiersRes.data || []);
     } catch (error) {
-      console.error('Error fetching product extras and modifiers:', error);
+      console.error('Error fetching product customizations:', error);
     }
+  };
+
+  const resetForm = () => {
+    setSelectedVariant('simple');
+    setSelectedPriceType('combo');
+    setSelectedExtras({});
+    setSelectedModifiers([]);
+    setSpecialNotes('');
+    setQuantity(1);
   };
 
   const formatPrice = (price: number) => {
@@ -90,45 +97,47 @@ export default function ProductCustomizationModal({
 
   const getVariants = () => {
     if (product.category === 'hamburguesas') {
-      return ['simple', 'doble', 'triple', 'cuadruple'];
-    } else if (product.category === 'papas') {
-      return ['Medium', 'Large'];
+      return ['simple', 'doble', 'triple'] as const;
     }
-    return ['simple', 'doble', 'triple'];
+    return ['simple'] as const;
   };
 
   const getBasePrice = () => {
-    const prices = product.prices[priceType];
-    return prices[selectedVariant as keyof typeof prices] || 0;
+    const prices = product.prices as any;
+    return prices[selectedPriceType][selectedVariant] || 0;
   };
 
   const getExtrasTotal = () => {
-    return Object.entries(selectedExtras).reduce((total, [extraId, quantity]) => {
+    return Object.entries(selectedExtras).reduce((total, [extraId, qty]) => {
       const extra = extras.find(e => e.id === extraId);
-      return total + (extra ? extra.price * quantity : 0);
+      return total + (extra ? extra.price * qty : 0);
+    }, 0);
+  };
+
+  const getModifiersTotal = () => {
+    return selectedModifiers.reduce((total, modifierId) => {
+      const modifier = modifiers.find(m => m.id === modifierId);
+      return total + (modifier ? modifier.price : 0);
     }, 0);
   };
 
   const getTotalPrice = () => {
-    return (getBasePrice() + getExtrasTotal()) * quantity;
+    return (getBasePrice() + getExtrasTotal() + getModifiersTotal()) * quantity;
   };
 
   const handleExtraChange = (extraId: string, change: number) => {
     setSelectedExtras(prev => {
-      const currentQty = prev[extraId] || 0;
-      const newQty = Math.max(0, currentQty + change);
-      
+      const newQty = Math.max(0, (prev[extraId] || 0) + change);
       if (newQty === 0) {
         const { [extraId]: _, ...rest } = prev;
         return rest;
       }
-      
       return { ...prev, [extraId]: newQty };
     });
   };
 
   const toggleModifier = (modifierId: string) => {
-    setSelectedModifiers(prev => 
+    setSelectedModifiers(prev =>
       prev.includes(modifierId)
         ? prev.filter(id => id !== modifierId)
         : [...prev, modifierId]
@@ -139,12 +148,12 @@ export default function ProductCustomizationModal({
     const selectedExtrasArray = Object.entries(selectedExtras).map(([extraId, qty]) => {
       const extra = extras.find(e => e.id === extraId);
       return {
-        id: extraId,
-        name: extra?.name || '',
+        key: extraId,
+        label: extra?.name || '',
         price: extra?.price || 0,
         quantity: qty
       };
-    }).filter(extra => extra.quantity > 0);
+    });
 
     const selectedModifiersArray = selectedModifiers.map(modifierId => {
       const modifier = modifiers.find(m => m.id === modifierId);
@@ -155,198 +164,221 @@ export default function ProductCustomizationModal({
     });
 
     const orderItem = {
-      size: selectedVariant as any,
-      priceKind: priceType,
+      productId: product.id!,
+      productName: product.name,
+      size: selectedVariant,
+      priceKind: selectedPriceType,
       basePrice: getBasePrice(),
       quantity,
-      extras: selectedExtrasArray.map(extra => ({
-        key: extra.id,
-        label: extra.name,
-        price: extra.price,
-        quantity: extra.quantity
-      })),
+      extras: selectedExtrasArray,
       modifiers: selectedModifiersArray,
-      notes
+      notes: specialNotes.trim() || undefined
     };
 
     onAddToCart(orderItem);
+    resetForm();
     onClose();
   };
-
-  const variants = getVariants();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">{product.name}</DialogTitle>
+          <DialogTitle>Personalizar {product.name}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Price Type Selection */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Tipo de Pedido</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant={priceType === 'combo' ? 'default' : 'outline'}
-                onClick={() => setPriceType('combo')}
-                className="h-12"
-              >
-                Combo
-              </Button>
-              <Button
-                variant={priceType === 'only' ? 'default' : 'outline'}
-                onClick={() => setPriceType('only')}
-                className="h-12"
-              >
-                Solo
-              </Button>
-            </div>
-          </div>
+        <Tabs defaultValue="customize" className="w-full">
+          <TabsList className="grid w-full grid-cols-1">
+            <TabsTrigger value="customize">Personalizar Producto</TabsTrigger>
+          </TabsList>
 
-          {/* Variant Selection */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Tamaño/Variante</Label>
-            <div className="grid grid-cols-2 gap-3">
-              {variants.map((variant) => {
-                const price = (product.prices[priceType] as any)[variant];
-                if (!price) return null;
-                
-                return (
+          <TabsContent value="customize" className="space-y-6">
+            {/* Tipo de precio */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Tipo de Precio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
                   <Button
-                    key={variant}
-                    variant={selectedVariant === variant ? 'default' : 'outline'}
-                    onClick={() => setSelectedVariant(variant)}
-                    className="h-16 flex flex-col gap-1"
+                    variant={selectedPriceType === 'combo' ? 'default' : 'outline'}
+                    onClick={() => setSelectedPriceType('combo')}
                   >
-                    <span className="font-medium capitalize">{variant}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {formatPrice(price)}
-                    </Badge>
+                    Combo (con papas)
                   </Button>
-                );
-              })}
-            </div>
-          </div>
+                  <Button
+                    variant={selectedPriceType === 'only' ? 'default' : 'outline'}
+                    onClick={() => setSelectedPriceType('only')}
+                  >
+                    Solo hamburguesa
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Extras */}
-          {extras.length > 0 && (
-            <div>
-              <Label className="text-base font-semibold mb-3 block">Extras</Label>
-              <div className="space-y-2">
-                {extras.map((extra) => (
-                  <div key={extra.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-medium">{extra.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatPrice(extra.price)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
+            {/* Variantes */}
+            {getVariants().length > 1 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Tamaño</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-3">
+                    {getVariants().map((variant) => (
                       <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleExtraChange(extra.id, -1)}
-                        disabled={!selectedExtras[extra.id]}
+                        key={variant}
+                        variant={selectedVariant === variant ? 'default' : 'outline'}
+                        onClick={() => setSelectedVariant(variant)}
+                        className="capitalize"
                       >
-                        <Minus className="w-4 h-4" />
+                        {variant}
                       </Button>
-                      <span className="w-8 text-center font-medium">
-                        {selectedExtras[extra.id] || 0}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleExtraChange(extra.id, 1)}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Modifiers */}
-          {modifiers.length > 0 && (
-            <div>
-              <Label className="text-base font-semibold mb-3 block">Modificadores (sin costo)</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {modifiers.map((modifier) => (
+            {/* Extras */}
+            {extras.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Extras</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {extras.map((extra) => (
+                      <div key={extra.id} className="flex justify-between items-center p-3 border rounded-lg">
+                        <div>
+                          <span className="font-medium">{extra.name}</span>
+                          <span className="text-sm text-muted-foreground ml-2">
+                            {formatPrice(extra.price)}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleExtraChange(extra.id, -1)}
+                            disabled={(selectedExtras[extra.id] || 0) === 0}
+                          >
+                            <Minus className="w-4 h-4" />
+                          </Button>
+                          <span className="w-8 text-center">
+                            {selectedExtras[extra.id] || 0}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleExtraChange(extra.id, 1)}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Modificadores */}
+            {modifiers.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Modificaciones</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {modifiers.map((modifier) => (
+                      <div
+                        key={modifier.id}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedModifiers.includes(modifier.id)
+                            ? 'bg-primary/10 border-primary'
+                            : 'hover:bg-muted/50'
+                        }`}
+                        onClick={() => toggleModifier(modifier.id)}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{modifier.name}</span>
+                          {modifier.price > 0 && (
+                            <span className="text-sm text-muted-foreground">
+                              {formatPrice(modifier.price)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Notas especiales */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Notas Especiales</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  placeholder="Instrucciones especiales para la preparación..."
+                  value={specialNotes}
+                  onChange={(e) => setSpecialNotes(e.target.value)}
+                  rows={3}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Cantidad */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Cantidad</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
                   <Button
-                    key={modifier.id}
-                    variant={selectedModifiers.includes(modifier.id) ? 'default' : 'outline'}
-                    onClick={() => toggleModifier(modifier.id)}
-                    className="h-auto p-3 text-sm"
+                    variant="outline"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
                   >
-                    {modifier.name}
+                    <Minus className="w-4 h-4" />
                   </Button>
-                ))}
+                  <Input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-20 text-center"
+                    min="1"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => setQuantity(quantity + 1)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Total y botones */}
+            <div className="flex justify-between items-center pt-4 border-t">
+              <div className="text-xl font-bold">
+                Total: {formatPrice(getTotalPrice())}
+              </div>
+              
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={onClose}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleAddToCart}>
+                  Agregar al Carrito
+                </Button>
               </div>
             </div>
-          )}
-
-          {/* Notes */}
-          <div>
-            <Label htmlFor="notes" className="text-base font-semibold mb-3 block">
-              Notas Especiales
-            </Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ej: Sin sal, extra crocante, etc."
-              rows={3}
-            />
-          </div>
-
-          {/* Quantity */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Cantidad</Label>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                disabled={quantity <= 1}
-              >
-                <Minus className="w-4 h-4" />
-              </Button>
-              <Input
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-20 text-center"
-                min="1"
-              />
-              <Button
-                variant="outline"
-                onClick={() => setQuantity(quantity + 1)}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Total and Actions */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center text-lg font-semibold">
-              <span>Total:</span>
-              <span>{formatPrice(getTotalPrice())}</span>
-            </div>
-            
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={onClose} className="flex-1">
-                Cancelar
-              </Button>
-              <Button onClick={handleAddToCart} className="flex-1">
-                Agregar al Carrito
-              </Button>
-            </div>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

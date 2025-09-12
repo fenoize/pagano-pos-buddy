@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import CustomerSearchStep from '@/components/pos/CustomerSearchStep';
 import FulfillmentStep from '@/components/pos/FulfillmentStep';
 import ProductGrid from '@/components/pos/ProductGrid';
-import ProductCustomizationModal from '@/components/pos/ProductCustomizationModal';
+import { ProductCustomizationModal } from '@/components/pos/ProductCustomizationModal';
 import Cart from '@/components/pos/Cart';
 import PaymentModal from '@/components/pos/PaymentModal';
 import RunasCalculator from '@/components/pos/RunasCalculator';
