@@ -59,7 +59,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
-      <MobileNav />
+      {/* Only show MobileNav when not in expanded kitchen mode */}
+      {!(isKitchenRoute && isExpanded) && <MobileNav />}
     </SidebarProvider>
   );
 }
