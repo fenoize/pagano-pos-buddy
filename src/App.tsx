@@ -10,6 +10,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
 import Login from "./pages/Login";
 import Dashboard from '@/pages/Dashboard';
+import Clientes from '@/pages/Clientes';
 import NewSale from '@/pages/NewSale';
 import Sales from '@/pages/Sales';
 import Kitchen from '@/pages/Kitchen';
@@ -128,7 +129,7 @@ const App = () => (
             <Route path="/clientes" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <div>Clientes - En desarrollo</div>
+                  <Clientes />
                 </AppLayout>
               </ProtectedRoute>
             } />
