@@ -191,6 +191,7 @@ export type Database = {
       orders: {
         Row: {
           created_at: string | null
+          created_by_user_id: string | null
           customer_id: string | null
           delivery_address: string | null
           delivery_comuna: string | null
@@ -214,6 +215,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by_user_id?: string | null
           customer_id?: string | null
           delivery_address?: string | null
           delivery_comuna?: string | null
@@ -237,6 +239,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by_user_id?: string | null
           customer_id?: string | null
           delivery_address?: string | null
           delivery_comuna?: string | null
@@ -259,6 +262,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
@@ -496,7 +506,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      app_role: "Administrador" | "Caja" | "Cocina" | "Reparto" | "Viewer"
+      app_role:
+        | "Administrador"
+        | "Caja"
+        | "Cocina"
+        | "Reparto"
+        | "Viewer"
+        | "Preparador"
+        | "Cajero"
       cash_movement_type: "ingreso" | "egreso"
       fulfillment_type: "retiro" | "delivery"
       order_status:
@@ -634,7 +651,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["Administrador", "Caja", "Cocina", "Reparto", "Viewer"],
+      app_role: [
+        "Administrador",
+        "Caja",
+        "Cocina",
+        "Reparto",
+        "Viewer",
+        "Preparador",
+        "Cajero",
+      ],
       cash_movement_type: ["ingreso", "egreso"],
       fulfillment_type: ["retiro", "delivery"],
       order_status: [
