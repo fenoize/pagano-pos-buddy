@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      addresses: {
+        Row: {
+          alias: string
+          calle: string
+          ciudad: string | null
+          comuna: string
+          created_at: string | null
+          customer_id: string
+          depto: string | null
+          id: string
+          is_default: boolean | null
+          numero: string
+          observaciones: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alias?: string
+          calle: string
+          ciudad?: string | null
+          comuna: string
+          created_at?: string | null
+          customer_id: string
+          depto?: string | null
+          id?: string
+          is_default?: boolean | null
+          numero: string
+          observaciones?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alias?: string
+          calle?: string
+          ciudad?: string | null
+          comuna?: string
+          created_at?: string | null
+          customer_id?: string
+          depto?: string | null
+          id?: string
+          is_default?: boolean | null
+          numero?: string
+          observaciones?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_addresses_customer"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_movements: {
         Row: {
           amount: number
@@ -119,50 +172,62 @@ export type Database = {
       customers: {
         Row: {
           apellido: string | null
+          apellidos: string | null
           cantidad_runas: number | null
-          comuna: string | null
           created_at: string | null
-          direccion: string | null
+          created_by_user_id: string | null
           email: string | null
+          estado_cliente: Database["public"]["Enums"]["estado_cliente"] | null
+          fecha_nacimiento: string | null
           id: string
+          motivo_estado: string | null
           name: string | null
-          numeracion: string | null
+          nombres: string | null
           phone: string | null
           rut: string | null
           ultima_compra: string | null
           updated_at: string | null
+          updated_by_user_id: string | null
           valor_cliente: number | null
         }
         Insert: {
           apellido?: string | null
+          apellidos?: string | null
           cantidad_runas?: number | null
-          comuna?: string | null
           created_at?: string | null
-          direccion?: string | null
+          created_by_user_id?: string | null
           email?: string | null
+          estado_cliente?: Database["public"]["Enums"]["estado_cliente"] | null
+          fecha_nacimiento?: string | null
           id?: string
+          motivo_estado?: string | null
           name?: string | null
-          numeracion?: string | null
+          nombres?: string | null
           phone?: string | null
           rut?: string | null
           ultima_compra?: string | null
           updated_at?: string | null
+          updated_by_user_id?: string | null
           valor_cliente?: number | null
         }
         Update: {
           apellido?: string | null
+          apellidos?: string | null
           cantidad_runas?: number | null
-          comuna?: string | null
           created_at?: string | null
-          direccion?: string | null
+          created_by_user_id?: string | null
           email?: string | null
+          estado_cliente?: Database["public"]["Enums"]["estado_cliente"] | null
+          fecha_nacimiento?: string | null
           id?: string
+          motivo_estado?: string | null
           name?: string | null
-          numeracion?: string | null
+          nombres?: string | null
           phone?: string | null
           rut?: string | null
           ultima_compra?: string | null
           updated_at?: string | null
+          updated_by_user_id?: string | null
           valor_cliente?: number | null
         }
         Relationships: []
@@ -429,27 +494,36 @@ export type Database = {
           created_at: string | null
           customer_id: string | null
           id: string
+          motivo: string | null
           order_id: string | null
+          origen: Database["public"]["Enums"]["origen_movimiento"] | null
+          responsable_id: string | null
           runas: number
-          type: string
+          type: Database["public"]["Enums"]["runa_movement_type"]
         }
         Insert: {
           amount: number
           created_at?: string | null
           customer_id?: string | null
           id?: string
+          motivo?: string | null
           order_id?: string | null
+          origen?: Database["public"]["Enums"]["origen_movimiento"] | null
+          responsable_id?: string | null
           runas: number
-          type: string
+          type?: Database["public"]["Enums"]["runa_movement_type"]
         }
         Update: {
           amount?: number
           created_at?: string | null
           customer_id?: string | null
           id?: string
+          motivo?: string | null
           order_id?: string | null
+          origen?: Database["public"]["Enums"]["origen_movimiento"] | null
+          responsable_id?: string | null
           runas?: number
-          type?: string
+          type?: Database["public"]["Enums"]["runa_movement_type"]
         }
         Relationships: [
           {
@@ -521,6 +595,7 @@ export type Database = {
         | "Preparador"
         | "Cajero"
       cash_movement_type: "ingreso" | "egreso"
+      estado_cliente: "Activo" | "Inactivo" | "Bloqueado"
       fulfillment_type: "retiro" | "delivery"
       order_status:
         | "Pendiente"
@@ -529,7 +604,9 @@ export type Database = {
         | "Listo"
         | "Entregado"
         | "Cancelado"
+      origen_movimiento: "POS" | "Web" | "Manual"
       payment_method: "efectivo" | "mp" | "pos" | "mixto"
+      runa_movement_type: "acumulacion" | "canje" | "ajuste" | "promo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -667,6 +744,7 @@ export const Constants = {
         "Cajero",
       ],
       cash_movement_type: ["ingreso", "egreso"],
+      estado_cliente: ["Activo", "Inactivo", "Bloqueado"],
       fulfillment_type: ["retiro", "delivery"],
       order_status: [
         "Pendiente",
@@ -676,7 +754,9 @@ export const Constants = {
         "Entregado",
         "Cancelado",
       ],
+      origen_movimiento: ["POS", "Web", "Manual"],
       payment_method: ["efectivo", "mp", "pos", "mixto"],
+      runa_movement_type: ["acumulacion", "canje", "ajuste", "promo"],
     },
   },
 } as const
