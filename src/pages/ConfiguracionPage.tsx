@@ -2,7 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign } from 'lucide-react';
+import { Settings, DollarSign, MapPin } from 'lucide-react';
+import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
 
 export default function ConfiguracionPage() {
   const { user } = useAuthContext();
@@ -30,8 +31,12 @@ export default function ConfiguracionPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="delivery" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="zones" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="zones" className="flex items-center gap-2">
+            <MapPin className="w-4 h-4" />
+            Zonas Delivery
+          </TabsTrigger>
           <TabsTrigger value="delivery" className="flex items-center gap-2">
             <DollarSign className="w-4 h-4" />
             Delivery
@@ -41,6 +46,10 @@ export default function ConfiguracionPage() {
             General
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="zones" className="space-y-6">
+          <DeliveryZoneManagement />
+        </TabsContent>
 
         <TabsContent value="delivery" className="space-y-6">
           <Card>

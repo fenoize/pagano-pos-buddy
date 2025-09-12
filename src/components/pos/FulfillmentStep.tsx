@@ -1,62 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FulfillmentType } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Store, Truck, Coffee } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Store, Truck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { DeliveryZoneSelector } from './DeliveryZoneSelector';
 
 interface FulfillmentStepProps {
   fulfillment: FulfillmentType;
-  onFulfillmentChange: (fulfillment: FulfillmentType, deliveryFee?: number, deliveryZone?: string) => void;
+  onFulfillmentChange: (fulfillment: FulfillmentType, deliveryFee?: number, deliveryZoneId?: string) => void;
   onNext: () => void;
 }
 
-interface DeliveryZone {
-  name: string;
-  price: number;
-}
-
 export default function FulfillmentStep({ fulfillment, onFulfillmentChange, onNext }: FulfillmentStepProps) {
-  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
-  const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const { toast } = useToast();
-
-  useEffect(() => {
-    fetchDeliveryZones();
-  }, []);
-
-  const fetchDeliveryZones = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('config')
-        .select('value')
-        .eq('key', 'delivery_zones')
-        .single();
-
-      if (error) throw error;
-      
-      if (data) {
-        setDeliveryZones((data.value as unknown) as DeliveryZone[]);
-      }
-    } catch (error) {
-      console.error('Error fetching delivery zones:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las zonas de delivery",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
-      currency: 'CLP'
+      currency: 'CLP',
+      minimumFractionDigits: 0,
     }).format(price);
   };
 
@@ -70,13 +36,14 @@ export default function FulfillmentStep({ fulfillment, onFulfillmentChange, onNe
     }
   };
 
-  const handleZoneSelect = (zone: DeliveryZone) => {
-    setSelectedZone(zone);
-    onFulfillmentChange('delivery', zone.price, zone.name);
+  const handleZoneChange = (zoneId: string, fee: number) => {
+    setSelectedZoneId(zoneId);
+    setDeliveryFee(fee);
+    onFulfillmentChange('delivery', fee, zoneId);
   };
 
   const handleContinue = () => {
-    if (fulfillment === 'delivery' && !selectedZone) {
+    if (fulfillment === 'delivery' && !selectedZoneId) {
       toast({
         title: "Error",
         description: "Selecciona una zona de delivery",
@@ -87,16 +54,6 @@ export default function FulfillmentStep({ fulfillment, onFulfillmentChange, onNe
     onNext();
   };
 
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center">Cargando opciones de entrega...</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <Card>
@@ -104,7 +61,7 @@ export default function FulfillmentStep({ fulfillment, onFulfillmentChange, onNe
           <CardTitle>Modalidad de Entrega</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Retiro */}
             <Button
               variant={fulfillment === 'retiro' ? 'default' : 'outline'}
@@ -134,34 +91,23 @@ export default function FulfillmentStep({ fulfillment, onFulfillmentChange, onNe
         </CardContent>
       </Card>
 
-      {/* Delivery Zones */}
-      {fulfillment === 'delivery' && deliveryZones.length > 0 && (
+      {/* Delivery Zone Selection */}
+      {fulfillment === 'delivery' && (
         <Card>
           <CardHeader>
             <CardTitle>Zona de Delivery</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {deliveryZones.map((zone, index) => (
-                <Button
-                  key={index}
-                  variant={selectedZone?.name === zone.name ? 'default' : 'outline'}
-                  className="h-16 flex flex-col gap-1 justify-center"
-                  onClick={() => handleZoneSelect(zone)}
-                >
-                  <div className="font-medium">{zone.name}</div>
-                  <Badge variant="secondary" className="text-xs">
-                    {formatPrice(zone.price)}
-                  </Badge>
-                </Button>
-              ))}
-            </div>
+          <CardContent className="space-y-4">
+            <DeliveryZoneSelector
+              selectedZoneId={selectedZoneId}
+              onZoneChange={handleZoneChange}
+            />
             
-            {selectedZone && (
-              <div className="mt-4 p-4 border rounded-lg bg-primary/5">
+            {selectedZoneId && deliveryFee > 0 && (
+              <div className="p-4 border rounded-lg bg-primary/5">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">Zona seleccionada: {selectedZone.name}</span>
-                  <Badge variant="default">{formatPrice(selectedZone.price)}</Badge>
+                  <span className="font-medium">Costo de delivery:</span>
+                  <Badge variant="default">{formatPrice(deliveryFee)}</Badge>
                 </div>
               </div>
             )}
@@ -171,7 +117,7 @@ export default function FulfillmentStep({ fulfillment, onFulfillmentChange, onNe
 
       {/* Continue Button */}
       {(fulfillment === 'retiro' || 
-        (fulfillment === 'delivery' && selectedZone)) && (
+        (fulfillment === 'delivery' && selectedZoneId)) && (
         <Button onClick={handleContinue} className="w-full" size="lg">
           Continuar al Menú
         </Button>

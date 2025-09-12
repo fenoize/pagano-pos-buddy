@@ -232,6 +232,36 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_zones: {
+        Row: {
+          active: boolean
+          created_at: string
+          delivery_fee: number
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          delivery_fee?: number
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          delivery_fee?: number
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           id: string
@@ -263,6 +293,7 @@ export type Database = {
           delivery_distance: number | null
           delivery_fee: number | null
           delivery_number: string | null
+          delivery_zone_id: string | null
           discount: number | null
           fulfillment: Database["public"]["Enums"]["fulfillment_type"]
           id: string
@@ -287,6 +318,7 @@ export type Database = {
           delivery_distance?: number | null
           delivery_fee?: number | null
           delivery_number?: string | null
+          delivery_zone_id?: string | null
           discount?: number | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
@@ -311,6 +343,7 @@ export type Database = {
           delivery_distance?: number | null
           delivery_fee?: number | null
           delivery_number?: string | null
+          delivery_zone_id?: string | null
           discount?: number | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
@@ -339,6 +372,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_zone_id_fkey"
+            columns: ["delivery_zone_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_zones"
             referencedColumns: ["id"]
           },
         ]
