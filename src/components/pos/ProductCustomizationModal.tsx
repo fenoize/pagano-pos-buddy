@@ -252,16 +252,32 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
-                  {getVariants().map((variant) => (
-                    <Button
-                      key={variant}
-                      variant={selectedVariant === variant ? 'default' : 'outline'}
-                      onClick={() => setSelectedVariant(variant as Variant)}
-                      className="capitalize"
-                    >
-                      {variant}
-                    </Button>
-                  ))}
+                  {getVariants().map((variant) => {
+                    const prices = product.prices as any;
+                    const priceType = prices[selectedPriceType] || {};
+                    let variantPrice = 0;
+                    
+                    // Handle cuádruple spelling variations
+                    if (variant === 'cuádruple') {
+                      variantPrice = priceType['cuádruple'] || priceType['cuadruple'] || 0;
+                    } else {
+                      variantPrice = priceType[variant] || 0;
+                    }
+                    
+                    return (
+                      <Button
+                        key={variant}
+                        variant={selectedVariant === variant ? 'default' : 'outline'}
+                        onClick={() => setSelectedVariant(variant as Variant)}
+                        className="capitalize h-auto flex flex-col py-3 px-4"
+                      >
+                        <span className="font-medium">{variant}</span>
+                        <span className="text-xs mt-1 opacity-80">
+                          {formatPrice(variantPrice)}
+                        </span>
+                      </Button>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
