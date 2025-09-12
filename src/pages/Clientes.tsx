@@ -191,14 +191,14 @@ export default function Clientes() {
             
             {/* Estado Filter */}
             <Select 
-              value={filters.estado || ''} 
-              onValueChange={(value) => setFilters({...filters, estado: value as EstadoCliente || undefined})}
+              value={filters.estado || 'all'} 
+              onValueChange={(value) => setFilters({...filters, estado: value === 'all' ? undefined : value as EstadoCliente})}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Todos los estados" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los estados</SelectItem>
+                <SelectItem value="all">Todos los estados</SelectItem>
                 <SelectItem value="Activo">Activo</SelectItem>
                 <SelectItem value="Inactivo">Inactivo</SelectItem>
                 <SelectItem value="Bloqueado">Bloqueado</SelectItem>
@@ -207,14 +207,14 @@ export default function Clientes() {
             
             {/* Has Runas Filter */}
             <Select 
-              value={filters.hasRunas ? 'true' : filters.hasRunas === false ? 'false' : ''} 
+              value={filters.hasRunas ? 'true' : filters.hasRunas === false ? 'false' : 'all'} 
               onValueChange={(value) => setFilters({...filters, hasRunas: value === 'true' ? true : value === 'false' ? false : undefined})}
             >
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Runas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="true">Con Runas</SelectItem>
                 <SelectItem value="false">Sin Runas</SelectItem>
               </SelectContent>
