@@ -1,4 +1,4 @@
-export type AppRole = 'Administrador' | 'Caja' | 'Cocina' | 'Reparto' | 'Viewer';
+export type AppRole = 'Administrador' | 'Cajero' | 'Cocinero' | 'Preparador' | 'Repartidor' | 'Viewer';
 
 export type OrderStatus = 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'Entregado' | 'Cancelado';
 
@@ -129,6 +129,8 @@ export interface Order {
   payment_method: PaymentMethod;
   status: OrderStatus;
   notes?: string;
+  created_by_user_id?: string;
+  created_by_user?: User;
   created_at: string;
   updated_at: string;
 }

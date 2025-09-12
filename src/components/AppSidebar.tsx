@@ -31,14 +31,14 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { AppRole } from "@/types";
 
 const menuItems = [
-  { title: "Escritorio", url: "/", icon: Home, roles: ['Administrador', 'Caja', 'Cocina', 'Reparto', 'Viewer'] },
-  { title: "Nueva Venta", url: "/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Caja'] },
-  { title: "Ventas", url: "/ventas", icon: TrendingUp, roles: ['Administrador', 'Caja', 'Viewer'] },
-  { title: "Cocina", url: "/cocina", icon: ChefHat, roles: ['Administrador', 'Cocina'] },
-  { title: "Pedido Listo", url: "/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocina'] },
+  { title: "Escritorio", url: "/", icon: Home, roles: ['Administrador', 'Cajero'] },
+  { title: "Nueva Venta", url: "/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
+  { title: "Ventas", url: "/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
+  { title: "Cocina", url: "/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
+  { title: "Pedido Listo", url: "/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocinero', 'Preparador'] },
   { title: "Productos", url: "/productos", icon: Package, roles: ['Administrador'] },
   { title: "Inventario", url: "/inventario", icon: Archive, roles: ['Administrador'] },
-  { title: "Clientes", url: "/clientes", icon: Users, roles: ['Administrador', 'Caja'] },
+  { title: "Clientes", url: "/clientes", icon: Users, roles: ['Administrador', 'Cajero'] },
   { title: "Usuarios", url: "/usuarios", icon: User, roles: ['Administrador'] },
   { title: "Configuración", url: "/configuracion", icon: Settings, roles: ['Administrador'] },
 ];

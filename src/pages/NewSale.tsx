@@ -4,6 +4,7 @@ import { Product, Customer, OrderItem, FulfillmentType } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthContext } from '@/contexts/AuthContext';
 import CustomerSearchStep from '@/components/pos/CustomerSearchStep';
 import FulfillmentStep from '@/components/pos/FulfillmentStep';
 import ProductGrid from '@/components/pos/ProductGrid';
@@ -27,6 +28,7 @@ export default function NewSale() {
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
   const [runaValue, setRunaValue] = useState(1000);
   const { toast } = useToast();
+  const { user } = useAuthContext();
 
   const total = cartItems.reduce((sum, item) => {
     const extrasTotal = item.extras.reduce((extraSum, extra) => extraSum + (extra.price * (extra.quantity || 1)), 0);
@@ -188,10 +190,11 @@ export default function NewSale() {
         }
       }
 
-      // Create order
-      const orderData = {
-        customer_id: customerId,
-        fulfillment: paymentData.fulfillment || fulfillment,
+        // Create order with user tracking
+        const orderData = {
+          customer_id: customerId,
+          created_by_user_id: user?.id,
+          fulfillment: paymentData.fulfillment || fulfillment,
         items: cartItems as any,
         subtotal: total - deliveryFee,
         delivery_fee: deliveryFee,

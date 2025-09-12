@@ -16,10 +16,10 @@ import { AppRole } from "@/types";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { title: "Inicio", url: "/", icon: Home, roles: ['Administrador', 'Caja', 'Cocina', 'Reparto', 'Viewer'] },
-  { title: "Venta", url: "/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Caja'] },
-  { title: "Ventas", url: "/ventas", icon: TrendingUp, roles: ['Administrador', 'Caja', 'Viewer'] },
-  { title: "Cocina", url: "/cocina", icon: ChefHat, roles: ['Administrador', 'Cocina'] },
+  { title: "Inicio", url: "/", icon: Home, roles: ['Administrador', 'Cajero'] },
+  { title: "Venta", url: "/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
+  { title: "Ventas", url: "/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
+  { title: "Cocina", url: "/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
   { title: "Config", url: "/configuracion", icon: Settings, roles: ['Administrador'] },
 ];
 

@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/types';
+import { User, AppRole } from '@/types';
 import bcrypt from 'bcryptjs';
+
+// Map old database role names to new app role names
+const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
+  const mapping: Record<string, AppRole> = {
+    'Caja': 'Cajero',
+    'Cocina': 'Cocinero',
+    'Reparto': 'Repartidor'
+  };
+  return mapping[dbRole] as AppRole || dbRole as AppRole;
+};
 
 export interface AuthState {
   user: User | null;
@@ -95,11 +105,16 @@ export function useAuth() {
         throw new Error('Usuario o contraseña incorrectos');
       }
 
-      // Store user in localStorage
-      localStorage.setItem('paganos_user', JSON.stringify(userData));
+      // Map database role to app role and store user in localStorage
+      const mappedUser = {
+        ...userData,
+        role: mapDatabaseRoleToApp(userData.role)
+      } as User;
+      
+      localStorage.setItem('paganos_user', JSON.stringify(mappedUser));
 
       setAuthState({
-        user: userData,
+        user: mappedUser,
         loading: false,
         error: null,
       });
