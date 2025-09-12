@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Product } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProductGridProps {
@@ -14,6 +16,7 @@ interface ProductGridProps {
 export default function ProductGrid({ products, onProductClick }: ProductGridProps) {
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
     // Get unique categories from products
@@ -39,9 +42,38 @@ export default function ProductGrid({ products, onProductClick }: ProductGridPro
     return Math.min(...allPrices);
   };
 
-  const filteredProducts = activeCategory === 'all' 
-    ? products 
-    : products.filter(p => p.category === activeCategory);
+  // Filtrado avanzado con búsqueda y categorías
+  const filteredProducts = useMemo(() => {
+    let filtered = products;
+
+    // Filtrar por búsqueda si hay término de búsqueda (mínimo 2 caracteres)
+    if (searchTerm.trim().length >= 2) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchLower) ||
+        product.category.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filtrar por categoría solo si no hay búsqueda activa
+    if (searchTerm.trim().length < 2 && activeCategory !== 'all') {
+      filtered = filtered.filter(p => p.category === activeCategory);
+    }
+
+    return filtered;
+  }, [products, searchTerm, activeCategory]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    // Si hay búsqueda activa, cambiar a "all" para mostrar resultados de todas las categorías
+    if (e.target.value.trim().length >= 2) {
+      setActiveCategory('all');
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+  };
 
   const getCategoryDisplayName = (category: string) => {
     const categoryNames: Record<string, string> = {
@@ -67,89 +99,124 @@ export default function ProductGrid({ products, onProductClick }: ProductGridPro
 
   return (
     <div className="space-y-6">
-      {/* Category Filters */}
-      <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
-          {categories.map((category) => (
-            <TabsTrigger key={category} value={category} className="text-sm">
-              {getCategoryDisplayName(category)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          type="text"
+          placeholder="Buscar productos..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="pl-10 pr-4 py-2 text-base"
+        />
+        {searchTerm && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearSearch}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+          >
+            ✕
+          </Button>
+        )}
+      </div>
 
-        <TabsContent value={activeCategory} className="mt-6">
-          {/* Products Grid */}
-          <div className="pos-grid">
-            {filteredProducts.map((product) => (
-              <Card 
-                key={product.id} 
-                className="pos-card cursor-pointer hover:shadow-lg transition-all duration-200 group"
-                onClick={() => onProductClick(product)}
-              >
-                {/* Product Image */}
-                <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
-                  {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                      onError={(e) => {
-                        e.currentTarget.src = '/placeholder.svg';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <span className="text-4xl opacity-50">🍔</span>
-                    </div>
-                  )}
+      {/* Search Results Info */}
+      {searchTerm.trim().length >= 2 && (
+        <div className="text-sm text-muted-foreground">
+          {filteredProducts.length > 0 
+            ? `${filteredProducts.length} producto${filteredProducts.length !== 1 ? 's' : ''} encontrado${filteredProducts.length !== 1 ? 's' : ''} para "${searchTerm}"`
+            : `No se encontraron productos para "${searchTerm}"`
+          }
+        </div>
+      )}
+
+      {/* Category Filters - Solo mostrar si no hay búsqueda activa */}
+      {searchTerm.trim().length < 2 && (
+        <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+            {categories.map((category) => (
+              <TabsTrigger key={category} value={category} className="text-sm">
+                {getCategoryDisplayName(category)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      )}
+
+      {/* Products Grid */}
+      <div className="pos-grid">
+        {filteredProducts.map((product) => (
+          <Card 
+            key={product.id} 
+            className="pos-card cursor-pointer hover:shadow-lg transition-all duration-200 group"
+            onClick={() => onProductClick(product)}
+          >
+            {/* Product Image */}
+            <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
+              {product.image_url ? (
+                <img
+                  src={product.image_url}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-muted">
+                  <span className="text-4xl opacity-50">🍔</span>
                 </div>
+              )}
+            </div>
 
-                <CardContent className="p-4 pt-0">
-                  {/* Product Info */}
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg leading-tight line-clamp-2">
-                      {product.name}
-                    </h3>
-                    
-                    <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="text-xs">
-                        {getCategoryDisplayName(product.category)}
-                      </Badge>
-                      
-                      <div className="text-right">
-                        <div className="text-sm text-muted-foreground">Desde</div>
-                        <div className="font-bold text-primary">
-                          {formatPrice(getMinPrice(product))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick actions hint */}
-                    <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-                      Toca para personalizar
+            <CardContent className="p-4 pt-0">
+              {/* Product Info */}
+              <div className="space-y-2">
+                <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+                  {product.name}
+                </h3>
+                
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary" className="text-xs">
+                    {getCategoryDisplayName(product.category)}
+                  </Badge>
+                  
+                  <div className="text-right">
+                    <div className="text-sm text-muted-foreground">Desde</div>
+                    <div className="font-bold text-primary">
+                      {formatPrice(getMinPrice(product))}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </div>
 
-          {/* No products message */}
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-muted-foreground mb-4">
-                No hay productos en la categoría "{getCategoryDisplayName(activeCategory)}"
+                {/* Quick actions hint */}
+                <div className="text-xs text-muted-foreground text-center pt-2 border-t">
+                  Toca para personalizar
+                </div>
               </div>
-              <Button 
-                variant="outline" 
-                onClick={() => setActiveCategory('all')}
-              >
-                Ver todos los productos
-              </Button>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* No products message */}
+      {filteredProducts.length === 0 && (
+        <div className="text-center py-12">
+          <div className="text-muted-foreground mb-4">
+            {searchTerm.trim().length >= 2 
+              ? `No se encontraron productos que coincidan con "${searchTerm}"`
+              : `No hay productos en la categoría "${getCategoryDisplayName(activeCategory)}"`
+            }
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={searchTerm.trim().length >= 2 ? clearSearch : () => setActiveCategory('all')}
+          >
+            {searchTerm.trim().length >= 2 ? 'Limpiar búsqueda' : 'Ver todos los productos'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
