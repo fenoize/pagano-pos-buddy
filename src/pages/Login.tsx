@@ -116,15 +116,6 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <div className="text-sm text-muted-foreground">
-              <strong>Usuario de prueba:</strong>
-              <br />
-              Usuario: administrador
-              <br />
-              Contraseña: 12345678
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
