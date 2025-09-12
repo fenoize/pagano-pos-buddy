@@ -61,54 +61,36 @@ export function useAuth() {
     try {
       console.log('Attempting login for username:', username);
       
-      // Find user by username
+      // Use the secure authentication function
       const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-        .eq('active', true)
-        .maybeSingle();
+        .rpc('authenticate_user', {
+          _username: username,
+          _password: password
+        });
 
-      console.log('User query result:', { userData, userError });
+      console.log('Authentication result:', { userData, userError });
 
       if (userError) {
-        console.error('Database error:', userError);
+        console.error('Authentication error:', userError);
         throw new Error('Error al consultar la base de datos');
       }
 
-      if (!userData) {
-        console.log('User not found');
+      if (!userData || userData.length === 0) {
+        console.log('Authentication failed - user not found or invalid credentials');
         throw new Error('Usuario o contraseña incorrectos');
       }
 
-      console.log('User found, verifying password...');
-      
-      // Check if password is hashed or plain text
-      let isValidPassword = false;
-      
-      // First, try direct comparison (for plain text passwords)
-      if (userData.pass_hash === password) {
-        isValidPassword = true;
-      } else {
-        // If direct comparison fails, try bcrypt (for hashed passwords)
-        try {
-          isValidPassword = await bcrypt.compare(password, userData.pass_hash);
-        } catch (bcryptError) {
-          console.log('bcrypt comparison failed, password might be plain text');
-          isValidPassword = false;
-        }
-      }
-
-      console.log('Password validation result:', isValidPassword);
-
-      if (!isValidPassword) {
-        throw new Error('Usuario o contraseña incorrectos');
-      }
+      const userRecord = userData[0];
+      console.log('Authentication successful for user:', userRecord.username);
 
       // Map database role to app role and store user in localStorage
       const mappedUser = {
-        ...userData,
-        role: mapDatabaseRoleToApp(userData.role)
+        id: userRecord.user_id,
+        username: userRecord.username,
+        full_name: userRecord.full_name,
+        email: userRecord.email,
+        role: mapDatabaseRoleToApp(userRecord.role),
+        active: userRecord.active
       } as User;
       
       localStorage.setItem('paganos_user', JSON.stringify(mappedUser));

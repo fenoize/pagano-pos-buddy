@@ -583,7 +583,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      authenticate_user: {
+        Args: { _password: string; _username: string }
+        Returns: {
+          active: boolean
+          email: string
+          full_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+          username: string
+        }[]
+      }
     }
     Enums: {
       app_role:
