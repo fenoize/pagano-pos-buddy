@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import NewSale from "./pages/NewSale";
 import Sales from "./pages/Sales";
+import Kitchen from "./pages/Kitchen";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -87,7 +88,7 @@ const App = () => (
             <Route path="/cocina" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <div>Cocina KDS - En desarrollo</div>
+                  <Kitchen />
                 </AppLayout>
               </ProtectedRoute>
             } />
