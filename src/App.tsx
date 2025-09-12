@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import NewSale from "./pages/NewSale";
+import Sales from "./pages/Sales";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,7 +80,7 @@ const App = () => (
             <Route path="/ventas" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <div>Ventas - En desarrollo</div>
+                  <Sales />
                 </AppLayout>
               </ProtectedRoute>
             } />
