@@ -80,7 +80,10 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
       if (editingExtra) {
         const { error } = await supabase
           .from('product_extras')
-          .update(formData)
+          .update({
+            ...formData,
+            category_id: formData.category_id === 'all' ? null : formData.category_id
+          })
           .eq('id', editingExtra.id);
 
         if (error) throw error;
@@ -92,7 +95,10 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
       } else {
         const { error } = await supabase
           .from('product_extras')
-          .insert(formData);
+          .insert({
+            ...formData,
+            category_id: formData.category_id === 'all' ? null : formData.category_id
+          });
 
         if (error) throw error;
         
@@ -163,7 +169,7 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
     setFormData({
       name: '',
       price: 0,
-      category_id: selectedCategories[0] || '',
+      category_id: selectedCategories[0] || 'all',
       active: true
     });
   };
@@ -177,7 +183,7 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
 
   // Filtrar extras relevantes a las categorías seleccionadas
   const relevantExtras = extras.filter(extra => 
-    !extra.category_id || selectedCategories.includes(extra.category_id)
+    !extra.category_id || extra.category_id === 'all' || selectedCategories.includes(extra.category_id)
   );
 
   return (
@@ -231,7 +237,7 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas las categorías</SelectItem>
+                    <SelectItem value="all">Todas las categorías</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
