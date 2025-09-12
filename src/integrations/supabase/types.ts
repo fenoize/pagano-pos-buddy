@@ -241,13 +241,14 @@ export type Database = {
           },
         ]
       }
-      products: {
+      product_extras: {
         Row: {
           active: boolean | null
           created_at: string | null
           id: string
           name: string
-          prices: Json
+          price: number
+          product_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -255,7 +256,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           name: string
-          prices: Json
+          price?: number
+          product_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -263,10 +265,132 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
+          price?: number
+          product_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_extras_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_modifiers: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          name: string
+          product_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          name: string
+          product_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          product_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_modifiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean | null
+          category: string | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          name: string
+          prices: Json
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          prices: Json
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
           prices?: Json
           updated_at?: string | null
         }
         Relationships: []
+      }
+      runas_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          order_id: string | null
+          runas: number
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          order_id?: string | null
+          runas: number
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          order_id?: string | null
+          runas?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runas_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "runas_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {

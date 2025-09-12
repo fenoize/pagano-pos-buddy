@@ -151,7 +151,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
                   <div key={index} className="flex justify-between text-sm">
                     <span>{item.quantity}x {item.productName} ({item.size})</span>
                     <span className="currency">
-                      {formatPrice((item.basePrice + item.extras.reduce((sum, e) => sum + e.price, 0)) * item.quantity)}
+                      {formatPrice((item.basePrice + item.extras.reduce((sum, e) => sum + (e.price * (e.quantity || 1)), 0)) * item.quantity)}
                     </span>
                   </div>
                 ))}
@@ -242,6 +242,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
                         value={runas}
                         onChange={(e) => setRunas(Number(e.target.value))}
                         placeholder="Cantidad de runas"
+                        max={customer.cantidad_runas || 0}
                       />
                     </div>
                     <div className="space-y-2">
@@ -260,7 +261,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
             </Card>
           )}
 
-          {/* Fulfillment - Show based on order timing config */}
+          {/* Fulfillment */}
           {orderTiming === 'after_payment' && (
             <Card>
               <CardHeader>

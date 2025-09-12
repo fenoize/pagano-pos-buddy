@@ -17,8 +17,8 @@ All colors MUST be HSL and themed for light/dark modes.
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 15%;
 
-    /* Primary: Paganos orange/red brand colors */
-    --primary: 18 95% 55%;
+    /* Primary: Paganos corporate red #ED3C1A */
+    --primary: 14 86% 51%;
     --primary-foreground: 0 0% 98%;
 
     /* Secondary: complementary warm gray */
@@ -28,7 +28,7 @@ All colors MUST be HSL and themed for light/dark modes.
     --muted: 25 8% 94%;
     --muted-foreground: 215 16% 46%;
 
-    --accent: 18 95% 55%;
+    --accent: 14 86% 51%;
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 84% 60%;
@@ -44,7 +44,7 @@ All colors MUST be HSL and themed for light/dark modes.
 
     --border: 25 8% 88%;
     --input: 25 8% 88%;
-    --ring: 18 95% 55%;
+    --ring: 14 86% 51%;
 
     --radius: 0.75rem;
 
@@ -75,7 +75,7 @@ All colors MUST be HSL and themed for light/dark modes.
     --popover: 215 28% 8%;
     --popover-foreground: 25 8% 94%;
 
-    --primary: 18 95% 60%;
+    --primary: 14 86% 55%;
     --primary-foreground: 0 0% 98%;
 
     --secondary: 215 28% 12%;
@@ -84,7 +84,7 @@ All colors MUST be HSL and themed for light/dark modes.
     --muted: 215 28% 12%;
     --muted-foreground: 215 16% 65%;
 
-    --accent: 18 95% 60%;
+    --accent: 14 86% 55%;
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 84% 65%;
@@ -98,7 +98,7 @@ All colors MUST be HSL and themed for light/dark modes.
 
     --border: 215 28% 15%;
     --input: 215 28% 15%;
-    --ring: 18 95% 60%;
+    --ring: 14 86% 55%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -128,7 +128,7 @@ All colors MUST be HSL and themed for light/dark modes.
 
 @layer utilities {
   .pos-grid {
-    @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3;
+    @apply grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4;
   }
   
   .pos-card {

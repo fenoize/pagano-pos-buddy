@@ -2,26 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product, Customer, OrderItem, FulfillmentType } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import CustomerForm from '@/components/pos/CustomerForm';
+import CustomerSearchStep from '@/components/pos/CustomerSearchStep';
+import FulfillmentStep from '@/components/pos/FulfillmentStep';
 import ProductGrid from '@/components/pos/ProductGrid';
+import ProductCustomizationModal from '@/components/pos/ProductCustomizationModal';
 import Cart from '@/components/pos/Cart';
 import PaymentModal from '@/components/pos/PaymentModal';
+import RunasCalculator from '@/components/pos/RunasCalculator';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default function NewSale() {
+  const [currentStep, setCurrentStep] = useState(1);
   const [products, setProducts] = useState<Product[]>([]);
   const [cartItems, setCartItems] = useState<OrderItem[]>([]);
   const [customer, setCustomer] = useState<Partial<Customer>>({});
+  const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [deliveryZone, setDeliveryZone] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [orderTiming, setOrderTiming] = useState('after_payment');
-  const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showCustomizationModal, setShowCustomizationModal] = useState(false);
+  const [runaValue, setRunaValue] = useState(1000);
   const { toast } = useToast();
 
   const total = cartItems.reduce((sum, item) => {
-    const itemTotal = (item.basePrice + item.extras.reduce((extraSum, extra) => extraSum + extra.price, 0)) * item.quantity;
+    const extrasTotal = item.extras.reduce((extraSum, extra) => extraSum + (extra.price * (extra.quantity || 1)), 0);
+    const itemTotal = (item.basePrice + extrasTotal) * item.quantity;
     return sum + itemTotal;
-  }, 0);
+  }, 0) + deliveryFee;
 
   useEffect(() => {
     fetchData();
@@ -29,18 +40,22 @@ export default function NewSale() {
 
   const fetchData = async () => {
     try {
-      const [productsRes, configRes] = await Promise.all([
+      const [productsRes, runaRes] = await Promise.all([
         supabase.from('products').select('*').eq('active', true),
-        supabase.from('config').select('*').eq('key', 'order_timing').single()
+        supabase.from('config').select('value').eq('key', 'runa_value').single()
       ]);
 
       if (productsRes.error) throw productsRes.error;
-      setProducts(productsRes.data as Product[]);
+      setProducts(productsRes.data.map(p => ({
+        ...p,
+        prices: p.prices as any
+      })) as Product[]);
       
-      if (configRes.data) {
-        setOrderTiming(configRes.data.value as string);
+      if (runaRes.data) {
+        setRunaValue(runaRes.data.value as number);
       }
     } catch (error) {
+      console.error('Error fetching data:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los datos",
@@ -51,21 +66,42 @@ export default function NewSale() {
     }
   };
 
-  const addToCart = (product: Product, variant: string, priceType: 'combo' | 'only') => {
-    const basePrice = (product.prices as any)[priceType][variant];
+  const handleCustomerNext = () => {
+    setCurrentStep(2);
+  };
+
+  const handleFulfillmentChange = (type: FulfillmentType, fee: number = 0, zone: string = '') => {
+    setFulfillment(type);
+    setDeliveryFee(fee);
+    setDeliveryZone(zone);
+  };
+
+  const handleFulfillmentNext = () => {
+    setCurrentStep(3);
+  };
+
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product);
+    setShowCustomizationModal(true);
+  };
+
+  const handleAddToCart = (orderItem: Omit<OrderItem, 'productId' | 'productName'>) => {
+    if (!selectedProduct) return;
+
     const newItem: OrderItem = {
-      productId: product.id,
-      productName: product.name,
-      size: variant as any,
-      priceKind: priceType,
-      basePrice,
-      quantity: 1,
-      extras: [],
-      modifiers: [],
-      notes: ''
+      productId: selectedProduct.id,
+      productName: selectedProduct.name,
+      ...orderItem
     };
 
     setCartItems(prev => [...prev, newItem]);
+    setShowCustomizationModal(false);
+    setSelectedProduct(null);
+
+    toast({
+      title: "Producto agregado",
+      description: `${selectedProduct.name} agregado al carrito`
+    });
   };
 
   const updateItemQuantity = (index: number, quantity: number) => {
@@ -100,14 +136,14 @@ export default function NewSale() {
       let customerId = customer.id;
       if (!customerId && (customer.name || customer.phone)) {
         // Check if customer exists
-        const { data: existingCustomer } = await supabase
+        const { data: existingCustomers } = await supabase
           .from('customers')
           .select('id')
           .or(`phone.eq.${customer.phone},rut.eq.${customer.rut}`)
-          .single();
+          .limit(1);
 
-        if (existingCustomer) {
-          customerId = existingCustomer.id;
+        if (existingCustomers && existingCustomers.length > 0) {
+          customerId = existingCustomers[0].id;
           // Update existing customer
           await supabase
             .from('customers')
@@ -144,15 +180,13 @@ export default function NewSale() {
         }
       }
 
-      const finalFulfillment = orderTiming === 'after_payment' ? paymentData.fulfillment : fulfillment;
-
       // Create order
       const orderData = {
         customer_id: customerId,
-        fulfillment: finalFulfillment,
+        fulfillment: paymentData.fulfillment || fulfillment,
         items: cartItems as any,
-        subtotal: total,
-        delivery_fee: 0,
+        subtotal: total - deliveryFee,
+        delivery_fee: deliveryFee,
         discount: 0,
         total,
         payment_efectivo: paymentData.method === 'Efectivo' ? paymentData.amount : 0,
@@ -162,25 +196,70 @@ export default function NewSale() {
         status: 'Pendiente' as const,
         notes: JSON.stringify({
           paymentDetails: paymentData,
-          customerInfo: customer
+          customerInfo: customer,
+          deliveryZone
         })
       };
 
-      const { error: orderError } = await supabase
+      const { data: orderResult, error: orderError } = await supabase
         .from('orders')
-        .insert(orderData);
+        .insert(orderData)
+        .select()
+        .single();
 
       if (orderError) throw orderError;
 
+      // Handle runas transactions if applicable
+      if (customerId && (paymentData.runas > 0 || total > 0)) {
+        const transactions = [];
+        
+        // Runas spent
+        if (paymentData.runas > 0) {
+          transactions.push({
+            customer_id: customerId,
+            order_id: orderResult.id,
+            type: 'spent',
+            amount: paymentData.runas * runaValue,
+            runas: -paymentData.runas
+          });
+        }
+
+        // Runas earned (from total amount paid)
+        const runasEarned = Math.floor(total / runaValue);
+        if (runasEarned > 0) {
+          transactions.push({
+            customer_id: customerId,
+            order_id: orderResult.id,
+            type: 'earned',
+            amount: total,
+            runas: runasEarned
+          });
+        }
+
+        if (transactions.length > 0) {
+          await supabase.from('runas_transactions').insert(transactions);
+          
+          // Update customer runas balance
+          const newBalance = (customer.cantidad_runas || 0) - (paymentData.runas || 0) + runasEarned;
+          await supabase
+            .from('customers')
+            .update({ cantidad_runas: Math.max(0, newBalance) })
+            .eq('id', customerId);
+        }
+      }
+
       toast({
-        title: "Éxito",
-        description: "Pedido procesado y enviado a cocina"
+        title: "¡Éxito!",
+        description: `Pedido #${orderResult.order_number} creado y enviado a cocina`
       });
 
       // Reset form
       setCartItems([]);
       setCustomer({});
       setFulfillment('retiro');
+      setDeliveryFee(0);
+      setDeliveryZone('');
+      setCurrentStep(1);
       setShowPaymentModal(false);
 
     } catch (error) {
@@ -201,56 +280,116 @@ export default function NewSale() {
     );
   }
 
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <CustomerSearchStep
+            customer={customer}
+            onCustomerChange={setCustomer}
+            onNext={handleCustomerNext}
+          />
+        );
+      case 2:
+        return (
+          <FulfillmentStep
+            fulfillment={fulfillment}
+            onFulfillmentChange={handleFulfillmentChange}
+            onNext={handleFulfillmentNext}
+          />
+        );
+      case 3:
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Products Grid */}
+            <div className="lg:col-span-2">
+              <ProductGrid 
+                products={products} 
+                onProductClick={handleProductClick}
+              />
+            </div>
+
+            {/* Cart */}
+            <div className="space-y-4">
+              <Cart 
+                items={cartItems}
+                onUpdateQuantity={updateItemQuantity}
+                onRemoveItem={removeItem}
+                onCheckout={handleCheckout}
+              />
+              
+              {/* Runas Calculator */}
+              {customer.id && (
+                <RunasCalculator
+                  totalAmount={total}
+                  runaValue={runaValue}
+                  customerRunas={customer.cantidad_runas}
+                />
+              )}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case 1: return 'Cliente';
+      case 2: return 'Modalidad de Entrega';
+      case 3: return 'Productos';
+      default: return 'Nueva Venta';
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Nueva Venta</h1>
-      
-      {/* Customer Form */}
-      <CustomerForm 
-        customer={customer} 
-        onCustomerChange={setCustomer} 
-      />
-
-      {/* Fulfillment - Show before payment if configured */}
-      {orderTiming === 'before_payment' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Modalidad de Entrega</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <select 
-              value={fulfillment} 
-              onChange={(e) => setFulfillment(e.target.value as FulfillmentType)}
-              className="w-full p-2 border rounded"
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Nueva Venta - {getStepTitle()}</h1>
+        
+        {/* Step Navigation */}
+        <div className="flex items-center gap-2">
+          {currentStep > 1 && (
+            <Button
+              variant="outline"
+              onClick={() => setCurrentStep(currentStep - 1)}
             >
-              <option value="retiro">Retiro en Local</option>
-              <option value="delivery">Delivery</option>
-              <option value="servir">Para Servir</option>
-            </select>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Main Content - Products and Cart */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Products Grid */}
-        <div className="lg:col-span-2">
-          <ProductGrid 
-            products={products} 
-            onAddToCart={addToCart} 
-          />
-        </div>
-
-        {/* Cart */}
-        <div>
-          <Cart 
-            items={cartItems}
-            onUpdateQuantity={updateItemQuantity}
-            onRemoveItem={removeItem}
-            onCheckout={handleCheckout}
-          />
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Anterior
+            </Button>
+          )}
+          
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className={`px-2 py-1 rounded ${currentStep >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+              1
+            </span>
+            <span className={`px-2 py-1 rounded ${currentStep >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+              2
+            </span>
+            <span className={`px-2 py-1 rounded ${currentStep >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+              3
+            </span>
+          </div>
         </div>
       </div>
+
+      {/* Step Content */}
+      {renderStep()}
+
+      {/* Product Customization Modal */}
+      {selectedProduct && (
+        <ProductCustomizationModal
+          isOpen={showCustomizationModal}
+          onClose={() => {
+            setShowCustomizationModal(false);
+            setSelectedProduct(null);
+          }}
+          onAddToCart={handleAddToCart}
+          product={selectedProduct}
+        />
+      )}
 
       {/* Payment Modal */}
       <PaymentModal

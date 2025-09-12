@@ -2,7 +2,7 @@ export type AppRole = 'Administrador' | 'Caja' | 'Cocina' | 'Reparto' | 'Viewer'
 
 export type OrderStatus = 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'Entregado' | 'Cancelado';
 
-export type FulfillmentType = 'retiro' | 'delivery';
+export type FulfillmentType = 'retiro' | 'delivery' | 'servir';
 
 export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'mixto';
 
@@ -20,16 +20,20 @@ export interface User {
 export interface Product {
   id: string;
   name: string;
+  category: string;
+  image_url?: string;
   prices: {
     combo: {
       simple: number;
       doble: number;
       triple: number;
+      cuadruple?: number;
     };
     only: {
       simple: number;
       doble: number;
       triple: number;
+      cuadruple?: number;
     };
   };
   active: boolean;
@@ -65,8 +69,12 @@ export interface OrderItem {
     key: string;
     label: string;
     price: number;
+    quantity?: number;
   }>;
-  modifiers: string[];
+  modifiers: Array<{
+    id: string;
+    name: string;
+  }>;
   notes?: string;
 }
 
