@@ -41,14 +41,26 @@ export default function NewSale() {
   const fetchData = async () => {
     try {
       const [productsRes, runaRes] = await Promise.all([
-        supabase.from('products').select('*').eq('active', true),
+        supabase
+          .from('products')
+          .select(`
+            *,
+            product_categories(
+              categories(
+                id,
+                name
+              )
+            )
+          `)
+          .eq('active', true),
         supabase.from('config').select('value').eq('key', 'runa_value').single()
       ]);
 
       if (productsRes.error) throw productsRes.error;
       setProducts(productsRes.data.map(p => ({
         ...p,
-        prices: p.prices as any
+        prices: p.prices as any,
+        categories: p.product_categories?.map((pc: any) => pc.categories) || []
       })) as Product[]);
       
       if (runaRes.data) {

@@ -96,7 +96,11 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   };
 
   const getVariants = () => {
-    if (product.category === 'hamburguesas') {
+    // Verificar si el producto tiene la categoría "hamburguesas"
+    const hasHamburguesasCategory = product.categories?.some(cat => cat.name === 'hamburguesas') || 
+                                    product.category === 'hamburguesas';
+    
+    if (hasHamburguesasCategory) {
       return ['simple', 'doble', 'triple'] as const;
     }
     return ['simple'] as const;
