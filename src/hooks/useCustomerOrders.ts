@@ -55,11 +55,6 @@ export function useCustomerOrders() {
             email,
             created_at,
             updated_at
-          ),
-          created_by_user:users (
-            id,
-            username,
-            full_name
           )
         `, { count: 'exact' })
         .eq('customer_id', customerId);
@@ -97,13 +92,7 @@ export function useCustomerOrders() {
       return {
         orders: data?.map(order => ({
           ...order,
-          items: order.items as any,
-          created_by_user: order.created_by_user ? {
-            ...order.created_by_user,
-            role: 'Cajero' as AppRole,
-            active: true,
-            email: null
-          } : undefined
+          items: order.items as any
         })) as Order[] || [],
         totalCount: count || 0
       };
@@ -195,11 +184,6 @@ export function useCustomerOrders() {
               created_at,
               updated_at
             )
-          ),
-          created_by_user:users (
-            id,
-            username,
-            full_name
           )
         `)
         .eq('id', orderId)
@@ -275,13 +259,7 @@ export function useCustomerOrders() {
 
       return {
         ...data,
-        items: data.items as any,
-        created_by_user: data.created_by_user ? {
-          ...data.created_by_user,
-          role: 'Cajero' as AppRole,
-          active: true,
-          email: null
-        } : undefined
+        items: data.items as any
       } as Order;
     } catch (error) {
       console.error('Error reordering:', error);
