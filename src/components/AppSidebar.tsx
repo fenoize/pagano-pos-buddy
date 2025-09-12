@@ -10,6 +10,7 @@ import {
   Users,
   User,
   Settings,
+  FileText,
   LogOut
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -40,6 +41,7 @@ const menuItems = [
   { title: "Inventario", url: "/inventario", icon: Archive, roles: ['Administrador'] },
   { title: "Clientes", url: "/clientes", icon: Users, roles: ['Administrador', 'Cajero'] },
   { title: "Usuarios", url: "/usuarios", icon: User, roles: ['Administrador'] },
+  { title: "Cierres Diarios", url: "/cierres-diarios", icon: FileText, roles: ['Administrador'] },
   { title: "Configuración", url: "/configuracion", icon: Settings, roles: ['Administrador'] },
 ];
 

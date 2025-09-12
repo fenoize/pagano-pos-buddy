@@ -17,6 +17,7 @@ import Kitchen from '@/pages/Kitchen';
 import Users from '@/pages/Users';
 import Products from '@/pages/Products';
 import ConfiguracionPage from '@/pages/ConfiguracionPage';
+import CierresDiarios from '@/pages/CierresDiarios';
 import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -137,6 +138,13 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Users />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/cierres-diarios" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <CierresDiarios />
                 </AppLayout>
               </ProtectedRoute>
             } />
