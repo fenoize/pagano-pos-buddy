@@ -2,7 +2,7 @@ export type AppRole = 'Administrador' | 'Cajero' | 'Cocinero' | 'Preparador' | '
 
 export type OrderStatus = 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'Entregado' | 'Cancelado';
 
-export type FulfillmentType = 'retiro' | 'delivery' | 'servir';
+export type FulfillmentType = 'retiro' | 'delivery';
 
 export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'mixto';
 
@@ -73,21 +73,65 @@ export interface ProductModifier {
   updated_at?: string;
 }
 
+export type EstadoCliente = 'Activo' | 'Inactivo' | 'Bloqueado';
+
+export type RunaMovementType = 'acumulacion' | 'canje' | 'ajuste' | 'promo';
+
+export type OrigenMovimiento = 'POS' | 'Web' | 'Manual';
+
 export interface Customer {
   id: string;
-  name?: string;
-  apellido?: string;
+  nombres?: string;
+  apellidos?: string;
+  name?: string; // Mantenido para compatibilidad con POS
+  apellido?: string; // Mantenido para compatibilidad con POS
   phone?: string;
   rut?: string;
   email?: string;
-  direccion?: string;
-  numeracion?: string;
-  comuna?: string;
+  fecha_nacimiento?: string;
+  estado_cliente?: EstadoCliente;
+  motivo_estado?: string;
   ultima_compra?: string;
   cantidad_runas?: number;
   valor_cliente?: number;
   created_at: string;
   updated_at: string;
+  created_by_user_id?: string;
+  updated_by_user_id?: string;
+  addresses?: Address[];
+  // Campos mantenidos para compatibilidad con POS existente
+  direccion?: string;
+  numeracion?: string;
+  comuna?: string;
+}
+
+export interface Address {
+  id: string;
+  customer_id: string;
+  alias: string;
+  calle: string;
+  numero: string;
+  depto?: string;
+  comuna: string;
+  ciudad: string;
+  observaciones?: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RunasTransaction {
+  id: string;
+  customer_id?: string;
+  type: RunaMovementType;
+  runas: number;
+  amount: number;
+  origen: OrigenMovimiento;
+  referencia?: string;
+  motivo?: string;
+  responsable_id?: string;
+  order_id?: string;
+  created_at: string;
 }
 
 export interface OrderItem {

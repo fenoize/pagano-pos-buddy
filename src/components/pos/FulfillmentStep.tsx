@@ -130,19 +130,6 @@ export default function FulfillmentStep({ fulfillment, onFulfillmentChange, onNe
                 <div className="text-sm opacity-80">A domicilio</div>
               </div>
             </Button>
-
-            {/* Para Servir */}
-            <Button
-              variant={fulfillment === 'servir' ? 'default' : 'outline'}
-              className="h-24 flex flex-col gap-2"
-              onClick={() => handleFulfillmentSelect('servir')}
-            >
-              <Coffee className="w-8 h-8" />
-              <div className="text-center">
-                <div className="font-medium">Para Servir</div>
-                <div className="text-sm opacity-80">En mesa</div>
-              </div>
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -183,7 +170,7 @@ export default function FulfillmentStep({ fulfillment, onFulfillmentChange, onNe
       )}
 
       {/* Continue Button */}
-      {(fulfillment === 'retiro' || fulfillment === 'servir' || 
+      {(fulfillment === 'retiro' || 
         (fulfillment === 'delivery' && selectedZone)) && (
         <Button onClick={handleContinue} className="w-full" size="lg">
           Continuar al Menú

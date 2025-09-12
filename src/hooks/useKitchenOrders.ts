@@ -57,14 +57,18 @@ export function useKitchenOrders() {
           *,
           customer:customers (
             id,
+            nombres,
+            apellidos,
             name,
             apellido,
             phone,
             rut,
             email,
-            direccion,
-            numeracion,
-            comuna
+            cantidad_runas,
+            valor_cliente,
+            estado_cliente,
+            created_at,
+            updated_at
           )
         `)
         .not('status', 'in', '("Entregado","Cancelado")')
@@ -96,14 +100,18 @@ export function useKitchenOrders() {
           *,
           customer:customers (
             id,
+            nombres,
+            apellidos,
             name,
             apellido,
             phone,
             rut,
             email,
-            direccion,
-            numeracion,
-            comuna
+            cantidad_runas,
+            valor_cliente,
+            estado_cliente,
+            created_at,
+            updated_at
           )
         `)
         .eq('id', orderId)
