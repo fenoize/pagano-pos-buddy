@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, AppRole } from '@/types';
-import bcrypt from 'bcryptjs';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -27,32 +26,54 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // Check if user is already authenticated from localStorage
-    const storedUser = localStorage.getItem('paganos_user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        setAuthState({
-          user,
-          loading: false,
-          error: null,
-        });
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('paganos_user');
+    const validateStoredUser = async () => {
+      const storedUser = localStorage.getItem('paganos_user');
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          
+          // Validate that the user still exists in the database
+          const { data: dbUser, error } = await supabase
+            .from('users')
+            .select('id, active')
+            .eq('id', user.id)
+            .eq('active', true)
+            .maybeSingle();
+          
+          if (error || !dbUser) {
+            console.log('Stored user no longer valid, clearing localStorage');
+            localStorage.removeItem('paganos_user');
+            setAuthState({
+              user: null,
+              loading: false,
+              error: null,
+            });
+          } else {
+            setAuthState({
+              user,
+              loading: false,
+              error: null,
+            });
+          }
+        } catch (error) {
+          console.error('Error validating stored user:', error);
+          localStorage.removeItem('paganos_user');
+          setAuthState({
+            user: null,
+            loading: false,
+            error: null,
+          });
+        }
+      } else {
         setAuthState({
           user: null,
           loading: false,
           error: null,
         });
       }
-    } else {
-      setAuthState({
-        user: null,
-        loading: false,
-        error: null,
-      });
-    }
+    };
+
+    validateStoredUser();
   }, []);
 
   const login = async (username: string, password: string) => {

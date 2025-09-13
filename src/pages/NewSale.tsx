@@ -197,6 +197,21 @@ export default function NewSale() {
         }
       }
 
+        // Validate user exists in database before creating order
+        let validUserId = null;
+        if (user?.id) {
+          const { data: dbUser } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', user.id)
+            .eq('active', true)
+            .maybeSingle();
+          
+          if (dbUser) {
+            validUserId = user.id;
+          }
+        }
+
         // Create order with user tracking
         const paymentMethodMap: Record<string, 'efectivo' | 'pos' | 'mp' | 'mixto'> = {
           'Efectivo': 'efectivo',
@@ -208,7 +223,7 @@ export default function NewSale() {
 
         const orderData = {
           customer_id: customerId,
-          created_by_user_id: user?.id,
+          created_by_user_id: validUserId,
           fulfillment: paymentData.fulfillment || fulfillment,
           items: cartItems as any,
           subtotal: total - deliveryFee,
@@ -292,9 +307,15 @@ export default function NewSale() {
 
     } catch (error) {
       console.error('Error processing order:', error);
+      
+      let errorMessage = "No se pudo procesar el pedido";
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = (error as any).message;
+      }
+      
       toast({
         title: "Error",
-        description: "No se pudo procesar el pedido",
+        description: errorMessage,
         variant: "destructive"
       });
     }
