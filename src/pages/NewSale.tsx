@@ -173,9 +173,6 @@ export default function NewSale() {
             .update({
               name: customer.name,
               apellido: customer.apellido,
-              direccion: customer.direccion,
-              numeracion: customer.numeracion,
-              comuna: customer.comuna,
               email: customer.email,
               phone: customer.phone,
               rut: customer.rut
@@ -188,9 +185,6 @@ export default function NewSale() {
             .insert({
               name: customer.name,
               apellido: customer.apellido,
-              direccion: customer.direccion,
-              numeracion: customer.numeracion,
-              comuna: customer.comuna,
               email: customer.email,
               phone: customer.phone,
               rut: customer.rut
@@ -204,26 +198,34 @@ export default function NewSale() {
       }
 
         // Create order with user tracking
+        const paymentMethodMap: Record<string, 'efectivo' | 'pos' | 'mp' | 'mixto'> = {
+          'Efectivo': 'efectivo',
+          'POS': 'pos',
+          'Transferencia': 'mp',
+          'Mixto': 'mixto',
+        };
+        const paymentMethod = paymentMethodMap[paymentData.method] ?? 'efectivo';
+
         const orderData = {
           customer_id: customerId,
           created_by_user_id: user?.id,
           fulfillment: paymentData.fulfillment || fulfillment,
-        items: cartItems as any,
-        subtotal: total - deliveryFee,
-        delivery_fee: deliveryFee,
-        discount: 0,
-        total,
-        payment_efectivo: paymentData.method === 'Efectivo' ? paymentData.amount : 0,
-        payment_mp: paymentData.method === 'Transferencia' ? paymentData.amount : 0,
-        payment_pos: paymentData.method === 'POS' ? paymentData.amount : 0,
-        payment_method: paymentData.method.toLowerCase() as any,
-        status: 'Pendiente' as const,
-        notes: JSON.stringify({
-          paymentDetails: paymentData,
-          customerInfo: customer,
-          deliveryZone
-        })
-      };
+          items: cartItems as any,
+          subtotal: total - deliveryFee,
+          delivery_fee: deliveryFee,
+          discount: 0,
+          total,
+          payment_efectivo: paymentData.method === 'Efectivo' ? paymentData.amount : 0,
+          payment_mp: paymentData.method === 'Transferencia' ? paymentData.amount : 0,
+          payment_pos: paymentData.method === 'POS' ? paymentData.amount : 0,
+          payment_method: paymentMethod,
+          status: 'Pendiente' as const,
+          notes: JSON.stringify({
+            paymentDetails: paymentData,
+            customerInfo: customer,
+            deliveryZone
+          })
+        };
 
       const { data: orderResult, error: orderError } = await supabase
         .from('orders')
@@ -242,9 +244,10 @@ export default function NewSale() {
           transactions.push({
             customer_id: customerId,
             order_id: orderResult.id,
-            type: 'spent',
+            type: 'canje',
             amount: paymentData.runas * runaValue,
-            runas: -paymentData.runas
+            runas: -paymentData.runas,
+            origen: 'POS'
           });
         }
 
@@ -254,9 +257,10 @@ export default function NewSale() {
           transactions.push({
             customer_id: customerId,
             order_id: orderResult.id,
-            type: 'earned',
+            type: 'acumulacion',
             amount: total,
-            runas: runasEarned
+            runas: runasEarned,
+            origen: 'POS'
           });
         }
 
