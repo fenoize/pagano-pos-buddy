@@ -28,23 +28,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { UserPlus, Search, Edit, Trash2, RotateCcw, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Search, Edit, Trash2, Key, Eye, EyeOff } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { User, AppRole } from '@/types';
 import { UserForm } from '@/components/users/UserForm';
+import { PasswordModal } from '@/components/users/PasswordModal';
 import { useUsers } from '@/hooks/useUsers';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/lib/utils';
 
 export default function Users() {
   const { user: currentUser } = useAuthContext();
-  const { users, loading, fetchUsers, deleteUser, toggleUserStatus, resetPassword } = useUsers();
+  const { users, loading, fetchUsers, deleteUser, toggleUserStatus, resetPassword, updateUserPassword } = useUsers();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<AppRole | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteDialogUser, setDeleteDialogUser] = useState<User | null>(null);
+  const [passwordModalUser, setPasswordModalUser] = useState<User | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -122,19 +125,29 @@ export default function Users() {
     }
   };
 
-  const handleResetPassword = async (user: User) => {
+  const handlePasswordModal = (user: User) => {
+    setPasswordModalUser(user);
+  };
+
+  const handlePasswordConfirm = async (password: string) => {
+    if (!passwordModalUser) return;
+    
+    setPasswordLoading(true);
     try {
-      const newPassword = await resetPassword(user.id);
+      await updateUserPassword(passwordModalUser.id, password);
       toast({
-        title: "Contraseña restablecida",
-        description: `Nueva contraseña para ${user.username}: ${newPassword}`
+        title: "Contraseña actualizada",
+        description: `Nueva contraseña aplicada para ${passwordModalUser.username}`
       });
+      setPasswordModalUser(null);
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo restablecer la contraseña.",
+        description: "No se pudo actualizar la contraseña.",
         variant: "destructive"
       });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -302,9 +315,10 @@ export default function Users() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleResetPassword(user)}
+                            onClick={() => handlePasswordModal(user)}
+                            title="Cambiar contraseña"
                           >
-                            <RotateCcw className="w-4 h-4" />
+                            <Key className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -331,6 +345,15 @@ export default function Users() {
         onClose={() => setShowForm(false)}
         onSuccess={handleFormSuccess}
         editingUser={editingUser}
+      />
+
+      {/* Password Modal */}
+      <PasswordModal
+        isOpen={!!passwordModalUser}
+        onClose={() => setPasswordModalUser(null)}
+        onConfirm={handlePasswordConfirm}
+        user={passwordModalUser}
+        loading={passwordLoading}
       />
 
       {/* Delete Confirmation Dialog */}

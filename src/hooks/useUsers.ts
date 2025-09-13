@@ -146,6 +146,35 @@ export function useUsers() {
     }
   };
 
+  const updateUserPassword = async (userId: string, newPassword: string): Promise<void> => {
+    // Hash the password using the edge function
+    const { data: hashData, error: hashError } = await supabase.functions.invoke('generate-password-hash', {
+      body: { password: newPassword }
+    });
+
+    if (hashError) {
+      console.error('Error hashing password:', hashError);
+      throw new Error('Error al procesar la contraseña');
+    }
+
+    if (!hashData?.hash) {
+      throw new Error('Error al generar hash de contraseña');
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .update({ 
+        pass_hash: hashData.hash,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Error updating user password:', error);
+      throw new Error('Error al actualizar la contraseña del usuario');
+    }
+  };
+
   const resetPassword = async (userId: string): Promise<string> => {
     try {
       // Generate a random password
@@ -176,6 +205,7 @@ export function useUsers() {
     updateUser,
     deleteUser,
     toggleUserStatus,
-    resetPassword
+    resetPassword,
+    updateUserPassword
   };
 }
