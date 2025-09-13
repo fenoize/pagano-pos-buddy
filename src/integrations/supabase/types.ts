@@ -634,6 +634,18 @@ export type Database = {
           username: string
         }[]
       }
+      generate_simple_hash: {
+        Args: { password: string }
+        Returns: string
+      }
+      set_user_password: {
+        Args: { new_password: string; user_uuid: string }
+        Returns: boolean
+      }
+      verify_password: {
+        Args: { hash: string; password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:

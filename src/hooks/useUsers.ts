@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, AppRole } from '@/types';
-import bcrypt from 'bcryptjs';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -62,24 +61,34 @@ export function useUsers() {
     role: AppRole;
   }) => {
     try {
-      // Hash the password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-
-      const { data, error } = await supabase
+      // First create the user with a temporary password
+      const { data, error: insertError } = await supabase
         .from('users')
         .insert({
           username: userData.username,
           full_name: userData.full_name,
           email: userData.email,
-          pass_hash: hashedPassword,
+          pass_hash: 'temp', // Temporary value
           role: mapAppRoleToDatabase(userData.role) as any,
           active: true
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
+
+      // Now set the proper password using the database function
+      const { error: passwordError } = await supabase.rpc('set_user_password', {
+        user_uuid: data.id,
+        new_password: userData.password
+      });
+
+      if (passwordError) {
+        // If password setting failed, clean up the user
+        await supabase.from('users').delete().eq('id', data.id);
+        throw passwordError;
+      }
+
       return data;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -147,31 +156,24 @@ export function useUsers() {
   };
 
   const updateUserPassword = async (userId: string, newPassword: string): Promise<void> => {
-    // Hash the password using the edge function
-    const { data: hashData, error: hashError } = await supabase.functions.invoke('generate-password-hash', {
-      body: { password: newPassword }
-    });
+    try {
+      // Use the database function to set password
+      const { data, error } = await supabase.rpc('set_user_password', {
+        user_uuid: userId,
+        new_password: newPassword
+      });
 
-    if (hashError) {
-      console.error('Error hashing password:', hashError);
-      throw new Error('Error al procesar la contraseña');
-    }
+      if (error) {
+        console.error('Error updating password:', error);
+        throw error;
+      }
 
-    if (!hashData?.hash) {
-      throw new Error('Error al generar hash de contraseña');
-    }
-
-    const { error } = await supabase
-      .from('users')
-      .update({ 
-        pass_hash: hashData.hash,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-
-    if (error) {
-      console.error('Error updating user password:', error);
-      throw new Error('Error al actualizar la contraseña del usuario');
+      if (!data) {
+        throw new Error('No se pudo actualizar la contraseña. Usuario no encontrado.');
+      }
+    } catch (error) {
+      console.error('Error in updateUserPassword:', error);
+      throw error;
     }
   };
 
@@ -179,17 +181,16 @@ export function useUsers() {
     try {
       // Generate a random password
       const newPassword = Math.random().toString(36).slice(-8);
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-      const { data, error } = await supabase
-        .from('users')
-        .update({ pass_hash: hashedPassword })
-        .eq('id', userId)
-        .select()
-        .single();
+      
+      // Use the database function to set password
+      const { data, error } = await supabase.rpc('set_user_password', {
+        user_uuid: userId,
+        new_password: newPassword
+      });
 
       if (error) throw error;
+      if (!data) throw new Error('No se pudo resetear la contraseña. Usuario no encontrado.');
+      
       return newPassword;
     } catch (error) {
       console.error('Error resetting password:', error);
