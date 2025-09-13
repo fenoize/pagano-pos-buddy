@@ -8,10 +8,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Loader2, ChefHat } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal';
+import ResetPasswordModal from '@/components/auth/ResetPasswordModal';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetIdentifier, setResetIdentifier] = useState('');
   const { login, loading, error, user } = useAuthContext();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -116,8 +121,45 @@ export default function Login() {
             </Button>
           </form>
 
+          {/* Forgot Password Link */}
+          <div className="text-center mt-4">
+            <Button
+              type="button"
+              variant="link"
+              onClick={() => setShowForgotPassword(true)}
+              disabled={loading}
+              className="text-sm text-muted-foreground hover:text-primary"
+            >
+              ¿Olvidaste tu contraseña?
+            </Button>
+          </div>
+
         </CardContent>
       </Card>
+
+      {/* Password Recovery Modals */}
+      <ForgotPasswordModal
+        open={showForgotPassword}
+        onOpenChange={setShowForgotPassword}
+        onCodeSent={(identifier) => {
+          setResetIdentifier(identifier);
+          setShowResetPassword(true);
+        }}
+      />
+
+      <ResetPasswordModal
+        open={showResetPassword}
+        onOpenChange={setShowResetPassword}
+        identifier={resetIdentifier}
+        onSuccess={() => {
+          toast({
+            title: "¡Listo!",
+            description: "Ahora puedes iniciar sesión con tu nueva contraseña",
+          });
+          setUsername('');
+          setPassword('');
+        }}
+      />
     </div>
   );
 }

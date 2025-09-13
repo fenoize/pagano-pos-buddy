@@ -2,3 +2,6 @@ project_id = "lxxfhayifyiioglfbsyj"
 
 [functions.generate-password-hash]
 verify_jwt = false
+
+[functions.send-password-reset]
+verify_jwt = false
