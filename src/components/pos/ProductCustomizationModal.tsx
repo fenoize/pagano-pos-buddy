@@ -30,9 +30,11 @@ interface ProductCustomizationModalProps {
   onClose: () => void;
   onAddToCart: (item: any) => void;
   product: Product;
+  editingItem?: any;
+  editingIndex?: number;
 }
 
-export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, product }: ProductCustomizationModalProps) {
+export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, product, editingItem, editingIndex }: ProductCustomizationModalProps) {
   const [selectedVariant, setSelectedVariant] = useState<Variant>('simple');
   const [selectedPriceType, setSelectedPriceType] = useState<'combo' | 'only'>('combo');
   const [selectedExtras, setSelectedExtras] = useState<Record<string, number>>({});
@@ -45,8 +47,26 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   useEffect(() => {
     if (isOpen && product.id) {
       fetchProductExtrasAndModifiers();
+      // If editing, populate form with existing item data
+      if (editingItem) {
+        setSelectedVariant(editingItem.size as Variant);
+        setSelectedPriceType(editingItem.priceKind);
+        setQuantity(editingItem.quantity);
+        setSpecialNotes(editingItem.notes || '');
+        
+        // Set extras
+        const extrasMap: Record<string, number> = {};
+        editingItem.extras?.forEach((extra: any) => {
+          extrasMap[extra.key] = extra.quantity || 1;
+        });
+        setSelectedExtras(extrasMap);
+        
+        // Set modifiers
+        const modifierIds = editingItem.modifiers?.map((mod: any) => mod.id) || [];
+        setSelectedModifiers(modifierIds);
+      }
     }
-  }, [isOpen, product.id]);
+  }, [isOpen, product.id, editingItem]);
 
   // Reset to valid variant when price type changes
   useEffect(() => {
@@ -206,7 +226,12 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       notes: specialNotes.trim() || undefined
     };
 
-    onAddToCart(orderItem);
+    if (editingItem && editingIndex !== undefined) {
+      // Include the editing index for updating
+      onAddToCart({ ...orderItem, editingIndex });
+    } else {
+      onAddToCart(orderItem);
+    }
     resetForm();
     onClose();
   };
@@ -215,7 +240,9 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Personalizar {product.name}</DialogTitle>
+          <DialogTitle>
+            {editingItem ? 'Editar' : 'Personalizar'} {product.name}
+          </DialogTitle>
           <DialogDescription className="sr-only">Selecciona tamaño, extras y notas para el producto.</DialogDescription>
         </DialogHeader>
 
@@ -418,7 +445,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
                 Cancelar
               </Button>
               <Button onClick={handleAddToCart}>
-                Agregar al Carrito
+                {editingItem ? 'Actualizar Item' : 'Agregar al Carrito'}
               </Button>
             </div>
           </div>

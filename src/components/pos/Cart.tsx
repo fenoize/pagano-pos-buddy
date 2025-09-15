@@ -3,16 +3,17 @@ import { OrderItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Plus, Minus, X } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, X, Edit3 } from 'lucide-react';
 
 interface CartProps {
   items: OrderItem[];
   onUpdateQuantity: (index: number, quantity: number) => void;
   onRemoveItem: (index: number) => void;
+  onEditItem: (index: number) => void;
   onCheckout: () => void;
 }
 
-export default function Cart({ items, onUpdateQuantity, onRemoveItem, onCheckout }: CartProps) {
+export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem, onCheckout }: CartProps) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -50,21 +51,33 @@ export default function Cart({ items, onUpdateQuantity, onRemoveItem, onCheckout
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {items.map((item, index) => (
                 <div key={index} className="border border-border rounded-lg p-3">
-                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
                       <h5 className="font-medium text-sm">{item.productName}</h5>
                       <p className="text-xs text-muted-foreground">
                         {item.size} • {item.priceKind === 'combo' ? 'Combo' : 'Solo'}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRemoveItem(index)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEditItem(index)}
+                        className="h-6 w-6 p-0"
+                        title="Editar item"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRemoveItem(index)}
+                        className="h-6 w-6 p-0"
+                        title="Eliminar item"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Extras */}

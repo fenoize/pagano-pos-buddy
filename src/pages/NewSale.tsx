@@ -28,6 +28,7 @@ export default function NewSale() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
+  const [editingItemIndex, setEditingItemIndex] = useState<number | undefined>(undefined);
   const [runaValue, setRunaValue] = useState(1000);
   const { toast } = useToast();
   const { user } = useAuthContext();
@@ -106,23 +107,57 @@ export default function NewSale() {
     setShowCustomizationModal(true);
   };
 
-  const handleAddToCart = (orderItem: Omit<OrderItem, 'productId' | 'productName'>) => {
+  const handleAddToCart = (orderItem: any) => {
     if (!selectedProduct) return;
 
-    const newItem: OrderItem = {
-      productId: selectedProduct.id,
-      productName: selectedProduct.name,
-      ...orderItem
-    };
+    // Check if this is an edit operation
+    if (orderItem.editingIndex !== undefined) {
+      // Update existing item
+      setCartItems(prev => prev.map((item, index) => 
+        index === orderItem.editingIndex 
+          ? {
+              productId: selectedProduct.id,
+              productName: selectedProduct.name,
+              size: orderItem.size,
+              priceKind: orderItem.priceKind,
+              basePrice: orderItem.basePrice,
+              quantity: orderItem.quantity,
+              extras: orderItem.extras,
+              modifiers: orderItem.modifiers,
+              notes: orderItem.notes
+            }
+          : item
+      ));
+      
+      toast({
+        title: "Item actualizado",
+        description: `${selectedProduct.name} actualizado en el carrito`
+      });
+    } else {
+      // Add new item
+      const newItem: OrderItem = {
+        productId: selectedProduct.id,
+        productName: selectedProduct.name,
+        size: orderItem.size,
+        priceKind: orderItem.priceKind,
+        basePrice: orderItem.basePrice,
+        quantity: orderItem.quantity,
+        extras: orderItem.extras,
+        modifiers: orderItem.modifiers,
+        notes: orderItem.notes
+      };
 
-    setCartItems(prev => [...prev, newItem]);
+      setCartItems(prev => [...prev, newItem]);
+      
+      toast({
+        title: "Producto agregado",
+        description: `${selectedProduct.name} agregado al carrito`
+      });
+    }
+
     setShowCustomizationModal(false);
     setSelectedProduct(null);
-
-    toast({
-      title: "Producto agregado",
-      description: `${selectedProduct.name} agregado al carrito`
-    });
+    setEditingItemIndex(undefined);
   };
 
   const updateItemQuantity = (index: number, quantity: number) => {
@@ -137,6 +172,17 @@ export default function NewSale() {
 
   const removeItem = (index: number) => {
     setCartItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEditItem = (index: number) => {
+    const item = cartItems[index];
+    // Find the product for this item
+    const product = products.find(p => p.id === item.productId);
+    if (!product) return;
+
+    setSelectedProduct(product);
+    setEditingItemIndex(index);
+    setShowCustomizationModal(true);
   };
 
   const handleCheckout = () => {
@@ -344,7 +390,8 @@ export default function NewSale() {
                 items={cartItems}
                 onUpdateQuantity={updateItemQuantity}
                 onRemoveItem={removeItem}
-                  onCheckout={() => {
+                onEditItem={handleEditItem}
+                onCheckout={() => {
                     if (cartItems.length === 0) {
                       toast({
                         title: "Error",
@@ -452,9 +499,12 @@ export default function NewSale() {
           onClose={() => {
             setShowCustomizationModal(false);
             setSelectedProduct(null);
+            setEditingItemIndex(undefined);
           }}
           onAddToCart={handleAddToCart}
           product={selectedProduct}
+          editingItem={editingItemIndex !== undefined ? cartItems[editingItemIndex] : undefined}
+          editingIndex={editingItemIndex}
         />
       )}
 
