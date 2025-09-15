@@ -2,8 +2,9 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign, MapPin } from 'lucide-react';
+import { Settings, DollarSign, MapPin, Star } from 'lucide-react';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
+import { FidelizationConfig } from '@/components/config/FidelizationConfig';
 
 export default function ConfiguracionPage() {
   const { user } = useAuthContext();
@@ -32,7 +33,7 @@ export default function ConfiguracionPage() {
       </div>
 
       <Tabs defaultValue="zones" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="zones" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
             Zonas Delivery
@@ -40,6 +41,10 @@ export default function ConfiguracionPage() {
           <TabsTrigger value="delivery" className="flex items-center gap-2">
             <DollarSign className="w-4 h-4" />
             Delivery
+          </TabsTrigger>
+          <TabsTrigger value="fidelization" className="flex items-center gap-2">
+            <Star className="w-4 h-4" />
+            Fidelización
           </TabsTrigger>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
@@ -63,6 +68,10 @@ export default function ConfiguracionPage() {
               <p className="text-muted-foreground">En desarrollo...</p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="fidelization" className="space-y-6">
+          <FidelizationConfig />
         </TabsContent>
 
         <TabsContent value="general" className="space-y-6">
