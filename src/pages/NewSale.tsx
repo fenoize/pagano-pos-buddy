@@ -235,11 +235,7 @@ export default function NewSale() {
           payment_pos: paymentData.method === 'POS' ? paymentData.amount : 0,
           payment_method: paymentMethod,
           status: 'Pendiente' as const,
-          notes: JSON.stringify({
-            paymentDetails: paymentData,
-            customerInfo: customer,
-            deliveryZone
-          })
+          notes: paymentData.notes || null
         };
 
       const { data: orderResult, error: orderError } = await supabase

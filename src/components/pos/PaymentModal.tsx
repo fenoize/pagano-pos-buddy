@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ interface PaymentData {
   operationNumber?: string;
   runas?: number;
   fulfillment: FulfillmentType;
+  notes?: string;
 }
 
 export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total }: PaymentModalProps) {
@@ -40,6 +42,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
   const [operationNumber, setOperationNumber] = useState('');
   const [runas, setRunas] = useState(0);
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     fetchConfig();
@@ -104,6 +107,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
       method: selectedMethod,
       amount: selectedMethod === 'Runas' ? calculateRunasTotal() : paymentAmount,
       fulfillment,
+      notes: notes.trim() || undefined,
     };
 
     if (selectedMethod === 'Efectivo') {
@@ -260,6 +264,25 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
               </CardContent>
             </Card>
           )}
+
+          {/* Order Notes */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Comentarios del Pedido</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <Label htmlFor="order-notes">Comentarios (opcional)</Label>
+                <Textarea
+                  id="order-notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Agregar comentarios especiales para el pedido..."
+                  className="min-h-[80px] mt-2"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Fulfillment */}
           {orderTiming === 'after_payment' && (
