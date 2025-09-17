@@ -3,6 +3,7 @@ import { OrderItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { ShoppingCart, Plus, Minus, X, Edit3 } from 'lucide-react';
 
 interface CartProps {
@@ -11,9 +12,12 @@ interface CartProps {
   onRemoveItem: (index: number) => void;
   onEditItem: (index: number) => void;
   onCheckout: () => void;
+  subtotal: number;
+  discount: number;
+  deliveryFee: number;
 }
 
-export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem, onCheckout }: CartProps) {
+export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem, onCheckout, subtotal, discount, deliveryFee }: CartProps) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -26,7 +30,7 @@ export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem
     return itemTotal;
   };
 
-  const total = items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
+  const total = subtotal - discount + deliveryFee;
 
   return (
     <Card className="sticky top-4">
@@ -119,6 +123,31 @@ export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem
                   </div>
                 </div>
               ))}
+            </div>
+            
+            <Separator />
+            <div className="space-y-1">
+              <div className="flex justify-between text-sm">
+                <span>Subtotal:</span>
+                <span className="currency">{formatPrice(subtotal)}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-sm text-destructive">
+                  <span>Descuento:</span>
+                  <span className="currency">-{formatPrice(discount)}</span>
+                </div>
+              )}
+              {deliveryFee > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Delivery:</span>
+                  <span className="currency">{formatPrice(deliveryFee)}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between font-bold">
+                <span>Total:</span>
+                <span className="currency">{formatPrice(total)}</span>
+              </div>
             </div>
             
             <Button 

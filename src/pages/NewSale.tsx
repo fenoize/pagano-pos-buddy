@@ -14,6 +14,7 @@ import { ProductCustomizationModal } from '@/components/pos/ProductCustomization
 import Cart from '@/components/pos/Cart';
 import PaymentModal from '@/components/pos/PaymentModal';
 import RunasCalculator from '@/components/pos/RunasCalculator';
+import DiscountManager, { DiscountData } from '@/components/pos/DiscountManager';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default function NewSale() {
@@ -30,15 +31,20 @@ export default function NewSale() {
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
   const [editingItemIndex, setEditingItemIndex] = useState<number | undefined>(undefined);
   const [runaValue, setRunaValue] = useState(1000);
+  const [discount, setDiscount] = useState<DiscountData | null>(null);
   const { toast } = useToast();
   const { user } = useAuthContext();
   const { hasActiveSession } = useCashSession();
 
-  const total = cartItems.reduce((sum, item) => {
+  const subtotal = cartItems.reduce((sum, item) => {
     const extrasTotal = item.extras.reduce((extraSum, extra) => extraSum + (extra.price * (extra.quantity || 1)), 0);
     const itemTotal = (item.basePrice + extrasTotal) * item.quantity;
     return sum + itemTotal;
-  }, 0) + deliveryFee;
+  }, 0);
+
+  const discountAmount = discount ? discount.amount : 0;
+  const totalBeforeDelivery = Math.max(0, subtotal - discountAmount);
+  const total = totalBeforeDelivery + deliveryFee;
 
   useEffect(() => {
     fetchData();
@@ -272,9 +278,9 @@ export default function NewSale() {
           created_by_user_id: validUserId,
           fulfillment: paymentData.fulfillment || fulfillment,
           items: cartItems as any,
-          subtotal: total - deliveryFee,
+          subtotal,
           delivery_fee: deliveryFee,
-          discount: 0,
+          discount: discountAmount,
           total,
           payment_efectivo: paymentData.method === 'Efectivo' ? paymentData.amount : 0,
           payment_mp: paymentData.method === 'Transferencia' ? paymentData.amount : 0,
@@ -344,6 +350,7 @@ export default function NewSale() {
       setFulfillment('retiro');
       setDeliveryFee(0);
       setDeliveryZone('');
+      setDiscount(null);
       setCurrentStep(1);
       setShowPaymentModal(false);
 
@@ -391,6 +398,9 @@ export default function NewSale() {
                 onUpdateQuantity={updateItemQuantity}
                 onRemoveItem={removeItem}
                 onEditItem={handleEditItem}
+                subtotal={subtotal}
+                discount={discountAmount}
+                deliveryFee={deliveryFee}
                 onCheckout={() => {
                     if (cartItems.length === 0) {
                       toast({
@@ -411,6 +421,13 @@ export default function NewSale() {
                     }
                     setCurrentStep(2);
                   }}
+              />
+
+              {/* Discount Manager */}
+              <DiscountManager 
+                subtotal={subtotal}
+                discount={discount}
+                onDiscountChange={setDiscount}
               />
               
               {/* Runas Calculator */}
@@ -509,14 +526,17 @@ export default function NewSale() {
       )}
 
       {/* Payment Modal */}
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onConfirm={handlePaymentConfirm}
-        customer={customer}
-        items={cartItems}
-        total={total}
-      />
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onConfirm={handlePaymentConfirm}
+          customer={customer}
+          items={cartItems}
+          total={total}
+          subtotal={subtotal}
+          discount={discountAmount}
+          deliveryFee={deliveryFee}
+        />
     </div>
   );
 }

@@ -19,6 +19,9 @@ interface PaymentModalProps {
   customer: Partial<Customer>;
   items: OrderItem[];
   total: number;
+  subtotal: number;
+  discount: number;
+  deliveryFee: number;
 }
 
 interface PaymentData {
@@ -32,7 +35,7 @@ interface PaymentData {
   notes?: string;
 }
 
-export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total, subtotal, discount, deliveryFee }: PaymentModalProps) {
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [runaValue, setRunaValue] = useState(1000);
   const [orderTiming, setOrderTiming] = useState('after_payment');
@@ -160,9 +163,28 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
                   </div>
                 ))}
                 <Separator />
-                <div className="flex justify-between font-bold">
-                  <span>Total:</span>
-                  <span className="currency">{formatPrice(total)}</span>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>Subtotal:</span>
+                    <span className="currency">{formatPrice(subtotal)}</span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-sm text-destructive">
+                      <span>Descuento:</span>
+                      <span className="currency">-{formatPrice(discount)}</span>
+                    </div>
+                  )}
+                  {deliveryFee > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span>Delivery:</span>
+                      <span className="currency">{formatPrice(deliveryFee)}</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between font-bold">
+                    <span>Total:</span>
+                    <span className="currency">{formatPrice(total)}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
