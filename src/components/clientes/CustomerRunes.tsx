@@ -184,14 +184,14 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <Select 
-              value={filters.type || ''} 
-              onValueChange={(value) => setFilters({...filters, type: value as RunaMovementType || undefined})}
+              value={filters.type || 'all'} 
+              onValueChange={(value) => setFilters({...filters, type: value === 'all' ? undefined : value as RunaMovementType})}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Tipo de movimiento" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los tipos</SelectItem>
+                <SelectItem value="all">Todos los tipos</SelectItem>
                 <SelectItem value="acumulacion">Acumulación</SelectItem>
                 <SelectItem value="canje">Canje</SelectItem>
                 <SelectItem value="ajuste">Ajuste Manual</SelectItem>
@@ -200,14 +200,14 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
             </Select>
 
             <Select 
-              value={filters.origen || ''} 
-              onValueChange={(value) => setFilters({...filters, origen: value as OrigenMovimiento || undefined})}
+              value={filters.origen || 'all'} 
+              onValueChange={(value) => setFilters({...filters, origen: value === 'all' ? undefined : value as OrigenMovimiento})}
             >
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Origen" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los orígenes</SelectItem>
+                <SelectItem value="all">Todos los orígenes</SelectItem>
                 <SelectItem value="POS">POS</SelectItem>
                 <SelectItem value="Web">Web</SelectItem>
                 <SelectItem value="Manual">Manual</SelectItem>
