@@ -344,16 +344,21 @@ export function useCustomers() {
     }
 
     try {
+      // En lugar de eliminar físicamente, cambiamos el estado a "Inactivo"
       const { error } = await supabase
         .from('customers')
-        .delete()
+        .update({ 
+          estado_cliente: 'Inactivo' as EstadoCliente,
+          motivo_estado: 'Cliente eliminado por administrador',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id);
 
       if (error) throw error;
 
       toast({
         title: "Éxito",
-        description: "Cliente eliminado correctamente",
+        description: "Cliente marcado como inactivo correctamente",
       });
 
       return true;
@@ -361,7 +366,7 @@ export function useCustomers() {
       console.error('Error deleting customer:', error);
       toast({
         title: "Error",
-        description: "Error al eliminar el cliente",
+        description: "Error al desactivar el cliente",
         variant: "destructive"
       });
       return false;
