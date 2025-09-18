@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarIcon, Search, Eye, Download, Filter } from 'lucide-react';
 import { format } from 'date-fns';
+import { OrderEditModal } from '@/components/sales/OrderEditModal';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -531,228 +532,23 @@ export default function Sales() {
         </CardContent>
       </Card>
 
-      {/* Order Detail Modal */}
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Detalle de Orden #{selectedOrder?.order_number}
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedOrder && (
-            <div className="space-y-6">
-              {/* Order Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Información General</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">N° Orden:</span>
-                      <span className="font-medium">#{selectedOrder.order_number}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Fecha:</span>
-                      <span>{format(new Date(selectedOrder.created_at), 'dd/MM/yyyy HH:mm')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Estado:</span>
-                      <Badge variant={getStatusBadgeVariant(selectedOrder.status)}>
-                        {selectedOrder.status}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Tipo:</span>
-                      <span className="capitalize">{selectedOrder.fulfillment}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cliente:</span>
-                      <span>{getCustomerInfo(selectedOrder.customer_id)}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Información de Pago</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Método:</span>
-                      <span className="capitalize">{selectedOrder.payment_method}</span>
-                    </div>
-                    {selectedOrder.payment_efectivo > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Efectivo:</span>
-                        <span>{formatPrice(selectedOrder.payment_efectivo)}</span>
-                      </div>
-                    )}
-                    {selectedOrder.payment_pos > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">POS:</span>
-                        <span>{formatPrice(selectedOrder.payment_pos)}</span>
-                      </div>
-                    )}
-                    {selectedOrder.payment_mp > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Transferencia:</span>
-                        <span>{formatPrice(selectedOrder.payment_mp)}</span>
-                      </div>
-                    )}
-                    <div className="border-t pt-2 flex justify-between font-bold">
-                      <span>Total:</span>
-                      <span>{formatPrice(selectedOrder.total)}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Order Items */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Productos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {(Array.isArray(selectedOrder.items) ? selectedOrder.items : []).map((item: any, index: number) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h4 className="font-medium">{item.productName}</h4>
-                            <div className="text-sm text-muted-foreground space-y-1">
-                              <div>Tamaño: <span className="capitalize">{item.size}</span></div>
-                              <div>Tipo: <span className="capitalize">{item.priceKind === 'combo' ? 'Combo' : 'Solo hamburguesa'}</span></div>
-                              {item.extras && item.extras.length > 0 && (
-                                <div>
-                                  Extras: {item.extras.map((extra: any) => 
-                                    `${extra.label} x${extra.quantity}`
-                                  ).join(', ')}
-                                </div>
-                              )}
-                              {item.modifiers && item.modifiers.length > 0 && (
-                                <div>
-                                  Modificaciones: {item.modifiers.map((mod: any) => mod.name).join(', ')}
-                                </div>
-                              )}
-                              {item.notes && (
-                                <div>Notas: {item.notes}</div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-medium">Cant: {item.quantity}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {formatPrice(item.basePrice)} c/u
-                            </div>
-                            <div className="font-bold">
-                              {formatPrice(item.basePrice * item.quantity)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Order Totals */}
-                  <div className="border-t mt-4 pt-4 space-y-2">
-                    <div className="flex justify-between">
-                      <span>Subtotal:</span>
-                      <span>{formatPrice(selectedOrder.subtotal)}</span>
-                    </div>
-                    {selectedOrder.delivery_fee > 0 && (
-                      <div className="flex justify-between">
-                        <span>Costo Delivery:</span>
-                        <span>{formatPrice(selectedOrder.delivery_fee)}</span>
-                      </div>
-                    )}
-                    {selectedOrder.discount > 0 && (
-                      <div className="flex justify-between text-red-600">
-                        <span>Descuento:</span>
-                        <span>-{formatPrice(selectedOrder.discount)}</span>
-                      </div>
-                    )}
-                    <div className="border-t pt-2 flex justify-between font-bold text-lg">
-                      <span>Total:</span>
-                      <span>{formatPrice(selectedOrder.total)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Customer & Delivery Info */}
-              {(() => {
-                const details = getOrderDetails(selectedOrder);
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {details.customerInfo && Object.keys(details.customerInfo).length > 0 && (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-lg">Información del Cliente</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                          {details.customerInfo.name && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Nombre:</span>
-                              <span>{details.customerInfo.name} {details.customerInfo.apellido || ''}</span>
-                            </div>
-                          )}
-                          {details.customerInfo.phone && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Teléfono:</span>
-                              <span>{details.customerInfo.phone}</span>
-                            </div>
-                          )}
-                          {details.customerInfo.rut && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">RUT:</span>
-                              <span>{details.customerInfo.rut}</span>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {selectedOrder.fulfillment === 'delivery' && (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-lg">Información de Delivery</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                          {selectedOrder.delivery_address && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Dirección:</span>
-                              <span>{selectedOrder.delivery_address}</span>
-                            </div>
-                          )}
-                          {selectedOrder.delivery_number && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Número:</span>
-                              <span>{selectedOrder.delivery_number}</span>
-                            </div>
-                          )}
-                          {selectedOrder.delivery_comuna && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Comuna:</span>
-                              <span>{selectedOrder.delivery_comuna}</span>
-                            </div>
-                          )}
-                          {details.deliveryZone && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Zona:</span>
-                              <span>{details.deliveryZone}</span>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-        </DialogContent>
+        {selectedOrder && (
+          <OrderEditModal
+            order={selectedOrder as any}
+            isOpen={showDetailModal}
+            onClose={() => setShowDetailModal(false)}
+            onOrderUpdated={(updatedOrder: any) => {
+              // Update the order in the list
+              setOrders(prevOrders => 
+                prevOrders.map(order => 
+                  order.id === updatedOrder.id ? {...order, ...updatedOrder} : order
+                )
+              );
+              setSelectedOrder({...selectedOrder, ...updatedOrder});
+            }}
+          />
+        )}
       </Dialog>
     </div>
   );
