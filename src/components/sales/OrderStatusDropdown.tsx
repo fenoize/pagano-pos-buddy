@@ -46,9 +46,19 @@ export const OrderStatusDropdown: React.FC<OrderStatusDropdownProps> = ({
     }
   };
 
+  // Load status options when dropdown opens or current status changes
+  useEffect(() => {
+    if (isOpen && statusOptions.length === 0) {
+      loadStatusOptions();
+    }
+  }, [isOpen, currentStatus]);
+
+  // Reset options when current status changes to ensure fresh options
+  useEffect(() => {
+    setStatusOptions([]);
+  }, [currentStatus]);
+
   const loadStatusOptions = async () => {
-    if (statusOptions.length > 0) return; // Already loaded
-    
     setIsLoading(true);
     try {
       // Get available status transitions from the order status enum
@@ -129,7 +139,6 @@ export const OrderStatusDropdown: React.FC<OrderStatusDropdownProps> = ({
           variant="ghost"
           className="h-auto p-0 hover:bg-transparent"
           disabled={isChangingStatus}
-          onClick={() => loadStatusOptions()}
           onKeyDown={handleKeyDown}
         >
           <div className="flex items-center gap-1">
