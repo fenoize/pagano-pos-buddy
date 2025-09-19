@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarIcon, Search, Eye, Download, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { OrderEditModal } from '@/components/sales/OrderEditModal';
+import { OrderStatusDropdown } from '@/components/sales/OrderStatusDropdown';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -222,6 +223,16 @@ export default function Sales() {
       case 'Cancelado': return 'destructive';
       default: return 'secondary';
     }
+  };
+
+  const handleStatusChange = (orderId: string, newStatus: string, newUpdatedAt: string) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { ...order, status: newStatus, updated_at: newUpdatedAt }
+          : order
+      )
+    );
   };
 
   const getCustomerInfo = (customerId: string) => {
@@ -502,9 +513,14 @@ export default function Sales() {
                       </TableCell>
                       <TableCell>{getCustomerInfo(order.customer_id)}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadgeVariant(order.status)}>
-                          {order.status}
-                        </Badge>
+                        <OrderStatusDropdown
+                          orderId={order.id}
+                          currentStatus={order.status}
+                          updatedAt={order.updated_at}
+                          onStatusChange={(newStatus, newUpdatedAt) => 
+                            handleStatusChange(order.id, newStatus, newUpdatedAt)
+                          }
+                        />
                       </TableCell>
                       <TableCell className="capitalize">{order.fulfillment}</TableCell>
                       <TableCell className="capitalize">{order.payment_method}</TableCell>
