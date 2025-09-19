@@ -174,10 +174,9 @@ export const OrderStatusDropdown: React.FC<OrderStatusDropdownProps> = ({
               }}
               className="cursor-pointer"
             >
-              <Badge variant={getStatusBadgeVariant(status.id)} className="mr-2">
+              <Badge variant={getStatusBadgeVariant(status.id)}>
                 {status.label}
               </Badge>
-              {status.label}
             </DropdownMenuItem>
           ))
         )}
