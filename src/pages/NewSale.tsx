@@ -8,6 +8,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useCashSession } from '@/hooks/useCashSession';
 import { CashSessionStatus } from '@/components/cash/CashSessionStatus';
 import CustomerSearchStep from '@/components/pos/CustomerSearchStep';
+import CustomerSearchWidget from '@/components/pos/CustomerSearchWidget';
 import FulfillmentStep from '@/components/pos/FulfillmentStep';
 import ProductGrid from '@/components/pos/ProductGrid';
 import { ProductCustomizationModal } from '@/components/pos/ProductCustomizationModal';
@@ -22,6 +23,7 @@ export default function NewSale() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cartItems, setCartItems] = useState<OrderItem[]>([]);
   const [customer, setCustomer] = useState<Partial<Customer>>({});
+  const [orderName, setOrderName] = useState('');
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryZone, setDeliveryZone] = useState<string>('');
@@ -31,6 +33,7 @@ export default function NewSale() {
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
   const [editingItemIndex, setEditingItemIndex] = useState<number | undefined>(undefined);
   const [runaValue, setRunaValue] = useState(1000);
+  const [usedRunas, setUsedRunas] = useState(0);
   const [discount, setDiscount] = useState<DiscountData | null>(null);
   const { toast } = useToast();
   const { user } = useAuthContext();
@@ -43,7 +46,9 @@ export default function NewSale() {
   }, 0);
 
   const discountAmount = discount ? discount.amount : 0;
-  const totalBeforeDelivery = Math.max(0, subtotal - discountAmount);
+  const runasDiscount = usedRunas * runaValue;
+  const totalDiscount = discountAmount + runasDiscount;
+  const totalBeforeDelivery = Math.max(0, subtotal - totalDiscount);
   const total = totalBeforeDelivery + deliveryFee;
 
   useEffect(() => {
@@ -276,11 +281,12 @@ export default function NewSale() {
         const orderData = {
           customer_id: customerId,
           created_by_user_id: validUserId,
+          nombre_resumen: orderName.trim() || null,
           fulfillment: paymentData.fulfillment || fulfillment,
           items: cartItems as any,
           subtotal,
           delivery_fee: deliveryFee,
-          discount: discountAmount,
+          discount: totalDiscount,
           total,
           payment_efectivo: paymentData.method === 'Efectivo' ? paymentData.amount : 0,
           payment_mp: paymentData.method === 'Transferencia' ? paymentData.amount : 0,
@@ -299,29 +305,30 @@ export default function NewSale() {
       if (orderError) throw orderError;
 
       // Handle runas transactions if applicable
-      if (customerId && (paymentData.runas > 0 || total > 0)) {
+      if (customerId && (usedRunas > 0 || total > 0)) {
         const transactions = [];
         
         // Runas spent
-        if (paymentData.runas > 0) {
+        if (usedRunas > 0) {
           transactions.push({
             customer_id: customerId,
             order_id: orderResult.id,
             type: 'canje',
-            amount: paymentData.runas * runaValue,
-            runas: -paymentData.runas,
+            amount: usedRunas * runaValue,
+            runas: -usedRunas,
             origen: 'POS'
           });
         }
 
-        // Runas earned (from total amount paid)
-        const runasEarned = Math.floor(total / runaValue);
+        // Runas earned (from total amount paid, excluding runas discount)
+        const earnableAmount = total - runasDiscount;
+        const runasEarned = Math.floor(earnableAmount / runaValue);
         if (runasEarned > 0) {
           transactions.push({
             customer_id: customerId,
             order_id: orderResult.id,
             type: 'acumulacion',
-            amount: total,
+            amount: earnableAmount,
             runas: runasEarned,
             origen: 'POS'
           });
@@ -331,7 +338,7 @@ export default function NewSale() {
           await supabase.from('runas_transactions').insert(transactions);
           
           // Update customer runas balance
-          const newBalance = (customer.cantidad_runas || 0) - (paymentData.runas || 0) + runasEarned;
+          const newBalance = (customer.cantidad_runas || 0) - usedRunas + runasEarned;
           await supabase
             .from('customers')
             .update({ cantidad_runas: Math.max(0, newBalance) })
@@ -347,6 +354,8 @@ export default function NewSale() {
       // Reset form
       setCartItems([]);
       setCustomer({});
+      setOrderName('');
+      setUsedRunas(0);
       setFulfillment('retiro');
       setDeliveryFee(0);
       setDeliveryZone('');
@@ -382,62 +391,65 @@ export default function NewSale() {
     switch (currentStep) {
       case 1:
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Products Grid */}
-            <div className="lg:col-span-2">
-              <ProductGrid 
-                products={products} 
-                onProductClick={handleProductClick}
-              />
-            </div>
-
-            {/* Cart */}
-            <div className="space-y-4">
-              <Cart 
-                items={cartItems}
-                onUpdateQuantity={updateItemQuantity}
-                onRemoveItem={removeItem}
-                onEditItem={handleEditItem}
-                subtotal={subtotal}
-                discount={discountAmount}
-                deliveryFee={deliveryFee}
-                onCheckout={() => {
-                    if (cartItems.length === 0) {
-                      toast({
-                        title: "Error",
-                        description: "Agrega productos al carrito",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
-                    // Check session before proceeding
-                    if (user?.role === 'Cajero' && !hasActiveSession()) {
-                      toast({
-                        title: "Turno cerrado",
-                        description: "Debes abrir un turno antes de realizar ventas.",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
-                    setCurrentStep(2);
-                  }}
-              />
-
-              {/* Discount Manager */}
-              <DiscountManager 
-                subtotal={subtotal}
-                discount={discount}
-                onDiscountChange={setDiscount}
-              />
-              
-              {/* Runas Calculator */}
-              {customer.id && (
-                <RunasCalculator
-                  totalAmount={total}
-                  runaValue={runaValue}
-                  customerRunas={customer.cantidad_runas}
+          <div className="space-y-6">
+            {/* Customer Search Widget */}
+            <CustomerSearchWidget
+              customer={customer}
+              onCustomerChange={setCustomer}
+              totalAmount={total}
+              runaValue={runaValue}
+              onRunasChange={setUsedRunas}
+              usedRunas={usedRunas}
+            />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Products Grid */}
+              <div className="lg:col-span-2">
+                <ProductGrid 
+                  products={products} 
+                  onProductClick={handleProductClick}
                 />
-              )}
+              </div>
+
+              {/* Cart */}
+              <div className="space-y-4">
+                <Cart 
+                  items={cartItems}
+                  onUpdateQuantity={updateItemQuantity}
+                  onRemoveItem={removeItem}
+                  onEditItem={handleEditItem}
+                  subtotal={subtotal}
+                  discount={totalDiscount}
+                  deliveryFee={deliveryFee}
+                  onCheckout={() => {
+                      if (cartItems.length === 0) {
+                        toast({
+                          title: "Error",
+                          description: "Agrega productos al carrito",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      // Check session before proceeding
+                      if (user?.role === 'Cajero' && !hasActiveSession()) {
+                        toast({
+                          title: "Turno cerrado",
+                          description: "Debes abrir un turno antes de realizar ventas.",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      setCurrentStep(2);
+                    }}
+                />
+
+                {/* Discount Manager */}
+                <DiscountManager 
+                  subtotal={subtotal}
+                  discount={discount}
+                  onDiscountChange={setDiscount}
+                />
+              </div>
             </div>
           </div>
         );
@@ -454,6 +466,8 @@ export default function NewSale() {
           <CustomerSearchStep
             customer={customer}
             onCustomerChange={setCustomer}
+            orderName={orderName}
+            onOrderNameChange={setOrderName}
             onNext={handleCustomerNext}
           />
         );
@@ -534,8 +548,9 @@ export default function NewSale() {
           items={cartItems}
           total={total}
           subtotal={subtotal}
-          discount={discountAmount}
+          discount={totalDiscount}
           deliveryFee={deliveryFee}
+          orderName={orderName}
         />
     </div>
   );

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Store, Truck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { DeliveryZoneSelector } from './DeliveryZoneSelector';
+import { DeliveryZoneGrid } from './DeliveryZoneGrid';
 
 interface FulfillmentStepProps {
   fulfillment: FulfillmentType;
@@ -98,7 +98,7 @@ export default function FulfillmentStep({ fulfillment, onFulfillmentChange, onNe
             <CardTitle>Zona de Delivery</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <DeliveryZoneSelector
+            <DeliveryZoneGrid
               selectedZoneId={selectedZoneId}
               onZoneChange={handleZoneChange}
             />
@@ -119,7 +119,7 @@ export default function FulfillmentStep({ fulfillment, onFulfillmentChange, onNe
       {(fulfillment === 'retiro' || 
         (fulfillment === 'delivery' && selectedZoneId)) && (
         <Button onClick={handleContinue} className="w-full" size="lg">
-          Continuar al Menú
+          Continuar a Cliente
         </Button>
       )}
     </div>

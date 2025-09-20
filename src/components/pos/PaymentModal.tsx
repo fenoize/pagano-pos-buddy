@@ -22,6 +22,7 @@ interface PaymentModalProps {
   subtotal: number;
   discount: number;
   deliveryFee: number;
+  orderName?: string;
 }
 
 interface PaymentData {
@@ -35,7 +36,7 @@ interface PaymentData {
   notes?: string;
 }
 
-export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total, subtotal, discount, deliveryFee }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total, subtotal, discount, deliveryFee, orderName }: PaymentModalProps) {
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [runaValue, setRunaValue] = useState(1000);
   const [orderTiming, setOrderTiming] = useState('after_payment');
@@ -48,8 +49,19 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    fetchConfig();
-  }, []);
+    if (isOpen) {
+      // Reset volatile payment states when modal opens
+      setSelectedMethod('Efectivo');  
+      setPaymentAmount(total);
+      setReceiptNumber('');
+      setOperationNumber('');
+      setRunas(0);
+      setNotes('');
+      // Don't reset fulfillment as it comes from previous steps
+
+      fetchConfig();
+    }
+  }, [isOpen, total]);
 
   useEffect(() => {
     setPaymentAmount(total);
@@ -147,6 +159,18 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Order Name */}
+          {orderName && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Nombre del Pedido</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="font-medium text-primary">{orderName}</div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Order Summary */}
           <Card>
             <CardHeader>

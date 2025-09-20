@@ -12,10 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 interface CustomerSearchStepProps {
   customer: Partial<Customer>;
   onCustomerChange: (customer: Partial<Customer>) => void;
+  orderName: string;
+  onOrderNameChange: (name: string) => void;
   onNext: () => void;
 }
 
-export default function CustomerSearchStep({ customer, onCustomerChange, onNext }: CustomerSearchStepProps) {
+export default function CustomerSearchStep({ customer, onCustomerChange, orderName, onOrderNameChange, onNext }: CustomerSearchStepProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -103,19 +105,37 @@ export default function CustomerSearchStep({ customer, onCustomerChange, onNext 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
-            Cliente
+            Información del Pedido
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+          {/* Order Name Field */}
+          <div>
+            <Label htmlFor="order-name">Nombre del pedido</Label>
             <Input
-              placeholder="Buscar cliente por nombre, RUT o teléfono..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              id="order-name"
+              placeholder="Ej: Mesa 5, Pedido Juan, etc."
+              value={orderName}
+              onChange={(e) => onOrderNameChange(e.target.value)}
+              className="mt-1"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Este nombre aparecerá en la cocina y en los tickets
+            </p>
+          </div>
+
+          {/* Search Input */}
+          <div>
+            <Label>Cliente (opcional)</Label>
+            <div className="relative mt-1">
+              <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar cliente por nombre, RUT o teléfono..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
 
           {/* Search Results */}
@@ -221,7 +241,7 @@ export default function CustomerSearchStep({ customer, onCustomerChange, onNext 
           )}
 
           {/* Continue Button */}
-          {(customer.name || customer.id) && (
+          {orderName.trim() && (
             <Button onClick={onNext} className="w-full" size="lg">
               Ir al Pago
             </Button>
