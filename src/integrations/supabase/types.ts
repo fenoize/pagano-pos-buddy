@@ -331,6 +331,7 @@ export type Database = {
           fulfillment: Database["public"]["Enums"]["fulfillment_type"]
           id: string
           items: Json
+          nombre_resumen: string | null
           notes: string | null
           order_number: number
           payment_efectivo: number | null
@@ -356,6 +357,7 @@ export type Database = {
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
           items: Json
+          nombre_resumen?: string | null
           notes?: string | null
           order_number?: number
           payment_efectivo?: number | null
@@ -381,6 +383,7 @@ export type Database = {
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
           items?: Json
+          nombre_resumen?: string | null
           notes?: string | null
           order_number?: number
           payment_efectivo?: number | null
