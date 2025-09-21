@@ -5,6 +5,7 @@ import { TrendingUp, ShoppingCart, Clock, DollarSign } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { CajeroDashboard } from '@/components/dashboard/CajeroDashboard';
+import { ActiveShiftWidget } from '@/components/dashboard/ActiveShiftWidget';
 
 interface DashboardStats {
   totalSales: number;
@@ -150,6 +151,9 @@ function DefaultDashboard() {
           Bienvenido, {user?.username} ({user?.role})
         </p>
       </div>
+
+      {/* Active Shift Widget */}
+      <ActiveShiftWidget />
 
       {/* KPIs Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
