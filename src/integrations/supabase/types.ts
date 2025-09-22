@@ -403,6 +403,13 @@ export type Database = {
             foreignKeyName: "orders_created_by_user_id_fkey"
             columns: ["created_by_user_id"]
             isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -448,6 +455,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_password_reset_codes_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_password_reset_codes_user_id"
             columns: ["user_id"]
@@ -651,6 +665,20 @@ export type Database = {
             foreignKeyName: "runas_transactions_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "runas_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "runas_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -694,9 +722,105 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      app_orders_delivery: {
+        Row: {
+          created_at: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_address: string | null
+          delivery_comuna: string | null
+          delivery_number: string | null
+          fulfillment: Database["public"]["Enums"]["fulfillment_type"] | null
+          id: string | null
+          order_number: number | null
+          status: Database["public"]["Enums"]["order_status"] | null
+          total: number | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      app_orders_kitchen: {
+        Row: {
+          created_at: string | null
+          fulfillment: Database["public"]["Enums"]["fulfillment_type"] | null
+          id: string | null
+          items: Json | null
+          nombre_resumen: string | null
+          notes: string | null
+          order_number: number | null
+          status: Database["public"]["Enums"]["order_status"] | null
+          total: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          fulfillment?: Database["public"]["Enums"]["fulfillment_type"] | null
+          id?: string | null
+          items?: Json | null
+          nombre_resumen?: string | null
+          notes?: string | null
+          order_number?: number | null
+          status?: Database["public"]["Enums"]["order_status"] | null
+          total?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          fulfillment?: Database["public"]["Enums"]["fulfillment_type"] | null
+          id?: string | null
+          items?: Json | null
+          nombre_resumen?: string | null
+          notes?: string | null
+          order_number?: number | null
+          status?: Database["public"]["Enums"]["order_status"] | null
+          total?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      app_public_users: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      algorithm_sign: {
+        Args: { algorithm: string; secret: string; signables: string }
+        Returns: string
+      }
+      auth_jwt: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       authenticate_user: {
         Args: { _password: string; _username: string }
         Returns: {
@@ -719,6 +843,30 @@ export type Database = {
       set_user_password: {
         Args: { new_password: string; user_uuid: string }
         Returns: boolean
+      }
+      sign: {
+        Args: { algorithm?: string; payload: Json; secret: string }
+        Returns: string
+      }
+      try_cast_double: {
+        Args: { inp: string }
+        Returns: number
+      }
+      url_decode: {
+        Args: { data: string }
+        Returns: string
+      }
+      url_encode: {
+        Args: { data: string }
+        Returns: string
+      }
+      verify: {
+        Args: { algorithm?: string; secret: string; token: string }
+        Returns: {
+          header: Json
+          payload: Json
+          valid: boolean
+        }[]
       }
       verify_password: {
         Args: { hash: string; password: string }
