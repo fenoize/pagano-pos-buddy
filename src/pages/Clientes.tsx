@@ -23,7 +23,7 @@ export default function Clientes() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState<CustomerFilters>({});
+  const [filters, setFilters] = useState<CustomerFilters>({ estado: 'Activo' });
   const [currentPage, setCurrentPage] = useState(0);
   
   const {
@@ -202,7 +202,7 @@ export default function Clientes() {
             
             {/* Estado Filter */}
             <Select 
-              value={filters.estado || 'all'} 
+              value={filters.estado || 'Activo'} 
               onValueChange={(value) => setFilters({...filters, estado: value === 'all' ? undefined : value as EstadoCliente})}
             >
               <SelectTrigger className="w-[180px]">

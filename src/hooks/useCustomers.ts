@@ -73,9 +73,9 @@ export function useCustomers() {
         query = query.or(`nombres.ilike.${searchTerm},apellidos.ilike.${searchTerm},name.ilike.${searchTerm},apellido.ilike.${searchTerm},email.ilike.${searchTerm},phone.ilike.${searchTerm},rut.ilike.${searchTerm}`);
       }
 
-      // Por defecto solo mostrar clientes activos, a menos que se especifique otro estado
-      const estadoFiltro = filters.estado || 'Activo';
-      query = query.eq('estado_cliente', estadoFiltro);
+      if (filters.estado) {
+        query = query.eq('estado_cliente', filters.estado);
+      }
 
       if (filters.comuna) {
         query = query.eq('addresses.comuna', filters.comuna);
