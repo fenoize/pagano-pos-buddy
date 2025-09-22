@@ -373,6 +373,42 @@ export function useCustomers() {
     }
   };
 
+  const deleteCustomerPermanently = async (id: string): Promise<boolean> => {
+    if (user?.role !== 'Administrador') {
+      toast({
+        title: "Error",
+        description: "Solo los administradores pueden eliminar clientes definitivamente",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    try {
+      // Eliminar definitivamente de la base de datos
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Cliente eliminado definitivamente de la base de datos",
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error permanently deleting customer:', error);
+      toast({
+        title: "Error",
+        description: "Error al eliminar definitivamente el cliente",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   const searchCustomers = async (searchTerm: string): Promise<Customer[]> => {
     if (!canViewCustomers || searchTerm.length < 3) return [];
 
@@ -500,6 +536,7 @@ export function useCustomers() {
     createCustomer,
     updateCustomer,
     deleteCustomer,
+    deleteCustomerPermanently,
     searchCustomers,
     calculateRunasSaldo,
     exportCustomersCSV

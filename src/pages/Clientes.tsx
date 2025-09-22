@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, MapPin, CreditCard, Download } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, MapPin, CreditCard, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCustomers, CustomerFilters } from '@/hooks/useCustomers';
@@ -33,6 +33,7 @@ export default function Clientes() {
     canManageCustomers,
     fetchCustomers,
     deleteCustomer,
+    deleteCustomerPermanently,
     exportCustomersCSV
   } = useCustomers();
 
@@ -72,10 +73,22 @@ export default function Clientes() {
   };
 
   const handleDeleteCustomer = async (customer: Customer) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar al cliente ${customer.nombres || customer.name} ${customer.apellidos || customer.apellido}?`)) {
+    if (window.confirm(`¿Estás seguro de que quieres desactivar al cliente ${customer.nombres || customer.name} ${customer.apellidos || customer.apellido}?`)) {
       const success = await deleteCustomer(customer.id);
       if (success) {
         fetchCustomers(filters, currentPage);
+      }
+    }
+  };
+
+  const handleDeleteCustomerPermanently = async (customer: Customer) => {
+    const customerName = `${customer.nombres || customer.name} ${customer.apellidos || customer.apellido}`;
+    if (window.confirm(`¿ESTÁS COMPLETAMENTE SEGURO de que quieres ELIMINAR DEFINITIVAMENTE al cliente ${customerName}? Esta acción NO se puede deshacer.`)) {
+      if (window.confirm('Esta acción eliminará permanentemente todos los datos del cliente de la base de datos. ¿Confirmas?')) {
+        const success = await deleteCustomerPermanently(customer.id);
+        if (success) {
+          fetchCustomers(filters, currentPage);
+        }
       }
     }
   };
@@ -203,7 +216,13 @@ export default function Clientes() {
             {/* Estado Filter */}
             <Select 
               value={filters.estado || 'Activo'} 
-              onValueChange={(value) => setFilters({...filters, estado: value === 'all' ? undefined : value as EstadoCliente})}
+              onValueChange={(value) => {
+                if (value === 'all') {
+                  setFilters({...filters, estado: undefined});
+                } else {
+                  setFilters({...filters, estado: value as EstadoCliente});
+                }
+              }}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Todos los estados" />
@@ -335,7 +354,15 @@ export default function Clientes() {
                                   className="text-red-600"
                                 >
                                   <Trash2 className="w-4 h-4 mr-2" />
-                                  Eliminar
+                                  Desactivar
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteCustomerPermanently(customer)}
+                                  className="text-red-800 bg-red-50 focus:bg-red-100"
+                                >
+                                  <X className="w-4 h-4 mr-2" />
+                                  Eliminar definitivamente
                                 </DropdownMenuItem>
                               </>
                             )}
