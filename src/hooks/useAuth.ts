@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { configuredSupabase } from '@/lib/supabaseClient';
 import { User, AppRole } from '@/types';
 
 // Map old database role names to new app role names
