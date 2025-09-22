@@ -104,6 +104,18 @@ export function useAuth() {
       const userRecord = userData[0];
       console.log('Authentication successful for user:', userRecord.username);
 
+      // Generate JWT after successful authentication
+      console.log('Generating JWT for user:', userRecord.user_id);
+      const { data: jwtToken, error: jwtError } = await supabase
+        .rpc('issue_app_jwt' as any, { p_user_id: userRecord.user_id });
+
+      if (jwtError) {
+        console.error('JWT generation error:', jwtError);
+        throw new Error('Error generando token de sesión');
+      }
+
+      console.log('JWT generated successfully');
+
       // Map database role to app role and store user in localStorage
       const mappedUser = {
         id: userRecord.user_id,
@@ -115,6 +127,14 @@ export function useAuth() {
       } as User;
       
       localStorage.setItem('paganos_user', JSON.stringify(mappedUser));
+      localStorage.setItem('paganos_jwt', String(jwtToken));
+
+      // Configure Supabase client headers for future requests
+      if (jwtToken) {
+        // Set authorization header for future requests
+        const token = String(jwtToken);
+        supabase.functions.setAuth(token);
+      }
 
       setAuthState({
         user: mappedUser,
@@ -122,7 +142,7 @@ export function useAuth() {
         error: null,
       });
 
-      console.log('Login successful');
+      console.log('Login successful with JWT');
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
@@ -139,6 +159,7 @@ export function useAuth() {
   const logout = async () => {
     try {
       localStorage.removeItem('paganos_user');
+      localStorage.removeItem('paganos_jwt');
       setAuthState({
         user: null,
         loading: false,
