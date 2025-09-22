@@ -120,7 +120,7 @@ export function CashSessionDetailModal({
   }, [detailData?.orders]);
 
   const exportToPDF = () => {
-    if (!detailData) return;
+    if (!detailData || !detailData.session) return;
 
     const doc = new jsPDF();
     const { session, summary, movements, orders } = detailData;
@@ -212,7 +212,7 @@ export function CashSessionDetailModal({
     );
   }
 
-  if (!detailData) {
+  if (!detailData || !detailData.session) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl">
@@ -234,8 +234,8 @@ export function CashSessionDetailModal({
             <div>
               <DialogTitle className="text-xl">Detalle de Cierre de Caja</DialogTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                {format(new Date(session.opened_at), 'dd/MM/yyyy HH:mm', { locale: es })} - {' '}
-                {session.closed_at ? format(new Date(session.closed_at), 'dd/MM/yyyy HH:mm', { locale: es }) : 'Activo'}
+                {session?.opened_at && format(new Date(session.opened_at), 'dd/MM/yyyy HH:mm', { locale: es })} - {' '}
+                {session?.closed_at ? format(new Date(session.closed_at), 'dd/MM/yyyy HH:mm', { locale: es }) : 'Activo'}
               </p>
             </div>
             <Button onClick={exportToPDF} variant="outline" size="sm">
@@ -259,16 +259,16 @@ export function CashSessionDetailModal({
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Efectivo Inicial:</span>
-                    <span className="font-medium">{formatCurrency(session.opening_cash)}</span>
+                    <span className="font-medium">{formatCurrency(session?.opening_cash || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Efectivo Final:</span>
-                    <span className="font-medium">{formatCurrency(session.closing_cash || 0)}</span>
+                    <span className="font-medium">{formatCurrency(session?.closing_cash || 0)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Total Ventas:</span>
-                    <span className="font-semibold text-lg">{formatCurrency(summary.totalSales)}</span>
+                    <span className="font-semibold text-lg">{formatCurrency(summary?.totalSales || 0)}</span>
                   </div>
                 </div>
                 
@@ -276,21 +276,21 @@ export function CashSessionDetailModal({
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Efectivo:</span>
                     <div className="text-right">
-                      <div className="font-medium">{formatCurrency(summary.totalCash)}</div>
+                      <div className="font-medium">{formatCurrency(summary?.totalCash || 0)}</div>
                       <div className="text-xs text-muted-foreground">{paymentMethodCounts.efectivo} ventas</div>
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Mercado Pago:</span>
                     <div className="text-right">
-                      <div className="font-medium">{formatCurrency(summary.totalMP)}</div>
+                      <div className="font-medium">{formatCurrency(summary?.totalMP || 0)}</div>
                       <div className="text-xs text-muted-foreground">{paymentMethodCounts.mp} ventas</div>
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">POS:</span>
                     <div className="text-right">
-                      <div className="font-medium">{formatCurrency(summary.totalPOS)}</div>
+                      <div className="font-medium">{formatCurrency(summary?.totalPOS || 0)}</div>
                       <div className="text-xs text-muted-foreground">{paymentMethodCounts.pos} ventas</div>
                     </div>
                   </div>
@@ -382,7 +382,7 @@ export function CashSessionDetailModal({
                 placeholder="Agregar observaciones del cierre de caja..."
                 rows={3}
               />
-              {observaciones !== (session.observaciones || '') && (
+              {observaciones !== (session?.observaciones || '') && (
                 <Button 
                   onClick={updateObservaciones}
                   disabled={isUpdatingObservaciones}
