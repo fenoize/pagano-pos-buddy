@@ -813,10 +813,6 @@ export type Database = {
       }
     }
     Functions: {
-      algorithm_sign: {
-        Args: { algorithm: string; secret: string; signables: string }
-        Returns: string
-      }
       auth_jwt: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -843,30 +839,6 @@ export type Database = {
       set_user_password: {
         Args: { new_password: string; user_uuid: string }
         Returns: boolean
-      }
-      sign: {
-        Args: { algorithm?: string; payload: Json; secret: string }
-        Returns: string
-      }
-      try_cast_double: {
-        Args: { inp: string }
-        Returns: number
-      }
-      url_decode: {
-        Args: { data: string }
-        Returns: string
-      }
-      url_encode: {
-        Args: { data: string }
-        Returns: string
-      }
-      verify: {
-        Args: { algorithm?: string; secret: string; token: string }
-        Returns: {
-          header: Json
-          payload: Json
-          valid: boolean
-        }[]
       }
       verify_password: {
         Args: { hash: string; password: string }
