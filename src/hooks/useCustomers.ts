@@ -384,7 +384,28 @@ export function useCustomers() {
     }
 
     try {
-      // Eliminar definitivamente de la base de datos
+      // Verificar si el cliente tiene órdenes asociadas
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('customer_id', id)
+        .limit(1);
+
+      if (ordersError) {
+        console.error('Error checking orders:', ordersError);
+        throw ordersError;
+      }
+
+      if (orders && orders.length > 0) {
+        toast({
+          title: "No se puede eliminar",
+          description: "Este cliente tiene órdenes asociadas y no puede ser eliminado definitivamente. Puedes desactivarlo en su lugar.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Si no hay órdenes, proceder con la eliminación
       const { error } = await supabase
         .from('customers')
         .delete()

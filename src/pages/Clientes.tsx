@@ -17,11 +17,15 @@ import CustomerForm from '@/components/clientes/CustomerForm';
 import CustomerAddresses from '@/components/clientes/CustomerAddresses';
 import CustomerRunes from '@/components/clientes/CustomerRunes';
 import CustomerOrders from '@/components/clientes/CustomerOrders';
+import DeleteCustomerModal from '@/components/clientes/DeleteCustomerModal';
 
 export default function Clientes() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteModalType, setDeleteModalType] = useState<'deactivate' | 'permanent' | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<CustomerFilters>({ estado: 'Activo' });
   const [currentPage, setCurrentPage] = useState(0);
@@ -72,25 +76,36 @@ export default function Clientes() {
     setIsCustomerModalOpen(true);
   };
 
-  const handleDeleteCustomer = async (customer: Customer) => {
-    if (window.confirm(`¿Estás seguro de que quieres desactivar al cliente ${customer.nombres || customer.name} ${customer.apellidos || customer.apellido}?`)) {
-      const success = await deleteCustomer(customer.id);
-      if (success) {
-        fetchCustomers(filters, currentPage);
-      }
+  const handleDeleteCustomer = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setDeleteModalType('deactivate');
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteCustomerPermanently = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setDeleteModalType('permanent');
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDeactivate = async (customer: Customer) => {
+    const success = await deleteCustomer(customer.id);
+    if (success) {
+      fetchCustomers(filters, currentPage);
     }
   };
 
-  const handleDeleteCustomerPermanently = async (customer: Customer) => {
-    const customerName = `${customer.nombres || customer.name} ${customer.apellidos || customer.apellido}`;
-    if (window.confirm(`¿ESTÁS COMPLETAMENTE SEGURO de que quieres ELIMINAR DEFINITIVAMENTE al cliente ${customerName}? Esta acción NO se puede deshacer.`)) {
-      if (window.confirm('Esta acción eliminará permanentemente todos los datos del cliente de la base de datos. ¿Confirmas?')) {
-        const success = await deleteCustomerPermanently(customer.id);
-        if (success) {
-          fetchCustomers(filters, currentPage);
-        }
-      }
+  const handleConfirmDeletePermanently = async (customer: Customer) => {
+    const success = await deleteCustomerPermanently(customer.id);
+    if (success) {
+      fetchCustomers(filters, currentPage);
     }
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setDeleteModalType(null);
+    setCustomerToDelete(null);
   };
 
   const handleCustomerCreated = () => {
@@ -455,6 +470,16 @@ export default function Clientes() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Customer Modal */}
+      <DeleteCustomerModal
+        customer={customerToDelete}
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirmDeactivate={handleConfirmDeactivate}
+        onConfirmDeletePermanently={handleConfirmDeletePermanently}
+        type={deleteModalType}
+      />
     </div>
   );
 }
