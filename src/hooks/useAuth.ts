@@ -117,17 +117,6 @@ export function useAuth() {
       
       localStorage.setItem('paganos_user', JSON.stringify(mappedUser));
 
-      // Establecer contexto del usuario en la base de datos para RLS
-      const { error: contextError } = await supabase.rpc('app.set_user_context', {
-        user_id: mappedUser.id,
-        user_role: mappedUser.role
-      });
-
-      if (contextError) {
-        console.error('Error setting user context:', contextError);
-        // No fallar el login por esto, solo loggearlo
-      }
-
       setAuthState({
         user: mappedUser,
         loading: false,
