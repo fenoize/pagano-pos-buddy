@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { CashSession, User, AppRole } from '@/types';
+import { CashSessionDetailButton } from './CashSessionDetailButton';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -456,9 +457,10 @@ export function CashSessionReport() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                        <CashSessionDetailButton
+                          sessionId={session.id}
+                          sessionData={session}
+                        />
                       </TableCell>
                     </TableRow>
                   ))

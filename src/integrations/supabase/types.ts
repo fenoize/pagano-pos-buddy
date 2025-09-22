@@ -99,6 +99,7 @@ export type Database = {
           closed_at: string | null
           closing_cash: number | null
           id: string
+          observaciones: string | null
           opened_at: string | null
           opening_cash: number
           user_id: string
@@ -107,6 +108,7 @@ export type Database = {
           closed_at?: string | null
           closing_cash?: number | null
           id?: string
+          observaciones?: string | null
           opened_at?: string | null
           opening_cash?: number
           user_id: string
@@ -115,6 +117,7 @@ export type Database = {
           closed_at?: string | null
           closing_cash?: number | null
           id?: string
+          observaciones?: string | null
           opened_at?: string | null
           opening_cash?: number
           user_id?: string

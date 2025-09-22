@@ -197,6 +197,7 @@ export interface CashSession {
   closed_at?: string;
   closing_cash?: number;
   user_id: string;
+  observaciones?: string;
 }
 
 export interface InventoryItem {

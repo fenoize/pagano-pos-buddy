@@ -160,6 +160,15 @@ export function useCashSession() {
 
       if (ordersError) throw ordersError;
 
+      // Get runas transactions for this session
+      const { data: runasTransactions, error: runasError } = await supabase
+        .from('runas_transactions')
+        .select('*')
+        .gte('created_at', sessionStart)
+        .lte('created_at', sessionEnd);
+
+      if (runasError) throw runasError;
+
       // Calculate totals
       const totalSales = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
       const totalCash = orders?.reduce((sum, order) => sum + order.payment_efectivo, 0) || 0;
@@ -171,10 +180,15 @@ export function useCashSession() {
 
       const expectedCash = session.opening_cash + totalCash + ingresos - egresos;
 
+      // Calculate runas totals
+      const totalRunasCanjeadas = runasTransactions?.filter(t => t.type === 'canje').reduce((sum, t) => sum + t.runas, 0) || 0;
+      const totalRunasAcumuladas = runasTransactions?.filter(t => t.type === 'acumulacion').reduce((sum, t) => sum + t.runas, 0) || 0;
+
       return {
         session,
         movements: movements || [],
         orders: orders || [],
+        runasTransactions: runasTransactions || [],
         summary: {
           totalSales,
           totalCash,
@@ -183,11 +197,32 @@ export function useCashSession() {
           ingresos,
           egresos,
           expectedCash,
-          difference: session.closing_cash ? session.closing_cash - expectedCash : 0
+          difference: session.closing_cash ? session.closing_cash - expectedCash : 0,
+          totalRunasCanjeadas,
+          totalRunasAcumuladas
         }
       };
     } catch (error) {
       console.error('Error getting session summary:', error);
+      throw error;
+    }
+  };
+
+  const updateSessionObservaciones = async (sessionId: string, observaciones: string): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('cash_sessions')
+        .update({ observaciones })
+        .eq('id', sessionId);
+
+      if (error) throw error;
+
+      // Update current session if it's the same
+      if (currentSession?.id === sessionId) {
+        setCurrentSession({ ...currentSession, observaciones });
+      }
+    } catch (error) {
+      console.error('Error updating session observaciones:', error);
       throw error;
     }
   };
@@ -204,6 +239,7 @@ export function useCashSession() {
     openSession,
     closeSession,
     addCashMovement,
-    getSessionSummary
+    getSessionSummary,
+    updateSessionObservaciones
   };
 }
