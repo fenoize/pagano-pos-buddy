@@ -31,12 +31,16 @@ export function CashSessionDetailModal({
   const { getSessionSummary, updateSessionObservaciones } = useCashSession();
   const { toast } = useToast();
 
-  const [detailData, setDetailData] = useState(sessionData);
+  const [detailData, setDetailData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   React.useEffect(() => {
-    if (isOpen && sessionId && !detailData) {
+    if (isOpen && sessionId) {
       loadDetailData();
+    } else if (!isOpen) {
+      // Reset data when modal closes
+      setDetailData(null);
+      setObservaciones('');
     }
   }, [isOpen, sessionId]);
 
