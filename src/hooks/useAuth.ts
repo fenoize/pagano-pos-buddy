@@ -108,7 +108,7 @@ export function useAuth() {
       // Generate JWT after successful authentication
       console.log('Generating JWT for user:', userRecord.user_id);
       const { data: jwtToken, error: jwtError } = await supabase
-        .rpc('issue_app_jwt' as any, { p_user_id: userRecord.user_id });
+        .rpc('app.issue_app_jwt' as any, { p_user_id: userRecord.user_id });
 
       if (jwtError) {
         console.error('JWT generation error:', jwtError);
