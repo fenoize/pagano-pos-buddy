@@ -125,7 +125,12 @@ export function useCashSession() {
 
   const getSessionSummary = async (sessionId?: string) => {
     const sessionToQuery = sessionId || currentSession?.id;
-    if (!sessionToQuery) return null;
+    if (!sessionToQuery) {
+      console.log('No session ID provided');
+      return null;
+    }
+
+    console.log('Getting session summary for ID:', sessionToQuery);
 
     try {
       // Get session details
@@ -135,7 +140,12 @@ export function useCashSession() {
         .eq('id', sessionToQuery)
         .single();
 
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw sessionError;
+      }
+
+      console.log('Session found:', session);
 
       // Get cash movements
       const { data: movements, error: movementsError } = await supabase
@@ -144,47 +154,64 @@ export function useCashSession() {
         .eq('session_id', sessionToQuery)
         .order('created_at');
 
-      if (movementsError) throw movementsError;
+      if (movementsError) {
+        console.error('Movements error:', movementsError);
+        throw movementsError;
+      }
 
-      // Get orders from this session
+      console.log('Movements found:', movements?.length || 0);
+
+      // Get orders from this session - Remove user filter and status filter for now
       const sessionStart = session.opened_at;
       const sessionEnd = session.closed_at || new Date().toISOString();
+
+      console.log('Looking for orders between:', sessionStart, 'and', sessionEnd);
 
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('*')
-        .eq('created_by_user_id', user?.id)
         .gte('created_at', sessionStart)
         .lte('created_at', sessionEnd)
-        .eq('status', 'Entregado');
+        .order('created_at');
 
-      if (ordersError) throw ordersError;
+      if (ordersError) {
+        console.error('Orders error:', ordersError);
+        throw ordersError;
+      }
+
+      console.log('Orders found:', orders?.length || 0);
 
       // Get runas transactions for this session
       const { data: runasTransactions, error: runasError } = await supabase
         .from('runas_transactions')
         .select('*')
         .gte('created_at', sessionStart)
-        .lte('created_at', sessionEnd);
+        .lte('created_at', sessionEnd)
+        .order('created_at');
 
-      if (runasError) throw runasError;
+      if (runasError) {
+        console.error('Runas error:', runasError);
+        throw runasError;
+      }
+
+      console.log('Runas transactions found:', runasTransactions?.length || 0);
 
       // Calculate totals
       const totalSales = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
-      const totalCash = orders?.reduce((sum, order) => sum + order.payment_efectivo, 0) || 0;
-      const totalMP = orders?.reduce((sum, order) => sum + order.payment_mp, 0) || 0;
-      const totalPOS = orders?.reduce((sum, order) => sum + order.payment_pos, 0) || 0;
+      const totalCash = orders?.reduce((sum, order) => sum + (order.payment_efectivo || 0), 0) || 0;
+      const totalMP = orders?.reduce((sum, order) => sum + (order.payment_mp || 0), 0) || 0;
+      const totalPOS = orders?.reduce((sum, order) => sum + (order.payment_pos || 0), 0) || 0;
 
       const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
       const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
 
-      const expectedCash = session.opening_cash + totalCash + ingresos - egresos;
+      const expectedCash = (session.opening_cash || 0) + totalCash + ingresos - egresos;
 
       // Calculate runas totals
       const totalRunasCanjeadas = runasTransactions?.filter(t => t.type === 'canje').reduce((sum, t) => sum + t.runas, 0) || 0;
       const totalRunasAcumuladas = runasTransactions?.filter(t => t.type === 'acumulacion').reduce((sum, t) => sum + t.runas, 0) || 0;
 
-      return {
+      const result = {
         session,
         movements: movements || [],
         orders: orders || [],
@@ -202,9 +229,12 @@ export function useCashSession() {
           totalRunasAcumuladas
         }
       };
+
+      console.log('Session summary result:', result);
+      return result;
     } catch (error) {
       console.error('Error getting session summary:', error);
-      throw error;
+      return null;
     }
   };
 
