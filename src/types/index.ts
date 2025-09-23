@@ -142,8 +142,11 @@ export interface RunasTransaction {
 export interface OrderItem {
   productId: string;
   productName: string;
-  size: 'simple' | 'doble' | 'triple' | 'cuádruple';
-  priceKind: 'combo' | 'only';
+  
+  // Legacy system fields - now optional
+  size?: 'simple' | 'doble' | 'triple' | 'cuádruple';
+  priceKind?: 'combo' | 'only';
+  
   basePrice: number;
   quantity: number;
   extras: Array<{
@@ -157,10 +160,13 @@ export interface OrderItem {
     name: string;
   }>;
   notes?: string;
-  // Nuevos campos para sistema de variantes
+  
+  // New variant system fields
   category_variant_id?: string;
   variant_name?: string;
+  product_variant_option_id?: string; // Added this field
   variant_price?: number;
+  
   // Para combos
   is_combo_item?: boolean;
   combo_parent_id?: string;

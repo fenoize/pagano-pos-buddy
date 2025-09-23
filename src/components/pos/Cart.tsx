@@ -59,7 +59,14 @@ export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem
                     <div className="flex-1">
                       <h5 className="font-medium text-sm">{item.productName}</h5>
                       <p className="text-xs text-muted-foreground">
-                        {item.size} • {item.priceKind === 'combo' ? 'Combo' : 'Solo'}
+                        {/* Display variant info based on system used */}
+                        {item.variant_name ? (
+                          // New variant system
+                          item.variant_name
+                        ) : (
+                          // Legacy system
+                          `${item.size} • ${item.priceKind === 'combo' ? 'Combo' : 'Solo'}`
+                        )}
                       </p>
                     </div>
                     <div className="flex gap-1">

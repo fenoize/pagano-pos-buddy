@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Product } from '@/types';
+import { Product, ProductVariantOption } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,7 @@ export default function ProductGrid({ products, onProductClick }: ProductGridPro
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [productVariants, setProductVariants] = useState<Record<string, ProductVariantOption[]>>({});
 
   useEffect(() => {
     // Get unique categories from products
@@ -26,7 +27,43 @@ export default function ProductGrid({ products, onProductClick }: ProductGridPro
     if (uniqueCategories.length > 0) {
       setActiveCategory(uniqueCategories[0]);
     }
+
+    // Fetch product variants for all products
+    fetchProductVariants();
   }, [products]);
+
+  const fetchProductVariants = async () => {
+    if (products.length === 0) return;
+    
+    try {
+      const productIds = products.map(p => p.id!).filter(Boolean);
+      const { data: variants, error } = await supabase
+        .from('product_variant_options')
+        .select(`
+          *,
+          variant:category_variants(*)
+        `)
+        .in('product_id', productIds)
+        .eq('active', true)
+        .order('variant(display_order)');
+
+      if (error) throw error;
+
+      // Group variants by product_id
+      const variantsByProduct: Record<string, ProductVariantOption[]> = {};
+      variants?.forEach((variant) => {
+        const productId = variant.product_id;
+        if (!variantsByProduct[productId]) {
+          variantsByProduct[productId] = [];
+        }
+        variantsByProduct[productId].push(variant);
+      });
+
+      setProductVariants(variantsByProduct);
+    } catch (error) {
+      console.error('Error fetching product variants:', error);
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -36,10 +73,19 @@ export default function ProductGrid({ products, onProductClick }: ProductGridPro
   };
 
   const getMinPrice = (product: Product) => {
-    const comboPrices = Object.values(product.prices.combo);
-    const onlyPrices = Object.values(product.prices.only);
+    const variants = productVariants[product.id!] || [];
+    
+    // If product has new variant system, use variant prices
+    if (variants.length > 0) {
+      const prices = variants.map(v => v.price).filter(p => p > 0);
+      return prices.length > 0 ? Math.min(...prices) : 0;
+    }
+    
+    // Fallback to legacy system
+    const comboPrices = Object.values(product.prices.combo || {});
+    const onlyPrices = Object.values(product.prices.only || {});
     const allPrices = [...comboPrices, ...onlyPrices].filter(p => p > 0);
-    return Math.min(...allPrices);
+    return allPrices.length > 0 ? Math.min(...allPrices) : 0;
   };
 
   // Filtrado avanzado con búsqueda y categorías

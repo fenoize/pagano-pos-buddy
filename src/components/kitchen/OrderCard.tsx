@@ -148,10 +148,17 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className={`font-medium ${compact ? 'text-xs' : ''}`}>
-                    {item.quantity}x {item.productName} - {item.size}
+                    {item.quantity}x {item.productName}
+                    {/* Display variant info based on system used */}
+                    {item.variant_name ? (
+                      ` - ${item.variant_name}`
+                    ) : item.size ? (
+                      ` - ${item.size}`
+                    ) : ''}
                   </div>
                   <div className={`text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
-                    {item.priceKind === 'combo' ? 'Combo' : 'Solo'}
+                    {/* Display price type for legacy system only */}
+                    {item.priceKind && (item.priceKind === 'combo' ? 'Combo' : 'Solo')}
                   </div>
                   
                   {/* Extras */}
