@@ -151,6 +151,156 @@ export type Database = {
         }
         Relationships: []
       }
+      category_variants: {
+        Row: {
+          active: boolean
+          category_id: string
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_variants_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combo_items: {
+        Row: {
+          allow_customization: boolean
+          category_id: string
+          combo_product_id: string
+          created_at: string
+          default_product_id: string | null
+          default_variant_id: string | null
+          display_order: number
+          id: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          allow_customization?: boolean
+          category_id: string
+          combo_product_id: string
+          created_at?: string
+          default_product_id?: string | null
+          default_variant_id?: string | null
+          display_order?: number
+          id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          allow_customization?: boolean
+          category_id?: string
+          combo_product_id?: string
+          created_at?: string
+          default_product_id?: string | null
+          default_variant_id?: string | null
+          display_order?: number
+          id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combo_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combo_items_combo_product_id_fkey"
+            columns: ["combo_product_id"]
+            isOneToOne: false
+            referencedRelation: "combo_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combo_items_default_product_id_fkey"
+            columns: ["default_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combo_items_default_variant_id_fkey"
+            columns: ["default_variant_id"]
+            isOneToOne: false
+            referencedRelation: "category_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combo_products: {
+        Row: {
+          active: boolean
+          base_price: number
+          combo_discount: number
+          created_at: string
+          id: string
+          included_variants: boolean
+          pricing_mode: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          base_price?: number
+          combo_discount?: number
+          created_at?: string
+          id?: string
+          included_variants?: boolean
+          pricing_mode?: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          base_price?: number
+          combo_discount?: number
+          created_at?: string
+          id?: string
+          included_variants?: boolean
+          pricing_mode?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combo_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       config: {
         Row: {
           id: string
@@ -321,6 +471,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          combo_data: Json | null
           created_at: string | null
           created_by_user_id: string | null
           customer_id: string | null
@@ -347,6 +498,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          combo_data?: Json | null
           created_at?: string | null
           created_by_user_id?: string | null
           customer_id?: string | null
@@ -373,6 +525,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          combo_data?: Json | null
           created_at?: string | null
           created_by_user_id?: string | null
           customer_id?: string | null
@@ -576,6 +729,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "product_modifiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variant_options: {
+        Row: {
+          active: boolean
+          category_variant_id: string
+          created_at: string
+          id: string
+          is_default: boolean
+          price: number
+          product_id: string
+          sku: string | null
+          stock: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category_variant_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          price?: number
+          product_id: string
+          sku?: string | null
+          stock?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category_variant_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          price?: number
+          product_id?: string
+          sku?: string | null
+          stock?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variant_options_category_variant_id_fkey"
+            columns: ["category_variant_id"]
+            isOneToOne: false
+            referencedRelation: "category_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_options_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
