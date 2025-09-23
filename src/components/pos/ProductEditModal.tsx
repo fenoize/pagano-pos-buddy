@@ -12,6 +12,8 @@ import { ImageUpload } from './ImageUpload';
 import { CategoryManagement } from './CategoryManagement';
 import { ExtrasManagement } from './ExtrasManagement';
 import { ModifiersManagement } from './ModifiersManagement';
+import ProductVariantsManagement from './ProductVariantsManagement';
+import ComboManagement from './ComboManagement';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductEditModalProps {
@@ -180,9 +182,11 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="categories">Categorías</TabsTrigger>
+            <TabsTrigger value="variants">Variantes</TabsTrigger>
+            <TabsTrigger value="combos">Combos</TabsTrigger>
             <TabsTrigger value="extras">Extras</TabsTrigger>
             <TabsTrigger value="modifiers">Modificadores</TabsTrigger>
           </TabsList>
@@ -323,10 +327,16 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
               </div>
             </TabsContent>
 
-            <TabsContent value="categories">
-              <CategoryManagement
-                selectedCategories={selectedCategories}
-                onCategoriesChange={setSelectedCategories}
+            <TabsContent value="variants">
+              <ProductVariantsManagement
+                productId={product?.id}
+                categoryIds={selectedCategories}
+              />
+            </TabsContent>
+
+            <TabsContent value="combos">
+              <ComboManagement
+                productId={product?.id}
               />
             </TabsContent>
 

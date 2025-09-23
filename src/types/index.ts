@@ -42,6 +42,11 @@ export interface Product {
   created_at?: string;
   updated_at?: string;
   categories?: Category[];
+  // Nuevos campos para sistema de variantes y combos
+  variants?: ProductVariantOption[];
+  combo_config?: ComboProduct;
+  combo_items?: ComboItem[];
+  is_combo?: boolean;
 }
 
 export interface Category {
@@ -152,6 +157,14 @@ export interface OrderItem {
     name: string;
   }>;
   notes?: string;
+  // Nuevos campos para sistema de variantes
+  category_variant_id?: string;
+  variant_name?: string;
+  variant_price?: number;
+  // Para combos
+  is_combo_item?: boolean;
+  combo_parent_id?: string;
+  combo_slot_id?: string;
 }
 
 export interface Order {
@@ -234,6 +247,63 @@ export interface Recipe {
   };
   combo: Record<string, number>;
 }
+
+// Nuevas interfaces para el sistema de variantes y combos
+export interface CategoryVariant {
+  id: string;
+  category_id: string;
+  name: string;
+  display_order: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductVariantOption {
+  id: string;
+  product_id: string;
+  category_variant_id: string;
+  price: number;
+  sku?: string;
+  stock: number;
+  is_default: boolean;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Populated from joins
+  variant?: CategoryVariant;
+}
+
+export interface ComboProduct {
+  id: string;
+  product_id: string;
+  pricing_mode: 'fixed' | 'dynamic';
+  base_price: number;
+  combo_discount: number;
+  included_variants: boolean;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComboItem {
+  id: string;
+  combo_product_id: string;
+  category_id: string;
+  quantity: number;
+  default_product_id?: string;
+  default_variant_id?: string;
+  allow_customization: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+  // Populated from joins
+  category?: Category;
+  default_product?: Product;
+  default_variant?: CategoryVariant;
+}
+
+export type PricingMode = 'fixed' | 'dynamic';
 
 // Utility types for forms
 export interface LoginForm {

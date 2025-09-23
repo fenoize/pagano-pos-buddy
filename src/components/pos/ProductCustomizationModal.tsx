@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Product } from '@/types';
+import { Product, ProductVariantOption } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Minus } from 'lucide-react';
+import VariantSelector from './VariantSelector';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductExtra {
   id: string;
@@ -35,22 +37,41 @@ interface ProductCustomizationModalProps {
 }
 
 export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, product, editingItem, editingIndex }: ProductCustomizationModalProps) {
+  // New variant system state
+  const [availableVariants, setAvailableVariants] = useState<ProductVariantOption[]>([]);
+  const [selectedVariantOption, setSelectedVariantOption] = useState<ProductVariantOption | null>(null);
+  const [useNewVariantSystem, setUseNewVariantSystem] = useState(false);
+  
+  // Legacy system state
   const [selectedVariant, setSelectedVariant] = useState<Variant>('simple');
   const [selectedPriceType, setSelectedPriceType] = useState<'combo' | 'only'>('combo');
+  
+  // Common state
   const [selectedExtras, setSelectedExtras] = useState<Record<string, number>>({});
   const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
   const [specialNotes, setSpecialNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [extras, setExtras] = useState<ProductExtra[]>([]);
   const [modifiers, setModifiers] = useState<ProductModifier[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen && product.id) {
-      fetchProductExtrasAndModifiers();
+      fetchProductVariantsAndCustomizations();
       // If editing, populate form with existing item data
       if (editingItem) {
-        setSelectedVariant(editingItem.size as Variant);
-        setSelectedPriceType(editingItem.priceKind);
+        // Handle new system
+        if (editingItem.category_variant_id) {
+          // This is a new system item
+          setUseNewVariantSystem(true);
+          // We'll set the selected variant after fetching variants
+        } else {
+          // This is a legacy system item
+          setUseNewVariantSystem(false);
+          setSelectedVariant(editingItem.size as Variant);
+          setSelectedPriceType(editingItem.priceKind);
+        }
+        
         setQuantity(editingItem.quantity);
         setSpecialNotes(editingItem.notes || '');
         
@@ -76,7 +97,58 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
     }
   }, [selectedPriceType]);
 
-  const fetchProductExtrasAndModifiers = async () => {
+  const fetchProductVariantsAndCustomizations = async () => {
+    try {
+      // Fetch product variants from new system
+      const { data: variantsData, error: variantsError } = await supabase
+        .from('product_variant_options')
+        .select(`
+          *,
+          variant:category_variants(*)
+        `)
+        .eq('product_id', product.id)
+        .eq('active', true)
+        .order('variant(display_order)');
+
+      if (variantsError) throw variantsError;
+
+      const variants = (variantsData || []) as ProductVariantOption[];
+      setAvailableVariants(variants);
+
+      // Determine which system to use
+      if (variants.length > 0) {
+        setUseNewVariantSystem(true);
+        // Set default variant
+        const defaultVariant = variants.find(v => v.is_default) || variants[0];
+        setSelectedVariantOption(defaultVariant);
+        
+        // If editing and has variant_id, find and set it
+        if (editingItem?.category_variant_id) {
+          const editingVariant = variants.find(v => v.category_variant_id === editingItem.category_variant_id);
+          if (editingVariant) {
+            setSelectedVariantOption(editingVariant);
+          }
+        }
+      } else {
+        setUseNewVariantSystem(false);
+      }
+
+      // Continue with existing customizations fetch
+      await fetchExtrasAndModifiers();
+    } catch (error) {
+      console.error('Error fetching product variants:', error);
+      toast({
+        title: "Error",
+        description: "Error al cargar las variantes del producto",
+        variant: "destructive",
+      });
+      // Fallback to legacy system
+      setUseNewVariantSystem(false);
+      await fetchExtrasAndModifiers();
+    }
+  };
+
+  const fetchExtrasAndModifiers = async () => {
     try {
       // Obtener categorías del producto
       const { data: productCategories } = await supabase
