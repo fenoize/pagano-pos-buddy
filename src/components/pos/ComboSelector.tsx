@@ -42,12 +42,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     }
   }, [product.id]);
 
-  useEffect(() => {
-    // Calculate combo total and notify parent
-    const total = calculateComboTotal();
-    onComboTotalChange(total);
-    onComboItemsChange(selections);
-  }, [selections, comboConfig]);
+  // Remove auto-notification effect - let parent handle when to update
 
   const fetchComboData = async () => {
     try {
@@ -184,11 +179,17 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   };
 
   const updateSelection = (slotIndex: number, updates: Partial<ComboItemSelection>) => {
-    setSelections(prev => prev.map((selection, index) => 
+    const newSelections = selections.map((selection, index) => 
       index === slotIndex 
         ? { ...selection, ...updates }
         : selection
-    ));
+    );
+    setSelections(newSelections);
+    
+    // Notify parent of changes
+    const total = calculateComboTotal();
+    onComboTotalChange(total);
+    onComboItemsChange(newSelections);
   };
 
   const selectProduct = (slotIndex: number, productId: string) => {

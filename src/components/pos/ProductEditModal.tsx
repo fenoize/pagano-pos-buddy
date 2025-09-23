@@ -26,10 +26,6 @@ interface ProductEditModalProps {
 export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }: ProductEditModalProps) {
   const [formData, setFormData] = useState({
     name: '',
-    prices: {
-      combo: { simple: 0, doble: 0, triple: 0 },
-      only: { simple: 0, doble: 0, triple: 0 }
-    },
     active: true,
     image_url: ''
   });
@@ -41,7 +37,6 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
     if (product) {
       setFormData({
         name: product.name,
-        prices: product.prices,
         active: product.active,
         image_url: product.image_url || ''
       });
@@ -90,9 +85,9 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
           .from('products')
           .update({
             name: formData.name,
-            prices: formData.prices,
             active: formData.active,
-            image_url: formData.image_url || null
+            image_url: formData.image_url || null,
+            prices: { combo: {}, only: {} } // Default empty prices for backward compatibility
           })
           .eq('id', product.id);
 
@@ -103,9 +98,9 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
           .from('products')
           .insert({
             name: formData.name,
-            prices: formData.prices,
             active: formData.active,
-            image_url: formData.image_url || null
+            image_url: formData.image_url || null,
+            prices: { combo: {}, only: {} } // Default empty prices for backward compatibility
           })
           .select()
           .single();
@@ -156,10 +151,6 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
   const resetForm = () => {
     setFormData({
       name: '',
-      prices: {
-        combo: { simple: 0, doble: 0, triple: 0 },
-        only: { simple: 0, doble: 0, triple: 0 }
-      },
       active: true,
       image_url: ''
     });
@@ -209,112 +200,11 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
                 productName={formData.name}
               />
 
-              <div className="grid grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Precios Combo</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Simple</Label>
-                      <Input
-                        type="number"
-                        value={formData.prices.combo.simple}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          prices: {
-                            ...formData.prices,
-                            combo: { ...formData.prices.combo, simple: Number(e.target.value) }
-                          }
-                        })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Doble</Label>
-                      <Input
-                        type="number"
-                        value={formData.prices.combo.doble}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          prices: {
-                            ...formData.prices,
-                            combo: { ...formData.prices.combo, doble: Number(e.target.value) }
-                          }
-                        })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Triple</Label>
-                      <Input
-                        type="number"
-                        value={formData.prices.combo.triple}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          prices: {
-                            ...formData.prices,
-                            combo: { ...formData.prices.combo, triple: Number(e.target.value) }
-                          }
-                        })}
-                        required
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Precios Solo</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Simple</Label>
-                      <Input
-                        type="number"
-                        value={formData.prices.only.simple}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          prices: {
-                            ...formData.prices,
-                            only: { ...formData.prices.only, simple: Number(e.target.value) }
-                          }
-                        })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Doble</Label>
-                      <Input
-                        type="number"
-                        value={formData.prices.only.doble}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          prices: {
-                            ...formData.prices,
-                            only: { ...formData.prices.only, doble: Number(e.target.value) }
-                          }
-                        })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Triple</Label>
-                      <Input
-                        type="number"
-                        value={formData.prices.only.triple}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          prices: {
-                            ...formData.prices,
-                            only: { ...formData.prices.only, triple: Number(e.target.value) }
-                          }
-                        })}
-                        required
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="bg-muted/30 p-4 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Los precios ahora se configuran por variante en la pestaña "Variantes". 
+                  Primero selecciona las categorías del producto, luego ve a la pestaña "Variantes" para configurar los precios específicos.
+                </p>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -325,6 +215,13 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
                 />
                 <Label htmlFor="active">Producto activo</Label>
               </div>
+            </TabsContent>
+
+            <TabsContent value="categories">
+              <CategoryManagement
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
+              />
             </TabsContent>
 
             <TabsContent value="variants">
