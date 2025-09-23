@@ -129,8 +129,14 @@ export default function NewSale() {
           ? {
               productId: selectedProduct.id,
               productName: selectedProduct.name,
+              // Legacy fields (optional)
               size: orderItem.size,
               priceKind: orderItem.priceKind,
+              // New variant fields (optional)
+              category_variant_id: orderItem.category_variant_id,
+              variant_name: orderItem.variant_name,
+              product_variant_option_id: orderItem.product_variant_option_id,
+              // Common fields
               basePrice: orderItem.basePrice,
               quantity: orderItem.quantity,
               extras: orderItem.extras,
@@ -149,8 +155,14 @@ export default function NewSale() {
       const newItem: OrderItem = {
         productId: selectedProduct.id,
         productName: selectedProduct.name,
+        // Legacy fields (optional)
         size: orderItem.size,
         priceKind: orderItem.priceKind,
+        // New variant fields (optional)
+        category_variant_id: orderItem.category_variant_id,
+        variant_name: orderItem.variant_name,
+        product_variant_option_id: orderItem.product_variant_option_id,
+        // Common fields
         basePrice: orderItem.basePrice,
         quantity: orderItem.quantity,
         extras: orderItem.extras,

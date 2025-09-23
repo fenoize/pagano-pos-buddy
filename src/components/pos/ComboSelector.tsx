@@ -1,0 +1,382 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Product, ComboProduct, ComboItem, Category, ProductVariantOption } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import VariantSelector from './VariantSelector';
+
+interface ComboSelectorProps {
+  product: Product;
+  onComboItemsChange: (items: ComboItemSelection[]) => void;
+  onComboTotalChange: (total: number) => void;
+}
+
+interface ComboItemSelection {
+  comboSlot: ComboItem;
+  selectedProduct?: Product;
+  selectedVariant?: ProductVariantOption;
+  quantity: number;
+}
+
+const ComboSelector: React.FC<ComboSelectorProps> = ({
+  product,
+  onComboItemsChange,
+  onComboTotalChange
+}) => {
+  const [comboConfig, setComboConfig] = useState<ComboProduct | null>(null);
+  const [comboSlots, setComboSlots] = useState<ComboItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [slotProducts, setSlotProducts] = useState<Record<string, Product[]>>({});
+  const [productVariants, setProductVariants] = useState<Record<string, ProductVariantOption[]>>({});
+  const [selections, setSelections] = useState<ComboItemSelection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (product.id) {
+      fetchComboData();
+    }
+  }, [product.id]);
+
+  useEffect(() => {
+    // Calculate combo total and notify parent
+    const total = calculateComboTotal();
+    onComboTotalChange(total);
+    onComboItemsChange(selections);
+  }, [selections, comboConfig]);
+
+  const fetchComboData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch combo configuration
+      const { data: comboData, error: comboError } = await supabase
+        .from('combo_products')
+        .select('*')
+        .eq('product_id', product.id)
+        .eq('active', true)
+        .single();
+
+      if (comboError) {
+        if (comboError.code !== 'PGRST116') {
+          throw comboError;
+        }
+        // No combo configuration found
+        setLoading(false);
+        return;
+      }
+
+      setComboConfig(comboData as ComboProduct);
+
+      // Fetch combo slots
+      const { data: slotsData, error: slotsError } = await supabase
+        .from('combo_items')
+        .select('*')
+        .eq('combo_product_id', comboData.id)
+        .order('display_order');
+
+      if (slotsError) throw slotsError;
+
+      setComboSlots(slotsData || []);
+
+      // Fetch categories
+      const categoryIds = [...new Set(slotsData?.map(slot => slot.category_id) || [])];
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .in('id', categoryIds);
+
+      if (categoriesError) throw categoriesError;
+
+      setCategories(categoriesData || []);
+
+      // Fetch products for each category
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select(`
+          *,
+          product_categories!inner(category_id)
+        `)
+        .in('product_categories.category_id', categoryIds)
+        .eq('active', true);
+
+      if (productsError) throw productsError;
+
+      // Group products by category
+      const groupedProducts: Record<string, Product[]> = {};
+      productsData?.forEach((dbProduct: any) => {
+        const productWithPrices = {
+          ...dbProduct,
+          prices: dbProduct.prices as any
+        } as Product;
+        
+        dbProduct.product_categories?.forEach((pc: any) => {
+          const categoryId = pc.category_id;
+          if (!groupedProducts[categoryId]) {
+            groupedProducts[categoryId] = [];
+          }
+          groupedProducts[categoryId].push(productWithPrices);
+        });
+      });
+
+      setSlotProducts(groupedProducts);
+
+      // Fetch product variants
+      const productIds = productsData?.map(p => p.id) || [];
+      const { data: variantsData, error: variantsError } = await supabase
+        .from('product_variant_options')
+        .select(`
+          *,
+          variant:category_variants(*)
+        `)
+        .in('product_id', productIds)
+        .eq('active', true);
+
+      if (variantsError) throw variantsError;
+
+      // Group variants by product
+      const groupedVariants: Record<string, ProductVariantOption[]> = {};
+      variantsData?.forEach((variant) => {
+        if (!groupedVariants[variant.product_id]) {
+          groupedVariants[variant.product_id] = [];
+        }
+        groupedVariants[variant.product_id].push(variant);
+      });
+
+      setProductVariants(groupedVariants);
+
+      // Initialize selections with defaults
+      const initialSelections: ComboItemSelection[] = (slotsData || []).map(slot => {
+        const categoryProducts = groupedProducts[slot.category_id] || [];
+        const defaultProduct = slot.default_product_id 
+          ? categoryProducts.find(p => p.id === slot.default_product_id)
+          : categoryProducts[0];
+
+        const productVariants = defaultProduct ? groupedVariants[defaultProduct.id!] || [] : [];
+        const defaultVariant = slot.default_variant_id
+          ? productVariants.find(v => v.id === slot.default_variant_id)
+          : productVariants.find(v => v.is_default) || productVariants[0];
+
+        return {
+          comboSlot: slot,
+          selectedProduct: defaultProduct,
+          selectedVariant: defaultVariant,
+          quantity: slot.quantity
+        };
+      });
+
+      setSelections(initialSelections);
+
+    } catch (error) {
+      console.error('Error fetching combo data:', error);
+      toast({
+        title: "Error",
+        description: "Error al cargar la configuración del combo",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateSelection = (slotIndex: number, updates: Partial<ComboItemSelection>) => {
+    setSelections(prev => prev.map((selection, index) => 
+      index === slotIndex 
+        ? { ...selection, ...updates }
+        : selection
+    ));
+  };
+
+  const selectProduct = (slotIndex: number, productId: string) => {
+    const selection = selections[slotIndex];
+    const categoryProducts = slotProducts[selection.comboSlot.category_id] || [];
+    const product = categoryProducts.find(p => p.id === productId);
+    
+    if (product) {
+      const variants = productVariants[productId] || [];
+      const defaultVariant = variants.find(v => v.is_default) || variants[0];
+      
+      updateSelection(slotIndex, {
+        selectedProduct: product,
+        selectedVariant: defaultVariant
+      });
+    }
+  };
+
+  const selectVariant = (slotIndex: number, variant: ProductVariantOption) => {
+    updateSelection(slotIndex, { selectedVariant: variant });
+  };
+
+  const calculateComboTotal = (): number => {
+    if (!comboConfig) return 0;
+
+    if (comboConfig.pricing_mode === 'fixed') {
+      return comboConfig.base_price;
+    }
+
+    // Individual pricing mode
+    let total = comboConfig.base_price;
+    
+    selections.forEach(selection => {
+      if (selection.selectedVariant) {
+        const discountedPrice = selection.selectedVariant.price * (1 - (comboConfig.combo_discount || 0) / 100);
+        total += discountedPrice * selection.quantity;
+      } else if (selection.selectedProduct) {
+        // Fallback to legacy pricing if no variants
+        const basePrice = getProductBasePrice(selection.selectedProduct);
+        const discountedPrice = basePrice * (1 - (comboConfig.combo_discount || 0) / 100);
+        total += discountedPrice * selection.quantity;
+      }
+    });
+
+    return Math.max(0, total);
+  };
+
+  const getProductBasePrice = (product: Product): number => {
+    if (!product || !product.prices) return 0;
+    
+    const prices = product.prices;
+    const comboPrices = Object.values(prices.combo || {}).filter((p): p is number => typeof p === 'number' && p > 0);
+    const onlyPrices = Object.values(prices.only || {}).filter((p): p is number => typeof p === 'number' && p > 0);
+    const allPrices = [...comboPrices, ...onlyPrices];
+    return allPrices.length > 0 ? Math.min(...allPrices) : 0;
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+    }).format(price);
+  };
+
+  const getCategoryName = (categoryId: string): string => {
+    const category = categories.find(c => c.id === categoryId);
+    return category?.name || 'Categoría';
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-muted-foreground">
+            Cargando configuración del combo...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!comboConfig || comboSlots.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-muted-foreground">
+            Este producto no tiene configuración de combo.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Configurar Combo</span>
+          <Badge variant="secondary">
+            {formatPrice(calculateComboTotal())}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {selections.map((selection, index) => {
+          const slot = selection.comboSlot;
+          const availableProducts = slotProducts[slot.category_id] || [];
+          const availableVariants = selection.selectedProduct 
+            ? productVariants[selection.selectedProduct.id!] || []
+            : [];
+
+          return (
+            <div key={slot.id} className="border border-border rounded-lg p-4">
+              <div className="pb-3">
+                <div className="text-sm font-medium">
+                  {getCategoryName(slot.category_id)}
+                  <Badge variant="outline" className="ml-2">
+                    {slot.quantity}x
+                  </Badge>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {/* Product Selection */}
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                    Producto
+                  </label>
+                  <Select
+                    value={selection.selectedProduct?.id || ''}
+                    onValueChange={(productId) => selectProduct(index, productId)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar producto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableProducts.map((product) => (
+                        <SelectItem key={product.id} value={product.id!}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Variant Selection */}
+                {availableVariants.length > 0 && (
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                      Variante
+                    </label>
+                    <VariantSelector
+                      variants={availableVariants}
+                      selectedVariantId={selection.selectedVariant?.id}
+                      onVariantSelect={(variant) => selectVariant(index, variant)}
+                      disabled={false}
+                    />
+                  </div>
+                )}
+
+                {/* Price Information */}
+                {comboConfig.pricing_mode === 'individual' && selection.selectedProduct && (
+                  <div className="text-xs text-muted-foreground">
+                    Precio individual: {formatPrice(
+                      selection.selectedVariant?.price || 
+                      getProductBasePrice(selection.selectedProduct)
+                    )}
+                    {(comboConfig.combo_discount || 0) > 0 && (
+                      <span className="text-green-600 ml-1">
+                        ({comboConfig.combo_discount}% desc.)
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        <Separator />
+        
+        <div className="flex justify-between items-center font-medium">
+          <span>Total del Combo:</span>
+          <span className="text-lg">{formatPrice(calculateComboTotal())}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default ComboSelector;

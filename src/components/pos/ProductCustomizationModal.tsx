@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Product, ProductVariantOption } from '@/types';
+import { Product, ProductVariantOption, ComboProduct } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Minus } from 'lucide-react';
 import VariantSelector from './VariantSelector';
+import ComboSelector from './ComboSelector';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductExtra {
@@ -53,11 +54,20 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   const [quantity, setQuantity] = useState(1);
   const [extras, setExtras] = useState<ProductExtra[]>([]);
   const [modifiers, setModifiers] = useState<ProductModifier[]>([]);
+  
+  // Combo system state
+  const [hasCombo, setHasCombo] = useState(false);
+  const [comboConfig, setComboConfig] = useState<ComboProduct | null>(null);
+  const [comboSelections, setComboSelections] = useState<any[]>([]);
+  const [comboTotal, setComboTotal] = useState(0);
+  const [useCombo, setUseCombo] = useState(false);
+  
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen && product.id) {
       fetchProductVariantsAndCustomizations();
+      fetchComboConfiguration();
       // If editing, populate form with existing item data
       if (editingItem) {
         // Handle new system
@@ -145,6 +155,31 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       // Fallback to legacy system
       setUseNewVariantSystem(false);
       await fetchExtrasAndModifiers();
+    }
+  };
+
+  const fetchComboConfiguration = async () => {
+    try {
+      const { data: comboData, error } = await supabase
+        .from('combo_products')
+        .select('*')
+        .eq('product_id', product.id)
+        .eq('active', true)
+        .maybeSingle();
+
+      if (error) {
+        if (error.code !== 'PGRST116') {
+          console.error('Error fetching combo config:', error);
+        }
+        return;
+      }
+
+      if (comboData) {
+        setHasCombo(true);
+        setComboConfig(comboData as ComboProduct);
+      }
+    } catch (error) {
+      console.error('Error fetching combo configuration:', error);
     }
   };
 
@@ -251,6 +286,9 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   };
 
   const getTotalPrice = () => {
+    if (useCombo) {
+      return comboTotal * quantity;
+    }
     return (getBasePrice() + getExtrasTotal() + getModifiersTotal()) * quantity;
   };
 
@@ -295,22 +333,27 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
     const orderItem: any = {
       productId: product.id!,
       productName: product.name,
-      basePrice: getBasePrice(),
+      basePrice: useCombo ? comboTotal : getBasePrice(),
       quantity,
       extras: selectedExtrasArray,
       modifiers: selectedModifiersArray,
-      notes: specialNotes.trim() || undefined
+      notes: specialNotes.trim() || undefined,
+      // Combo data
+      is_combo_item: useCombo,
+      combo_selections: useCombo ? comboSelections : undefined,
     };
 
-    // Add variant data based on system used
-    if (useNewVariantSystem && selectedVariantOption) {
-      orderItem.category_variant_id = selectedVariantOption.category_variant_id;
-      orderItem.variant_name = selectedVariantOption.variant?.name;
-      orderItem.product_variant_option_id = selectedVariantOption.id;
-    } else {
-      // Legacy system
-      orderItem.size = selectedVariant;
-      orderItem.priceKind = selectedPriceType;
+    // Add variant data based on system used (only if not using combo)
+    if (!useCombo) {
+      if (useNewVariantSystem && selectedVariantOption) {
+        orderItem.category_variant_id = selectedVariantOption.category_variant_id;
+        orderItem.variant_name = selectedVariantOption.variant?.name;
+        orderItem.product_variant_option_id = selectedVariantOption.id;
+      } else {
+        // Legacy system
+        orderItem.size = selectedVariant;
+        orderItem.priceKind = selectedPriceType;
+      }
     }
 
     if (editingItem && editingIndex !== undefined) {
@@ -335,91 +378,127 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
 
         {/* Scrollable customization area */}
         <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-          {/* Variant Selection - New or Legacy System */}
-          {useNewVariantSystem && availableVariants.length > 0 ? (
+          {/* Combo Selection */}
+          {hasCombo && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Variantes Disponibles</CardTitle>
+                <CardTitle className="text-lg">Tipo de Pedido</CardTitle>
               </CardHeader>
               <CardContent>
-                <VariantSelector
-                  variants={availableVariants}
-                  selectedVariantId={selectedVariantOption?.id || undefined}
-                  onVariantSelect={(variant) => {
-                    setSelectedVariantOption(variant);
-                  }}
-                  disabled={false}
-                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant={!useCombo ? 'default' : 'outline'}
+                    onClick={() => setUseCombo(false)}
+                  >
+                    Individual
+                  </Button>
+                  <Button
+                    variant={useCombo ? 'default' : 'outline'}
+                    onClick={() => setUseCombo(true)}
+                  >
+                    Combo
+                  </Button>
+                </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Combo Configuration */}
+          {hasCombo && useCombo ? (
+            <ComboSelector
+              product={product}
+              onComboItemsChange={setComboSelections}
+              onComboTotalChange={setComboTotal}
+            />
           ) : (
             <>
-              {/* Legacy System - Tipo de precio */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Tipo de Precio</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      variant={selectedPriceType === 'combo' ? 'default' : 'outline'}
-                      onClick={() => setSelectedPriceType('combo')}
-                    >
-                      Combo (con papas)
-                    </Button>
-                    <Button
-                      variant={selectedPriceType === 'only' ? 'default' : 'outline'}
-                      onClick={() => setSelectedPriceType('only')}
-                    >
-                      Solo hamburguesa
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Legacy System - Variantes */}
-              {getVariants().length > 1 && (
+              {/* Variant Selection - New or Legacy System */}
+              {useNewVariantSystem && availableVariants.length > 0 ? (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Tamaño</CardTitle>
+                    <CardTitle className="text-lg">Variantes Disponibles</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-3">
-                      {getVariants().map((variant) => {
-                        const prices = product.prices as any;
-                        const priceType = prices[selectedPriceType] || {};
-                        let variantPrice = 0;
-                        
-                        // Handle cuádruple spelling variations
-                        if (variant === 'cuádruple') {
-                          variantPrice = priceType['cuádruple'] || priceType['cuadruple'] || 0;
-                        } else {
-                          variantPrice = priceType[variant] || 0;
-                        }
-                        
-                        return (
-                          <Button
-                            key={variant}
-                            variant={selectedVariant === variant ? 'default' : 'outline'}
-                            onClick={() => setSelectedVariant(variant as Variant)}
-                            className="capitalize h-auto flex flex-col py-3 px-4"
-                          >
-                            <span className="font-medium">{variant}</span>
-                            <span className="text-xs mt-1 opacity-80">
-                              {formatPrice(variantPrice)}
-                            </span>
-                          </Button>
-                        );
-                      })}
-                    </div>
+                    <VariantSelector
+                      variants={availableVariants}
+                      selectedVariantId={selectedVariantOption?.id || undefined}
+                      onVariantSelect={(variant) => {
+                        setSelectedVariantOption(variant);
+                      }}
+                      disabled={false}
+                    />
                   </CardContent>
                 </Card>
+              ) : (
+                <>
+                  {/* Legacy System - Tipo de precio */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Tipo de Precio</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          variant={selectedPriceType === 'combo' ? 'default' : 'outline'}
+                          onClick={() => setSelectedPriceType('combo')}
+                        >
+                          Combo (con papas)
+                        </Button>
+                        <Button
+                          variant={selectedPriceType === 'only' ? 'default' : 'outline'}
+                          onClick={() => setSelectedPriceType('only')}
+                        >
+                          Solo hamburguesa
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Legacy System - Variantes */}
+                  {getVariants().length > 1 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Tamaño</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-3">
+                          {getVariants().map((variant) => {
+                            const prices = product.prices as any;
+                            const priceType = prices[selectedPriceType] || {};
+                            let variantPrice = 0;
+                            
+                            // Handle cuádruple spelling variations
+                            if (variant === 'cuádruple') {
+                              variantPrice = priceType['cuádruple'] || priceType['cuadruple'] || 0;
+                            } else {
+                              variantPrice = priceType[variant] || 0;
+                            }
+                            
+                            return (
+                              <Button
+                                key={variant}
+                                variant={selectedVariant === variant ? 'default' : 'outline'}
+                                onClick={() => setSelectedVariant(variant as Variant)}
+                                className="capitalize h-auto flex flex-col py-3 px-4"
+                              >
+                                <span className="font-medium">{variant}</span>
+                                <span className="text-xs mt-1 opacity-80">
+                                  {formatPrice(variantPrice)}
+                                </span>
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
               )}
             </>
           )}
 
-          {/* Extras */}
-          {extras.length > 0 && (
+          {/* Extras - Only show if not using combo or combo allows extras */}
+          {(!useCombo || (comboConfig && comboConfig.included_variants)) && extras.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Extras</CardTitle>
@@ -462,8 +541,8 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
             </Card>
           )}
 
-          {/* Modificadores */}
-          {modifiers.length > 0 && (
+          {/* Modificadores - Only show if not using combo */}
+          {!useCombo && modifiers.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Modificaciones</CardTitle>
