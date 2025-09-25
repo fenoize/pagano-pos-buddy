@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Plus, Minus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import VariantSelector from './VariantSelector';
 
@@ -20,6 +21,8 @@ interface ComboItemSelection {
   selectedProduct?: Product;
   selectedVariant?: ProductVariantOption;
   quantity: number;
+  extras?: Record<string, number>; // extra_id -> quantity
+  modifiers?: string[]; // modifier_ids
 }
 
 const ComboSelector: React.FC<ComboSelectorProps> = ({
@@ -32,6 +35,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const [categories, setCategories] = useState<Category[]>([]);
   const [slotProducts, setSlotProducts] = useState<Record<string, Product[]>>({});
   const [productVariants, setProductVariants] = useState<Record<string, ProductVariantOption[]>>({});
+  const [productExtras, setProductExtras] = useState<Record<string, any[]>>({});
+  const [productModifiers, setProductModifiers] = useState<Record<string, any[]>>({});
   const [selections, setSelections] = useState<ComboItemSelection[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -144,6 +149,45 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
       setProductVariants(groupedVariants);
 
+      // Fetch extras and modifiers for each category
+      const { data: extrasData, error: extrasError } = await supabase
+        .from('product_extras')
+        .select('*')
+        .in('category_id', categoryIds)
+        .eq('active', true);
+
+      if (extrasError) throw extrasError;
+
+      const { data: modifiersData, error: modifiersError } = await supabase
+        .from('product_modifiers')
+        .select('*')
+        .in('product_id', productIds)
+        .eq('active', true);
+
+      if (modifiersError) throw modifiersError;
+
+      // Group extras by category
+      const groupedExtras: Record<string, any[]> = {};
+      extrasData?.forEach((extra) => {
+        if (!groupedExtras[extra.category_id]) {
+          groupedExtras[extra.category_id] = [];
+        }
+        groupedExtras[extra.category_id].push(extra);
+      });
+
+      setProductExtras(groupedExtras);
+
+      // Group modifiers by product
+      const groupedModifiers: Record<string, any[]> = {};
+      modifiersData?.forEach((modifier) => {
+        if (!groupedModifiers[modifier.product_id]) {
+          groupedModifiers[modifier.product_id] = [];
+        }
+        groupedModifiers[modifier.product_id].push(modifier);
+      });
+
+      setProductModifiers(groupedModifiers);
+
       // Initialize selections with defaults
       const initialSelections: ComboItemSelection[] = (slotsData || []).map(slot => {
         const categoryProducts = groupedProducts[slot.category_id] || [];
@@ -160,7 +204,9 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           comboSlot: slot,
           selectedProduct: defaultProduct,
           selectedVariant: defaultVariant,
-          quantity: slot.quantity
+          quantity: slot.quantity,
+          extras: {},
+          modifiers: []
         };
       });
 
@@ -215,22 +261,37 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const calculateComboTotal = (): number => {
     if (!comboConfig) return 0;
 
+    let total = 0;
+
     if (comboConfig.pricing_mode === 'fixed') {
-      return comboConfig.base_price;
+      total = comboConfig.base_price;
+    } else {
+      // Individual pricing mode
+      total = comboConfig.base_price;
+      
+      selections.forEach(selection => {
+        if (selection.selectedVariant) {
+          const discountedPrice = selection.selectedVariant.price * (1 - (comboConfig.combo_discount || 0) / 100);
+          total += discountedPrice * selection.quantity;
+        } else if (selection.selectedProduct) {
+          // Fallback to legacy pricing if no variants
+          const basePrice = getProductBasePrice(selection.selectedProduct);
+          const discountedPrice = basePrice * (1 - (comboConfig.combo_discount || 0) / 100);
+          total += discountedPrice * selection.quantity;
+        }
+      });
     }
 
-    // Individual pricing mode
-    let total = comboConfig.base_price;
-    
+    // Add extras from all selections
     selections.forEach(selection => {
-      if (selection.selectedVariant) {
-        const discountedPrice = selection.selectedVariant.price * (1 - (comboConfig.combo_discount || 0) / 100);
-        total += discountedPrice * selection.quantity;
-      } else if (selection.selectedProduct) {
-        // Fallback to legacy pricing if no variants
-        const basePrice = getProductBasePrice(selection.selectedProduct);
-        const discountedPrice = basePrice * (1 - (comboConfig.combo_discount || 0) / 100);
-        total += discountedPrice * selection.quantity;
+      if (selection.extras) {
+        Object.entries(selection.extras).forEach(([extraId, qty]) => {
+          const categoryExtras = productExtras[selection.comboSlot.category_id] || [];
+          const extra = categoryExtras.find(e => e.id === extraId);
+          if (extra) {
+            total += extra.price * qty * selection.quantity;
+          }
+        });
       }
     });
 
@@ -258,6 +319,32 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const getCategoryName = (categoryId: string): string => {
     const category = categories.find(c => c.id === categoryId);
     return category?.name || 'Categoría';
+  };
+
+  const handleExtraChange = (slotIndex: number, extraId: string, change: number) => {
+    const selection = selections[slotIndex];
+    const currentExtras = selection.extras || {};
+    const newQty = Math.max(0, (currentExtras[extraId] || 0) + change);
+    
+    let newExtras: Record<string, number>;
+    if (newQty === 0) {
+      const { [extraId]: _, ...rest } = currentExtras;
+      newExtras = rest;
+    } else {
+      newExtras = { ...currentExtras, [extraId]: newQty };
+    }
+
+    updateSelection(slotIndex, { extras: newExtras });
+  };
+
+  const toggleModifier = (slotIndex: number, modifierId: string) => {
+    const selection = selections[slotIndex];
+    const currentModifiers = selection.modifiers || [];
+    const newModifiers = currentModifiers.includes(modifierId)
+      ? currentModifiers.filter(id => id !== modifierId)
+      : [...currentModifiers, modifierId];
+    
+    updateSelection(slotIndex, { modifiers: newModifiers });
   };
 
   if (loading) {
@@ -300,6 +387,10 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           const availableProducts = slotProducts[slot.category_id] || [];
           const availableVariants = selection.selectedProduct 
             ? productVariants[selection.selectedProduct.id!] || []
+            : [];
+          const availableExtras = productExtras[slot.category_id] || [];
+          const availableModifiers = selection.selectedProduct 
+            ? productModifiers[selection.selectedProduct.id!] || []
             : [];
 
           return (
@@ -347,6 +438,72 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                       onVariantSelect={(variant) => selectVariant(index, variant)}
                       disabled={false}
                     />
+                  </div>
+                )}
+
+                {/* Extras */}
+                {availableExtras.length > 0 && (
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                      Extras
+                    </label>
+                    <div className="space-y-2">
+                      {availableExtras.map((extra) => (
+                        <div key={extra.id} className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{extra.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatPrice(extra.price)}
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleExtraChange(index, extra.id, -1)}
+                              disabled={((selection.extras || {})[extra.id] || 0) === 0}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-6 text-center text-sm">
+                              {(selection.extras || {})[extra.id] || 0}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleExtraChange(index, extra.id, 1)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Modifiers */}
+                {availableModifiers.length > 0 && (
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                      Modificaciones (gratis)
+                    </label>
+                    <div className="space-y-1">
+                      {availableModifiers.map((modifier) => (
+                        <label
+                          key={modifier.id}
+                          className="flex items-center space-x-2 text-sm cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={((selection.modifiers || []).includes(modifier.id))}
+                            onChange={() => toggleModifier(index, modifier.id)}
+                            className="rounded"
+                          />
+                          <span>{modifier.name}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 )}
 

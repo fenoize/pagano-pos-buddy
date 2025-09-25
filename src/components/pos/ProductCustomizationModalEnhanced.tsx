@@ -92,6 +92,13 @@ export function ProductCustomizationModalEnhanced({
     }
   }, [isOpen, product.id, editingItem]);
 
+  // Auto-enable combo if available
+  useEffect(() => {
+    if (hasCombo) {
+      setUseCombo(true);
+    }
+  }, [hasCombo]);
+
   const fetchProductVariantsAndCustomizations = async () => {
     try {
       // Fetch product variants (new system)
@@ -232,8 +239,9 @@ export function ProductCustomizationModalEnhanced({
   };
 
   const getTotalPrice = () => {
-    if (useCombo) {
-      return (comboTotal + getExtrasTotal()) * quantity;
+    if (hasCombo) {
+      // Para combos, los extras se manejan dentro del combo
+      return comboTotal * quantity;
     }
     return (getBasePrice() + getExtrasTotal() + getModifiersTotal()) * quantity;
   };
@@ -357,33 +365,27 @@ export function ProductCustomizationModalEnhanced({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-          {/* Combo Selection */}
+          {/* Auto-select combo if available */}
           {hasCombo && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Tipo de Pedido</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant={!useCombo ? 'default' : 'outline'}
-                    onClick={() => setUseCombo(false)}
-                  >
-                    Individual
-                  </Button>
-                  <Button
-                    variant={useCombo ? 'default' : 'outline'}
-                    onClick={() => setUseCombo(true)}
-                  >
+                <div className="text-center">
+                  <Badge variant="default" className="text-base px-4 py-2">
                     Combo
-                  </Button>
+                  </Badge>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Este producto está disponible como combo
+                  </p>
                 </div>
               </CardContent>
             </Card>
           )}
 
           {/* Combo Configuration o Variant Selection */}
-          {hasCombo && useCombo ? (
+          {hasCombo ? (
             <ComboSelector
               product={product}
               onComboItemsChange={setComboSelections}
@@ -421,8 +423,8 @@ export function ProductCustomizationModalEnhanced({
             </Card>
           )}
 
-          {/* Extras */}
-          {extras.length > 0 && (
+          {/* Extras - Solo mostrar para productos individuales */}
+          {!hasCombo && extras.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Extras</CardTitle>
@@ -467,8 +469,8 @@ export function ProductCustomizationModalEnhanced({
             </Card>
           )}
 
-          {/* Modificaciones */}
-          {modifiers.length > 0 && (
+          {/* Modificaciones - Solo mostrar para productos individuales */}
+          {!hasCombo && modifiers.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Modificaciones</CardTitle>
