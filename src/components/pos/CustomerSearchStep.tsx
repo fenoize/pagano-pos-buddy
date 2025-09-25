@@ -241,11 +241,9 @@ export default function CustomerSearchStep({ customer, onCustomerChange, orderNa
           )}
 
           {/* Continue Button */}
-          {orderName.trim() && (
-            <Button onClick={onNext} className="w-full" size="lg">
-              Ir al Pago
-            </Button>
-          )}
+          <Button onClick={onNext} className="w-full" size="lg">
+            Ir al Pago
+          </Button>
         </CardContent>
       </Card>
     </div>
