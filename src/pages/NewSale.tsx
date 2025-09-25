@@ -404,16 +404,6 @@ export default function NewSale() {
       case 1:
         return (
           <div className="space-y-6">
-            {/* Customer Search Widget */}
-            <CustomerSearchWidget
-              customer={customer}
-              onCustomerChange={setCustomer}
-              totalAmount={total}
-              runaValue={runaValue}
-              onRunasChange={setUsedRunas}
-              usedRunas={usedRunas}
-            />
-            
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Products Grid */}
               <div className="lg:col-span-2">
@@ -460,6 +450,16 @@ export default function NewSale() {
                   subtotal={subtotal}
                   discount={discount}
                   onDiscountChange={setDiscount}
+                />
+
+                {/* Customer Search Widget */}
+                <CustomerSearchWidget
+                  customer={customer}
+                  onCustomerChange={setCustomer}
+                  totalAmount={total}
+                  runaValue={runaValue}
+                  onRunasChange={setUsedRunas}
+                  usedRunas={usedRunas}
                 />
               </div>
             </div>
