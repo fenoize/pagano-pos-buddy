@@ -668,6 +668,7 @@ export type Database = {
           active: boolean | null
           category_id: string | null
           created_at: string | null
+          display_order: number
           id: string
           name: string
           price: number
@@ -677,6 +678,7 @@ export type Database = {
           active?: boolean | null
           category_id?: string | null
           created_at?: string | null
+          display_order?: number
           id?: string
           name: string
           price?: number
@@ -686,6 +688,7 @@ export type Database = {
           active?: boolean | null
           category_id?: string | null
           created_at?: string | null
+          display_order?: number
           id?: string
           name?: string
           price?: number

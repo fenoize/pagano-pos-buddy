@@ -9,8 +9,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface ExtrasManagementProps {
   selectedCategories: string[];
@@ -45,7 +64,7 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
             name
           )
         `)
-        .order('name');
+        .order('display_order, created_at');
 
       if (error) throw error;
       setExtras(data || []);
@@ -93,11 +112,22 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
           description: "Extra actualizado correctamente"
         });
       } else {
+        // Get the max display_order for the category
+        const { data: maxOrderData } = await supabase
+          .from('product_extras')
+          .select('display_order')
+          .eq('category_id', formData.category_id === 'all' ? null : formData.category_id)
+          .order('display_order', { ascending: false })
+          .limit(1);
+        
+        const nextOrder = maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].display_order + 1 : 0;
+        
         const { error } = await supabase
           .from('product_extras')
           .insert({
             ...formData,
-            category_id: formData.category_id === 'all' ? null : formData.category_id
+            category_id: formData.category_id === 'all' ? null : formData.category_id,
+            display_order: nextOrder
           });
 
         if (error) throw error;
@@ -186,6 +216,53 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
     !extra.category_id || extra.category_id === 'all' || selectedCategories.includes(extra.category_id)
   );
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = relevantExtras.findIndex((extra) => extra.id === active.id);
+      const newIndex = relevantExtras.findIndex((extra) => extra.id === over?.id);
+      
+      const newExtras = arrayMove(relevantExtras, oldIndex, newIndex);
+      
+      // Update display_order in the database
+      try {
+        const updates = newExtras.map((extra, index) => ({
+          id: extra.id,
+          display_order: index
+        }));
+
+        for (const update of updates) {
+          await supabase
+            .from('product_extras')
+            .update({ display_order: update.display_order })
+            .eq('id', update.id);
+        }
+
+        // Refresh the extras list
+        fetchExtras();
+        
+        toast({
+          title: "Éxito",
+          description: "Orden de extras actualizado"
+        });
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el orden de los extras",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -269,53 +346,25 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
         </Dialog>
       </div>
 
-      <div className="grid gap-3">
-        {relevantExtras.map((extra) => (
-          <Card key={extra.id}>
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{extra.name}</span>
-                    <Badge variant={extra.active ? "default" : "secondary"}>
-                      {extra.active ? 'Activo' : 'Inactivo'}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {formatPrice(extra.price)}
-                    {(extra as any).categories && (
-                      <span className="ml-2">• {(extra as any).categories.name}</span>
-                    )}
-                  </p>
-                </div>
-                
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEditDialog(extra);
-                    }}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteExtra(extra);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={relevantExtras.map(extra => extra.id)} strategy={verticalListSortingStrategy}>
+          <div className="grid gap-3">
+            {relevantExtras.map((extra) => (
+              <SortableExtraItem
+                key={extra.id}
+                extra={extra}
+                onEdit={openEditDialog}
+                onDelete={deleteExtra}
+                formatPrice={formatPrice}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {relevantExtras.length === 0 && (
         <Card>
@@ -325,5 +374,88 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
         </Card>
       )}
     </div>
+  );
+}
+
+interface SortableExtraItemProps {
+  extra: ProductExtra;
+  onEdit: (extra: ProductExtra) => void;
+  onDelete: (extra: ProductExtra) => void;
+  formatPrice: (price: number) => string;
+}
+
+function SortableExtraItem({ extra, onEdit, onDelete, formatPrice }: SortableExtraItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: extra.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <Card 
+      ref={setNodeRef} 
+      style={style} 
+      className={isDragging ? "opacity-50" : ""}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="cursor-move text-muted-foreground hover:text-foreground"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="w-4 h-4" />
+            </div>
+            
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{extra.name}</span>
+                <Badge variant={extra.active ? "default" : "secondary"}>
+                  {extra.active ? 'Activo' : 'Inactivo'}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {formatPrice(extra.price)}
+                {(extra as any).categories && (
+                  <span className="ml-2">• {(extra as any).categories.name}</span>
+                )}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(extra);
+              }}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(extra);
+              }}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
