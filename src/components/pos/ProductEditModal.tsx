@@ -163,8 +163,17 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
     onClose();
   };
 
+  const handleOpenChange = (open: boolean) => {
+    // Solo cerrar si explícitamente se cambia a false
+    // Ignorar cambios automáticos causados por re-renders
+    if (!open) {
+      console.log('Dialog closing triggered by user interaction');
+      handleClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>

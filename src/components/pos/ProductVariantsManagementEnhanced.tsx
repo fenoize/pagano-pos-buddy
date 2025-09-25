@@ -354,7 +354,15 @@ export default function ProductVariantsManagementEnhanced({
               </Button>
             </>
           ) : (
-            <Button variant="outline" onClick={() => setBulkEditMode(true)}>
+            <Button 
+              variant="outline" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Activating bulk edit mode');
+                setBulkEditMode(true);
+              }}
+            >
               <Edit2 className="h-4 w-4 mr-2" />
               Editar Precios en Lote
             </Button>
