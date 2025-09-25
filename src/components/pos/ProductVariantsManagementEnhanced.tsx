@@ -272,6 +272,46 @@ export default function ProductVariantsManagementEnhanced({
     }
   };
 
+  const toggleBulkEditMode = async (enabled: boolean) => {
+    if (enabled) {
+      // Crear automáticamente opciones de variante faltantes
+      const missingVariants = availableVariants.filter(variant => 
+        variant.name !== "Default" && 
+        !productVariants.some(pv => pv.category_variant_id === variant.id)
+      );
+
+      if (missingVariants.length > 0) {
+        try {
+          const variantInserts = missingVariants.map(variant => ({
+            product_id: productId,
+            category_variant_id: variant.id,
+            price: null,
+            is_default: false,
+            active: true,
+            is_enabled: false,
+          }));
+
+          const { error } = await supabase
+            .from("product_variant_options")
+            .insert(variantInserts);
+
+          if (error) throw error;
+          
+          await fetchData(); // Recargar datos
+        } catch (error) {
+          console.error("Error creating missing variants:", error);
+          toast({
+            title: "Error",
+            description: "Error al crear variantes faltantes",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+    setBulkEditMode(enabled);
+  };
+
   const formatPrice = (amount: number) => {
     return new Intl.NumberFormat("es-CL", {
       style: "currency",
@@ -345,7 +385,7 @@ export default function ProductVariantsManagementEnhanced({
         <div className="space-x-2">
           {bulkEditMode ? (
             <>
-              <Button variant="outline" onClick={() => setBulkEditMode(false)}>
+              <Button variant="outline" onClick={() => toggleBulkEditMode(false)}>
                 Cancelar
               </Button>
               <Button onClick={saveBulkPrices}>
@@ -360,7 +400,7 @@ export default function ProductVariantsManagementEnhanced({
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('Activating bulk edit mode');
-                setBulkEditMode(true);
+                toggleBulkEditMode(true);
               }}
             >
               <Edit2 className="h-4 w-4 mr-2" />
@@ -413,7 +453,7 @@ export default function ProductVariantsManagementEnhanced({
                       bulkEditMode ? (
                         <Input
                           type="text"
-                          placeholder="$0"
+                          placeholder="$500"
                           value={bulkPrices[existingOption.id] || ""}
                           onChange={(e) => {
                             const value = e.target.value.replace(/\D/g, "");
@@ -424,13 +464,16 @@ export default function ProductVariantsManagementEnhanced({
                           }}
                           onBlur={(e) => {
                             const value = e.target.value.replace(/\D/g, "");
-                            const formatted = value ? formatPrice(parseInt(value)) : "";
-                            setBulkPrices(prev => ({
-                              ...prev,
-                              [existingOption.id]: formatted
-                            }));
+                            if (value) {
+                              const numericValue = parseInt(value);
+                              const formatted = formatPrice(numericValue);
+                              setBulkPrices(prev => ({
+                                ...prev,
+                                [existingOption.id]: formatted
+                              }));
+                            }
                           }}
-                          className="w-24"
+                          className="w-32"
                         />
                       ) : (
                         <div className="flex items-center space-x-2">
@@ -443,7 +486,17 @@ export default function ProductVariantsManagementEnhanced({
                         </div>
                       )
                     ) : (
-                      "-"
+                      bulkEditMode ? (
+                        <Button
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => toggleVariant(variant.id, true)}
+                        >
+                          Agregar Variante
+                        </Button>
+                      ) : (
+                        "-"
+                      )
                     )}
                   </TableCell>
 
