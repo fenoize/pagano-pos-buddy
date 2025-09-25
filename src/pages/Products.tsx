@@ -5,19 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, ToggleLeft, ToggleRight, Image as ImageIcon, Trash2, Filter, ArrowUpDown } from 'lucide-react';
+import { Plus, Edit, ToggleLeft, ToggleRight, Image as ImageIcon, Trash2, Filter, ArrowUpDown, Search } from 'lucide-react';
 import { ProductEditModal } from '@/components/pos/ProductEditModal';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [productVariants, setProductVariants] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Estados para filtros y ordenamiento
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name-asc');
@@ -68,6 +71,9 @@ export default function Products() {
       })) || [];
 
       setProducts(productsWithCategories as any);
+      
+      // Obtener variantes para todos los productos
+      await fetchProductVariants(productsWithCategories.map(p => p.id));
     } catch (error) {
       toast({
         title: "Error",
@@ -76,6 +82,35 @@ export default function Products() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProductVariants = async (productIds: string[]) => {
+    try {
+      const { data, error } = await supabase
+        .from('product_variant_options')
+        .select(`
+          *,
+          variant:category_variants(*)
+        `)
+        .in('product_id', productIds)
+        .eq('active', true)
+        .order('variant(display_order)');
+
+      if (error) throw error;
+
+      // Agrupar variantes por producto
+      const variantsByProduct: Record<string, any[]> = {};
+      (data || []).forEach(variant => {
+        if (!variantsByProduct[variant.product_id]) {
+          variantsByProduct[variant.product_id] = [];
+        }
+        variantsByProduct[variant.product_id].push(variant);
+      });
+
+      setProductVariants(variantsByProduct);
+    } catch (error) {
+      console.error('Error fetching product variants:', error);
     }
   };
 
@@ -143,6 +178,16 @@ export default function Products() {
   // Lógica de filtrado y ordenamiento
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = products.filter(product => {
+      // Filtro por búsqueda
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const nameMatch = product.name.toLowerCase().includes(searchLower);
+        const categoryMatch = product.categories?.some(cat => 
+          cat.name.toLowerCase().includes(searchLower)
+        );
+        if (!nameMatch && !categoryMatch) return false;
+      }
+      
       // Filtro por estado
       if (statusFilter === 'active' && !product.active) return false;
       if (statusFilter === 'inactive' && product.active) return false;
@@ -164,24 +209,16 @@ export default function Products() {
         case 'name-desc':
           return b.name.localeCompare(a.name);
         case 'price-asc':
-          const minPriceA = Math.min(
-            (a.prices as any).combo.simple,
-            (a.prices as any).only.simple
-          );
-          const minPriceB = Math.min(
-            (b.prices as any).combo.simple,
-            (b.prices as any).only.simple
-          );
+          const aVariants = productVariants[a.id] || [];
+          const bVariants = productVariants[b.id] || [];
+          const minPriceA = aVariants.length > 0 ? Math.min(...aVariants.map(v => v.price || 0)) : 0;
+          const minPriceB = bVariants.length > 0 ? Math.min(...bVariants.map(v => v.price || 0)) : 0;
           return minPriceA - minPriceB;
         case 'price-desc':
-          const maxPriceA = Math.max(
-            (a.prices as any).combo.triple,
-            (a.prices as any).only.triple
-          );
-          const maxPriceB = Math.max(
-            (b.prices as any).combo.triple,
-            (b.prices as any).only.triple
-          );
+          const aVariantsDesc = productVariants[a.id] || [];
+          const bVariantsDesc = productVariants[b.id] || [];
+          const maxPriceA = aVariantsDesc.length > 0 ? Math.max(...aVariantsDesc.map(v => v.price || 0)) : 0;
+          const maxPriceB = bVariantsDesc.length > 0 ? Math.max(...bVariantsDesc.map(v => v.price || 0)) : 0;
           return maxPriceB - maxPriceA;
         default:
           return 0;
@@ -189,7 +226,7 @@ export default function Products() {
     });
 
     return filtered;
-  }, [products, statusFilter, categoryFilter, sortBy]);
+  }, [products, searchTerm, statusFilter, categoryFilter, sortBy, productVariants]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -214,6 +251,17 @@ export default function Products() {
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Producto
         </Button>
+      </div>
+
+      {/* Buscador */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          placeholder="Buscar productos por nombre o categoría..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
       </div>
 
       {/* Controles de filtros y ordenamiento */}
@@ -318,23 +366,66 @@ export default function Products() {
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-medium text-muted-foreground mb-2">Precios Combo</h4>
-                      <div className="space-y-1 text-sm">
-                        <div>Simple: {formatPrice((product.prices as any).combo.simple)}</div>
-                        <div>Doble: {formatPrice((product.prices as any).combo.doble)}</div>
-                        <div>Triple: {formatPrice((product.prices as any).combo.triple)}</div>
+                  {/* Variantes configuradas */}
+                  <div>
+                    <h4 className="font-medium text-muted-foreground mb-2">Variantes Configuradas</h4>
+                    {productVariants[product.id] && productVariants[product.id].length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {productVariants[product.id]
+                          .filter(variant => variant.variant?.name !== 'Default') // Ocultar variante Default
+                          .map((variant) => (
+                          <div
+                            key={variant.id}
+                            className={`p-3 rounded-lg border text-sm ${
+                              variant.is_enabled && variant.price && variant.price >= 500
+                                ? 'bg-background border-border' 
+                                : 'bg-muted border-muted-foreground/20'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium">{variant.variant?.name}</span>
+                              {variant.is_default && (
+                                <Badge variant="secondary" className="text-xs px-1 py-0">
+                                  Defecto
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className={
+                                variant.is_enabled && variant.price && variant.price >= 500
+                                  ? "text-foreground"
+                                  : "text-muted-foreground"
+                              }>
+                                {variant.price && variant.price > 0 
+                                  ? formatPrice(variant.price)
+                                  : "Sin precio"
+                                }
+                              </span>
+                              <Badge 
+                                variant={
+                                  variant.is_enabled && variant.price && variant.price >= 500
+                                    ? "default"
+                                    : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {variant.is_enabled && variant.price && variant.price >= 500
+                                  ? "Activa"
+                                  : "Inactiva"
+                                }
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-muted-foreground mb-2">Precios Solo</h4>
-                      <div className="space-y-1 text-sm">
-                        <div>Simple: {formatPrice((product.prices as any).only.simple)}</div>
-                        <div>Doble: {formatPrice((product.prices as any).only.doble)}</div>
-                        <div>Triple: {formatPrice((product.prices as any).only.triple)}</div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                        <p>Sin variantes configuradas</p>
+                        <p className="text-xs mt-1">
+                          Ve a la pestaña "Variantes" en edición para configurar precios por variante
+                        </p>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
