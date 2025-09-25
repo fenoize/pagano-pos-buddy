@@ -293,14 +293,20 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => openEditDialog(extra)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditDialog(extra);
+                    }}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteExtra(extra)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteExtra(extra);
+                    }}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
