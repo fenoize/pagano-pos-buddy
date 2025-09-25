@@ -263,7 +263,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
                           <Button
                             key={denomination}
                             variant="outline"
-                            className="h-12 flex flex-col gap-1 text-xs"
+                            className="h-12 flex flex-col gap-1 text-sm font-medium"
                             onClick={() => setPaymentAmount(denomination)}
                           >
                             <Banknote className="w-4 h-4" />
