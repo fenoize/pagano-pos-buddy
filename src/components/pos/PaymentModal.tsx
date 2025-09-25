@@ -38,6 +38,7 @@ interface PaymentData {
 
 export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total, subtotal, discount, deliveryFee, orderName }: PaymentModalProps) {
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
+  const [cashDenominations, setCashDenominations] = useState<number[]>([]);
   const [runaValue, setRunaValue] = useState(1000);
   const [orderTiming, setOrderTiming] = useState('after_payment');
   const [selectedMethod, setSelectedMethod] = useState('');
@@ -72,7 +73,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
       const { data } = await supabase
         .from('config')
         .select('*')
-        .in('key', ['payment_methods', 'runa_value', 'order_timing']);
+        .in('key', ['payment_methods', 'runa_value', 'order_timing', 'cash_denominations']);
 
       data?.forEach((config) => {
         if (config.key === 'payment_methods') {
@@ -82,6 +83,8 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
           setRunaValue(config.value as number);
         } else if (config.key === 'order_timing') {
           setOrderTiming(config.value as string);
+        } else if (config.key === 'cash_denominations') {
+          setCashDenominations(config.value as number[]);
         }
       });
     } catch (error) {
@@ -253,9 +256,37 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
               <CardContent className="space-y-4">
                 {selectedMethod === 'Efectivo' && (
                   <>
+                    <div className="space-y-3">
+                      <Label>Billetes Rápidos</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {cashDenominations.map((denomination) => (
+                          <Button
+                            key={denomination}
+                            variant="outline"
+                            className="h-12 flex flex-col gap-1 text-xs"
+                            onClick={() => setPaymentAmount(denomination)}
+                          >
+                            <Banknote className="w-4 h-4" />
+                            {formatPrice(denomination)}
+                          </Button>
+                        ))}
+                        <Button
+                          variant="outline"
+                          className="h-12 flex flex-col gap-1 text-xs"
+                          onClick={() => {
+                            const input = document.getElementById('manual-amount') as HTMLInputElement;
+                            input?.focus();
+                          }}
+                        >
+                          <span className="text-lg">+</span>
+                          Otro
+                        </Button>
+                      </div>
+                    </div>
                     <div>
-                      <Label>Con cuánto paga</Label>
+                      <Label htmlFor="manual-amount">Con cuánto paga</Label>
                       <Input
+                        id="manual-amount"
                         type="number"
                         value={paymentAmount}
                         onChange={(e) => setPaymentAmount(Number(e.target.value))}
