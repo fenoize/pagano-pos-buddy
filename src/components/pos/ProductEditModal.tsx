@@ -14,6 +14,7 @@ import { ExtrasManagement } from './ExtrasManagement';
 import { ModifiersManagement } from './ModifiersManagement';
 import ProductVariantsManagementEnhanced from './ProductVariantsManagementEnhanced';
 import ComboManagement from './ComboManagement';
+import { AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductEditModalProps {
@@ -31,6 +32,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
   });
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('general');
+  const [isComboProduct, setIsComboProduct] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,11 +46,28 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
       // Cargar categorías del producto
       if (product.id) {
         fetchProductCategories(product.id);
+        checkIfComboProduct(product.id);
       }
     } else {
       resetForm();
     }
   }, [product, isOpen]);
+
+  const checkIfComboProduct = async (productId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('combo_products')
+        .select('id')
+        .eq('product_id', productId)
+        .maybeSingle();
+
+      if (error) throw error;
+      setIsComboProduct(!!data);
+    } catch (error) {
+      console.error('Error checking combo product:', error);
+      setIsComboProduct(false);
+    }
+  };
 
   const fetchProductCategories = async (productId: string) => {
     try {
@@ -156,6 +175,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
     });
     setSelectedCategories([]);
     setActiveTab('general');
+    setIsComboProduct(false);
   };
 
   const handleClose = () => {
@@ -234,10 +254,26 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             </TabsContent>
 
             <TabsContent value="variants">
-            <ProductVariantsManagementEnhanced
-              productId={product?.id}
-              categoryIds={selectedCategories}
-            />
+              {isComboProduct && (
+                <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                    <div>
+                      <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
+                        Producto configurado como Combo
+                      </h4>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                        Este producto está configurado como combo. Los precios se gestionan desde la configuración de combo, 
+                        no desde las variantes individuales. Ve a la pestaña "Combos" para modificar la configuración de precios.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <ProductVariantsManagementEnhanced
+                productId={product?.id}
+                categoryIds={selectedCategories}
+              />
             </TabsContent>
 
             <TabsContent value="combos">

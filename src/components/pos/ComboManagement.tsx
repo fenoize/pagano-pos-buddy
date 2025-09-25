@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Settings } from "lucide-react";
+import { Plus, Trash2, Settings, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ComboProduct, ComboItem, Category, Product, PricingMode } from "@/types";
@@ -22,6 +22,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
   const [comboItems, setComboItems] = useState<ComboItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categoryVariants, setCategoryVariants] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -31,6 +32,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
     }
     fetchCategories();
     fetchProducts();
+    fetchCategoryVariants();
   }, [productId]);
 
   const fetchComboData = async () => {
@@ -97,12 +99,24 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          categories:product_categories(
+            category:categories(*)
+          )
+        `)
         .eq('active', true)
         .order('name');
 
       if (error) throw error;
-      setProducts((data || []) as Product[]);
+      
+      // Transform the data to match the expected format
+      const transformedProducts = (data || []).map(product => ({
+        ...product,
+        categories: product.categories?.map((pc: any) => pc.category).filter(Boolean) || []
+      }));
+      
+      setProducts(transformedProducts as Product[]);
     } catch (error) {
       console.error('Error fetching products:', error);
     }
@@ -254,12 +268,31 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
     }
   };
 
+  const fetchCategoryVariants = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('category_variants')
+        .select('*')
+        .eq('active', true)
+        .order('name');
+
+      if (error) throw error;
+      setCategoryVariants(data || []);
+    } catch (error) {
+      console.error('Error fetching category variants:', error);
+    }
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
       currency: 'CLP',
       minimumFractionDigits: 0,
     }).format(price);
+  };
+
+  const getVariantsForCategory = (categoryId: string) => {
+    return categoryVariants.filter(variant => variant.category_id === categoryId);
   };
 
   if (!productId) {
@@ -290,6 +323,14 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
         </CardHeader>
         {isCombo && comboConfig && (
           <CardContent className="space-y-4">
+            {/* Validación de precio base */}
+            {comboConfig.base_price <= 0 && (
+              <div className="flex items-center space-x-2 p-3 bg-destructive/10 text-destructive rounded-lg">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm">El precio base debe ser mayor a $0 para que el combo sea válido</span>
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Modo de Precio</Label>
@@ -308,11 +349,12 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                 </RadioGroup>
               </div>
               <div>
-                <Label>Precio Base</Label>
+                <Label>Precio Base *</Label>
                 <Input
                   type="number"
                   value={comboConfig.base_price}
                   onChange={(e) => updateComboConfig('base_price', parseInt(e.target.value) || 0)}
+                  min="1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {formatPrice(comboConfig.base_price)}
@@ -375,12 +417,17 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label>Categoría</Label>
                           <Select
                             value={item.category_id}
-                            onValueChange={(value) => updateComboItem(item.id, 'category_id', value)}
+                            onValueChange={(value) => {
+                              updateComboItem(item.id, 'category_id', value);
+                              // Reset product and variant when category changes
+                              updateComboItem(item.id, 'default_product_id', null);
+                              updateComboItem(item.id, 'default_variant_id', null);
+                            }}
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -403,16 +450,24 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                             min="1"
                           />
                         </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label>Producto por Defecto</Label>
                           <Select
                             value={item.default_product_id || ''}
-                            onValueChange={(value) => updateComboItem(item.id, 'default_product_id', value || null)}
+                            onValueChange={(value) => {
+                              updateComboItem(item.id, 'default_product_id', value || null);
+                              // Reset variant when product changes
+                              updateComboItem(item.id, 'default_variant_id', null);
+                            }}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Seleccionar producto" />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="">Sin producto por defecto</SelectItem>
                               {products
                                 .filter(p => p.categories?.some(c => c.id === item.category_id))
                                 .map((product) => (
@@ -423,7 +478,45 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                             </SelectContent>
                           </Select>
                         </div>
+                        
+                        <div>
+                          <Label>Variante por Defecto</Label>
+                          <Select
+                            value={item.default_variant_id || ''}
+                            onValueChange={(value) => updateComboItem(item.id, 'default_variant_id', value || null)}
+                            disabled={!item.default_product_id}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar variante" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Sin variante por defecto</SelectItem>
+                              {getVariantsForCategory(item.category_id).map((variant) => (
+                                <SelectItem key={variant.id} value={variant.id}>
+                                  {variant.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
+                      
+                      {/* Información del slot configurado */}
+                      {item.default_product_id && (
+                        <div className="p-3 bg-muted/50 rounded-lg">
+                          <div className="text-sm">
+                            <strong>Configurado:</strong>{' '}
+                            {item.quantity}x{' '}
+                            {products.find(p => p.id === item.default_product_id)?.name || 'Producto no encontrado'}
+                            {item.default_variant_id && (
+                              <>
+                                {' - '}
+                                {getVariantsForCategory(item.category_id).find(v => v.id === item.default_variant_id)?.name || 'Variante no encontrada'}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center space-x-2 mt-4">
                         <Switch
                           checked={item.allow_customization}
