@@ -743,6 +743,7 @@ export type Database = {
           created_at: string
           id: string
           is_default: boolean
+          is_enabled: boolean | null
           price: number
           product_id: string
           sku: string | null
@@ -755,6 +756,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_default?: boolean
+          is_enabled?: boolean | null
           price?: number
           product_id: string
           sku?: string | null
@@ -767,6 +769,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_default?: boolean
+          is_enabled?: boolean | null
           price?: number
           product_id?: string
           sku?: string | null

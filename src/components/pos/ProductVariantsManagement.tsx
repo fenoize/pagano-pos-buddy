@@ -253,7 +253,7 @@ const ProductVariantsManagement: React.FC<ProductVariantsManagementProps> = ({
                       </div>
 
                       {isEnabled && productVariant && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                           <div>
                             <Label htmlFor={`price-${variant.id}`}>Precio</Label>
                             <Input
@@ -269,36 +269,6 @@ const ProductVariantsManagement: React.FC<ProductVariantsManagementProps> = ({
                             />
                             <p className="text-xs text-muted-foreground mt-1">
                               {formatPrice(productVariant.price)}
-                            </p>
-                          </div>
-                          <div>
-                            <Label htmlFor={`sku-${variant.id}`}>SKU (Opcional)</Label>
-                            <Input
-                              id={`sku-${variant.id}`}
-                              value={productVariant.sku || ''}
-                              onChange={(e) => updateVariantOption(
-                                productVariant.id,
-                                'sku',
-                                e.target.value
-                              )}
-                              placeholder="Código de producto"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor={`stock-${variant.id}`}>Stock</Label>
-                            <Input
-                              id={`stock-${variant.id}`}
-                              type="number"
-                              value={productVariant.stock}
-                              onChange={(e) => updateVariantOption(
-                                productVariant.id,
-                                'stock',
-                                parseInt(e.target.value) || 0
-                              )}
-                              min="0"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Para uso futuro con inventario
                             </p>
                           </div>
                         </div>

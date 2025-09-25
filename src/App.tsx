@@ -16,6 +16,7 @@ import Sales from '@/pages/Sales';
 import Kitchen from '@/pages/Kitchen';
 import Users from '@/pages/Users';
 import Products from '@/pages/Products';
+import Categorias from '@/pages/Categorias';
 import ConfiguracionPage from '@/pages/ConfiguracionPage';
 import CierresDiarios from '@/pages/CierresDiarios';
 import NotFound from '@/pages/NotFound';
@@ -117,6 +118,13 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Products />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/categorias" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Categorias />
                 </AppLayout>
               </ProtectedRoute>
             } />

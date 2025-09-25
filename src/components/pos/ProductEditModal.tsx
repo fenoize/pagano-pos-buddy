@@ -12,7 +12,7 @@ import { ImageUpload } from './ImageUpload';
 import { CategoryManagement } from './CategoryManagement';
 import { ExtrasManagement } from './ExtrasManagement';
 import { ModifiersManagement } from './ModifiersManagement';
-import ProductVariantsManagement from './ProductVariantsManagement';
+import ProductVariantsManagementEnhanced from './ProductVariantsManagementEnhanced';
 import ComboManagement from './ComboManagement';
 import { useToast } from '@/hooks/use-toast';
 
@@ -225,10 +225,10 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             </TabsContent>
 
             <TabsContent value="variants">
-              <ProductVariantsManagement
-                productId={product?.id}
-                categoryIds={selectedCategories}
-              />
+            <ProductVariantsManagementEnhanced
+              productId={product?.id}
+              categoryIds={selectedCategories}
+            />
             </TabsContent>
 
             <TabsContent value="combos">
