@@ -456,7 +456,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                         <div>
                           <Label>Producto por Defecto</Label>
                           <Select
-                            value={item.default_product_id || ''}
+                            value={item.default_product_id || undefined}
                             onValueChange={(value) => {
                               updateComboItem(item.id, 'default_product_id', value || null);
                               // Reset variant when product changes
@@ -464,10 +464,9 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                             }}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar producto" />
+                              <SelectValue placeholder="Seleccionar producto (opcional)" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Sin producto por defecto</SelectItem>
                               {products
                                 .filter(p => p.categories?.some(c => c.id === item.category_id))
                                 .map((product) => (
@@ -482,15 +481,14 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                         <div>
                           <Label>Variante por Defecto</Label>
                           <Select
-                            value={item.default_variant_id || ''}
+                            value={item.default_variant_id || undefined}
                             onValueChange={(value) => updateComboItem(item.id, 'default_variant_id', value || null)}
                             disabled={!item.default_product_id}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar variante" />
+                              <SelectValue placeholder="Seleccionar variante (opcional)" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Sin variante por defecto</SelectItem>
                               {getVariantsForCategory(item.category_id).map((variant) => (
                                 <SelectItem key={variant.id} value={variant.id}>
                                   {variant.name}
