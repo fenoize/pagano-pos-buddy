@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,7 @@ interface SalesFilters {
 }
 
 export default function Sales() {
+  const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -79,7 +81,18 @@ export default function Sales() {
   useEffect(() => {
     loadOrders();
     loadCustomers();
-  }, []);
+    
+    // Check if we're filtering by active shift
+    const activeShiftId = searchParams.get('activeShift');
+    const startDate = searchParams.get('startDate');
+    
+    if (activeShiftId && startDate) {
+      setFilters({
+        startDate: new Date(startDate)
+      });
+      setShowFilters(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     applyFilters();

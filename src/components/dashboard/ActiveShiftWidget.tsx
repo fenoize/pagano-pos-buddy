@@ -12,7 +12,11 @@ export function ActiveShiftWidget() {
   const navigate = useNavigate();
 
   const handleViewDetails = () => {
-    navigate('/ventas');
+    if (stats.sessionStart && stats.sessionId) {
+      navigate(`/ventas?activeShift=${stats.sessionId}&startDate=${stats.sessionStart}`);
+    } else {
+      navigate('/ventas');
+    }
   };
 
   if (loading) {
