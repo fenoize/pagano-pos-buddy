@@ -369,27 +369,6 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
             </CardContent>
           </Card>
 
-          {/* Fulfillment */}
-          {orderTiming === 'after_payment' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Modalidad de Entrega</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Select value={fulfillment} onValueChange={(value: FulfillmentType) => setFulfillment(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="retiro">Retiro en Local</SelectItem>
-                    <SelectItem value="delivery">Delivery</SelectItem>
-                    <SelectItem value="servir">Para Servir</SelectItem>
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Actions */}
           <div className="flex gap-3">
             <Button variant="outline" onClick={onClose} className="flex-1">
