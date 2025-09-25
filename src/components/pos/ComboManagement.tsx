@@ -206,6 +206,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
           category_id: categories[0].id,
           quantity: 1,
           allow_customization: true,
+          allow_variant_change: true,
           display_order: comboItems.length,
         })
         .select(`
@@ -515,12 +516,21 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                           </div>
                         </div>
                       )}
-                      <div className="flex items-center space-x-2 mt-4">
-                        <Switch
-                          checked={item.allow_customization}
-                          onCheckedChange={(checked) => updateComboItem(item.id, 'allow_customization', checked)}
-                        />
-                        <Label>Permitir personalización</Label>
+                      <div className="space-y-3 mt-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={item.allow_variant_change !== false}
+                            onCheckedChange={(checked) => updateComboItem(item.id, 'allow_variant_change', checked)}
+                          />
+                          <Label>Permitir cambio de variante</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={item.allow_customization}
+                            onCheckedChange={(checked) => updateComboItem(item.id, 'allow_customization', checked)}
+                          />
+                          <Label>Permitir personalización</Label>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

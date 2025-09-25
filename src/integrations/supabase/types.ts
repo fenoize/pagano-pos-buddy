@@ -192,6 +192,7 @@ export type Database = {
       combo_items: {
         Row: {
           allow_customization: boolean
+          allow_variant_change: boolean
           category_id: string
           combo_product_id: string
           created_at: string
@@ -204,6 +205,7 @@ export type Database = {
         }
         Insert: {
           allow_customization?: boolean
+          allow_variant_change?: boolean
           category_id: string
           combo_product_id: string
           created_at?: string
@@ -216,6 +218,7 @@ export type Database = {
         }
         Update: {
           allow_customization?: boolean
+          allow_variant_change?: boolean
           category_id?: string
           combo_product_id?: string
           created_at?: string

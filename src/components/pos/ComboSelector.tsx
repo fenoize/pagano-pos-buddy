@@ -444,20 +444,32 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                   </Select>
                 </div>
 
-                {/* Variant Selection */}
+                {/* Variant Selection - condicionado por allow_variant_change */}
                 {availableVariants.length > 0 && (
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-2 block">
                       Variante
                     </label>
-                    <VariantSelector
-                      variants={availableVariants}
-                      selectedVariantId={selection.selectedVariant?.id}
-                      onVariantSelect={(variant) => selectVariant(index, variant)}
-                      disabled={false}
-                      defaultVariantId={slot.default_variant_id}
-                      showExtraCost={comboConfig?.pricing_mode === 'fixed'}
-                    />
+                    {slot.allow_variant_change !== false ? (
+                      <VariantSelector
+                        variants={availableVariants}
+                        selectedVariantId={selection.selectedVariant?.id}
+                        onVariantSelect={(variant) => selectVariant(index, variant)}
+                        disabled={false}
+                        defaultVariantId={slot.default_variant_id}
+                        showExtraCost={comboConfig?.pricing_mode === 'fixed'}
+                      />
+                    ) : (
+                      // Mostrar solo la variante por defecto (no modificable)
+                      <div className="p-3 bg-muted/50 rounded-md border">
+                        <div className="text-sm font-medium">
+                          {selection.selectedVariant?.variant?.name || 'Variante fija'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Variante no modificable
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

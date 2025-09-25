@@ -300,6 +300,7 @@ export interface ComboItem {
   default_product_id?: string;
   default_variant_id?: string;
   allow_customization: boolean;
+  allow_variant_change?: boolean;
   display_order: number;
   created_at: string;
   updated_at: string;
