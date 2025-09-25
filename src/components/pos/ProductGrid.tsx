@@ -223,17 +223,16 @@ export default function ProductGrid({ products, onProductClick }: ProductGridPro
                   {product.name}
                 </h3>
                 
-                {/* Category above price on mobile, side by side on desktop */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <Badge variant="secondary" className="text-xs w-fit">
-                    {getCategoryDisplayName(product.category)}
-                  </Badge>
-                  
-                  <div className="text-left sm:text-right">
-                    <div className="text-sm text-muted-foreground">Desde</div>
-                    <div className="font-bold text-primary">
-                      {formatPrice(getMinPrice(product))}
-                    </div>
+                {/* Category */}
+                <Badge variant="secondary" className="text-xs w-fit">
+                  {getCategoryDisplayName(product.category)}
+                </Badge>
+                
+                {/* Price */}
+                <div>
+                  <div className="text-sm text-muted-foreground">Desde</div>
+                  <div className="font-bold text-primary">
+                    {formatPrice(getMinPrice(product))}
                   </div>
                 </div>
 
