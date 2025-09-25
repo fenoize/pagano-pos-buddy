@@ -91,7 +91,7 @@ export default function ProductVariantsManagementEnhanced({
       // Inicializar precios para bulk edit
       const initialBulkPrices: Record<string, string> = {};
       (optionsData || []).forEach(option => {
-        if (option.price !== null) {
+        if (option.price !== null && option.price > 0) {
           initialBulkPrices[option.id] = option.price.toString();
         }
       });
@@ -120,7 +120,7 @@ export default function ProductVariantsManagementEnhanced({
           .insert({
             product_id: productId,
             category_variant_id: categoryVariantId,
-            price: null, // Sin precio inicial
+            price: 0, // Precio 0 como valor por defecto
             is_default: false,
             active: true,
             is_enabled: false, // Deshabilitada hasta asignar precio válido
@@ -237,7 +237,7 @@ export default function ProductVariantsManagementEnhanced({
       const price = parseInt(priceStr.replace(/\D/g, ''));
       return {
         id,
-        price: isNaN(price) || price < 500 ? null : price,
+        price: isNaN(price) || price < 500 ? 0 : price,
         is_enabled: !isNaN(price) && price >= 500,
       };
     });
@@ -285,7 +285,7 @@ export default function ProductVariantsManagementEnhanced({
           const variantInserts = missingVariants.map(variant => ({
             product_id: productId,
             category_variant_id: variant.id,
-            price: null,
+            price: 0, // Precio 0 como valor por defecto
             is_default: false,
             active: true,
             is_enabled: false,
@@ -322,7 +322,7 @@ export default function ProductVariantsManagementEnhanced({
   const getVariantStatus = (option: ProductVariantOption) => {
     if (!option.active) return { color: "secondary", text: "Inactiva" };
     if (!option.is_enabled) return { color: "destructive", text: "Sin precio" };
-    if (option.price === null || option.price < 500) return { color: "destructive", text: "Precio inválido" };
+    if (option.price === null || option.price === 0 || option.price < 500) return { color: "destructive", text: "Precio inválido" };
     return { color: "default", text: "Activa" };
   };
 
@@ -366,7 +366,7 @@ export default function ProductVariantsManagementEnhanced({
   return (
     <div className="space-y-6">
       {/* Resumen y alertas */}
-      {productVariants.some(v => v.is_enabled && (v.price === null || v.price < 500)) && (
+      {productVariants.some(v => v.is_enabled && (v.price === null || v.price === 0 || v.price < 500)) && (
         <Card className="border-destructive">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -478,9 +478,9 @@ export default function ProductVariantsManagementEnhanced({
                       ) : (
                         <div className="flex items-center space-x-2">
                           <span>
-                            {existingOption.price ? formatPrice(existingOption.price) : "Sin precio"}
+                            {existingOption.price && existingOption.price > 0 ? formatPrice(existingOption.price) : "Sin precio"}
                           </span>
-                          {(!existingOption.price || existingOption.price < 500) && (
+                          {(!existingOption.price || existingOption.price === 0 || existingOption.price < 500) && (
                             <AlertTriangle className="h-4 w-4 text-destructive" />
                           )}
                         </div>
