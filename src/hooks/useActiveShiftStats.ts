@@ -69,8 +69,7 @@ export function useActiveShiftStats() {
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('*')
-        .gte('created_at', activeSession.opened_at)
-        .eq('status', 'Entregado');
+        .gte('created_at', activeSession.opened_at);
 
       if (ordersError) {
         throw ordersError;
