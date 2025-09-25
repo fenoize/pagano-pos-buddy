@@ -265,6 +265,24 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
     if (comboConfig.pricing_mode === 'fixed') {
       total = comboConfig.base_price;
+      
+      // Add prices for non-default variants
+      selections.forEach(selection => {
+        if (selection.selectedVariant) {
+          // Find the default variant for this combo slot
+          const slot = selection.comboSlot;
+          const availableVariants = selection.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
+          const defaultVariant = slot.default_variant_id
+            ? availableVariants.find(v => v.id === slot.default_variant_id)
+            : availableVariants.find(v => v.is_default);
+          
+          // If there's a default variant and the selected variant is different, add the price
+          if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
+            total += selection.selectedVariant.price * selection.quantity;
+          }
+          // If there's no default variant, don't add extra cost for variant changes
+        }
+      });
     } else {
       // Individual pricing mode
       total = comboConfig.base_price;
@@ -437,6 +455,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                       selectedVariantId={selection.selectedVariant?.id}
                       onVariantSelect={(variant) => selectVariant(index, variant)}
                       disabled={false}
+                      defaultVariantId={slot.default_variant_id}
+                      showExtraCost={comboConfig?.pricing_mode === 'fixed'}
                     />
                   </div>
                 )}

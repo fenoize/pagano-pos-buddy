@@ -9,13 +9,17 @@ interface VariantSelectorProps {
   selectedVariantId?: string;
   onVariantSelect: (variant: ProductVariantOption) => void;
   disabled?: boolean;
+  defaultVariantId?: string;
+  showExtraCost?: boolean;
 }
 
 const VariantSelector: React.FC<VariantSelectorProps> = ({
   variants,
   selectedVariantId,
   onVariantSelect,
-  disabled = false
+  disabled = false,
+  defaultVariantId,
+  showExtraCost = false
 }) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -52,7 +56,8 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
       <div className={`grid gap-3 ${getGridCols()}`}>
         {variants.map((variant) => {
           const isSelected = selectedVariantId === variant.id;
-          const isDefault = variant.is_default;
+          const isDefault = defaultVariantId ? variant.id === defaultVariantId : variant.is_default;
+          const hasExtraCost = showExtraCost && defaultVariantId && !isDefault;
           
           return (
             <Card
@@ -75,9 +80,14 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                         Predeterminado
                       </Badge>
                     )}
+                    {hasExtraCost && (
+                      <Badge variant="outline" className="text-xs px-1 border-orange-500 text-orange-600">
+                        +{formatPrice(variant.price)}
+                      </Badge>
+                    )}
                   </div>
                   <div className="text-primary font-semibold">
-                    {formatPrice(variant.price)}
+                    {showExtraCost && isDefault ? "Incluido" : formatPrice(variant.price)}
                   </div>
                   {variant.stock !== undefined && variant.stock <= 0 && (
                     <Badge variant="destructive" className="text-xs">
