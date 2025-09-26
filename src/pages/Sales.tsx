@@ -193,8 +193,19 @@ export default function Sales() {
 
   const exportToCSV = () => {
     const csvData = filteredOrders.map(order => {
-      const customer = customers.find(c => c.id === order.customer_id);
-      const customerName = customer ? `${customer.name} ${customer.apellido || ''}` : 'Cliente no encontrado';
+      let customerName = 'Cliente';
+      
+      // Si el cliente está registrado
+      if (order.customer_id) {
+        const customer = customers.find(c => c.id === order.customer_id);
+        if (customer) {
+          customerName = `${customer.name} ${customer.apellido || ''}`.trim();
+        }
+      } else {
+        // Si no está registrado, extraer de notes
+        const orderDetails = getOrderDetails(order);
+        customerName = orderDetails.customerInfo?.name || 'Cliente';
+      }
       
       return {
         Hora: format(new Date(order.created_at), 'HH:mm'),
@@ -248,10 +259,35 @@ export default function Sales() {
     );
   };
 
-  const getCustomerInfo = (customerId: string) => {
-    const customer = customers.find(c => c.id === customerId);
-    if (!customer) return 'Cliente no encontrado';
-    return `${customer.name} ${customer.apellido || ''}`.trim();
+  const getCustomerInfo = (order: Order) => {
+    // Si el cliente está registrado, mostrar nombre clickeable
+    if (order.customer_id) {
+      const customer = customers.find(c => c.id === order.customer_id);
+      if (customer) {
+        const customerName = `${customer.name} ${customer.apellido || ''}`.trim();
+        return (
+          <button
+            className="text-primary hover:underline text-left"
+            onClick={() => {
+              // TODO: Implementar modal de información de cliente
+              console.log('Ver cliente:', customer.id);
+            }}
+          >
+            {customerName}
+          </button>
+        );
+      }
+    }
+    
+    // Si no está registrado, extraer nombre de notes
+    const orderDetails = getOrderDetails(order);
+    const guestName = orderDetails.customerInfo?.name || 'Cliente';
+    
+    return (
+      <span className="text-muted-foreground">
+        {guestName}
+      </span>
+    );
   };
 
   const getOrderDetails = (order: Order) => {
@@ -524,7 +560,7 @@ export default function Sales() {
                           <div className="text-muted-foreground">{format(new Date(order.created_at), 'HH:mm')}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{getCustomerInfo(order.customer_id)}</TableCell>
+                      <TableCell>{getCustomerInfo(order)}</TableCell>
                       <TableCell>
                         <OrderStatusDropdown
                           orderId={order.id}

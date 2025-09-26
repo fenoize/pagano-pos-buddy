@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Order, OrderItem } from '@/types';
 import { useOrderEdit, OrderEditData } from '@/hooks/useOrderEdit';
+import { useCustomers } from '@/hooks/useCustomers';
 import { OrderItemEditRow } from './OrderItemEditRow';
 import { ProductSelector } from './ProductSelector';
 import { OrderHistoryModal } from './OrderHistoryModal';
@@ -30,6 +31,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const [showHistory, setShowHistory] = useState(false);
   
   const { updateOrder, calculateTotals, isLoading } = useOrderEdit();
+  const { customers } = useCustomers();
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -186,6 +188,65 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                 </CardContent>
               </Card>
             )}
+
+            {/* Order Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Información del Pedido</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">N° Orden:</Label>
+                    <div className="font-medium">#{order.order_number}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Estado:</Label>
+                    <Badge variant="secondary">{order.status}</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Tipo de Entrega:</Label>
+                    <div className="capitalize">{order.fulfillment}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Cliente:</Label>
+                    <div>
+                      {order.customer_id ? (
+                        (() => {
+                          // Cliente registrado - buscar en BD
+                          const customer = customers.find(c => c.id === order.customer_id);
+                          if (customer) {
+                            return (
+                              <button
+                                className="text-primary hover:underline text-left"
+                                onClick={() => {
+                                  // TODO: Implementar modal de información de cliente
+                                  console.log('Ver cliente:', customer.id);
+                                }}
+                              >
+                                {`${customer.name} ${customer.apellido || ''}`.trim()}
+                              </button>
+                            );
+                          }
+                          return <span>Cliente no encontrado</span>;
+                        })()
+                      ) : (
+                        // Cliente no registrado - extraer de notes
+                        (() => {
+                          try {
+                            const notes = JSON.parse(order.notes || '{}');
+                            const guestName = notes.customerInfo?.name || 'Cliente';
+                            return <span className="text-muted-foreground">{guestName}</span>;
+                          } catch {
+                            return <span className="text-muted-foreground">Cliente</span>;
+                          }
+                        })()
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Order Items */}
             <Card>
