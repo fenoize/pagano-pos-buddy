@@ -161,8 +161,36 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
                     {item.priceKind && (item.priceKind === 'combo' ? 'Combo' : 'Solo')}
                   </div>
                   
-                  {/* Extras */}
-                  {item.extras.length > 0 && (
+                  {/* Combo Items Details */}
+                  {item.is_combo_item && item.combo_selections && item.combo_selections.length > 0 && (
+                    <div className={`text-muted-foreground mt-1 ${compact ? 'text-xs' : 'text-xs'}`}>
+                      {item.combo_selections.map((comboItem: any, comboIndex: number) => (
+                        <div key={comboIndex} className="mb-1">
+                          <span className="font-medium">
+                            {comboItem.quantity}x {comboItem.product_name}
+                            {comboItem.variant_name ? ` - ${comboItem.variant_name}` : ''}
+                          </span>
+                          {/* Combo item extras */}
+                          {comboItem.extras && comboItem.extras.length > 0 && (
+                            <div className="ml-2 text-muted-foreground">
+                              Extras: {comboItem.extras.map((extra: any) => 
+                                `${extra.quantity || 1}x ${extra.label}`
+                              ).join(', ')}
+                            </div>
+                          )}
+                          {/* Combo item modifiers */}
+                          {comboItem.modifiers && comboItem.modifiers.length > 0 && (
+                            <div className="ml-2 text-muted-foreground">
+                              Modificadores: {comboItem.modifiers.map((mod: any) => mod.name).join(', ')}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Regular Extras (for non-combo items) */}
+                  {!item.is_combo_item && item.extras && item.extras.length > 0 && (
                     <div className={`text-muted-foreground mt-1 ${compact ? 'text-xs' : 'text-xs'}`}>
                       Extras: {item.extras.map(extra => 
                         `${extra.quantity || 1}x ${extra.label}`
@@ -170,8 +198,8 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
                     </div>
                   )}
 
-                  {/* Modifiers */}
-                  {item.modifiers.length > 0 && (
+                  {/* Regular Modifiers (for non-combo items) */}
+                  {!item.is_combo_item && item.modifiers && item.modifiers.length > 0 && (
                     <div className={`text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
                       Modificadores: {item.modifiers.map(mod => mod.name).join(', ')}
                     </div>

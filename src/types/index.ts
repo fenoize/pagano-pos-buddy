@@ -171,6 +171,7 @@ export interface OrderItem {
   is_combo_item?: boolean;
   combo_parent_id?: string;
   combo_slot_id?: string;
+  combo_selections?: any[];
 }
 
 export interface Order {
