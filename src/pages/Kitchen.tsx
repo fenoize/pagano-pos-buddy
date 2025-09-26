@@ -8,10 +8,10 @@ import { KitchenSounds } from '@/components/kitchen/KitchenSounds';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, Users, Maximize2, Minimize2, X } from 'lucide-react';
+import { Clock, Users, Maximize2, Minimize2, X, RefreshCw } from 'lucide-react';
 
 export default function Kitchen() {
-  const { orders, updateOrderStatus, loading } = useKitchenOrders();
+  const { orders, updateOrderStatus, loading, refetch } = useKitchenOrders();
   const { config } = useKitchenConfig();
   const { isExpanded, toggleExpanded, exitExpanded } = useKitchenExpanded();
   const isMobile = useIsMobile();
@@ -66,6 +66,15 @@ export default function Kitchen() {
               <Users className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium">{activeOrders.length}</span>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refetch}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Actualizar
+            </Button>
           </div>
           <Button 
             variant="ghost" 
@@ -135,6 +144,15 @@ export default function Kitchen() {
           >
             <Maximize2 className="w-4 h-4" />
             {isMobile ? "Expandir" : "Modo Pantalla Completa"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refetch}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Actualizar
           </Button>
         </div>
         
