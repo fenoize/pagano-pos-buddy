@@ -419,12 +419,12 @@ export default function Sales() {
               {/* Customer */}
               <div className="space-y-2">
                 <Label>Cliente</Label>
-                <Select value={filters.customerId || ''} onValueChange={(value) => setFilters({...filters, customerId: value || undefined})}>
+                <Select value={filters.customerId || 'all'} onValueChange={(value) => setFilters({...filters, customerId: value === 'all' ? undefined : value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todos los clientes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos los clientes</SelectItem>
+                    <SelectItem value="all">Todos los clientes</SelectItem>
                     {customers.map(customer => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name} {customer.apellido || ''}
@@ -437,12 +437,12 @@ export default function Sales() {
               {/* Status */}
               <div className="space-y-2">
                 <Label>Estado</Label>
-                <Select value={filters.status || ''} onValueChange={(value) => setFilters({...filters, status: value || undefined})}>
+                <Select value={filters.status || 'all'} onValueChange={(value) => setFilters({...filters, status: value === 'all' ? undefined : value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todos los estados" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos los estados</SelectItem>
+                    <SelectItem value="all">Todos los estados</SelectItem>
                     <SelectItem value="Pendiente">Pendiente</SelectItem>
                     <SelectItem value="En preparación">En preparación</SelectItem>
                     <SelectItem value="En pausa">En pausa</SelectItem>
@@ -456,12 +456,12 @@ export default function Sales() {
               {/* Payment Method */}
               <div className="space-y-2">
                 <Label>Método de Pago</Label>
-                <Select value={filters.paymentMethod || ''} onValueChange={(value) => setFilters({...filters, paymentMethod: value || undefined})}>
+                <Select value={filters.paymentMethod || 'all'} onValueChange={(value) => setFilters({...filters, paymentMethod: value === 'all' ? undefined : value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todos los métodos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos los métodos</SelectItem>
+                    <SelectItem value="all">Todos los métodos</SelectItem>
                     <SelectItem value="efectivo">Efectivo</SelectItem>
                     <SelectItem value="pos">POS</SelectItem>
                     <SelectItem value="transferencia">Transferencia</SelectItem>

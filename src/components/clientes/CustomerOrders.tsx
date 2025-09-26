@@ -223,14 +223,14 @@ export default function CustomerOrders({ customerId }: CustomerOrdersProps) {
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <Select 
-                value={filters.status || ''} 
-                onValueChange={(value) => setFilters({...filters, status: value as OrderStatus || undefined})}
+                value={filters.status || 'all'} 
+                onValueChange={(value) => setFilters({...filters, status: value === 'all' ? undefined : value as OrderStatus})}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los estados</SelectItem>
+                  <SelectItem value="all">Todos los estados</SelectItem>
                   <SelectItem value="Pendiente">Pendiente</SelectItem>
                   <SelectItem value="En preparación">En preparación</SelectItem>
                   <SelectItem value="En pausa">En pausa</SelectItem>
@@ -241,14 +241,14 @@ export default function CustomerOrders({ customerId }: CustomerOrdersProps) {
               </Select>
 
               <Select 
-                value={filters.fulfillment || ''} 
-                onValueChange={(value) => setFilters({...filters, fulfillment: value as FulfillmentType || undefined})}
+                value={filters.fulfillment || 'all'} 
+                onValueChange={(value) => setFilters({...filters, fulfillment: value === 'all' ? undefined : value as FulfillmentType})}
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Entrega" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="retiro">Retiro</SelectItem>
                   <SelectItem value="delivery">Delivery</SelectItem>
                 </SelectContent>
