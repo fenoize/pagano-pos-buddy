@@ -128,15 +128,21 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
 
       <CardContent className={`space-y-3 ${compact ? 'px-3 py-2' : 'space-y-4'}`}>
         {/* Customer Info */}
-        {order.customer && (
+        {(order.customer || order.nombre_resumen) && (
           <div className={`flex items-center gap-2 text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
             <User className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
-            <span>{order.customer.name} {order.customer.apellido}</span>
-            {order.customer.phone && (
+            {order.customer ? (
               <>
-                <Phone className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
-                <span>{order.customer.phone}</span>
+                <span>{order.customer.name} {order.customer.apellido}</span>
+                {order.customer.phone && (
+                  <>
+                    <Phone className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
+                    <span>{order.customer.phone}</span>
+                  </>
+                )}
               </>
+            ) : (
+              <span>{order.nombre_resumen}</span>
             )}
           </div>
         )}

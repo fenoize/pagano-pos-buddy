@@ -35,6 +35,7 @@ interface Order {
   payment_method: string;
   status: string;
   notes: string;
+  nombre_resumen?: string;
   created_at: string;
   updated_at: string;
   delivery_address?: string;
@@ -202,9 +203,8 @@ export default function Sales() {
           customerName = `${customer.name} ${customer.apellido || ''}`.trim();
         }
       } else {
-        // Si no está registrado, extraer de notes
-        const orderDetails = getOrderDetails(order);
-        customerName = orderDetails.customerInfo?.name || 'Cliente';
+        // Si no está registrado, usar nombre_resumen
+        customerName = order.nombre_resumen || 'Cliente';
       }
       
       return {
@@ -279,9 +279,8 @@ export default function Sales() {
       }
     }
     
-    // Si no está registrado, extraer nombre de notes
-    const orderDetails = getOrderDetails(order);
-    const guestName = orderDetails.customerInfo?.name || 'Cliente';
+    // Si no está registrado, usar nombre_resumen
+    const guestName = order.nombre_resumen || 'Cliente';
     
     return (
       <span className="text-muted-foreground">

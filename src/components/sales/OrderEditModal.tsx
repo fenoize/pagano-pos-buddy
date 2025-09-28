@@ -228,19 +228,11 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                               </button>
                             );
                           }
-                          return <span>Cliente no encontrado</span>;
+                          return <span className="text-muted-foreground">{order.nombre_resumen || 'Cliente'}</span>;
                         })()
                       ) : (
-                        // Cliente no registrado - extraer de notes
-                        (() => {
-                          try {
-                            const notes = JSON.parse(order.notes || '{}');
-                            const guestName = notes.customerInfo?.name || 'Cliente';
-                            return <span className="text-muted-foreground">{guestName}</span>;
-                          } catch {
-                            return <span className="text-muted-foreground">Cliente</span>;
-                          }
-                        })()
+                        // Cliente no registrado - usar nombre_resumen
+                        <span className="text-muted-foreground">{order.nombre_resumen || 'Cliente'}</span>
                       )}
                     </div>
                   </div>

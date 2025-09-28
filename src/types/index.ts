@@ -195,6 +195,7 @@ export interface Order {
   payment_method: PaymentMethod;
   status: OrderStatus;
   notes?: string;
+  nombre_resumen?: string;
   created_by_user_id?: string;
   created_by_user?: User;
   created_at: string;
