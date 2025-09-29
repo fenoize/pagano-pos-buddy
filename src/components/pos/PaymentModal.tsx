@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CreditCard, Banknote, Smartphone, Coins } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { DeliveryData } from './FulfillmentStep';
+import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -23,6 +25,7 @@ interface PaymentModalProps {
   discount: number;
   deliveryFee: number;
   orderName?: string;
+  deliveryData?: DeliveryData | null;
 }
 
 interface PaymentData {
@@ -36,7 +39,7 @@ interface PaymentData {
   notes?: string;
 }
 
-export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total, subtotal, discount, deliveryFee, orderName }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total, subtotal, discount, deliveryFee, orderName, deliveryData }: PaymentModalProps) {
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [cashDenominations, setCashDenominations] = useState<number[]>([]);
   const [runaValue, setRunaValue] = useState(1000);
@@ -224,6 +227,45 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
               </div>
             </CardContent>
           </Card>
+
+          {/* Delivery Information */}
+          {deliveryFee > 0 && deliveryData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Información de Delivery</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Zona:</span>
+                    <span className="font-medium">{deliveryData.zone?.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Dirección:</span>
+                    <span className="font-medium text-right">
+                      {formatDeliveryAddress(
+                        deliveryData.addressLine,
+                        deliveryData.addressNumber,
+                        deliveryData.comunaName,
+                        deliveryData.reference
+                      )}
+                    </span>
+                  </div>
+                  {deliveryData.repartidorName && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Repartidor:</span>
+                      <span className="font-medium">{deliveryData.repartidorName}</span>
+                    </div>
+                  )}
+                  <Separator className="my-2" />
+                  <div className="flex justify-between font-medium">
+                    <span>Costo Delivery (no afecto):</span>
+                    <span className="currency">{formatPrice(deliveryFee)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Payment Methods */}
           <Card>

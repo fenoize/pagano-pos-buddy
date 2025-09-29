@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { CashSession, User, AppRole } from '@/types';
 import { CashSessionDetailButton } from './CashSessionDetailButton';
+import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -211,7 +212,7 @@ export function CashSessionReport() {
     setFilteredSessions(filtered);
   };
 
-  const exportToCSV = () => {
+  const exportToCSV = async () => {
     const headers = [
       'Fecha Apertura',
       'Usuario',
@@ -225,26 +226,55 @@ export function CashSessionReport() {
       'POS',
       'Ingresos',
       'Egresos',
-      'Diferencia'
+      'Diferencia',
+      'Deliveries Realizados',
+      'Total Delivery'
     ];
 
-    const csvData = filteredSessions.map(session => [
-      new Date(session.opened_at).toLocaleDateString('es-CL'),
-      session.user?.username || '-',
-      new Date(session.opened_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-      session.closed_at 
-        ? new Date(session.closed_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
-        : 'Abierto',
-      session.opening_cash,
-      session.closing_cash || 0,
-      session.summary?.totalSales || 0,
-      session.summary?.totalCash || 0,
-      session.summary?.totalMP || 0,
-      session.summary?.totalPOS || 0,
-      session.summary?.ingresos || 0,
-      session.summary?.egresos || 0,
-      session.summary?.difference || 0
-    ]);
+    // Get delivery data for each session
+    const csvDataPromises = filteredSessions.map(async (session) => {
+      let deliveryCount = 0;
+      let totalDeliveryFee = 0;
+
+      if (session.closed_at) {
+        try {
+          const { data: deliveryOrders } = await supabase
+            .from('orders')
+            .select('delivery_fee')
+            .eq('fulfillment', 'delivery')
+            .eq('created_by_user_id', session.user_id)
+            .gte('created_at', session.opened_at)
+            .lte('created_at', session.closed_at);
+
+          deliveryCount = deliveryOrders?.length || 0;
+          totalDeliveryFee = deliveryOrders?.reduce((sum, order) => sum + (order.delivery_fee || 0), 0) || 0;
+        } catch (error) {
+          console.error('Error fetching delivery data:', error);
+        }
+      }
+
+      return [
+        new Date(session.opened_at).toLocaleDateString('es-CL'),
+        session.user?.username || '-',
+        new Date(session.opened_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+        session.closed_at 
+          ? new Date(session.closed_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+          : 'Abierto',
+        session.opening_cash,
+        session.closing_cash || 0,
+        session.summary?.totalSales || 0,
+        session.summary?.totalCash || 0,
+        session.summary?.totalMP || 0,
+        session.summary?.totalPOS || 0,
+        session.summary?.ingresos || 0,
+        session.summary?.egresos || 0,
+        session.summary?.difference || 0,
+        deliveryCount,
+        totalDeliveryFee
+      ];
+    });
+
+    const csvData = await Promise.all(csvDataPromises);
 
     const csvContent = [headers, ...csvData]
       .map(row => row.map(field => `"${field}"`).join(','))

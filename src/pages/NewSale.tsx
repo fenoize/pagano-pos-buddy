@@ -9,7 +9,8 @@ import { useCashSession } from '@/hooks/useCashSession';
 import { CashSessionStatus } from '@/components/cash/CashSessionStatus';
 import CustomerSearchStep from '@/components/pos/CustomerSearchStep';
 import CustomerSearchWidget from '@/components/pos/CustomerSearchWidget';
-import FulfillmentStep from '@/components/pos/FulfillmentStep';
+import FulfillmentStep, { DeliveryData } from '@/components/pos/FulfillmentStep';
+import { createDeliverySnapshot } from '@/lib/deliveryHelpers';
 import ProductGrid from '@/components/pos/ProductGrid';
 import { ProductCustomizationModal } from '@/components/pos/ProductCustomizationModal';
 import Cart from '@/components/pos/Cart';
@@ -27,6 +28,7 @@ export default function NewSale() {
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryZone, setDeliveryZone] = useState<string>('');
+  const [deliveryData, setDeliveryData] = useState<DeliveryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -103,6 +105,13 @@ export default function NewSale() {
     setFulfillment(type);
     setDeliveryFee(fee);
     setDeliveryZone(zone);
+  };
+
+  const handleDeliveryDataChange = (data: DeliveryData) => {
+    setDeliveryData(data);
+    if (data.zone) {
+      setDeliveryFee(data.zone.delivery_fee);
+    }
   };
 
   const handleFulfillmentNext = () => {
@@ -305,7 +314,19 @@ export default function NewSale() {
           payment_pos: paymentData.method === 'POS' ? paymentData.amount : 0,
           payment_method: paymentMethod,
           status: 'Pendiente' as const,
-          notes: paymentData.notes || null
+          notes: paymentData.notes || null,
+          // Delivery snapshot fields
+          ...(fulfillment === 'delivery' && deliveryData && {
+            delivery_zone_id: deliveryData.zone?.id,
+            delivery_zone_name: deliveryData.zone?.name,
+            delivery_address: deliveryData.addressLine,
+            delivery_number: deliveryData.addressNumber,
+            delivery_comuna_id: deliveryData.comunaId,
+            delivery_comuna: deliveryData.comunaName,
+            delivery_reference: deliveryData.reference,
+            delivery_person_id: deliveryData.repartidorId || null,
+            delivery_person_name: deliveryData.repartidorName || null
+          })
         };
 
       const { data: orderResult, error: orderError } = await supabase
@@ -315,6 +336,24 @@ export default function NewSale() {
         .single();
 
       if (orderError) throw orderError;
+
+      // Save address if requested
+      if (fulfillment === 'delivery' && deliveryData?.saveAddress && customerId) {
+        try {
+          await supabase.from('addresses').insert({
+            customer_id: customerId,
+            calle: deliveryData.addressLine,
+            numero: deliveryData.addressNumber,
+            comuna_id: deliveryData.comunaId,
+            comuna: deliveryData.comunaName,
+            observaciones: deliveryData.reference,
+            is_default: false
+          });
+        } catch (error) {
+          console.error('Error saving address:', error);
+          // Don't fail the order if address save fails
+        }
+      }
 
       // Handle runas transactions if applicable
       if (customerId && (usedRunas > 0 || total > 0)) {
@@ -371,6 +410,7 @@ export default function NewSale() {
       setFulfillment('retiro');
       setDeliveryFee(0);
       setDeliveryZone('');
+      setDeliveryData(null);
       setDiscount(null);
       setCurrentStep(1);
       setShowPaymentModal(false);
@@ -469,7 +509,9 @@ export default function NewSale() {
         return (
           <FulfillmentStep
             fulfillment={fulfillment}
+            customer={customer}
             onFulfillmentChange={handleFulfillmentChange}
+            onDeliveryDataChange={handleDeliveryDataChange}
             onNext={handleFulfillmentNext}
           />
         );
@@ -559,11 +601,12 @@ export default function NewSale() {
           customer={customer}
           items={cartItems}
           total={total}
-          subtotal={subtotal}
-          discount={totalDiscount}
-          deliveryFee={deliveryFee}
-          orderName={orderName}
-        />
+            subtotal={subtotal}
+            discount={totalDiscount}
+            deliveryFee={deliveryFee}
+            orderName={orderName}
+            deliveryData={deliveryData}
+          />
     </div>
   );
 }

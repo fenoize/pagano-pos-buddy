@@ -118,9 +118,29 @@ export interface Address {
   numero: string;
   depto?: string;
   comuna: string;
+  comuna_id?: string; // FK a tabla comunas
   ciudad: string;
   observaciones?: string;
   is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Comuna {
+  id: string;
+  name: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  description?: string;
+  delivery_fee: number;
+  active: boolean;
   created_at: string;
   updated_at: string;
 }
