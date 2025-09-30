@@ -384,7 +384,7 @@ export default function FulfillmentStep({ fulfillment, customer, onFulfillmentCh
                         <SelectValue placeholder="Sin asignar" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin asignar</SelectItem>
+                        <SelectItem value="none">Sin asignar</SelectItem>
                         {repartidores.map(rep => (
                           <SelectItem key={rep.id} value={rep.id}>
                             {rep.full_name || rep.username}
