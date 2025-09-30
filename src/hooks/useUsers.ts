@@ -7,7 +7,7 @@ const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
   const mapping: Record<string, AppRole> = {
     'Caja': 'Cajero',
     'Cocina': 'Cocinero',
-    'Reparto': 'Repartidor'
+    'Reparto': 'Reparto'
   };
   return mapping[dbRole] as AppRole || dbRole as AppRole;
 };
@@ -17,7 +17,7 @@ const mapAppRoleToDatabase = (appRole: AppRole): string => {
   const mapping: Record<AppRole, string> = {
     'Cajero': 'Caja',
     'Cocinero': 'Cocina',
-    'Repartidor': 'Reparto',
+    'Reparto': 'Reparto',
     'Administrador': 'Administrador',
     // No existe "Preparador" en el enum de la BD; lo mapeamos a Cocina por compatibilidad
     'Preparador': 'Cocina',

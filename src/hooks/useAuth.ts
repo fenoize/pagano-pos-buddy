@@ -8,7 +8,7 @@ const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
   const mapping: Record<string, AppRole> = {
     'Caja': 'Cajero',
     'Cocina': 'Cocinero',
-    'Reparto': 'Repartidor'
+    'Reparto': 'Reparto'
   };
   return mapping[dbRole] as AppRole || dbRole as AppRole;
 };

@@ -1,4 +1,4 @@
-export type AppRole = 'Administrador' | 'Cajero' | 'Cocinero' | 'Preparador' | 'Repartidor' | 'Viewer';
+export type AppRole = 'Administrador' | 'Cajero' | 'Cocinero' | 'Preparador' | 'Reparto' | 'Viewer';
 
 export type OrderStatus = 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'Entregado' | 'Cancelado';
 
@@ -200,9 +200,15 @@ export interface Order {
   customer_id?: string;
   customer?: Customer;
   fulfillment: FulfillmentType;
+  delivery_zone_id?: string;
+  delivery_zone_name?: string;
   delivery_address?: string;
   delivery_number?: string;
   delivery_comuna?: string;
+  delivery_comuna_id?: string;
+  delivery_reference?: string;
+  delivery_person_id?: string;
+  delivery_person_name?: string;
   delivery_distance?: number;
   items: OrderItem[];
   subtotal: number;

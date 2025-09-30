@@ -31,7 +31,7 @@ export function useCustomers() {
 
   // Verificar permisos
   const canManageCustomers = user?.role === 'Administrador' || user?.role === 'Cajero';
-  const canViewCustomers = canManageCustomers || user?.role === 'Repartidor';
+  const canViewCustomers = canManageCustomers || user?.role === 'Reparto';
 
   const fetchCustomers = async (
     filters: CustomerFilters = {},

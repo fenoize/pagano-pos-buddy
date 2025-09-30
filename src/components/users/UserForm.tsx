@@ -165,8 +165,8 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
       description: 'Acceso solo a la cocina (KDS)' 
     },
     { 
-      value: 'Repartidor', 
-      label: 'Repartidor', 
+      value: 'Reparto', 
+      label: 'Reparto',
       description: 'Acceso a módulo de delivery (próximamente)' 
     },
     { 

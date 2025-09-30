@@ -8,13 +8,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Order, OrderItem } from '@/types';
+import { Order, OrderItem, Comuna } from '@/types';
 import { useOrderEdit, OrderEditData } from '@/hooks/useOrderEdit';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useComunas } from '@/hooks/useComunas';
+import { useUsers } from '@/hooks/useUsers';
+import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { OrderItemEditRow } from './OrderItemEditRow';
 import { ProductSelector } from './ProductSelector';
 import { OrderHistoryModal } from './OrderHistoryModal';
-import { Edit, Save, X, History, Plus } from 'lucide-react';
+import { Edit, Save, X, History, Plus, MapPin, User } from 'lucide-react';
 
 interface OrderEditModalProps {
   order: Order | null;
@@ -32,6 +35,10 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   
   const { updateOrder, calculateTotals, isLoading } = useOrderEdit();
   const { customers } = useCustomers();
+  const { comunas } = useComunas();
+  const { users } = useUsers();
+  
+  const repartidores = users.filter(u => u.role === 'Reparto' && u.active);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -51,7 +58,12 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         payment_pos: order.payment_pos || 0,
         subtotal: order.subtotal,
         discount: order.discount || 0,
-        total: order.total
+        total: order.total,
+        delivery_address: order.delivery_address || '',
+        delivery_number: order.delivery_number || '',
+        delivery_comuna_id: order.delivery_comuna_id || '',
+        delivery_reference: order.delivery_reference || '',
+        delivery_person_id: order.delivery_person_id || null
       });
     }
   }, [order, isEditMode, editData]);
@@ -239,6 +251,137 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                 </div>
               </CardContent>
             </Card>
+
+            {/* Delivery Information - Only show for delivery orders */}
+            {order.fulfillment === 'delivery' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5" />
+                    Información de Delivery
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isEditMode ? (
+                    <>
+                      {/* Zona de delivery */}
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground">Zona:</Label>
+                        <div className="font-medium">{order.delivery_zone_name || 'N/A'}</div>
+                      </div>
+
+                      {/* Dirección editable */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="delivery_address">Calle</Label>
+                          <Input
+                            id="delivery_address"
+                            value={editData?.delivery_address || ''}
+                            onChange={(e) => setEditData(prev => prev ? { ...prev, delivery_address: e.target.value } : null)}
+                            placeholder="Nombre de la calle"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="delivery_number">Número</Label>
+                          <Input
+                            id="delivery_number"
+                            value={editData?.delivery_number || ''}
+                            onChange={(e) => setEditData(prev => prev ? { ...prev, delivery_number: e.target.value } : null)}
+                            placeholder="Número"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="delivery_comuna">Comuna</Label>
+                        <Select
+                          value={editData?.delivery_comuna_id || ''}
+                          onValueChange={(value) => setEditData(prev => prev ? { ...prev, delivery_comuna_id: value } : null)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar comuna" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {comunas.map(comuna => (
+                              <SelectItem key={comuna.id} value={comuna.id}>
+                                {comuna.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="delivery_reference">Referencia</Label>
+                        <Textarea
+                          id="delivery_reference"
+                          value={editData?.delivery_reference || ''}
+                          onChange={(e) => setEditData(prev => prev ? { ...prev, delivery_reference: e.target.value } : null)}
+                          placeholder="Referencias adicionales (depto, block, etc.)"
+                          rows={2}
+                        />
+                      </div>
+
+                      <Separator />
+
+                      {/* Repartidor editable */}
+                      <div className="space-y-2">
+                        <Label htmlFor="delivery_person" className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Repartidor Asignado
+                        </Label>
+                        <Select
+                          value={editData?.delivery_person_id || 'none'}
+                          onValueChange={(value) => setEditData(prev => prev ? { ...prev, delivery_person_id: value === 'none' ? null : value } : null)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sin asignar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin asignar</SelectItem>
+                            {repartidores.map(rep => (
+                              <SelectItem key={rep.id} value={rep.id}>
+                                {rep.full_name || rep.username}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground">Zona:</Label>
+                        <div className="font-medium">{order.delivery_zone_name || 'N/A'}</div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground">Dirección:</Label>
+                        <div className="font-medium">
+                          {order.delivery_address && order.delivery_number && order.delivery_comuna
+                            ? formatDeliveryAddress(
+                                order.delivery_address,
+                                order.delivery_number,
+                                order.delivery_comuna,
+                                order.delivery_reference || undefined
+                              )
+                            : 'N/A'}
+                        </div>
+                      </div>
+                      <Separator />
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Repartidor Asignado:
+                        </Label>
+                        <div className="font-medium">
+                          {order.delivery_person_name || 'Sin asignar'}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Order Items */}
             <Card>

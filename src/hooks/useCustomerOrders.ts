@@ -24,7 +24,7 @@ export function useCustomerOrders() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const canViewOrders = user?.role === 'Administrador' || user?.role === 'Cajero' || user?.role === 'Repartidor';
+  const canViewOrders = user?.role === 'Administrador' || user?.role === 'Cajero' || user?.role === 'Reparto';
 
   // Obtener historial de pedidos de un cliente
   const getCustomerOrders = async (
