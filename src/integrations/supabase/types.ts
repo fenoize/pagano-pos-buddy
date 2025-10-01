@@ -20,6 +20,7 @@ export type Database = {
           calle: string
           ciudad: string | null
           comuna: string
+          comuna_id: string | null
           created_at: string | null
           customer_id: string
           depto: string | null
@@ -34,6 +35,7 @@ export type Database = {
           calle: string
           ciudad?: string | null
           comuna: string
+          comuna_id?: string | null
           created_at?: string | null
           customer_id: string
           depto?: string | null
@@ -48,6 +50,7 @@ export type Database = {
           calle?: string
           ciudad?: string | null
           comuna?: string
+          comuna_id?: string | null
           created_at?: string | null
           customer_id?: string
           depto?: string | null
@@ -58,6 +61,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "addresses_comuna_id_fkey"
+            columns: ["comuna_id"]
+            isOneToOne: false
+            referencedRelation: "comunas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_addresses_customer"
             columns: ["customer_id"]
@@ -304,6 +314,33 @@ export type Database = {
           },
         ]
       }
+      comunas: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       config: {
         Row: {
           id: string
@@ -324,6 +361,514 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      coupon_allowed_categories: {
+        Row: {
+          category_id: string
+          coupon_id: string
+        }
+        Insert: {
+          category_id: string
+          coupon_id: string
+        }
+        Update: {
+          category_id?: string
+          coupon_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_allowed_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_allowed_categories_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_allowed_extras: {
+        Row: {
+          coupon_id: string
+          extra_id: string
+        }
+        Insert: {
+          coupon_id: string
+          extra_id: string
+        }
+        Update: {
+          coupon_id?: string
+          extra_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_allowed_extras_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_allowed_extras_extra_id_fkey"
+            columns: ["extra_id"]
+            isOneToOne: false
+            referencedRelation: "product_extras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_allowed_modifiers: {
+        Row: {
+          coupon_id: string
+          modifier_id: string
+        }
+        Insert: {
+          coupon_id: string
+          modifier_id: string
+        }
+        Update: {
+          coupon_id?: string
+          modifier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_allowed_modifiers_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_allowed_modifiers_modifier_id_fkey"
+            columns: ["modifier_id"]
+            isOneToOne: false
+            referencedRelation: "product_modifiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_allowed_products: {
+        Row: {
+          coupon_id: string
+          product_id: string
+        }
+        Insert: {
+          coupon_id: string
+          product_id: string
+        }
+        Update: {
+          coupon_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_allowed_products_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_allowed_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_allowed_variants: {
+        Row: {
+          category_variant_id: string
+          coupon_id: string
+        }
+        Insert: {
+          category_variant_id: string
+          coupon_id: string
+        }
+        Update: {
+          category_variant_id?: string
+          coupon_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_allowed_variants_category_variant_id_fkey"
+            columns: ["category_variant_id"]
+            isOneToOne: false
+            referencedRelation: "category_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_allowed_variants_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_applications: {
+        Row: {
+          applied_at: string
+          applied_by: string | null
+          coupon_id: string
+          discount_delivery: number
+          discount_products: number
+          id: string
+          order_id: string
+          payload: Json | null
+        }
+        Insert: {
+          applied_at?: string
+          applied_by?: string | null
+          coupon_id: string
+          discount_delivery?: number
+          discount_products?: number
+          id?: string
+          order_id: string
+          payload?: Json | null
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string | null
+          coupon_id?: string
+          discount_delivery?: number
+          discount_products?: number
+          id?: string
+          order_id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_applications_applied_by_fkey"
+            columns: ["applied_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_applications_applied_by_fkey"
+            columns: ["applied_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_applications_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_applications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_applications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_applications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_excluded_categories: {
+        Row: {
+          category_id: string
+          coupon_id: string
+        }
+        Insert: {
+          category_id: string
+          coupon_id: string
+        }
+        Update: {
+          category_id?: string
+          coupon_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_excluded_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_excluded_categories_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_excluded_extras: {
+        Row: {
+          coupon_id: string
+          extra_id: string
+        }
+        Insert: {
+          coupon_id: string
+          extra_id: string
+        }
+        Update: {
+          coupon_id?: string
+          extra_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_excluded_extras_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_excluded_extras_extra_id_fkey"
+            columns: ["extra_id"]
+            isOneToOne: false
+            referencedRelation: "product_extras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_excluded_modifiers: {
+        Row: {
+          coupon_id: string
+          modifier_id: string
+        }
+        Insert: {
+          coupon_id: string
+          modifier_id: string
+        }
+        Update: {
+          coupon_id?: string
+          modifier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_excluded_modifiers_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_excluded_modifiers_modifier_id_fkey"
+            columns: ["modifier_id"]
+            isOneToOne: false
+            referencedRelation: "product_modifiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_excluded_products: {
+        Row: {
+          coupon_id: string
+          product_id: string
+        }
+        Insert: {
+          coupon_id: string
+          product_id: string
+        }
+        Update: {
+          coupon_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_excluded_products_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_excluded_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_excluded_variants: {
+        Row: {
+          category_variant_id: string
+          coupon_id: string
+        }
+        Insert: {
+          category_variant_id: string
+          coupon_id: string
+        }
+        Update: {
+          category_variant_id?: string
+          coupon_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_excluded_variants_category_variant_id_fkey"
+            columns: ["category_variant_id"]
+            isOneToOne: false
+            referencedRelation: "category_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_excluded_variants_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          customer_id: string
+          used_count: number
+        }
+        Insert: {
+          coupon_id: string
+          customer_id: string
+          used_count?: number
+        }
+        Update: {
+          coupon_id?: string
+          customer_id?: string
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          affects_delivery: boolean
+          affects_products: boolean
+          affects_tip: boolean
+          allow_manual_line_selection: boolean
+          allow_stack: boolean
+          amount: number
+          apply_to_combo_children: boolean
+          apply_to_discounted: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          date_end: string | null
+          date_start: string | null
+          delivery_amount: number | null
+          delivery_mode: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          max_spend: number | null
+          min_spend: number | null
+          roles_allowed: string[] | null
+          time_windows: Json | null
+          type: string
+          usage_limit_per_customer: number | null
+          usage_limit_total: number | null
+        }
+        Insert: {
+          affects_delivery?: boolean
+          affects_products?: boolean
+          affects_tip?: boolean
+          allow_manual_line_selection?: boolean
+          allow_stack?: boolean
+          amount: number
+          apply_to_combo_children?: boolean
+          apply_to_discounted?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          date_end?: string | null
+          date_start?: string | null
+          delivery_amount?: number | null
+          delivery_mode?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_spend?: number | null
+          min_spend?: number | null
+          roles_allowed?: string[] | null
+          time_windows?: Json | null
+          type: string
+          usage_limit_per_customer?: number | null
+          usage_limit_total?: number | null
+        }
+        Update: {
+          affects_delivery?: boolean
+          affects_products?: boolean
+          affects_tip?: boolean
+          allow_manual_line_selection?: boolean
+          allow_stack?: boolean
+          amount?: number
+          apply_to_combo_children?: boolean
+          apply_to_discounted?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          date_end?: string | null
+          date_start?: string | null
+          delivery_amount?: number | null
+          delivery_mode?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_spend?: number | null
+          min_spend?: number | null
+          roles_allowed?: string[] | null
+          time_windows?: Json | null
+          type?: string
+          usage_limit_per_customer?: number | null
+          usage_limit_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupons_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customers: {
         Row: {
@@ -472,6 +1017,75 @@ export type Database = {
         }
         Relationships: []
       }
+      order_delivery_audit: {
+        Row: {
+          changed_at: string
+          changed_by_user_id: string | null
+          field_name: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          order_id: string
+          reason: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by_user_id?: string | null
+          field_name: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          order_id: string
+          reason?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by_user_id?: string | null
+          field_name?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          order_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_delivery_audit_changed_by_user_id_fkey"
+            columns: ["changed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_delivery_audit_changed_by_user_id_fkey"
+            columns: ["changed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_delivery_audit_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_delivery_audit_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_delivery_audit_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           combo_data: Json | null
@@ -480,10 +1094,15 @@ export type Database = {
           customer_id: string | null
           delivery_address: string | null
           delivery_comuna: string | null
+          delivery_comuna_id: string | null
           delivery_distance: number | null
           delivery_fee: number | null
           delivery_number: string | null
+          delivery_person_id: string | null
+          delivery_person_name: string | null
+          delivery_reference: string | null
           delivery_zone_id: string | null
+          delivery_zone_name: string | null
           discount: number | null
           fulfillment: Database["public"]["Enums"]["fulfillment_type"]
           id: string
@@ -507,10 +1126,15 @@ export type Database = {
           customer_id?: string | null
           delivery_address?: string | null
           delivery_comuna?: string | null
+          delivery_comuna_id?: string | null
           delivery_distance?: number | null
           delivery_fee?: number | null
           delivery_number?: string | null
+          delivery_person_id?: string | null
+          delivery_person_name?: string | null
+          delivery_reference?: string | null
           delivery_zone_id?: string | null
+          delivery_zone_name?: string | null
           discount?: number | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
@@ -534,10 +1158,15 @@ export type Database = {
           customer_id?: string | null
           delivery_address?: string | null
           delivery_comuna?: string | null
+          delivery_comuna_id?: string | null
           delivery_distance?: number | null
           delivery_fee?: number | null
           delivery_number?: string | null
+          delivery_person_id?: string | null
+          delivery_person_name?: string | null
+          delivery_reference?: string | null
           delivery_zone_id?: string | null
+          delivery_zone_name?: string | null
           discount?: number | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
@@ -574,6 +1203,27 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_comuna_id_fkey"
+            columns: ["delivery_comuna_id"]
+            isOneToOne: false
+            referencedRelation: "comunas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_person_id_fkey"
+            columns: ["delivery_person_id"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_person_id_fkey"
+            columns: ["delivery_person_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {

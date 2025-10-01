@@ -84,6 +84,10 @@ export type RunaMovementType = 'acumulacion' | 'canje' | 'ajuste' | 'promo';
 
 export type OrigenMovimiento = 'POS' | 'Web' | 'Manual';
 
+// Cupones
+export type CouponType = 'percent' | 'fixed_cart' | 'fixed_product';
+export type DeliveryMode = 'free' | 'fixed' | 'percent';
+
 export interface Customer {
   id: string;
   nombres?: string;
@@ -186,6 +190,11 @@ export interface OrderItem {
   variant_name?: string;
   product_variant_option_id?: string; // Added this field
   variant_price?: number;
+  selectedVariant?: {
+    id: string;
+    name: string;
+    price: number;
+  };
   
   // Para combos
   is_combo_item?: boolean;
@@ -222,6 +231,11 @@ export interface Order {
   status: OrderStatus;
   notes?: string;
   nombre_resumen?: string;
+  
+  // Cupones y descuentos
+  applied_coupons?: CouponApplication[];
+  manual_discount?: number;
+  manual_discount_type?: 'percentage' | 'fixed';
   created_by_user_id?: string;
   created_by_user?: User;
   created_at: string;
@@ -271,6 +285,96 @@ export interface Extra {
 export interface DeliveryConfig {
   minFee: number;
   perKm: number;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  type: CouponType;
+  amount: number;
+  description?: string;
+  
+  // Vigencia
+  date_start?: string;
+  date_end?: string;
+  time_windows?: Record<string, string[]>; // {"mon": ["12:00-16:00"]}
+  
+  // Condiciones
+  min_spend?: number;
+  max_spend?: number;
+  
+  // Límites
+  usage_limit_total?: number;
+  usage_limit_per_customer?: number;
+  
+  // Reglas
+  allow_stack: boolean;
+  apply_to_discounted: boolean;
+  apply_to_combo_children: boolean;
+  allow_manual_line_selection: boolean;
+  roles_allowed?: AppRole[];
+  
+  // Áreas afectadas
+  affects_products: boolean;
+  affects_delivery: boolean;
+  delivery_mode?: DeliveryMode;
+  delivery_amount?: number;
+  affects_tip: boolean;
+  
+  // Alcance (cargar dinámicamente)
+  allowed_categories?: string[];
+  excluded_categories?: string[];
+  allowed_products?: string[];
+  excluded_products?: string[];
+  allowed_variants?: string[];
+  excluded_variants?: string[];
+  allowed_extras?: string[];
+  excluded_extras?: string[];
+  allowed_modifiers?: string[];
+  excluded_modifiers?: string[];
+  
+  // Auditoría
+  created_at: string;
+  created_by?: string;
+  is_active: boolean;
+  
+  // Stats (calculados)
+  total_used?: number;
+}
+
+export interface CouponApplication {
+  id: string;
+  order_id: string;
+  coupon_id: string;
+  applied_by?: string;
+  applied_at: string;
+  discount_products: number;
+  discount_delivery: number;
+  payload: {
+    coupon_code: string;
+    coupon_type: CouponType;
+    affected_lines: Array<{
+      item_index: number;
+      product_id: string;
+      product_name: string;
+      base_amount: number;
+      discount_amount: number;
+    }>;
+    delivery_original?: number;
+    delivery_final?: number;
+  };
+}
+
+export interface CouponEligibilityResult {
+  valid: boolean;
+  errors: string[];
+  coupon?: Coupon;
+  eligible_line_indices?: number[];
+  preview?: {
+    discount_products: number;
+    discount_delivery: number;
+    total_discount: number;
+  };
 }
 
 export interface Recipe {
