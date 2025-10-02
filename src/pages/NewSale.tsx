@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Product, Customer, OrderItem, FulfillmentType } from '@/types';
+import { Product, Customer, OrderItem, FulfillmentType, CouponApplication } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +16,8 @@ import { ProductCustomizationModal } from '@/components/pos/ProductCustomization
 import Cart from '@/components/pos/Cart';
 import PaymentModal from '@/components/pos/PaymentModal';
 import RunasCalculator from '@/components/pos/RunasCalculator';
-import DiscountManager, { DiscountData } from '@/components/pos/DiscountManager';
+import { CouponManager } from '@/components/pos/CouponManager';
+import { CouponModal } from '@/components/pos/CouponModal';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default function NewSale() {
@@ -36,7 +37,9 @@ export default function NewSale() {
   const [editingItemIndex, setEditingItemIndex] = useState<number | undefined>(undefined);
   const [runaValue, setRunaValue] = useState(1000);
   const [usedRunas, setUsedRunas] = useState(0);
-  const [discount, setDiscount] = useState<DiscountData | null>(null);
+  const [appliedCoupons, setAppliedCoupons] = useState<CouponApplication[]>([]);
+  const [manualDiscount, setManualDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number; amount: number } | null>(null);
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuthContext();
   const { hasActiveSession } = useCashSession();
@@ -47,9 +50,11 @@ export default function NewSale() {
     return sum + itemTotal;
   }, 0);
 
-  const discountAmount = discount ? discount.amount : 0;
+  const couponDiscount = appliedCoupons.reduce((sum, coupon) => 
+    sum + Number(coupon.discount_products) + Number(coupon.discount_delivery), 0);
+  const manualDiscountAmount = manualDiscount ? manualDiscount.amount : 0;
   const runasDiscount = usedRunas * runaValue;
-  const totalDiscount = discountAmount + runasDiscount;
+  const totalDiscount = couponDiscount + manualDiscountAmount + runasDiscount;
   const totalBeforeDelivery = Math.max(0, subtotal - totalDiscount);
   const total = totalBeforeDelivery + deliveryFee;
 
@@ -411,7 +416,8 @@ export default function NewSale() {
       setDeliveryFee(0);
       setDeliveryZone('');
       setDeliveryData(null);
-      setDiscount(null);
+      setAppliedCoupons([]);
+      setManualDiscount(null);
       setCurrentStep(1);
       setShowPaymentModal(false);
 
@@ -485,11 +491,18 @@ export default function NewSale() {
                     }}
                 />
 
-                {/* Discount Manager */}
-                <DiscountManager 
+                {/* Coupon Manager */}
+                <CouponManager 
+                  appliedCoupons={appliedCoupons}
+                  onAddCoupon={() => setIsCouponModalOpen(true)}
+                  onRemoveCoupon={(couponId) => {
+                    setAppliedCoupons(prev => prev.filter(c => c.coupon_id !== couponId));
+                  }}
                   subtotal={subtotal}
-                  discount={discount}
-                  onDiscountChange={setDiscount}
+                  cartItems={cartItems}
+                  totalCouponDiscount={couponDiscount}
+                  manualDiscount={manualDiscount}
+                  onManualDiscountChange={setManualDiscount}
                 />
 
                 {/* Customer Search Widget */}
@@ -594,19 +607,36 @@ export default function NewSale() {
       )}
 
       {/* Payment Modal */}
-        <PaymentModal
-          isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
-          onConfirm={handlePaymentConfirm}
-          customer={customer}
-          items={cartItems}
-          total={total}
-            subtotal={subtotal}
-            discount={totalDiscount}
-            deliveryFee={deliveryFee}
-            orderName={orderName}
-            deliveryData={deliveryData}
-          />
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onConfirm={handlePaymentConfirm}
+        customer={customer}
+        items={cartItems}
+        total={total}
+        subtotal={subtotal}
+        discount={totalDiscount}
+        deliveryFee={deliveryFee}
+        orderName={orderName}
+        deliveryData={deliveryData}
+        appliedCoupons={appliedCoupons}
+        manualDiscount={manualDiscount}
+      />
+
+      {/* Coupon Modal */}
+      <CouponModal
+        isOpen={isCouponModalOpen}
+        onClose={() => setIsCouponModalOpen(false)}
+        onApply={(coupon) => {
+          setAppliedCoupons(prev => [...prev, coupon]);
+          setIsCouponModalOpen(false);
+        }}
+        cartItems={cartItems}
+        subtotal={subtotal}
+        deliveryFee={deliveryFee}
+        customer={customer}
+        existingCoupons={appliedCoupons}
+      />
     </div>
   );
 }

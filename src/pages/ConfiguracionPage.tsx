@@ -2,10 +2,11 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign, MapPin, Star, CreditCard } from 'lucide-react';
+import { Settings, DollarSign, MapPin, Star, CreditCard, Tag } from 'lucide-react';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
 import { FidelizationConfig } from '@/components/config/FidelizationConfig';
 import { PaymentMethodsConfig } from '@/components/config/PaymentMethodsConfig';
+import CouponsManagement from './CouponsManagement';
 
 export default function ConfiguracionPage() {
   const { user } = useAuthContext();
@@ -34,7 +35,7 @@ export default function ConfiguracionPage() {
       </div>
 
       <Tabs defaultValue="zones" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="zones" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
             Zonas Delivery
@@ -50,6 +51,10 @@ export default function ConfiguracionPage() {
           <TabsTrigger value="fidelization" className="flex items-center gap-2">
             <Star className="w-4 h-4" />
             Fidelización
+          </TabsTrigger>
+          <TabsTrigger value="coupons" className="flex items-center gap-2">
+            <Tag className="w-4 h-4" />
+            Cupones
           </TabsTrigger>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
@@ -81,6 +86,10 @@ export default function ConfiguracionPage() {
 
         <TabsContent value="fidelization" className="space-y-6">
           <FidelizationConfig />
+        </TabsContent>
+
+        <TabsContent value="coupons" className="space-y-6">
+          <CouponsManagement />
         </TabsContent>
 
         <TabsContent value="general" className="space-y-6">

@@ -13,6 +13,7 @@ import { CreditCard, Banknote, Smartphone, Coins } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DeliveryData } from './FulfillmentStep';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
+import { CouponApplication } from '@/types';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -26,6 +27,8 @@ interface PaymentModalProps {
   deliveryFee: number;
   orderName?: string;
   deliveryData?: DeliveryData | null;
+  appliedCoupons?: CouponApplication[];
+  manualDiscount?: { type: 'percentage' | 'fixed'; value: number; amount: number } | null;
 }
 
 interface PaymentData {
@@ -39,7 +42,7 @@ interface PaymentData {
   notes?: string;
 }
 
-export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total, subtotal, discount, deliveryFee, orderName, deliveryData }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total, subtotal, discount, deliveryFee, orderName, deliveryData, appliedCoupons = [], manualDiscount }: PaymentModalProps) {
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [cashDenominations, setCashDenominations] = useState<number[]>([]);
   const [runaValue, setRunaValue] = useState(1000);
@@ -206,10 +209,22 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
                     <span>Subtotal:</span>
                     <span className="currency">{formatPrice(subtotal)}</span>
                   </div>
-                  {discount > 0 && (
+                  {appliedCoupons.length > 0 && (
+                    <>
+                      {appliedCoupons.map((coupon, index) => (
+                        <div key={index} className="flex justify-between text-sm text-green-600">
+                          <span>Cupón {coupon.payload.coupon_code}:</span>
+                          <span className="currency">
+                            -{formatPrice(Number(coupon.discount_products) + Number(coupon.discount_delivery))}
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  {manualDiscount && manualDiscount.amount > 0 && (
                     <div className="flex justify-between text-sm text-destructive">
-                      <span>Descuento:</span>
-                      <span className="currency">-{formatPrice(discount)}</span>
+                      <span>Descuento Manual ({manualDiscount.type === 'percentage' ? `${manualDiscount.value}%` : formatPrice(manualDiscount.value)}):</span>
+                      <span className="currency">-{formatPrice(manualDiscount.amount)}</span>
                     </div>
                   )}
                   {deliveryFee > 0 && (
