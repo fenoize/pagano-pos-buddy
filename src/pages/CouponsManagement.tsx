@@ -10,11 +10,15 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Edit, Trash2, Tag } from 'lucide-react';
 import { useCoupons } from '@/hooks/useCoupons';
-import { Coupon, CouponType } from '@/types';
+import { Coupon, CouponType, Category, Product } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function CouponsManagement() {
   const { user } = useAuthContext();
@@ -35,6 +39,42 @@ export default function CouponsManagement() {
     allow_manual_line_selection: false,
   });
 
+  // Estados para alcance de productos
+  const [scopeMode, setScopeMode] = useState<'all' | 'categories' | 'products'>('all');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedAllowedCategories, setSelectedAllowedCategories] = useState<string[]>([]);
+  const [selectedExcludedCategories, setSelectedExcludedCategories] = useState<string[]>([]);
+  const [selectedAllowedProducts, setSelectedAllowedProducts] = useState<string[]>([]);
+  const [selectedExcludedProducts, setSelectedExcludedProducts] = useState<string[]>([]);
+
+  // Cargar categorías y productos al abrir el modal
+  useEffect(() => {
+    if (isDialogOpen) {
+      fetchCategoriesAndProducts();
+    }
+  }, [isDialogOpen]);
+
+  const fetchCategoriesAndProducts = async () => {
+    // Cargar categorías activas
+    const { data: categoriesData } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('active', true)
+      .order('name');
+    
+    setCategories(categoriesData || []);
+    
+    // Cargar productos activos
+    const { data: productsData } = await supabase
+      .from('products')
+      .select('id, name, category')
+      .eq('active', true)
+      .order('name');
+    
+    setProducts(productsData || []);
+  };
+
   const resetForm = () => {
     setFormData({
       code: '',
@@ -50,11 +90,30 @@ export default function CouponsManagement() {
       allow_manual_line_selection: false,
     });
     setEditingCoupon(null);
+    setScopeMode('all');
+    setSelectedAllowedCategories([]);
+    setSelectedExcludedCategories([]);
+    setSelectedAllowedProducts([]);
+    setSelectedExcludedProducts([]);
   };
 
   const handleEdit = (coupon: Coupon) => {
     setEditingCoupon(coupon);
     setFormData(coupon);
+    
+    // Determinar el modo de alcance
+    if (coupon.allowed_categories?.length || coupon.excluded_categories?.length) {
+      setScopeMode('categories');
+      setSelectedAllowedCategories(coupon.allowed_categories || []);
+      setSelectedExcludedCategories(coupon.excluded_categories || []);
+    } else if (coupon.allowed_products?.length || coupon.excluded_products?.length) {
+      setScopeMode('products');
+      setSelectedAllowedProducts(coupon.allowed_products || []);
+      setSelectedExcludedProducts(coupon.excluded_products || []);
+    } else {
+      setScopeMode('all');
+    }
+    
     setIsDialogOpen(true);
   };
 
@@ -87,10 +146,29 @@ export default function CouponsManagement() {
         return;
       }
 
-      const couponData = {
+      const couponData: Partial<Coupon> = {
         ...formData,
         created_by: user?.id,
       };
+
+      // Agregar alcance según el modo seleccionado
+      if (scopeMode === 'categories') {
+        couponData.allowed_categories = selectedAllowedCategories;
+        couponData.excluded_categories = selectedExcludedCategories;
+        couponData.allowed_products = [];
+        couponData.excluded_products = [];
+      } else if (scopeMode === 'products') {
+        couponData.allowed_products = selectedAllowedProducts;
+        couponData.excluded_products = selectedExcludedProducts;
+        couponData.allowed_categories = [];
+        couponData.excluded_categories = [];
+      } else {
+        // 'all' - limpiar todo
+        couponData.allowed_categories = [];
+        couponData.excluded_categories = [];
+        couponData.allowed_products = [];
+        couponData.excluded_products = [];
+      }
 
       if (editingCoupon) {
         await updateCoupon(editingCoupon.id, couponData);
@@ -297,7 +375,8 @@ export default function CouponsManagement() {
               </TabsContent>
 
               <TabsContent value="rules" className="space-y-4">
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  {/* Switch de Aplica a Productos */}
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="affects_products"
@@ -306,7 +385,175 @@ export default function CouponsManagement() {
                     />
                     <Label htmlFor="affects_products">Aplica a Productos</Label>
                   </div>
+                  
+                  {/* Sección de Alcance (solo visible si affects_products = true) */}
+                  {formData.affects_products && (
+                    <Card className="border-2 border-primary/20">
+                      <CardHeader>
+                        <CardTitle className="text-base">Alcance de Productos</CardTitle>
+                        <CardDescription>
+                          Define qué productos son elegibles para este cupón
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Radio Group para seleccionar el modo */}
+                        <RadioGroup value={scopeMode} onValueChange={(value: 'all' | 'categories' | 'products') => setScopeMode(value)}>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="all" id="scope-all" />
+                            <Label htmlFor="scope-all" className="font-normal cursor-pointer">
+                              Todos los productos
+                            </Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="categories" id="scope-categories" />
+                            <Label htmlFor="scope-categories" className="font-normal cursor-pointer">
+                              Categorías específicas
+                            </Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="products" id="scope-products" />
+                            <Label htmlFor="scope-products" className="font-normal cursor-pointer">
+                              Productos específicos
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                        
+                        {/* Sección de Categorías */}
+                        {scopeMode === 'categories' && (
+                          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Incluir Categorías</Label>
+                              <p className="text-xs text-muted-foreground">
+                                El cupón aplicará solo a productos de estas categorías
+                              </p>
+                              <ScrollArea className="h-[150px] border rounded-md p-3">
+                                <div className="space-y-2">
+                                  {categories.map(category => (
+                                    <div key={category.id} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`allow-cat-${category.id}`}
+                                        checked={selectedAllowedCategories.includes(category.id)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setSelectedAllowedCategories([...selectedAllowedCategories, category.id]);
+                                            setSelectedExcludedCategories(selectedExcludedCategories.filter(id => id !== category.id));
+                                          } else {
+                                            setSelectedAllowedCategories(selectedAllowedCategories.filter(id => id !== category.id));
+                                          }
+                                        }}
+                                      />
+                                      <Label htmlFor={`allow-cat-${category.id}`} className="font-normal cursor-pointer">
+                                        {category.name}
+                                      </Label>
+                                    </div>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Excluir Categorías</Label>
+                              <p className="text-xs text-muted-foreground">
+                                El cupón NO aplicará a productos de estas categorías (tiene prioridad)
+                              </p>
+                              <ScrollArea className="h-[150px] border rounded-md p-3">
+                                <div className="space-y-2">
+                                  {categories.map(category => (
+                                    <div key={category.id} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`exclude-cat-${category.id}`}
+                                        checked={selectedExcludedCategories.includes(category.id)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setSelectedExcludedCategories([...selectedExcludedCategories, category.id]);
+                                            setSelectedAllowedCategories(selectedAllowedCategories.filter(id => id !== category.id));
+                                          } else {
+                                            setSelectedExcludedCategories(selectedExcludedCategories.filter(id => id !== category.id));
+                                          }
+                                        }}
+                                      />
+                                      <Label htmlFor={`exclude-cat-${category.id}`} className="font-normal cursor-pointer">
+                                        {category.name}
+                                      </Label>
+                                    </div>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Sección de Productos */}
+                        {scopeMode === 'products' && (
+                          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Incluir Productos</Label>
+                              <p className="text-xs text-muted-foreground">
+                                El cupón aplicará solo a estos productos específicos
+                              </p>
+                              <ScrollArea className="h-[200px] border rounded-md p-3">
+                                <div className="space-y-2">
+                                  {products.map(product => (
+                                    <div key={product.id} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`allow-prod-${product.id}`}
+                                        checked={selectedAllowedProducts.includes(product.id)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setSelectedAllowedProducts([...selectedAllowedProducts, product.id]);
+                                            setSelectedExcludedProducts(selectedExcludedProducts.filter(id => id !== product.id));
+                                          } else {
+                                            setSelectedAllowedProducts(selectedAllowedProducts.filter(id => id !== product.id));
+                                          }
+                                        }}
+                                      />
+                                      <Label htmlFor={`allow-prod-${product.id}`} className="font-normal cursor-pointer">
+                                        {product.name}
+                                      </Label>
+                                    </div>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Excluir Productos</Label>
+                              <p className="text-xs text-muted-foreground">
+                                El cupón NO aplicará a estos productos (tiene prioridad)
+                              </p>
+                              <ScrollArea className="h-[200px] border rounded-md p-3">
+                                <div className="space-y-2">
+                                  {products.map(product => (
+                                    <div key={product.id} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`exclude-prod-${product.id}`}
+                                        checked={selectedExcludedProducts.includes(product.id)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setSelectedExcludedProducts([...selectedExcludedProducts, product.id]);
+                                            setSelectedAllowedProducts(selectedAllowedProducts.filter(id => id !== product.id));
+                                          } else {
+                                            setSelectedExcludedProducts(selectedExcludedProducts.filter(id => id !== product.id));
+                                          }
+                                        }}
+                                      />
+                                      <Label htmlFor={`exclude-prod-${product.id}`} className="font-normal cursor-pointer">
+                                        {product.name}
+                                      </Label>
+                                    </div>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
 
+                  {/* Resto de switches existentes */}
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="affects_delivery"

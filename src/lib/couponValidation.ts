@@ -47,50 +47,87 @@ const isTimeWindowValid = (timeWindows: Record<string, string[]> | undefined, cu
   });
 };
 
-const getEligibleLines = (
+const getEligibleLines = async (
   coupon: Coupon,
   cartItems: OrderItem[]
-): number[] => {
+): Promise<number[]> => {
   const eligibleIndices: number[] = [];
+
+  // Si no hay restricciones de alcance, todas las líneas son elegibles
+  const hasAllowedCategories = coupon.allowed_categories && coupon.allowed_categories.length > 0;
+  const hasExcludedCategories = coupon.excluded_categories && coupon.excluded_categories.length > 0;
+  const hasAllowedProducts = coupon.allowed_products && coupon.allowed_products.length > 0;
+  const hasExcludedProducts = coupon.excluded_products && coupon.excluded_products.length > 0;
+  const hasAllowedVariants = coupon.allowed_variants && coupon.allowed_variants.length > 0;
+  const hasExcludedVariants = coupon.excluded_variants && coupon.excluded_variants.length > 0;
+
+  if (!hasAllowedCategories && !hasExcludedCategories && !hasAllowedProducts && !hasExcludedProducts && !hasAllowedVariants && !hasExcludedVariants) {
+    // Sin restricciones, todas las líneas son elegibles
+    return cartItems.map((_, index) => index);
+  }
+
+  // Cargar relaciones producto-categoría para los productos en el carrito
+  const productIds = [...new Set(cartItems.map(item => item.productId))];
+  const { data: productCategories } = await supabase
+    .from('product_categories')
+    .select('product_id, category_id')
+    .in('product_id', productIds);
+
+  const productCategoryMap = new Map<string, string[]>();
+  productCategories?.forEach(pc => {
+    if (!productCategoryMap.has(pc.product_id)) {
+      productCategoryMap.set(pc.product_id, []);
+    }
+    productCategoryMap.get(pc.product_id)!.push(pc.category_id);
+  });
 
   cartItems.forEach((item, index) => {
     let isEligible = true;
+    const itemCategories = productCategoryMap.get(item.productId) || [];
 
-    // Verificar categorías permitidas
-    if (coupon.allowed_categories && coupon.allowed_categories.length > 0) {
-      // TODO: Verificar si el producto pertenece a una categoría permitida
-      // Necesitaríamos cargar la información de categorías del producto
-    }
-
-    // Verificar categorías excluidas
-    if (coupon.excluded_categories && coupon.excluded_categories.length > 0) {
-      // TODO: Similar a arriba
-    }
-
-    // Verificar productos permitidos
-    if (coupon.allowed_products && coupon.allowed_products.length > 0) {
-      if (!coupon.allowed_products.includes(item.productId)) {
+    // Lógica de whitelist/blacklist para categorías
+    if (hasAllowedCategories) {
+      // Si hay categorías permitidas, el producto DEBE estar en al menos una
+      const hasAllowedCategory = itemCategories.some(catId => 
+        coupon.allowed_categories!.includes(catId)
+      );
+      if (!hasAllowedCategory) {
         isEligible = false;
       }
     }
 
-    // Verificar productos excluidos
-    if (coupon.excluded_products && coupon.excluded_products.length > 0) {
-      if (coupon.excluded_products.includes(item.productId)) {
+    // Las exclusiones tienen prioridad
+    if (hasExcludedCategories && isEligible) {
+      const hasExcludedCategory = itemCategories.some(catId => 
+        coupon.excluded_categories!.includes(catId)
+      );
+      if (hasExcludedCategory) {
         isEligible = false;
       }
     }
 
-    // Verificar variantes permitidas
-    if (coupon.allowed_variants && coupon.allowed_variants.length > 0 && item.selectedVariant) {
-      if (!coupon.allowed_variants.includes(item.selectedVariant.id)) {
+    // Lógica de whitelist/blacklist para productos
+    if (hasAllowedProducts && isEligible) {
+      if (!coupon.allowed_products!.includes(item.productId)) {
         isEligible = false;
       }
     }
 
-    // Verificar variantes excluidas
-    if (coupon.excluded_variants && coupon.excluded_variants.length > 0 && item.selectedVariant) {
-      if (coupon.excluded_variants.includes(item.selectedVariant.id)) {
+    if (hasExcludedProducts && isEligible) {
+      if (coupon.excluded_products!.includes(item.productId)) {
+        isEligible = false;
+      }
+    }
+
+    // Lógica de whitelist/blacklist para variantes
+    if (hasAllowedVariants && item.selectedVariant && isEligible) {
+      if (!coupon.allowed_variants!.includes(item.selectedVariant.id)) {
+        isEligible = false;
+      }
+    }
+
+    if (hasExcludedVariants && item.selectedVariant && isEligible) {
+      if (coupon.excluded_variants!.includes(item.selectedVariant.id)) {
         isEligible = false;
       }
     }
@@ -187,8 +224,8 @@ export const validateCouponEligibility = async (
     return { valid: false, errors };
   }
 
-  // Calcular líneas elegibles
-  const eligibleLineIndices = getEligibleLines(coupon, cartItems);
+  // Calcular líneas elegibles (ahora es async)
+  const eligibleLineIndices = await getEligibleLines(coupon, cartItems);
 
   if (eligibleLineIndices.length === 0) {
     return {
@@ -339,7 +376,7 @@ export const applyCouponToCart = async (
   deliveryFee: number,
   userId?: string
 ): Promise<CouponApplication> => {
-  const eligibleLineIndices = getEligibleLines(coupon, cartItems);
+  const eligibleLineIndices = await getEligibleLines(coupon, cartItems);
   const discountDetails = calculateCouponDiscount(
     coupon,
     cartItems,
