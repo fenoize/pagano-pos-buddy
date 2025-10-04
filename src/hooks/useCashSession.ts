@@ -257,6 +257,25 @@ export function useCashSession() {
     }
   };
 
+  const updateClosingCash = async (sessionId: string, closingCash: number): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('cash_sessions')
+        .update({ closing_cash: closingCash })
+        .eq('id', sessionId);
+
+      if (error) throw error;
+
+      // Update current session if it's the same
+      if (currentSession?.id === sessionId) {
+        setCurrentSession({ ...currentSession, closing_cash: closingCash });
+      }
+    } catch (error) {
+      console.error('Error updating closing cash:', error);
+      throw error;
+    }
+  };
+
   const hasActiveSession = (): boolean => {
     return !!currentSession;
   };
@@ -270,6 +289,7 @@ export function useCashSession() {
     closeSession,
     addCashMovement,
     getSessionSummary,
-    updateSessionObservaciones
+    updateSessionObservaciones,
+    updateClosingCash
   };
 }

@@ -6,11 +6,13 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useCashSession } from "@/hooks/useCashSession";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { FileDown, DollarSign, ShoppingCart, Truck, Coins, TrendingUp, TrendingDown } from "lucide-react";
+import { FileDown, DollarSign, ShoppingCart, Truck, Coins, TrendingUp, TrendingDown, Edit, Save, X, User } from "lucide-react";
 import jsPDF from 'jspdf';
 
 interface CashSessionDetailModalProps {
@@ -28,8 +30,11 @@ export function CashSessionDetailModal({
 }: CashSessionDetailModalProps) {
   const [observaciones, setObservaciones] = useState(sessionData?.session?.observaciones || '');
   const [isUpdatingObservaciones, setIsUpdatingObservaciones] = useState(false);
-  const { getSessionSummary, updateSessionObservaciones } = useCashSession();
+  const [isEditingClosure, setIsEditingClosure] = useState(false);
+  const [editedClosingCash, setEditedClosingCash] = useState<number>(0);
+  const { getSessionSummary, updateSessionObservaciones, updateClosingCash } = useCashSession();
   const { toast } = useToast();
+  const { user } = useAuthContext();
 
   const [detailData, setDetailData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -50,6 +55,7 @@ export function CashSessionDetailModal({
       const data = await getSessionSummary(sessionId);
       setDetailData(data);
       setObservaciones(data?.session?.observaciones || '');
+      setEditedClosingCash(data?.session?.closing_cash || 0);
     } catch (error) {
       console.error('Error loading session detail:', error);
       toast({
@@ -114,20 +120,67 @@ export function CashSessionDetailModal({
   }, [detailData?.orders]);
 
   const deliveryData = useMemo(() => {
-    if (!detailData?.orders) return { count: 0, total: 0 };
+    if (!detailData?.orders) return { count: 0, total: 0, orders: [] };
     
     const deliveryOrders = detailData.orders.filter((order: any) => order.fulfillment === 'delivery');
     return {
       count: deliveryOrders.length,
-      total: deliveryOrders.reduce((sum: number, order: any) => sum + (order.delivery_fee || 0), 0)
+      total: deliveryOrders.reduce((sum: number, order: any) => sum + (order.delivery_fee || 0), 0),
+      orders: deliveryOrders
     };
   }, [detailData?.orders]);
+
+  const repartidoresPayment = useMemo(() => {
+    if (!detailData?.orders) return [];
+    
+    const deliveryOrders = detailData.orders.filter((order: any) => order.fulfillment === 'delivery');
+    
+    // Group by delivery person
+    const grouped = deliveryOrders.reduce((acc: any, order: any) => {
+      const personId = order.delivery_person_id || 'unassigned';
+      const personName = order.delivery_person_name || 'Sin asignar';
+      
+      if (!acc[personId]) {
+        acc[personId] = {
+          id: personId,
+          name: personName,
+          orders: [],
+          totalFee: 0
+        };
+      }
+      
+      acc[personId].orders.push(order);
+      acc[personId].totalFee += order.delivery_fee || 0;
+      
+      return acc;
+    }, {});
+    
+    return Object.values(grouped) as Array<{ id: string; name: string; orders: any[]; totalFee: number }>;
+  }, [detailData?.orders]);
+
+  const handleSaveClosingCash = async () => {
+    try {
+      await updateClosingCash(sessionId, editedClosingCash);
+      setIsEditingClosure(false);
+      await loadDetailData(); // Reload data
+      toast({
+        title: "Efectivo final actualizado",
+        description: "El cierre de caja se actualizó correctamente"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el efectivo final",
+        variant: "destructive"
+      });
+    }
+  };
 
   const exportToPDF = () => {
     if (!detailData || !detailData.session) return;
 
     const doc = new jsPDF();
-    const { session, summary, movements, orders } = detailData;
+    const { session, summary, movements } = detailData;
     
     // Header
     doc.setFontSize(20);
@@ -159,15 +212,30 @@ export function CashSessionDetailModal({
     doc.text(`Pagos Mixtos: ${paymentMethodCounts.mixto} ventas`, 20, yPos);
     yPos += 15;
     
-    // Delivery
-    doc.setFontSize(14);
-    doc.text('Delivery', 20, yPos);
-    yPos += 10;
-    doc.setFontSize(10);
-    doc.text(`Pedidos con Delivery: ${deliveryData.count}`, 20, yPos);
-    yPos += 6;
-    doc.text(`Total Delivery: ${formatCurrency(deliveryData.total)}`, 20, yPos);
-    yPos += 15;
+    // Pagos a Repartidores
+    if (repartidoresPayment.length > 0) {
+      doc.setFontSize(14);
+      doc.text('Pagos a Repartidores', 20, yPos);
+      yPos += 10;
+      doc.setFontSize(10);
+      
+      repartidoresPayment.forEach((rep: any) => {
+        doc.text(`${rep.name}: ${formatCurrency(rep.totalFee)} (${rep.orders.length} pedidos)`, 20, yPos);
+        yPos += 6;
+        
+        rep.orders.forEach((order: any) => {
+          doc.text(`  #${order.order_number}: ${order.delivery_address} ${order.delivery_number}, ${order.delivery_comuna} - ${formatCurrency(order.delivery_fee)}`, 25, yPos);
+          yPos += 5;
+        });
+        yPos += 3;
+      });
+      
+      const totalRepartidores = repartidoresPayment.reduce((sum, rep) => sum + rep.totalFee, 0);
+      doc.setFontSize(11);
+      doc.text(`Total a pagar a repartidores: ${formatCurrency(totalRepartidores)}`, 20, yPos);
+      yPos += 15;
+      doc.setFontSize(10);
+    }
     
     // Movimientos
     if (movements?.length > 0) {
@@ -265,9 +333,33 @@ export function CashSessionDetailModal({
                     <span className="text-sm text-muted-foreground">Efectivo Inicial:</span>
                     <span className="font-medium">{formatCurrency(session?.opening_cash || 0)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Efectivo Final:</span>
-                    <span className="font-medium">{formatCurrency(session?.closing_cash || 0)}</span>
+                    {isEditingClosure ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={editedClosingCash}
+                          onChange={(e) => setEditedClosingCash(Number(e.target.value))}
+                          className="w-32 h-8"
+                        />
+                        <Button size="sm" variant="ghost" onClick={() => setIsEditingClosure(false)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" onClick={handleSaveClosingCash}>
+                          <Save className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{formatCurrency(session?.closing_cash || 0)}</span>
+                        {user?.role === 'Administrador' && session?.closed_at && (
+                          <Button size="sm" variant="ghost" onClick={() => setIsEditingClosure(true)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <Separator />
                   <div className="flex justify-between">
@@ -307,27 +399,95 @@ export function CashSessionDetailModal({
             </CardContent>
           </Card>
 
-          {/* Delivery */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Truck className="w-5 h-5" />
-                Delivery
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{deliveryData.count}</div>
-                  <div className="text-sm text-muted-foreground">Pedidos con Delivery</div>
+          {/* Pedidos del Turno */}
+          {orders && orders.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5" />
+                  Pedidos del Turno ({orders.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {orders.map((order: any) => (
+                    <div key={order.id} className="flex items-center justify-between p-2 border rounded text-sm">
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium">#{order.order_number}</span>
+                        <Badge variant={order.fulfillment === 'delivery' ? 'default' : 'secondary'}>
+                          {order.fulfillment === 'delivery' ? 'Delivery' : 'Retiro'}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(order.created_at), 'HH:mm', { locale: es })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {order.fulfillment === 'delivery' && order.delivery_person_name && (
+                          <span className="text-xs text-muted-foreground">
+                            <User className="w-3 h-3 inline mr-1" />
+                            {order.delivery_person_name}
+                          </span>
+                        )}
+                        <span className="font-medium">{formatCurrency(order.total)}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{formatCurrency(deliveryData.total)}</div>
-                  <div className="text-sm text-muted-foreground">Total Delivery</div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Pagos a Repartidores */}
+          {repartidoresPayment.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="w-5 h-5" />
+                  Pagos a Repartidores
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {repartidoresPayment.map((rep: any) => (
+                    <div key={rep.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          <span className="font-semibold">{rep.name}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-lg">{formatCurrency(rep.totalFee)}</div>
+                          <div className="text-xs text-muted-foreground">{rep.orders.length} pedidos</div>
+                        </div>
+                      </div>
+                      
+                      <Separator className="my-2" />
+                      
+                      <div className="space-y-1">
+                        {rep.orders.map((order: any) => (
+                          <div key={order.id} className="flex justify-between text-xs text-muted-foreground">
+                            <span>
+                              #{order.order_number} - {order.delivery_address} {order.delivery_number}, {order.delivery_comuna}
+                            </span>
+                            <span className="font-medium">{formatCurrency(order.delivery_fee)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <Separator />
+                  
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="font-semibold">Total a pagar a repartidores:</span>
+                    <span className="font-bold text-xl">
+                      {formatCurrency(repartidoresPayment.reduce((sum, rep) => sum + rep.totalFee, 0))}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Movimientos de Caja */}
           {movements && movements.length > 0 && (

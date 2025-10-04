@@ -52,6 +52,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       setEditData({
         items: [...(Array.isArray(order.items) ? order.items : [])],
         delivery_fee: order.delivery_fee || 0,
+        fulfillment: order.fulfillment,
         payment_method: order.payment_method,
         payment_efectivo: order.payment_efectivo || 0,
         payment_mp: order.payment_mp || 0,
@@ -218,7 +219,40 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                   </div>
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">Tipo de Entrega:</Label>
-                    <div className="capitalize">{order.fulfillment}</div>
+                    {isEditMode ? (
+                      <Select
+                        value={editData?.fulfillment || order.fulfillment}
+                        onValueChange={(value: 'retiro' | 'delivery') => {
+                          setEditData(prev => {
+                            if (!prev) return null;
+                            // If changing to retiro, clear delivery fields
+                            if (value === 'retiro') {
+                              return {
+                                ...prev,
+                                fulfillment: value,
+                                delivery_fee: 0,
+                                delivery_address: '',
+                                delivery_number: '',
+                                delivery_comuna_id: '',
+                                delivery_reference: '',
+                                delivery_person_id: null
+                              };
+                            }
+                            return { ...prev, fulfillment: value };
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="retiro">Retiro</SelectItem>
+                          <SelectItem value="delivery">Delivery</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="capitalize">{order.fulfillment}</div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">Cliente:</Label>
@@ -252,8 +286,8 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
               </CardContent>
             </Card>
 
-            {/* Delivery Information - Only show for delivery orders */}
-            {order.fulfillment === 'delivery' && (
+            {/* Delivery Information - Show for delivery orders or when editing to delivery */}
+            {((isEditMode && editData?.fulfillment === 'delivery') || (!isEditMode && order.fulfillment === 'delivery')) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">

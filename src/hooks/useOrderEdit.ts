@@ -6,6 +6,7 @@ import { Order, OrderItem } from '@/types';
 export interface OrderEditData {
   items: OrderItem[];
   delivery_fee: number;
+  fulfillment?: 'retiro' | 'delivery';
   payment_method: 'efectivo' | 'mp' | 'pos' | 'mixto';
   payment_efectivo: number;
   payment_mp: number;
@@ -138,6 +139,7 @@ export function useOrderEdit() {
           subtotal: editData.subtotal,
           discount: editData.discount,
           delivery_fee: editData.delivery_fee,
+          fulfillment: editData.fulfillment || currentOrder.fulfillment,
           total: editData.total,
           payment_method: editData.payment_method,
           payment_efectivo: editData.payment_efectivo,
