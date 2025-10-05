@@ -286,8 +286,10 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
               </CardContent>
             </Card>
 
-            {/* Delivery Information - Show for delivery orders or when editing to delivery */}
-            {((isEditMode && editData?.fulfillment === 'delivery') || (!isEditMode && order.fulfillment === 'delivery')) && (
+            {/* Delivery Information - Show for delivery orders, when editing to delivery, or when delivery data exists */}
+            {((isEditMode && editData?.fulfillment === 'delivery') || 
+              (!isEditMode && order.fulfillment === 'delivery') ||
+              (order.delivery_address && order.delivery_fee && order.delivery_fee > 0)) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
