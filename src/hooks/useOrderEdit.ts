@@ -131,7 +131,7 @@ export function useOrderEdit() {
         deliveryPersonName = null;
       }
 
-      // Update order
+      // Update order - Convert empty strings to null for UUID/nullable fields
       const { data: updatedOrder, error: updateError } = await supabase
         .from('orders')
         .update({
@@ -145,12 +145,12 @@ export function useOrderEdit() {
           payment_efectivo: editData.payment_efectivo,
           payment_mp: editData.payment_mp,
           payment_pos: editData.payment_pos,
-          delivery_address: editData.delivery_address,
-          delivery_number: editData.delivery_number,
-          delivery_comuna_id: editData.delivery_comuna_id,
+          delivery_address: editData.delivery_address || null,
+          delivery_number: editData.delivery_number || null,
+          delivery_comuna_id: editData.delivery_comuna_id || null,
           delivery_comuna: comunaName,
-          delivery_reference: editData.delivery_reference,
-          delivery_person_id: editData.delivery_person_id,
+          delivery_reference: editData.delivery_reference || null,
+          delivery_person_id: editData.delivery_person_id === '' ? null : editData.delivery_person_id,
           delivery_person_name: deliveryPersonName,
           updated_at: new Date().toISOString()
         })
