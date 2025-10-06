@@ -236,7 +236,17 @@ export default function NewSale() {
     setShowPaymentModal(true);
   };
 
-  const handlePaymentConfirm = async (paymentData: any) => {
+  const handlePaymentConfirm = async (paymentData: {
+    payments: Array<{
+      method: string;
+      amount: number;
+      receiptNumber?: string;
+      operationNumber?: string;
+      runas?: number;
+    }>;
+    fulfillment: FulfillmentType;
+    notes?: string;
+  }) => {
     try {
       // Create or update customer if needed
       let customerId = customer.id;
@@ -295,15 +305,37 @@ export default function NewSale() {
           }
         }
 
-        // Create order with user tracking
-        const paymentMethodMap: Record<string, 'efectivo' | 'pos' | 'mp' | 'aplicacion' | 'mixto'> = {
-          'Efectivo': 'efectivo',
-          'POS': 'pos',
-          'Transferencia': 'mp',
-          'Aplicación': 'aplicacion',
-          'Mixto': 'mixto',
-        };
-        const paymentMethod = paymentMethodMap[paymentData.method] ?? 'efectivo';
+        // Calculate payment totals by method
+        const totals = paymentData.payments.reduce(
+          (acc, payment) => {
+            if (payment.method === 'Efectivo') {
+              acc.efectivo += payment.amount;
+            } else if (payment.method === 'POS') {
+              acc.pos += payment.amount;
+            } else if (payment.method === 'Transferencia') {
+              acc.mp += payment.amount;
+            } else if (payment.method === 'Aplicación') {
+              acc.aplicacion += payment.amount;
+            } else if (payment.method === 'Runas') {
+              acc.runas += payment.runas || 0;
+            }
+            return acc;
+          },
+          { efectivo: 0, pos: 0, mp: 0, aplicacion: 0, runas: 0 }
+        );
+
+        // Determine payment method
+        const paymentMethod: 'efectivo' | 'pos' | 'mp' | 'aplicacion' | 'mixto' =
+          paymentData.payments.length === 1
+            ? (() => {
+                const method = paymentData.payments[0].method;
+                if (method === 'Efectivo') return 'efectivo';
+                if (method === 'POS') return 'pos';
+                if (method === 'Transferencia') return 'mp';
+                if (method === 'Aplicación') return 'aplicacion';
+                return 'efectivo';
+              })()
+            : 'mixto';
 
         const orderData = {
           customer_id: customerId,
@@ -315,10 +347,10 @@ export default function NewSale() {
           delivery_fee: deliveryFee,
           discount: totalDiscount,
           total,
-          payment_efectivo: paymentData.method === 'Efectivo' ? paymentData.amount : 0,
-          payment_mp: paymentData.method === 'Transferencia' ? paymentData.amount : 0,
-          payment_pos: paymentData.method === 'POS' ? paymentData.amount : 0,
-          payment_aplicacion: paymentData.method === 'Aplicación' ? paymentData.amount : 0,
+          payment_efectivo: totals.efectivo,
+          payment_mp: totals.mp,
+          payment_pos: totals.pos,
+          payment_aplicacion: totals.aplicacion,
           payment_method: paymentMethod,
           status: 'Pendiente' as const,
           notes: paymentData.notes || null,
@@ -363,23 +395,24 @@ export default function NewSale() {
       }
 
       // Handle runas transactions if applicable
-      if (customerId && (usedRunas > 0 || total > 0)) {
+      if (customerId && (totals.runas > 0 || total > 0)) {
         const transactions = [];
         
         // Runas spent
-        if (usedRunas > 0) {
+        if (totals.runas > 0) {
           transactions.push({
             customer_id: customerId,
             order_id: orderResult.id,
             type: 'canje',
-            amount: usedRunas * runaValue,
-            runas: -usedRunas,
+            amount: totals.runas * runaValue,
+            runas: -totals.runas,
             origen: 'POS'
           });
         }
 
         // Runas earned (from total amount paid, excluding runas discount)
-        const earnableAmount = total - runasDiscount;
+        const runasDiscountAmount = totals.runas * runaValue;
+        const earnableAmount = total - runasDiscountAmount;
         const runasEarned = Math.floor(earnableAmount / runaValue);
         if (runasEarned > 0) {
           transactions.push({
@@ -396,7 +429,7 @@ export default function NewSale() {
           await supabase.from('runas_transactions').insert(transactions);
           
           // Update customer runas balance
-          const newBalance = (customer.cantidad_runas || 0) - usedRunas + runasEarned;
+          const newBalance = (customer.cantidad_runas || 0) - totals.runas + runasEarned;
           await supabase
             .from('customers')
             .update({ cantidad_runas: Math.max(0, newBalance) })

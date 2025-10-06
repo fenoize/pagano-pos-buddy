@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Customer, OrderItem, FulfillmentType } from '@/types';
+import { Customer, OrderItem, FulfillmentType, PaymentMethod } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { CreditCard, Banknote, Smartphone, Coins, Bike } from 'lucide-react';
+import { CreditCard, Banknote, Smartphone, Coins, Bike, Plus, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DeliveryData } from './FulfillmentStep';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { CouponApplication } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -31,64 +30,73 @@ interface PaymentModalProps {
   manualDiscount?: { type: 'percentage' | 'fixed'; value: number; amount: number } | null;
 }
 
-interface PaymentData {
+interface SinglePayment {
   method: string;
   amount: number;
-  change?: number;
   receiptNumber?: string;
   operationNumber?: string;
   runas?: number;
+}
+
+interface PaymentData {
+  payments: SinglePayment[];
   fulfillment: FulfillmentType;
   notes?: string;
 }
 
-export default function PaymentModal({ isOpen, onClose, onConfirm, customer, items, total, subtotal, discount, deliveryFee, orderName, deliveryData, appliedCoupons = [], manualDiscount }: PaymentModalProps) {
+export default function PaymentModal({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  customer, 
+  items, 
+  total, 
+  subtotal, 
+  discount, 
+  deliveryFee, 
+  orderName, 
+  deliveryData, 
+  appliedCoupons = [], 
+  manualDiscount 
+}: PaymentModalProps) {
+  const [payments, setPayments] = useState<SinglePayment[]>([]);
+  const [currentMethod, setCurrentMethod] = useState('Efectivo');
+  const [currentAmount, setCurrentAmount] = useState('');
+  const [currentReceiptNumber, setCurrentReceiptNumber] = useState('');
+  const [currentOperationNumber, setCurrentOperationNumber] = useState('');
+  const [currentRunas, setCurrentRunas] = useState('');
+  const [notes, setNotes] = useState('');
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [cashDenominations, setCashDenominations] = useState<number[]>([]);
   const [runaValue, setRunaValue] = useState(1000);
-  const [orderTiming, setOrderTiming] = useState('after_payment');
-  const [selectedMethod, setSelectedMethod] = useState('');
-  const [paymentAmount, setPaymentAmount] = useState(total);
-  const [receiptNumber, setReceiptNumber] = useState('');
-  const [operationNumber, setOperationNumber] = useState('');
-  const [runas, setRunas] = useState(0);
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
-  const [notes, setNotes] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
-      // Reset volatile payment states when modal opens
-      setSelectedMethod('Efectivo');  
-      setPaymentAmount(total);
-      setReceiptNumber('');
-      setOperationNumber('');
-      setRunas(0);
+      setPayments([]);
+      setCurrentMethod('Efectivo');
+      setCurrentAmount('');
+      setCurrentReceiptNumber('');
+      setCurrentOperationNumber('');
+      setCurrentRunas('');
       setNotes('');
-      // Don't reset fulfillment as it comes from previous steps
-
       fetchConfig();
     }
-  }, [isOpen, total]);
-
-  useEffect(() => {
-    setPaymentAmount(total);
-  }, [total]);
+  }, [isOpen]);
 
   const fetchConfig = async () => {
     try {
       const { data } = await supabase
         .from('config')
         .select('*')
-        .in('key', ['payment_methods', 'runa_value', 'order_timing', 'cash_denominations']);
+        .in('key', ['payment_methods', 'runa_value', 'cash_denominations']);
 
       data?.forEach((config) => {
         if (config.key === 'payment_methods') {
           setPaymentMethods(config.value as string[]);
-          setSelectedMethod('Efectivo');
         } else if (config.key === 'runa_value') {
           setRunaValue(config.value as number);
-        } else if (config.key === 'order_timing') {
-          setOrderTiming(config.value as string);
         } else if (config.key === 'cash_denominations') {
           setCashDenominations(config.value as number[]);
         }
@@ -116,56 +124,132 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
     }
   };
 
-  const calculateChange = () => {
-    if (selectedMethod === 'Efectivo') {
-      return Math.max(0, paymentAmount - total);
-    }
-    return 0;
+  const getTotalPaid = () => {
+    return payments.reduce((sum, payment) => {
+      if (payment.method === 'Runas') {
+        return sum + (payment.runas || 0) * runaValue;
+      }
+      return sum + payment.amount;
+    }, 0);
   };
 
-  const calculateRunasTotal = () => {
-    return runas * runaValue;
+  const getRemainingBalance = () => {
+    return Math.max(0, total - getTotalPaid());
+  };
+
+  const calculateChange = () => {
+    const efectivoPayments = payments.filter(p => p.method === 'Efectivo');
+    const totalEfectivo = efectivoPayments.reduce((sum, p) => sum + p.amount, 0);
+    const otherPayments = payments.filter(p => p.method !== 'Efectivo');
+    const totalOther = otherPayments.reduce((sum, p) => {
+      if (p.method === 'Runas') {
+        return sum + (p.runas || 0) * runaValue;
+      }
+      return sum + p.amount;
+    }, 0);
+    return Math.max(0, totalEfectivo - Math.max(0, total - totalOther));
+  };
+
+  const handleAddPayment = () => {
+    const amount = parseFloat(currentAmount) || 0;
+    
+    if (currentMethod !== 'Runas' && amount <= 0) {
+      toast({
+        title: "Error",
+        description: "Ingrese un monto válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (currentMethod === 'POS' && !currentReceiptNumber.trim()) {
+      toast({
+        title: "Error",
+        description: "Ingrese el número de boleta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if ((currentMethod === 'Transferencia' || currentMethod === 'Aplicación') && !currentOperationNumber.trim()) {
+      toast({
+        title: "Error",
+        description: "Ingrese el número de operación",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (currentMethod === 'Runas') {
+      const runasNum = parseFloat(currentRunas) || 0;
+      if (runasNum <= 0) {
+        toast({
+          title: "Error",
+          description: "Ingrese cantidad de runas",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (runasNum > (customer.cantidad_runas || 0)) {
+        toast({
+          title: "Error",
+          description: "Runas insuficientes",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    const newPayment: SinglePayment = {
+      method: currentMethod,
+      amount: currentMethod === 'Runas' ? 0 : amount,
+      receiptNumber: currentMethod === 'POS' ? currentReceiptNumber : undefined,
+      operationNumber: (currentMethod === 'Transferencia' || currentMethod === 'Aplicación') ? currentOperationNumber : undefined,
+      runas: currentMethod === 'Runas' ? parseFloat(currentRunas) : undefined,
+    };
+
+    setPayments([...payments, newPayment]);
+    setCurrentAmount('');
+    setCurrentReceiptNumber('');
+    setCurrentOperationNumber('');
+    setCurrentRunas('');
+    toast({
+      title: "Pago agregado",
+      description: `${currentMethod} agregado a la lista`
+    });
+  };
+
+  const handleRemovePayment = (index: number) => {
+    setPayments(payments.filter((_, i) => i !== index));
   };
 
   const handleConfirm = () => {
-    const paymentData: PaymentData = {
-      method: selectedMethod,
-      amount: selectedMethod === 'Runas' ? calculateRunasTotal() : paymentAmount,
-      fulfillment,
-      notes: notes.trim() || undefined,
-    };
-
-    if (selectedMethod === 'Efectivo') {
-      paymentData.change = calculateChange();
-    } else if (selectedMethod === 'POS') {
-      paymentData.receiptNumber = receiptNumber;
-    } else if (selectedMethod === 'Transferencia' || selectedMethod === 'Aplicación') {
-      paymentData.operationNumber = operationNumber;
-    } else if (selectedMethod === 'Runas') {
-      paymentData.runas = runas;
+    if (getTotalPaid() < total) {
+      toast({
+        title: "Error",
+        description: "El total pagado es menor al total de la venta",
+        variant: "destructive"
+      });
+      return;
     }
 
+    const paymentData: PaymentData = {
+      payments,
+      fulfillment: deliveryData?.zone ? 'delivery' : 'retiro',
+      notes: notes.trim() || undefined,
+    };
     onConfirm(paymentData);
   };
 
   const isValidPayment = () => {
-    if (selectedMethod === 'Efectivo') {
-      return paymentAmount >= total;
-    } else if (selectedMethod === 'POS') {
-      return receiptNumber.trim().length > 0;
-    } else if (selectedMethod === 'Transferencia' || selectedMethod === 'Aplicación') {
-      return operationNumber.trim().length > 0;
-    } else if (selectedMethod === 'Runas') {
-      return runas > 0 && calculateRunasTotal() >= total;
-    }
-    return false;
+    return payments.length > 0 && getTotalPaid() >= total;
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Procesar Pago</DialogTitle>
+          <DialogTitle>Procesar Pago {payments.length > 1 ? '(Mixto)' : ''}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -181,6 +265,18 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
             </Card>
           )}
 
+          {/* Summary with remaining balance */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col items-center justify-center p-4 bg-primary/5 rounded-lg">
+              <span className="text-xs font-medium mb-1">Total a pagar</span>
+              <span className="text-xl font-bold text-primary">{formatPrice(total)}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 bg-secondary/10 rounded-lg">
+              <span className="text-xs font-medium mb-1">Saldo pendiente</span>
+              <span className="text-xl font-bold text-secondary">{formatPrice(getRemainingBalance())}</span>
+            </div>
+          </div>
+
           {/* Order Summary */}
           <Card>
             <CardHeader>
@@ -192,7 +288,6 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
                   <div key={index} className="flex justify-between text-sm">
                     <span>
                       {item.quantity}x {item.productName} 
-                      {/* Display variant info based on system used */}
                       {item.variant_name ? (
                         ` (${item.variant_name})`
                       ) : item.size ? (
@@ -283,130 +378,227 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
             </Card>
           )}
 
-          {/* Payment Methods */}
+          {/* Payments List */}
+          {payments.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Pagos agregados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {payments.map((payment, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        {getMethodIcon(payment.method)}
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{payment.method}</span>
+                          {payment.method === 'Runas' ? (
+                            <span className="text-xs text-muted-foreground">
+                              {payment.runas} runas = {formatPrice((payment.runas || 0) * runaValue)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              {formatPrice(payment.amount)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemovePayment(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Separator className="my-3" />
+                <div className="space-y-2">
+                  <div className="flex justify-between font-semibold">
+                    <span>Total pagado:</span>
+                    <span>{formatPrice(getTotalPaid())}</span>
+                  </div>
+                  {calculateChange() > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400 font-semibold">
+                      <span>Vuelto:</span>
+                      <span>{formatPrice(calculateChange())}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Payment Method Selection */}
           <Card>
             <CardHeader>
-              <CardTitle>Método de Pago</CardTitle>
+              <CardTitle>Agregar método de pago</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
                 {paymentMethods.map((method) => (
                   <Button
                     key={method}
-                    variant={selectedMethod === method ? 'default' : 'outline'}
+                    type="button"
+                    variant={currentMethod === method ? 'default' : 'outline'}
                     className="h-16 flex flex-col gap-2"
-                    onClick={() => setSelectedMethod(method)}
+                    onClick={() => setCurrentMethod(method)}
                   >
                     {getMethodIcon(method)}
                     <span>{method}</span>
                   </Button>
                 ))}
               </div>
+
+              {/* Payment Details based on selected method */}
+              {currentMethod === 'Efectivo' && (
+                <div className="space-y-3">
+                  <Label>Billetes Rápidos</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {cashDenominations.map((denomination) => (
+                      <Button
+                        key={denomination}
+                        variant="outline"
+                        className="h-12 flex flex-col gap-1 text-sm font-medium"
+                        onClick={() => setCurrentAmount(denomination.toString())}
+                      >
+                        <Banknote className="w-4 h-4" />
+                        {formatPrice(denomination)}
+                      </Button>
+                    ))}
+                  </div>
+                  <div>
+                    <Label htmlFor="efectivo">Con cuánto paga</Label>
+                    <Input
+                      id="efectivo"
+                      type="number"
+                      placeholder="$0"
+                      value={currentAmount}
+                      onChange={(e) => setCurrentAmount(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {currentMethod === 'POS' && (
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="pos">Monto POS</Label>
+                    <Input
+                      id="pos"
+                      type="number"
+                      placeholder="$0"
+                      value={currentAmount}
+                      onChange={(e) => setCurrentAmount(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="receiptNumber">N° de boleta</Label>
+                    <Input
+                      id="receiptNumber"
+                      placeholder="Número de boleta"
+                      value={currentReceiptNumber}
+                      onChange={(e) => setCurrentReceiptNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {currentMethod === 'Transferencia' && (
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="mp">Monto transferencia</Label>
+                    <Input
+                      id="mp"
+                      type="number"
+                      placeholder="$0"
+                      value={currentAmount}
+                      onChange={(e) => setCurrentAmount(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="operationNumber">N° de operación</Label>
+                    <Input
+                      id="operationNumber"
+                      placeholder="Número de operación"
+                      value={currentOperationNumber}
+                      onChange={(e) => setCurrentOperationNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {currentMethod === 'Aplicación' && (
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="aplicacion">Monto aplicación</Label>
+                    <Input
+                      id="aplicacion"
+                      type="number"
+                      placeholder="$0"
+                      value={currentAmount}
+                      onChange={(e) => setCurrentAmount(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="operationNumberApp">N° de pedido (Uber/PedidosYa)</Label>
+                    <Input
+                      id="operationNumberApp"
+                      placeholder="Número de pedido"
+                      value={currentOperationNumber}
+                      onChange={(e) => setCurrentOperationNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {currentMethod === 'Runas' && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-primary/5 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Coins className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">
+                        Cliente tiene <strong>{customer.cantidad_runas || 0} runas</strong> disponibles
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Valor: 1 runa = {formatPrice(runaValue)}
+                    </span>
+                  </div>
+                  <div>
+                    <Label htmlFor="runas">Cantidad de runas a usar</Label>
+                    <Input
+                      id="runas"
+                      type="number"
+                      placeholder="0"
+                      max={customer.cantidad_runas || 0}
+                      value={currentRunas}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        if (val <= (customer.cantidad_runas || 0)) {
+                          setCurrentRunas(e.target.value);
+                          setCurrentAmount((val * runaValue).toString());
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={handleAddPayment}
+                disabled={!currentAmount && !currentRunas}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar este pago
+              </Button>
             </CardContent>
           </Card>
-
-          {/* Payment Details */}
-          {selectedMethod && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Detalles de Pago - {selectedMethod}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {selectedMethod === 'Efectivo' && (
-                  <>
-                    <div className="space-y-3">
-                      <Label>Billetes Rápidos</Label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {cashDenominations.map((denomination) => (
-                          <Button
-                            key={denomination}
-                            variant="outline"
-                            className="h-12 flex flex-col gap-1 text-sm font-medium"
-                            onClick={() => setPaymentAmount(denomination)}
-                          >
-                            <Banknote className="w-4 h-4" />
-                            {formatPrice(denomination)}
-                          </Button>
-                        ))}
-                        <Button
-                          variant="outline"
-                          className="h-12 flex flex-col gap-1 text-xs"
-                          onClick={() => {
-                            const input = document.getElementById('manual-amount') as HTMLInputElement;
-                            input?.focus();
-                          }}
-                        >
-                          <span className="text-lg">+</span>
-                          Otro
-                        </Button>
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="manual-amount">Con cuánto paga</Label>
-                      <Input
-                        id="manual-amount"
-                        type="number"
-                        value={paymentAmount}
-                        onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                        placeholder="Monto recibido"
-                      />
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                      <span>Vuelto:</span>
-                      <span className="font-bold currency">{formatPrice(calculateChange())}</span>
-                    </div>
-                  </>
-                )}
-
-                {selectedMethod === 'POS' && (
-                  <div>
-                    <Label>Número de Boleta</Label>
-                    <Input
-                      value={receiptNumber}
-                      onChange={(e) => setReceiptNumber(e.target.value)}
-                      placeholder="Ingrese número de boleta"
-                    />
-                  </div>
-                )}
-
-                {(selectedMethod === 'Transferencia' || selectedMethod === 'Aplicación') && (
-                  <div>
-                    <Label>Número de Operación</Label>
-                    <Input
-                      value={operationNumber}
-                      onChange={(e) => setOperationNumber(e.target.value)}
-                      placeholder={selectedMethod === 'Aplicación' ? "Ingrese ID de pedido (Uber/PedidosYa)" : "Ingrese número de operación"}
-                    />
-                  </div>
-                )}
-
-                {selectedMethod === 'Runas' && (
-                  <>
-                    <div>
-                      <Label>Cantidad de Runas</Label>
-                      <Input
-                        type="number"
-                        value={runas}
-                        onChange={(e) => setRunas(Number(e.target.value))}
-                        placeholder="Cantidad de runas"
-                        max={customer.cantidad_runas || 0}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Valor por Runa:</span>
-                        <span className="currency">{formatPrice(runaValue)}</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                        <span>Total en CLP:</span>
-                        <span className="font-bold currency">{formatPrice(calculateRunasTotal())}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          )}
 
           {/* Order Notes */}
           <Card>
