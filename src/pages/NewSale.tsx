@@ -296,10 +296,11 @@ export default function NewSale() {
         }
 
         // Create order with user tracking
-        const paymentMethodMap: Record<string, 'efectivo' | 'pos' | 'mp' | 'mixto'> = {
+        const paymentMethodMap: Record<string, 'efectivo' | 'pos' | 'mp' | 'aplicacion' | 'mixto'> = {
           'Efectivo': 'efectivo',
           'POS': 'pos',
           'Transferencia': 'mp',
+          'Aplicación': 'aplicacion',
           'Mixto': 'mixto',
         };
         const paymentMethod = paymentMethodMap[paymentData.method] ?? 'efectivo';
@@ -317,6 +318,7 @@ export default function NewSale() {
           payment_efectivo: paymentData.method === 'Efectivo' ? paymentData.amount : 0,
           payment_mp: paymentData.method === 'Transferencia' ? paymentData.amount : 0,
           payment_pos: paymentData.method === 'POS' ? paymentData.amount : 0,
+          payment_aplicacion: paymentData.method === 'Aplicación' ? paymentData.amount : 0,
           payment_method: paymentMethod,
           status: 'Pendiente' as const,
           notes: paymentData.notes || null,

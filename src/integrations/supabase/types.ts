@@ -1110,6 +1110,7 @@ export type Database = {
           nombre_resumen: string | null
           notes: string | null
           order_number: number
+          payment_aplicacion: number | null
           payment_efectivo: number | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_mp: number | null
@@ -1142,6 +1143,7 @@ export type Database = {
           nombre_resumen?: string | null
           notes?: string | null
           order_number?: number
+          payment_aplicacion?: number | null
           payment_efectivo?: number | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_mp?: number | null
@@ -1174,6 +1176,7 @@ export type Database = {
           nombre_resumen?: string | null
           notes?: string | null
           order_number?: number
+          payment_aplicacion?: number | null
           payment_efectivo?: number | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_mp?: number | null

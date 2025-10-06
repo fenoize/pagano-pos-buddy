@@ -57,6 +57,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         payment_efectivo: order.payment_efectivo || 0,
         payment_mp: order.payment_mp || 0,
         payment_pos: order.payment_pos || 0,
+        payment_aplicacion: order.payment_aplicacion || 0,
         subtotal: order.subtotal,
         discount: order.discount || 0,
         total: order.total,

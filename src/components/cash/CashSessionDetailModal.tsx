@@ -96,14 +96,15 @@ export function CashSessionDetailModal({
   };
 
   const paymentMethodCounts = useMemo(() => {
-    if (!detailData?.orders) return { efectivo: 0, mp: 0, pos: 0, mixto: 0 };
+    if (!detailData?.orders) return { efectivo: 0, mp: 0, pos: 0, aplicacion: 0, mixto: 0 };
     
     return detailData.orders.reduce((acc: any, order: any) => {
       const hasEfectivo = order.payment_efectivo > 0;
       const hasMP = order.payment_mp > 0;
       const hasPOS = order.payment_pos > 0;
+      const hasAplicacion = order.payment_aplicacion > 0;
       
-      const methodCount = [hasEfectivo, hasMP, hasPOS].filter(Boolean).length;
+      const methodCount = [hasEfectivo, hasMP, hasPOS, hasAplicacion].filter(Boolean).length;
       
       if (methodCount > 1) {
         acc.mixto++;
@@ -113,10 +114,12 @@ export function CashSessionDetailModal({
         acc.mp++;
       } else if (hasPOS) {
         acc.pos++;
+      } else if (hasAplicacion) {
+        acc.aplicacion++;
       }
       
       return acc;
-    }, { efectivo: 0, mp: 0, pos: 0, mixto: 0 });
+    }, { efectivo: 0, mp: 0, pos: 0, aplicacion: 0, mixto: 0 });
   }, [detailData?.orders]);
 
   const deliveryData = useMemo(() => {
@@ -208,6 +211,8 @@ export function CashSessionDetailModal({
     doc.text(`Mercado Pago: ${formatCurrency(summary.totalMP)} (${paymentMethodCounts.mp} ventas)`, 20, yPos);
     yPos += 6;
     doc.text(`POS: ${formatCurrency(summary.totalPOS)} (${paymentMethodCounts.pos} ventas)`, 20, yPos);
+    yPos += 6;
+    doc.text(`Aplicación: ${formatCurrency(summary.totalAplicacion)} (${paymentMethodCounts.aplicacion} ventas)`, 20, yPos);
     yPos += 6;
     doc.text(`Pagos Mixtos: ${paymentMethodCounts.mixto} ventas`, 20, yPos);
     yPos += 15;
@@ -388,6 +393,13 @@ export function CashSessionDetailModal({
                     <div className="text-right">
                       <div className="font-medium">{formatCurrency(summary?.totalPOS || 0)}</div>
                       <div className="text-xs text-muted-foreground">{paymentMethodCounts.pos} ventas</div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Aplicación (Uber/PedidosYa):</span>
+                    <div className="text-right">
+                      <div className="font-medium">{formatCurrency(summary?.totalAplicacion || 0)}</div>
+                      <div className="text-xs text-muted-foreground">{paymentMethodCounts.aplicacion} ventas</div>
                     </div>
                   </div>
                   <div className="flex justify-between items-center">

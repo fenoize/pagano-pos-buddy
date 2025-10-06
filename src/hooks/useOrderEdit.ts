@@ -11,6 +11,7 @@ export interface OrderEditData {
   payment_efectivo: number;
   payment_mp: number;
   payment_pos: number;
+  payment_aplicacion: number;
   subtotal: number;
   discount: number;
   total: number;

@@ -293,6 +293,7 @@ export function useCustomerOrders() {
           payment_efectivo,
           payment_mp,
           payment_pos,
+          payment_aplicacion,
           payment_method,
           delivery_address,
           delivery_number,
