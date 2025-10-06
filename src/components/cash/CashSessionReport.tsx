@@ -228,19 +228,23 @@ export function CashSessionReport() {
       'Egresos',
       'Diferencia',
       'Deliveries Realizados',
-      'Total Delivery'
+      'Total Delivery',
+      'Detalle Repartidores',
+      'Direcciones Delivery'
     ];
 
-    // Get delivery data for each session
+    // Get delivery data for each session with detailed info
     const csvDataPromises = filteredSessions.map(async (session) => {
       let deliveryCount = 0;
       let totalDeliveryFee = 0;
+      let repartidoresDetail = '';
+      let addressesDetail = '';
 
       if (session.closed_at) {
         try {
           const { data: deliveryOrders } = await supabase
             .from('orders')
-            .select('delivery_fee')
+            .select('*')
             .eq('fulfillment', 'delivery')
             .eq('created_by_user_id', session.user_id)
             .gte('created_at', session.opened_at)
@@ -248,6 +252,43 @@ export function CashSessionReport() {
 
           deliveryCount = deliveryOrders?.length || 0;
           totalDeliveryFee = deliveryOrders?.reduce((sum, order) => sum + (order.delivery_fee || 0), 0) || 0;
+
+          // Group by delivery person
+          const deliveryByPerson = new Map<string, { name: string; fee: number; count: number }>();
+          const addresses: string[] = [];
+
+          deliveryOrders?.forEach(order => {
+            const personId = order.delivery_person_id || 'sin_asignar';
+            const personName = order.delivery_person_name || 'Sin asignar';
+            const fee = order.delivery_fee || 0;
+
+            if (!deliveryByPerson.has(personId)) {
+              deliveryByPerson.set(personId, { name: personName, fee: 0, count: 0 });
+            }
+            const current = deliveryByPerson.get(personId)!;
+            current.fee += fee;
+            current.count += 1;
+
+            // Format address
+            const address = formatDeliveryAddress(
+              order.delivery_address || '',
+              order.delivery_number || '',
+              order.delivery_comuna || '',
+              order.delivery_reference || ''
+            );
+            if (address) {
+              addresses.push(`#${order.order_number}: ${address}`);
+            }
+          });
+
+          // Format repartidores detail
+          const repartidoresArray = Array.from(deliveryByPerson.values());
+          repartidoresDetail = repartidoresArray
+            .map(p => `${p.name}: ${p.count} pedidos - $${p.fee}`)
+            .join(' | ');
+
+          // Format addresses detail
+          addressesDetail = addresses.join(' | ');
         } catch (error) {
           console.error('Error fetching delivery data:', error);
         }
@@ -270,7 +311,9 @@ export function CashSessionReport() {
         session.summary?.egresos || 0,
         session.summary?.difference || 0,
         deliveryCount,
-        totalDeliveryFee
+        totalDeliveryFee,
+        repartidoresDetail,
+        addressesDetail
       ];
     });
 

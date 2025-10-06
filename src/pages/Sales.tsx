@@ -18,30 +18,7 @@ import { OrderEditModal } from '@/components/sales/OrderEditModal';
 import { OrderStatusDropdown } from '@/components/sales/OrderStatusDropdown';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-
-interface Order {
-  id: string;
-  order_number: number;
-  customer_id: string;
-  fulfillment: 'retiro' | 'delivery';
-  items: any;
-  subtotal: number;
-  delivery_fee: number;
-  discount: number;
-  total: number;
-  payment_efectivo: number;
-  payment_mp: number;
-  payment_pos: number;
-  payment_method: string;
-  status: string;
-  notes: string;
-  nombre_resumen?: string;
-  created_at: string;
-  updated_at: string;
-  delivery_address?: string;
-  delivery_number?: string;
-  delivery_comuna?: string;
-}
+import { Order } from '@/types';
 
 interface Customer {
   id: string;
@@ -107,7 +84,7 @@ export default function Sales() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
+      setOrders((data || []) as unknown as Order[]);
     } catch (error) {
       console.error('Error loading orders:', error);
       toast.error('Error cargando las ventas');
@@ -249,11 +226,23 @@ export default function Sales() {
     }
   };
 
+  const handleOrderUpdate = (updatedOrder: Order) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === updatedOrder.id ? updatedOrder as Order : order
+      )
+    );
+    // Also update selectedOrder if it's the same
+    if (selectedOrder?.id === updatedOrder.id) {
+      setSelectedOrder(updatedOrder as Order);
+    }
+  };
+
   const handleStatusChange = (orderId: string, newStatus: string, newUpdatedAt: string) => {
     setOrders(prevOrders => 
       prevOrders.map(order => 
         order.id === orderId 
-          ? { ...order, status: newStatus, updated_at: newUpdatedAt }
+          ? { ...order, status: newStatus as any, updated_at: newUpdatedAt }
           : order
       )
     );
@@ -602,15 +591,7 @@ export default function Sales() {
             order={selectedOrder as any}
             isOpen={showDetailModal}
             onClose={() => setShowDetailModal(false)}
-            onOrderUpdated={(updatedOrder: any) => {
-              // Update the order in the list
-              setOrders(prevOrders => 
-                prevOrders.map(order => 
-                  order.id === updatedOrder.id ? {...order, ...updatedOrder} : order
-                )
-              );
-              setSelectedOrder({...selectedOrder, ...updatedOrder});
-            }}
+            onOrderUpdated={handleOrderUpdate}
           />
         )}
       </Dialog>
