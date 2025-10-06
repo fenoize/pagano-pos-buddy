@@ -1731,7 +1731,7 @@ export type Database = {
         | "Entregado"
         | "Cancelado"
       origen_movimiento: "POS" | "Web" | "Manual"
-      payment_method: "efectivo" | "mp" | "pos" | "mixto"
+      payment_method: "efectivo" | "mp" | "pos" | "mixto" | "aplicacion"
       runa_movement_type: "acumulacion" | "canje" | "ajuste" | "promo"
     }
     CompositeTypes: {
@@ -1881,7 +1881,7 @@ export const Constants = {
         "Cancelado",
       ],
       origen_movimiento: ["POS", "Web", "Manual"],
-      payment_method: ["efectivo", "mp", "pos", "mixto"],
+      payment_method: ["efectivo", "mp", "pos", "mixto", "aplicacion"],
       runa_movement_type: ["acumulacion", "canje", "ajuste", "promo"],
     },
   },

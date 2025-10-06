@@ -4,7 +4,7 @@ export type OrderStatus = 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo'
 
 export type FulfillmentType = 'retiro' | 'delivery';
 
-export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'mixto';
+export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'aplicacion' | 'mixto';
 
 export type CashMovementType = 'ingreso' | 'egreso';
 

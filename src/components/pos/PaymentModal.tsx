@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { CreditCard, Banknote, Smartphone, Coins } from 'lucide-react';
+import { CreditCard, Banknote, Smartphone, Coins, Bike } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DeliveryData } from './FulfillmentStep';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
@@ -110,6 +110,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
       case 'Efectivo': return <Banknote className="w-5 h-5" />;
       case 'POS': return <CreditCard className="w-5 h-5" />;
       case 'Transferencia': return <Smartphone className="w-5 h-5" />;
+      case 'Aplicación': return <Bike className="w-5 h-5" />;
       case 'Runas': return <Coins className="w-5 h-5" />;
       default: return <CreditCard className="w-5 h-5" />;
     }
@@ -138,7 +139,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
       paymentData.change = calculateChange();
     } else if (selectedMethod === 'POS') {
       paymentData.receiptNumber = receiptNumber;
-    } else if (selectedMethod === 'Transferencia') {
+    } else if (selectedMethod === 'Transferencia' || selectedMethod === 'Aplicación') {
       paymentData.operationNumber = operationNumber;
     } else if (selectedMethod === 'Runas') {
       paymentData.runas = runas;
@@ -152,7 +153,7 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
       return paymentAmount >= total;
     } else if (selectedMethod === 'POS') {
       return receiptNumber.trim().length > 0;
-    } else if (selectedMethod === 'Transferencia') {
+    } else if (selectedMethod === 'Transferencia' || selectedMethod === 'Aplicación') {
       return operationNumber.trim().length > 0;
     } else if (selectedMethod === 'Runas') {
       return runas > 0 && calculateRunasTotal() >= total;
@@ -368,13 +369,13 @@ export default function PaymentModal({ isOpen, onClose, onConfirm, customer, ite
                   </div>
                 )}
 
-                {selectedMethod === 'Transferencia' && (
+                {(selectedMethod === 'Transferencia' || selectedMethod === 'Aplicación') && (
                   <div>
                     <Label>Número de Operación</Label>
                     <Input
                       value={operationNumber}
                       onChange={(e) => setOperationNumber(e.target.value)}
-                      placeholder="Ingrese número de operación"
+                      placeholder={selectedMethod === 'Aplicación' ? "Ingrese ID de pedido (Uber/PedidosYa)" : "Ingrese número de operación"}
                     />
                   </div>
                 )}

@@ -1,13 +1,13 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Order, OrderItem } from '@/types';
+import { Order, OrderItem, PaymentMethod } from '@/types';
 
 export interface OrderEditData {
   items: OrderItem[];
   delivery_fee: number;
   fulfillment?: 'retiro' | 'delivery';
-  payment_method: 'efectivo' | 'mp' | 'pos' | 'mixto';
+  payment_method: PaymentMethod;
   payment_efectivo: number;
   payment_mp: number;
   payment_pos: number;
