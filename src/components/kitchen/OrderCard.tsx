@@ -153,7 +153,7 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
             <div key={index} className={`bg-background/50 rounded border ${compact ? 'p-1.5' : 'p-2'}`}>
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className={`font-medium ${compact ? 'text-xs' : ''}`}>
+                  <div className={`font-medium ${compact ? 'text-sm' : 'text-base'}`}>
                     {item.quantity}x {item.productName}
                     {/* Display variant info based on system used */}
                     {item.variant_name ? (
@@ -162,14 +162,14 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
                       ` - ${item.size}`
                     ) : ''}
                   </div>
-                  <div className={`text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
+                  <div className={`text-muted-foreground ${compact ? 'text-sm' : 'text-sm'}`}>
                     {/* Display price type for legacy system only */}
                     {item.priceKind && (item.priceKind === 'combo' ? 'Combo' : 'Solo')}
                   </div>
                   
                   {/* Combo Items Details */}
                   {item.is_combo_item && item.combo_selections && item.combo_selections.length > 0 && (
-                    <div className={`text-muted-foreground mt-1 ${compact ? 'text-xs' : 'text-xs'}`}>
+                    <div className={`text-muted-foreground mt-1 ${compact ? 'text-sm' : 'text-sm'}`}>
                       {item.combo_selections.map((comboItem: any, comboIndex: number) => (
                         <div key={comboIndex} className="mb-1">
                           <span className="font-medium">
@@ -197,7 +197,7 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
 
                   {/* Regular Extras (for non-combo items) */}
                   {!item.is_combo_item && item.extras && item.extras.length > 0 && (
-                    <div className={`text-muted-foreground mt-1 ${compact ? 'text-xs' : 'text-xs'}`}>
+                    <div className={`text-muted-foreground mt-1 ${compact ? 'text-sm' : 'text-sm'}`}>
                       Extras: {item.extras.map(extra => 
                         `${extra.quantity || 1}x ${extra.label}`
                       ).join(', ')}
@@ -206,14 +206,14 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
 
                   {/* Regular Modifiers (for non-combo items) */}
                   {!item.is_combo_item && item.modifiers && item.modifiers.length > 0 && (
-                    <div className={`text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
+                    <div className={`text-muted-foreground ${compact ? 'text-sm' : 'text-sm'}`}>
                       Modificadores: {item.modifiers.map(mod => mod.name).join(', ')}
                     </div>
                   )}
 
                   {/* Notes */}
                   {item.notes && (
-                    <div className={`flex items-start gap-1 text-muted-foreground mt-1 ${compact ? 'text-xs' : 'text-xs'}`}>
+                    <div className={`flex items-start gap-1 text-muted-foreground mt-1 ${compact ? 'text-sm' : 'text-sm'}`}>
                       <MessageSquare className={`${compact ? 'w-3 h-3' : 'w-3 h-3'} mt-0.5`} />
                       <span className="italic">{item.notes}</span>
                     </div>
