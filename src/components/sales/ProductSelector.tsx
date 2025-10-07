@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { OrderItem } from '@/types';
-import { Search, Plus } from 'lucide-react';
+import { Search, X, ShoppingCart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Product {
   id: string;
@@ -26,6 +27,8 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [addedCount, setAddedCount] = useState(0);
+  const { toast } = useToast();
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -37,6 +40,8 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
   useEffect(() => {
     if (isOpen) {
       loadProducts();
+      setAddedCount(0); // Reset counter when opening
+      setSearchQuery(''); // Reset search
     }
   }, [isOpen]);
 
@@ -73,6 +78,14 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
     };
 
     onProductSelected(orderItem);
+    setAddedCount(prev => prev + 1);
+    
+    // Show success toast
+    toast({
+      title: "Producto agregado",
+      description: `${product.name} (${size}, ${priceKind === 'combo' ? 'Combo' : 'Solo'})`,
+      duration: 2000,
+    });
   };
 
   const filteredProducts = products.filter(product =>
@@ -80,10 +93,18 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Seleccionar Producto</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Seleccionar Producto</span>
+            {addedCount > 0 && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <ShoppingCart className="w-3 h-3" />
+                {addedCount} agregado{addedCount !== 1 ? 's' : ''}
+              </Badge>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -183,6 +204,13 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
             </div>
           )}
         </div>
+
+        <DialogFooter>
+          <Button onClick={onClose} variant="outline" className="gap-2">
+            <X className="w-4 h-4" />
+            Cerrar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
