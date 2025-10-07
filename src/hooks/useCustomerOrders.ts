@@ -294,6 +294,7 @@ export function useCustomerOrders() {
           payment_mp,
           payment_pos,
           payment_aplicacion,
+          payment_runas,
           payment_method,
           delivery_address,
           delivery_number,

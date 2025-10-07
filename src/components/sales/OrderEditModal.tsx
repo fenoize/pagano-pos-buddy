@@ -13,11 +13,12 @@ import { useOrderEdit, OrderEditData } from '@/hooks/useOrderEdit';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useComunas } from '@/hooks/useComunas';
 import { useUsers } from '@/hooks/useUsers';
+import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { OrderItemEditRow } from './OrderItemEditRow';
 import { ProductSelector } from './ProductSelector';
 import { OrderHistoryModal } from './OrderHistoryModal';
-import { Edit, Save, X, History, Plus, MapPin, User } from 'lucide-react';
+import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet } from 'lucide-react';
 
 interface OrderEditModalProps {
   order: Order | null;
@@ -37,8 +38,16 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const { customers } = useCustomers();
   const { comunas } = useComunas();
   const { users } = useUsers();
+  const { paymentMethods } = usePaymentMethods();
   
   const repartidores = users.filter(u => u.role === 'Reparto' && u.active);
+
+  const getIconComponent = (iconName: string) => {
+    const icons: Record<string, any> = {
+      Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet
+    };
+    return icons[iconName] || DollarSign;
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -58,6 +67,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         payment_mp: order.payment_mp || 0,
         payment_pos: order.payment_pos || 0,
         payment_aplicacion: order.payment_aplicacion || 0,
+        payment_runas: order.payment_runas || 0,
         subtotal: order.subtotal,
         discount: order.discount || 0,
         total: order.total,
@@ -512,43 +522,36 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                           <SelectItem value="efectivo">Efectivo</SelectItem>
                           <SelectItem value="mp">Transferencia</SelectItem>
                           <SelectItem value="pos">POS</SelectItem>
+                          <SelectItem value="aplicacion">Aplicación</SelectItem>
+                          <SelectItem value="runas">Runas</SelectItem>
                           <SelectItem value="mixto">Mixto</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     {editData?.payment_method === 'mixto' && (
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="efectivo">Efectivo</Label>
-                          <Input
-                            id="efectivo"
-                            type="number"
-                            value={editData.payment_efectivo}
-                            onChange={(e) => handlePaymentUpdate('payment_efectivo', parseInt(e.target.value) || 0)}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="transferencia">Transferencia</Label>
-                          <Input
-                            id="transferencia"
-                            type="number"
-                            value={editData.payment_mp}
-                            onChange={(e) => handlePaymentUpdate('payment_mp', parseInt(e.target.value) || 0)}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="pos">POS</Label>
-                          <Input
-                            id="pos"
-                            type="number"
-                            value={editData.payment_pos}
-                            onChange={(e) => handlePaymentUpdate('payment_pos', parseInt(e.target.value) || 0)}
-                            min="0"
-                          />
-                        </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {paymentMethods.filter(m => m.is_active).map((method) => {
+                          const Icon = getIconComponent(method.icon);
+                          const fieldName = `payment_${method.name}` as keyof OrderEditData;
+                          const currentValue = editData[fieldName] as number || 0;
+                          
+                          return (
+                            <div key={method.id} className="space-y-2">
+                              <Label htmlFor={method.name} className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                {method.display_name}
+                              </Label>
+                              <Input
+                                id={method.name}
+                                type="number"
+                                value={currentValue}
+                                onChange={(e) => handlePaymentUpdate(fieldName, parseInt(e.target.value) || 0)}
+                                min="0"
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </>
@@ -558,24 +561,24 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                       <span className="text-muted-foreground">Método:</span>
                       <span className="capitalize">{order.payment_method}</span>
                     </div>
-                    {order.payment_efectivo > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Efectivo:</span>
-                        <span>{formatPrice(order.payment_efectivo)}</span>
-                      </div>
-                    )}
-                    {order.payment_pos > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">POS:</span>
-                        <span>{formatPrice(order.payment_pos)}</span>
-                      </div>
-                    )}
-                    {order.payment_mp > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Transferencia:</span>
-                        <span>{formatPrice(order.payment_mp)}</span>
-                      </div>
-                    )}
+                    {paymentMethods.map((method) => {
+                      const fieldName = `payment_${method.name}` as keyof Order;
+                      const amount = order[fieldName] as number || 0;
+                      
+                      if (amount > 0) {
+                        const Icon = getIconComponent(method.icon);
+                        return (
+                          <div key={method.id} className="flex justify-between items-center">
+                            <span className="text-muted-foreground flex items-center gap-2">
+                              <Icon className="w-4 h-4" />
+                              {method.display_name}:
+                            </span>
+                            <span>{formatPrice(amount)}</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
                     <div className="border-t pt-2 flex justify-between font-bold">
                       <span>Total:</span>
                       <span>{formatPrice(order.total)}</span>

@@ -12,6 +12,7 @@ export interface OrderEditData {
   payment_mp: number;
   payment_pos: number;
   payment_aplicacion: number;
+  payment_runas: number;
   subtotal: number;
   discount: number;
   total: number;
@@ -146,6 +147,8 @@ export function useOrderEdit() {
           payment_efectivo: editData.payment_efectivo,
           payment_mp: editData.payment_mp,
           payment_pos: editData.payment_pos,
+          payment_aplicacion: editData.payment_aplicacion,
+          payment_runas: editData.payment_runas,
           delivery_address: editData.delivery_address || null,
           delivery_number: editData.delivery_number || null,
           delivery_comuna_id: editData.delivery_comuna_id || null,

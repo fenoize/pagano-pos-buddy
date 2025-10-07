@@ -228,6 +228,7 @@ export interface Order {
   payment_mp: number;
   payment_pos: number;
   payment_aplicacion: number;
+  payment_runas: number;
   payment_method: PaymentMethod;
   status: OrderStatus;
   notes?: string;
