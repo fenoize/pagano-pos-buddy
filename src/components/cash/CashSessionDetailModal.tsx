@@ -12,7 +12,7 @@ import { useCashSession } from "@/hooks/useCashSession";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { FileDown, DollarSign, ShoppingCart, Truck, Coins, TrendingUp, TrendingDown, Edit, Save, X, User } from "lucide-react";
+import { FileDown, DollarSign, ShoppingCart, Truck, Coins, TrendingUp, TrendingDown, Edit, Save, X, User, Sparkles } from "lucide-react";
 import jsPDF from 'jspdf';
 
 interface CashSessionDetailModalProps {
@@ -406,6 +406,38 @@ export function CashSessionDetailModal({
                     <span className="text-sm text-muted-foreground">Pagos Mixtos:</span>
                     <Badge variant="secondary">{paymentMethodCounts.mixto} ventas</Badge>
                   </div>
+                </div>
+
+                {/* Ventas en Runas Section */}
+                {summary?.totalRunasQuantity > 0 && (
+                  <div className="mt-4 pt-4 border-t space-y-2">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Ventas en Runas
+                    </h4>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Total Runas Utilizadas:</span>
+                      <span className="font-medium">{summary.totalRunasQuantity} runas</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Valor en CLP:</span>
+                      <span className="font-medium">{formatCurrency(summary.totalRunasAmount || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Ventas con Runas:</span>
+                      <Badge variant="outline">{summary.ventasConRunas} ventas</Badge>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex justify-between items-center font-bold text-lg">
+                    <span>Total Ventas Real:</span>
+                    <span className="text-primary">{formatCurrency(summary?.totalSalesReal || 0)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    (Total sin incluir el valor de runas canjeadas)
+                  </p>
                 </div>
               </div>
             </CardContent>

@@ -1115,6 +1115,7 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_mp: number | null
           payment_pos: number | null
+          payment_runas: number | null
           status: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
           total: number
@@ -1148,6 +1149,7 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_mp?: number | null
           payment_pos?: number | null
+          payment_runas?: number | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
           total: number
@@ -1181,6 +1183,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_mp?: number | null
           payment_pos?: number | null
+          payment_runas?: number | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal?: number
           total?: number
@@ -1279,6 +1282,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_methods: {
+        Row: {
+          counts_as_real_sale: boolean
+          created_at: string | null
+          display_name: string
+          display_order: number
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          requires_change: boolean
+          requires_operation_number: boolean
+          requires_receipt: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          counts_as_real_sale?: boolean
+          created_at?: string | null
+          display_name: string
+          display_order?: number
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          requires_change?: boolean
+          requires_operation_number?: boolean
+          requires_receipt?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          counts_as_real_sale?: boolean
+          created_at?: string | null
+          display_name?: string
+          display_order?: number
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          requires_change?: boolean
+          requires_operation_number?: boolean
+          requires_receipt?: boolean
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       product_categories: {
         Row: {

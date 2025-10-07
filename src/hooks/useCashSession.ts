@@ -196,6 +196,15 @@ export function useCashSession() {
 
       console.log('Runas transactions found:', runasTransactions?.length || 0);
 
+      // Get runa value from config
+      const { data: runaConfig } = await supabase
+        .from('config')
+        .select('value')
+        .eq('key', 'runa_value')
+        .maybeSingle();
+      
+      const runaValue = runaConfig?.value || 1000;
+
       // Calculate totals
       const totalSales = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
       const totalCash = orders?.reduce((sum, order) => sum + (order.payment_efectivo || 0), 0) || 0;
@@ -203,12 +212,21 @@ export function useCashSession() {
       const totalPOS = orders?.reduce((sum, order) => sum + (order.payment_pos || 0), 0) || 0;
       const totalAplicacion = orders?.reduce((sum, order) => sum + (order.payment_aplicacion || 0), 0) || 0;
 
+      // Calculate runas from orders
+      const totalRunasQuantity = orders?.reduce((sum, order) => sum + (order.payment_runas || 0), 0) || 0;
+      const runaValueNumber = Number(runaConfig?.value || 1000);
+      const totalRunasAmount = totalRunasQuantity * runaValueNumber;
+      const ventasConRunas = orders?.filter(order => (order.payment_runas || 0) > 0).length || 0;
+
+      // Adjust total sales to exclude runas value (real money sales only)
+      const totalSalesReal = totalSales - totalRunasAmount;
+
       const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
       const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
 
       const expectedCash = (session.opening_cash || 0) + totalCash + ingresos - egresos;
 
-      // Calculate runas totals
+      // Calculate runas totals from transactions (for reference)
       const totalRunasCanjeadas = runasTransactions?.filter(t => t.type === 'canje').reduce((sum, t) => sum + t.runas, 0) || 0;
       const totalRunasAcumuladas = runasTransactions?.filter(t => t.type === 'acumulacion').reduce((sum, t) => sum + t.runas, 0) || 0;
 
@@ -219,10 +237,14 @@ export function useCashSession() {
         runasTransactions: runasTransactions || [],
         summary: {
           totalSales,
+          totalSalesReal,
           totalCash,
           totalMP,
           totalPOS,
           totalAplicacion,
+          totalRunasQuantity,
+          totalRunasAmount,
+          ventasConRunas,
           ingresos,
           egresos,
           expectedCash,

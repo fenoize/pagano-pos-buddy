@@ -1,159 +1,371 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, Banknote } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { 
+  Plus, Settings, Trash2, GripVertical, 
+  Banknote, CreditCard, Smartphone, AppWindow, 
+  Sparkles, DollarSign, Coins, Wallet
+} from 'lucide-react';
+import { usePaymentMethods, PaymentMethod } from '@/hooks/usePaymentMethods';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const ICON_OPTIONS = [
+  { value: 'Banknote', label: 'Billetes', icon: Banknote },
+  { value: 'CreditCard', label: 'Tarjeta', icon: CreditCard },
+  { value: 'Smartphone', label: 'Teléfono', icon: Smartphone },
+  { value: 'AppWindow', label: 'Aplicación', icon: AppWindow },
+  { value: 'Sparkles', label: 'Runas', icon: Sparkles },
+  { value: 'DollarSign', label: 'Dólar', icon: DollarSign },
+  { value: 'Coins', label: 'Monedas', icon: Coins },
+  { value: 'Wallet', label: 'Billetera', icon: Wallet }
+];
+
+function getIconComponent(iconName: string) {
+  const iconOption = ICON_OPTIONS.find(opt => opt.value === iconName);
+  return iconOption ? iconOption.icon : DollarSign;
+}
 
 export function PaymentMethodsConfig() {
-  const [cashDenominations, setCashDenominations] = useState<number[]>([]);
-  const [newDenomination, setNewDenomination] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const { 
+    paymentMethods, 
+    loading, 
+    createPaymentMethod, 
+    updatePaymentMethod, 
+    deletePaymentMethod,
+    restoreDefaults 
+  } = usePaymentMethods();
 
-  useEffect(() => {
-    fetchConfig();
-  }, []);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
+  const [formData, setFormData] = useState<Partial<PaymentMethod>>({
+    name: '',
+    display_name: '',
+    icon: 'DollarSign',
+    is_active: true,
+    requires_change: false,
+    requires_receipt: false,
+    requires_operation_number: false,
+    counts_as_real_sale: true,
+    display_order: paymentMethods.length
+  });
 
-  const fetchConfig = async () => {
+  const handleOpenModal = (method?: PaymentMethod) => {
+    if (method) {
+      setEditingMethod(method);
+      setFormData(method);
+    } else {
+      setEditingMethod(null);
+      setFormData({
+        name: '',
+        display_name: '',
+        icon: 'DollarSign',
+        is_active: true,
+        requires_change: false,
+        requires_receipt: false,
+        requires_operation_number: false,
+        counts_as_real_sale: true,
+        display_order: paymentMethods.length
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingMethod(null);
+  };
+
+  const handleSave = async () => {
     try {
-      const { data } = await supabase
-        .from('config')
-        .select('value')
-        .eq('key', 'cash_denominations')
-        .maybeSingle();
-
-      if (data?.value) {
-        setCashDenominations(data.value as number[]);
+      if (editingMethod) {
+        await updatePaymentMethod(editingMethod.id, formData);
+      } else {
+        await createPaymentMethod(formData as Omit<PaymentMethod, 'id' | 'created_at' | 'updated_at'>);
       }
+      handleCloseModal();
     } catch (error) {
-      console.error('Error fetching config:', error);
+      console.error('Error saving payment method:', error);
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0
-    }).format(price);
-  };
-
-  const addDenomination = () => {
-    const value = parseInt(newDenomination);
-    if (!value || value <= 0) {
-      toast({
-        title: "Error",
-        description: "Ingrese un valor válido",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (cashDenominations.includes(value)) {
-      toast({
-        title: "Error", 
-        description: "Esta denominación ya existe",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const updated = [...cashDenominations, value].sort((a, b) => a - b);
-    setCashDenominations(updated);
-    setNewDenomination('');
-  };
-
-  const removeDenomination = (value: number) => {
-    setCashDenominations(prev => prev.filter(d => d !== value));
-  };
-
-  const saveConfig = async () => {
-    setIsLoading(true);
-    try {
-      await supabase
-        .from('config')
-        .upsert({
-          key: 'cash_denominations',
-          value: cashDenominations
-        });
-
-      toast({
-        title: "Configuración guardada",
-        description: "Los billetes se han actualizado correctamente"
-      });
-    } catch (error) {
-      console.error('Error saving config:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo guardar la configuración",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+  const handleDelete = async (id: string) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este método de pago?')) {
+      await deletePaymentMethod(id);
     }
   };
+
+  const handleToggleActive = async (method: PaymentMethod) => {
+    await updatePaymentMethod(method.id, { is_active: !method.is_active });
+  };
+
+  const handleRestoreDefaults = async () => {
+    if (window.confirm('¿Estás seguro de que deseas restaurar los métodos de pago por defecto? Esto eliminará todos los métodos personalizados.')) {
+      await restoreDefaults();
+    }
+  };
+
+  if (loading) {
+    return <div>Cargando...</div>;
+  }
+
+  const IconComponent = getIconComponent(formData.icon || 'DollarSign');
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Banknote className="w-5 h-5" />
-          Denominaciones de Efectivo
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label>Billetes Disponibles</Label>
-          <div className="flex flex-wrap gap-2">
-            {cashDenominations.map((value) => (
-              <Badge key={value} variant="secondary" className="flex items-center gap-2 px-3 py-1">
-                {formatPrice(value)}
-                <button
-                  onClick={() => removeDenomination(value)}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <Label htmlFor="new-denomination">Agregar Nueva Denominación</Label>
-            <Input
-              id="new-denomination"
-              type="number"
-              value={newDenomination}
-              onChange={(e) => setNewDenomination(e.target.value)}
-              placeholder="Ej: 50000"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  addDenomination();
-                }
-              }}
-            />
-          </div>
-          <div className="flex items-end">
-            <Button onClick={addDenomination} size="icon">
-              <Plus className="w-4 h-4" />
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Métodos de Pago
+          </CardTitle>
+          <div className="flex gap-2">
+            <Button onClick={handleRestoreDefaults} variant="outline" size="sm">
+              Restaurar Por Defecto
+            </Button>
+            <Button onClick={() => handleOpenModal()} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Agregar Método
             </Button>
           </div>
-        </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12"></TableHead>
+                <TableHead>Icono</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Nombre Mostrado</TableHead>
+                <TableHead>Activo</TableHead>
+                <TableHead>Req. Vuelto</TableHead>
+                <TableHead>Req. Comprobante</TableHead>
+                <TableHead>Req. N° Op.</TableHead>
+                <TableHead>Cuenta como Venta</TableHead>
+                <TableHead className="w-24">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paymentMethods.map((method) => {
+                const Icon = getIconComponent(method.icon);
+                return (
+                  <TableRow key={method.id}>
+                    <TableCell>
+                      <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
+                    </TableCell>
+                    <TableCell>
+                      <Icon className="w-5 h-5" />
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{method.name}</TableCell>
+                    <TableCell>{method.display_name}</TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={method.is_active}
+                        onCheckedChange={() => handleToggleActive(method)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {method.requires_change ? (
+                        <Badge variant="secondary">Sí</Badge>
+                      ) : (
+                        <Badge variant="outline">No</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {method.requires_receipt ? (
+                        <Badge variant="secondary">Sí</Badge>
+                      ) : (
+                        <Badge variant="outline">No</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {method.requires_operation_number ? (
+                        <Badge variant="secondary">Sí</Badge>
+                      ) : (
+                        <Badge variant="outline">No</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {method.counts_as_real_sale ? (
+                        <Badge>Sí</Badge>
+                      ) : (
+                        <Badge variant="destructive">No</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleOpenModal(method)}
+                        >
+                          <Settings className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDelete(method.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-        <Button 
-          onClick={saveConfig} 
-          disabled={isLoading}
-          className="w-full"
-        >
-          {isLoading ? 'Guardando...' : 'Guardar Configuración'}
-        </Button>
-      </CardContent>
-    </Card>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingMethod ? 'Editar Método de Pago' : 'Nuevo Método de Pago'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Nombre Interno (identificador)</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="efectivo"
+                  disabled={!!editingMethod}
+                />
+              </div>
+              <div>
+                <Label htmlFor="display_name">Nombre Mostrado</Label>
+                <Input
+                  id="display_name"
+                  value={formData.display_name}
+                  onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+                  placeholder="Efectivo"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="icon">Icono</Label>
+              <Select
+                value={formData.icon}
+                onValueChange={(value) => setFormData({ ...formData, icon: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue>
+                    <div className="flex items-center gap-2">
+                      <IconComponent className="w-4 h-4" />
+                      <span>{ICON_OPTIONS.find(opt => opt.value === formData.icon)?.label}</span>
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {ICON_OPTIONS.map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-4 h-4" />
+                          <span>{option.label}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-3 border rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="is_active">Método Activo</Label>
+                <Switch
+                  id="is_active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="requires_change">Requiere Vuelto</Label>
+                <Switch
+                  id="requires_change"
+                  checked={formData.requires_change}
+                  onCheckedChange={(checked) => setFormData({ ...formData, requires_change: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="requires_receipt">Requiere Comprobante</Label>
+                <Switch
+                  id="requires_receipt"
+                  checked={formData.requires_receipt}
+                  onCheckedChange={(checked) => setFormData({ ...formData, requires_receipt: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="requires_operation_number">Requiere Número de Operación</Label>
+                <Switch
+                  id="requires_operation_number"
+                  checked={formData.requires_operation_number}
+                  onCheckedChange={(checked) => setFormData({ ...formData, requires_operation_number: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between border-t pt-3">
+                <div>
+                  <Label htmlFor="counts_as_real_sale">Cuenta como Venta Real</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Si está activado, este método se contabiliza en el total de ventas del cierre
+                  </p>
+                </div>
+                <Switch
+                  id="counts_as_real_sale"
+                  checked={formData.counts_as_real_sale}
+                  onCheckedChange={(checked) => setFormData({ ...formData, counts_as_real_sale: checked })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseModal}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave}>
+              {editingMethod ? 'Guardar Cambios' : 'Crear Método'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

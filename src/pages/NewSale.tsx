@@ -357,6 +357,7 @@ export default function NewSale() {
           payment_mp: totals.mp,
           payment_pos: totals.pos,
           payment_aplicacion: totals.aplicacion,
+          payment_runas: totals.runas,
           payment_method: paymentMethod,
           status: 'Pendiente' as const,
           notes: paymentData.notes || null,
