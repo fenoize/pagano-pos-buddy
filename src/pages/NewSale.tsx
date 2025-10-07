@@ -150,6 +150,9 @@ export default function NewSale() {
               category_variant_id: orderItem.category_variant_id,
               variant_name: orderItem.variant_name,
               product_variant_option_id: orderItem.product_variant_option_id,
+              // Combo fields
+              is_combo_item: orderItem.is_combo_item,
+              combo_selections: orderItem.combo_selections,
               // Common fields
               basePrice: orderItem.basePrice,
               quantity: orderItem.quantity,
@@ -176,6 +179,9 @@ export default function NewSale() {
         category_variant_id: orderItem.category_variant_id,
         variant_name: orderItem.variant_name,
         product_variant_option_id: orderItem.product_variant_option_id,
+        // Combo fields
+        is_combo_item: orderItem.is_combo_item,
+        combo_selections: orderItem.combo_selections,
         // Common fields
         basePrice: orderItem.basePrice,
         quantity: orderItem.quantity,

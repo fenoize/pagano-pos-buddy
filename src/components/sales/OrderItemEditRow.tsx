@@ -31,20 +31,54 @@ export function OrderItemEditRow({ item, index, isEditMode, onUpdate, onRemove }
         <div className="flex-1">
           <h4 className="font-medium">{item.productName}</h4>
           <div className="text-sm text-muted-foreground space-y-1">
-            <div>Tamaño: <span className="capitalize">{item.size}</span></div>
-            <div>Tipo: <span className="capitalize">{item.priceKind === 'combo' ? 'Combo' : 'Solo hamburguesa'}</span></div>
-            {item.extras && item.extras.length > 0 && (
+            {/* Legacy system fields */}
+            {item.size && <div>Tamaño: <span className="capitalize">{item.size}</span></div>}
+            {item.priceKind && <div>Tipo: <span className="capitalize">{item.priceKind === 'combo' ? 'Combo' : 'Solo hamburguesa'}</span></div>}
+            
+            {/* New variant system */}
+            {item.variant_name && <div>Variante: <span className="capitalize">{item.variant_name}</span></div>}
+            
+            {/* Combo details */}
+            {item.is_combo_item && item.combo_selections && item.combo_selections.length > 0 && (
+              <div className="mt-2 space-y-2 pl-2 border-l-2 border-muted">
+                <div className="font-medium text-xs">Combo incluye:</div>
+                {item.combo_selections.map((comboItem: any, idx: number) => (
+                  <div key={idx} className="text-xs space-y-0.5">
+                    <div className="font-medium">
+                      {comboItem.quantity}x {comboItem.product_name}
+                      {comboItem.variant_name && ` - ${comboItem.variant_name}`}
+                    </div>
+                    {comboItem.extras && comboItem.extras.length > 0 && (
+                      <div className="pl-2">
+                        Extras: {comboItem.extras.map((e: any) => 
+                          `${e.quantity || 1}x ${e.label}`
+                        ).join(', ')}
+                      </div>
+                    )}
+                    {comboItem.modifiers && comboItem.modifiers.length > 0 && (
+                      <div className="pl-2">
+                        Mods: {comboItem.modifiers.map((m: any) => m.name).join(', ')}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Regular extras and modifiers (for non-combo items) */}
+            {!item.is_combo_item && item.extras && item.extras.length > 0 && (
               <div>
                 Extras: {item.extras.map((extra: any) => 
                   `${extra.label} ${formatPrice(extra.price)}`
                 ).join(', ')}
               </div>
             )}
-            {item.modifiers && item.modifiers.length > 0 && (
+            {!item.is_combo_item && item.modifiers && item.modifiers.length > 0 && (
               <div>
                 Modificaciones: {item.modifiers.map((mod: any) => mod.name).join(', ')}
               </div>
             )}
+            
             {item.notes && (
               <div>Notas: {item.notes}</div>
             )}
