@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import type { User, Session } from '@supabase/supabase-js';
 import { STORAGE_KEYS, clearCustomerStorage } from '@/lib/storageKeys';
+import { setCustomerContext, clearDBContext } from '@/lib/dbContext';
 
 type Customer = Database['public']['Tables']['customers']['Row'];
 
@@ -36,7 +37,18 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .maybeSingle();
 
       if (customerError) throw customerError;
+      
       setCustomer(customerData);
+      
+      // CRITICAL: Establecer contexto DB si tenemos datos del customer
+      if (customerData && customerData.account_id) {
+        try {
+          await setCustomerContext(customerData.account_id, customerData.id);
+        } catch (contextError) {
+          console.error('Failed to set customer DB context:', contextError);
+          // No bloqueamos el login si falla el contexto, pero lo logueamos
+        }
+      }
     } catch (error) {
       console.error('Error loading customer data:', error);
     }
@@ -116,6 +128,9 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const signOut = async () => {
+    // Limpiar contexto DB antes del signout
+    await clearDBContext();
+    
     await supabase.auth.signOut();
     clearCustomerStorage();
     setSession(null);

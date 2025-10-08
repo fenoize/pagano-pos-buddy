@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { configuredSupabase } from '@/lib/supabaseClient';
 import { User, AppRole } from '@/types';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
+import { setStaffContext, clearDBContext } from '@/lib/dbContext';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -118,6 +119,14 @@ export function useAuth() {
       
       localStorage.setItem(STORAGE_KEYS.STAFF_USER, JSON.stringify(mappedUser));
 
+      // CRITICAL: Establecer contexto DB para staff
+      try {
+        await setStaffContext(mappedUser.id);
+      } catch (contextError) {
+        console.error('Failed to set staff DB context:', contextError);
+        // No bloqueamos el login si falla el contexto, pero lo logueamos
+      }
+
       setAuthState({
         user: mappedUser,
         loading: false,
@@ -140,6 +149,9 @@ export function useAuth() {
 
   const logout = async () => {
     try {
+      // Limpiar contexto DB antes del logout
+      await clearDBContext();
+      
       clearStaffStorage();
       setAuthState({
         user: null,

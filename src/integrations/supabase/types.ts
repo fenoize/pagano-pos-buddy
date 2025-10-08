@@ -2119,6 +2119,14 @@ export type Database = {
         Args: { password: string }
         Returns: string
       }
+      get_current_customer_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_staff_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       register_customer: {
         Args: {
           p_apellidos?: string
@@ -2140,6 +2148,10 @@ export type Database = {
       }
       set_customer_context: {
         Args: { p_account_id: string; p_customer_id: string }
+        Returns: undefined
+      }
+      set_staff_context: {
+        Args: { p_user_id: string }
         Returns: undefined
       }
       set_user_password: {
