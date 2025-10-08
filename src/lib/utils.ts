@@ -5,6 +5,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Formatea un número de runas con separadores de miles
+ */
+export function formatRunas(runas: number): string {
+  return new Intl.NumberFormat('es-CL').format(runas);
+}
+
+/**
+ * Formatea un monto en CLP sin decimales
+ */
+export function formatCLP(amount: number): string {
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('es-CL', {
     style: 'currency',
