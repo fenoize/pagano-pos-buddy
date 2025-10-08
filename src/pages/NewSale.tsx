@@ -354,7 +354,7 @@ export default function NewSale() {
           customer_id: customerId,
           created_by_user_id: validUserId,
           nombre_resumen: orderName.trim() || null,
-          fulfillment: (deliveryData && deliveryData.zone) ? 'delivery' as const : 'retiro' as const,
+          fulfillment: fulfillment,
           items: cartItems as any,
           subtotal,
           delivery_fee: deliveryFee,
