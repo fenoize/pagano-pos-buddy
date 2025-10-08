@@ -272,6 +272,8 @@ export function CashSessionDetailModal({
           const customerName = order.customers.name || 
                               `${order.customers.nombres || ''} ${order.customers.apellidos || ''}`.trim();
           customerText = customerName ? `${customerName} (R)` : 'Cliente (R)';
+        } else if (order.nombre_resumen) {
+          customerText = order.nombre_resumen;
         }
         doc.text(customerText.substring(0, 18), 65, yPos);
         
