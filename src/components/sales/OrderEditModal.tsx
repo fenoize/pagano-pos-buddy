@@ -43,7 +43,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const { updateOrder, calculateTotals, isLoading } = useOrderEdit();
   const { customers } = useCustomers();
   const { comunas } = useComunas();
-  const { users } = useUsers();
+  const { users, fetchUsers } = useUsers();
   const { paymentMethods } = usePaymentMethods();
   const { getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
   
@@ -56,16 +56,22 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
     return icons[iconName] || DollarSign;
   };
 
-  // Cargar saldo de runas y valor cuando se abre el modal
+  // Cargar datos cuando se abre el modal
   useEffect(() => {
-    if (isOpen && order && order.customer_id) {
-      const loadRunasData = async () => {
-        const balance = await getCustomerRunasBalance(order.customer_id!);
-        const value = await fetchRunaValue();
-        setSaldoRunasCliente(balance);
-        setValorRunaActual(value);
-      };
-      loadRunasData();
+    if (isOpen) {
+      // Cargar usuarios
+      fetchUsers();
+      
+      // Cargar saldo de runas si hay customer
+      if (order && order.customer_id) {
+        const loadRunasData = async () => {
+          const balance = await getCustomerRunasBalance(order.customer_id!);
+          const value = await fetchRunaValue();
+          setSaldoRunasCliente(balance);
+          setValorRunaActual(value);
+        };
+        loadRunasData();
+      }
     }
   }, [isOpen, order]);
 
