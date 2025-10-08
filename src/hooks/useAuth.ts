@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { configuredSupabase } from '@/lib/supabaseClient';
 import { User, AppRole } from '@/types';
+import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -28,7 +29,7 @@ export function useAuth() {
 
   useEffect(() => {
     const validateStoredUser = async () => {
-      const storedUser = localStorage.getItem('paganos_user');
+      const storedUser = localStorage.getItem(STORAGE_KEYS.STAFF_USER);
       if (storedUser) {
         try {
           const user = JSON.parse(storedUser);
@@ -43,7 +44,7 @@ export function useAuth() {
           
           if (error || !dbUser) {
             console.log('Stored user no longer valid, clearing localStorage');
-            localStorage.removeItem('paganos_user');
+            clearStaffStorage();
             setAuthState({
               user: null,
               loading: false,
@@ -58,7 +59,7 @@ export function useAuth() {
           }
         } catch (error) {
           console.error('Error validating stored user:', error);
-          localStorage.removeItem('paganos_user');
+          clearStaffStorage();
           setAuthState({
             user: null,
             loading: false,
@@ -115,7 +116,7 @@ export function useAuth() {
         active: userRecord.active
       } as User;
       
-      localStorage.setItem('paganos_user', JSON.stringify(mappedUser));
+      localStorage.setItem(STORAGE_KEYS.STAFF_USER, JSON.stringify(mappedUser));
 
       setAuthState({
         user: mappedUser,
@@ -139,7 +140,7 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      localStorage.removeItem('paganos_user');
+      clearStaffStorage();
       setAuthState({
         user: null,
         loading: false,

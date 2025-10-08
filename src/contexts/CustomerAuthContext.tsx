@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import type { User } from '@supabase/supabase-js';
+import type { User, Session } from '@supabase/supabase-js';
+import { STORAGE_KEYS, clearCustomerStorage } from '@/lib/storageKeys';
 
 type Customer = Database['public']['Tables']['customers']['Row'];
 
 interface CustomerAuthContextType {
   user: User | null;
+  session: Session | null;
   customer: Customer | null;
   loading: boolean;
   signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ error: Error | null }>;
@@ -21,6 +23,7 @@ const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(u
 
 export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,23 +43,38 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   useEffect(() => {
-    // Obtener sesión inicial
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Store session in localStorage with customer-specific key
+        if (session) {
+          localStorage.setItem(STORAGE_KEYS.CUSTOMER_SESSION, JSON.stringify(session));
+          // Defer customer data loading with setTimeout to avoid deadlock
+          setTimeout(() => {
+            if (session.user) {
+              loadCustomerData(session.user.id);
+            }
+          }, 0);
+        } else {
+          clearCustomerStorage();
+          setCustomer(null);
+        }
+      }
+    );
+
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
+      
+      if (session) {
+        localStorage.setItem(STORAGE_KEYS.CUSTOMER_SESSION, JSON.stringify(session));
         loadCustomerData(session.user.id);
       }
       setLoading(false);
-    });
-
-    // Escuchar cambios de autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadCustomerData(session.user.id);
-      } else {
-        setCustomer(null);
-      }
     });
 
     return () => subscription.unsubscribe();
@@ -99,6 +117,8 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    clearCustomerStorage();
+    setSession(null);
     setUser(null);
     setCustomer(null);
   };
@@ -137,6 +157,7 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const value = {
     user,
+    session,
     customer,
     loading,
     signUp,
