@@ -217,6 +217,90 @@ export function CashSessionDetailModal({
     doc.text(`Pagos Mixtos: ${paymentMethodCounts.mixto} ventas`, 20, yPos);
     yPos += 15;
     
+    // Detalle de Pedidos
+    if (orders && orders.length > 0) {
+      doc.setFontSize(14);
+      doc.text('Detalle de Pedidos', 20, yPos);
+      yPos += 10;
+      doc.setFontSize(9);
+      
+      // Headers de la tabla
+      doc.setFont('helvetica', 'bold');
+      doc.text('#', 20, yPos);
+      doc.text('Fecha/Hora', 30, yPos);
+      doc.text('Cliente', 65, yPos);
+      doc.text('Entrega', 105, yPos);
+      doc.text('Pago', 135, yPos);
+      doc.text('Monto', 175, yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'normal');
+      
+      // Línea separadora
+      doc.line(20, yPos, 190, yPos);
+      yPos += 5;
+      
+      orders.forEach((order: any) => {
+        // Verificar si necesitamos nueva página
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+          // Repetir headers en nueva página
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text('#', 20, yPos);
+          doc.text('Fecha/Hora', 30, yPos);
+          doc.text('Cliente', 65, yPos);
+          doc.text('Entrega', 105, yPos);
+          doc.text('Pago', 135, yPos);
+          doc.text('Monto', 175, yPos);
+          yPos += 5;
+          doc.line(20, yPos, 190, yPos);
+          yPos += 5;
+          doc.setFont('helvetica', 'normal');
+        }
+        
+        // Número de orden
+        doc.text(`${order.order_number}`, 20, yPos);
+        
+        // Fecha y hora
+        const orderDate = format(new Date(order.created_at), 'dd/MM HH:mm', { locale: es });
+        doc.text(orderDate, 30, yPos);
+        
+        // Cliente
+        let customerText = '-';
+        if (order.customer_id && order.customers) {
+          const customerName = order.customers.name || 
+                              `${order.customers.nombres || ''} ${order.customers.apellidos || ''}`.trim();
+          customerText = customerName ? `${customerName} (R)` : 'Cliente (R)';
+        }
+        doc.text(customerText.substring(0, 18), 65, yPos);
+        
+        // Tipo de entrega
+        let deliveryText = order.fulfillment === 'delivery' ? 'Delivery' : 'Retiro';
+        if (order.fulfillment === 'delivery' && order.delivery_person_name) {
+          deliveryText = `D: ${order.delivery_person_name.substring(0, 12)}`;
+        }
+        doc.text(deliveryText, 105, yPos);
+        
+        // Método de pago
+        const payments = [];
+        if (order.payment_efectivo > 0) payments.push('Efec');
+        if (order.payment_mp > 0) payments.push('MP');
+        if (order.payment_pos > 0) payments.push('POS');
+        if (order.payment_aplicacion > 0) payments.push('App');
+        if (order.payment_runas > 0) payments.push('Runas');
+        const paymentText = payments.join('+') || order.payment_method || '-';
+        doc.text(paymentText, 135, yPos);
+        
+        // Monto
+        doc.text(formatCurrency(order.total), 185, yPos, { align: 'right' });
+        
+        yPos += 5;
+      });
+      
+      yPos += 10;
+    }
+    
     // Pagos a Repartidores
     if (repartidoresPayment.length > 0) {
       doc.setFontSize(14);

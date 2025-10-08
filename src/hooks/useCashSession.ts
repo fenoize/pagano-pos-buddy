@@ -169,7 +169,15 @@ export function useCashSession() {
 
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          customers (
+            id,
+            name,
+            nombres,
+            apellidos
+          )
+        `)
         .gte('created_at', sessionStart)
         .lte('created_at', sessionEnd)
         .order('created_at');
