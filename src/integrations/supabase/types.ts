@@ -2172,6 +2172,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      is_admin_from_jwt: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       register_customer: {
         Args: {
           p_apellidos?: string
