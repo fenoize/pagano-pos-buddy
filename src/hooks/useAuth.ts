@@ -52,6 +52,13 @@ export function useAuth() {
               error: null,
             });
           } else {
+            // Re-establecer contexto DB después de validar usuario almacenado
+            try {
+              await setStaffContext(user.id);
+            } catch (contextError) {
+              console.error('Failed to restore staff context:', contextError);
+            }
+            
             setAuthState({
               user,
               loading: false,
