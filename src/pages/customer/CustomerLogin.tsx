@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Flame, Loader2 } from 'lucide-react';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 export default function CustomerLogin() {
   const navigate = useNavigate();
@@ -17,15 +18,39 @@ export default function CustomerLogin() {
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [loginCaptchaToken, setLoginCaptchaToken] = useState<string | null>(null);
 
   // Signup state
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
   const [signupPhone, setSignupPhone] = useState('');
+  const [signupCaptchaToken, setSignupCaptchaToken] = useState<string | null>(null);
+
+  // ReCAPTCHA refs
+  const loginCaptchaRef = useRef<ReCAPTCHA>(null);
+  const signupCaptchaRef = useRef<ReCAPTCHA>(null);
+
+  // ReCAPTCHA callbacks
+  const onLoginCaptchaChange = (token: string | null) => {
+    setLoginCaptchaToken(token);
+  };
+
+  const onSignupCaptchaChange = (token: string | null) => {
+    setSignupCaptchaToken(token);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar CAPTCHA
+    if (!loginCaptchaToken) {
+      toast.error('Verificación requerida', {
+        description: 'Por favor completa el CAPTCHA',
+      });
+      return;
+    }
+
     setLoading(true);
 
     const { error } = await signIn(loginEmail, loginPassword);
@@ -34,6 +59,9 @@ export default function CustomerLogin() {
       toast.error('Error al iniciar sesión', {
         description: error.message,
       });
+      // Resetear CAPTCHA en caso de error
+      loginCaptchaRef.current?.reset();
+      setLoginCaptchaToken(null);
     } else {
       toast.success('¡Bienvenido de vuelta!');
       navigate('/');
@@ -44,6 +72,15 @@ export default function CustomerLogin() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar CAPTCHA
+    if (!signupCaptchaToken) {
+      toast.error('Verificación requerida', {
+        description: 'Por favor completa el CAPTCHA',
+      });
+      return;
+    }
+
     setLoading(true);
 
     const { error } = await signUp(signupEmail, signupPassword, signupName, signupPhone);
@@ -52,6 +89,9 @@ export default function CustomerLogin() {
       toast.error('Error al registrarse', {
         description: error.message,
       });
+      // Resetear CAPTCHA en caso de error
+      signupCaptchaRef.current?.reset();
+      setSignupCaptchaToken(null);
     } else {
       toast.success('¡Cuenta creada exitosamente!', {
         description: 'Ya puedes iniciar sesión',
@@ -77,7 +117,17 @@ export default function CustomerLogin() {
         </CardHeader>
 
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs 
+            defaultValue="login" 
+            className="w-full"
+            onValueChange={() => {
+              // Resetear ambos CAPTCHAs al cambiar de tab
+              loginCaptchaRef.current?.reset();
+              signupCaptchaRef.current?.reset();
+              setLoginCaptchaToken(null);
+              setSignupCaptchaToken(null);
+            }}
+          >
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
               <TabsTrigger value="signup">Registrarse</TabsTrigger>
@@ -112,10 +162,42 @@ export default function CustomerLogin() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                {/* reCAPTCHA */}
+                <div className="flex justify-center">
+                  <ReCAPTCHA
+                    ref={loginCaptchaRef}
+                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                    onChange={onLoginCaptchaChange}
+                    theme="dark"
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading || !loginCaptchaToken}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Iniciar Sesión
                 </Button>
+
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Este sitio está protegido por reCAPTCHA y aplican la{' '}
+                  <a 
+                    href="https://policies.google.com/privacy" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    Política de privacidad
+                  </a>
+                  {' '}y{' '}
+                  <a 
+                    href="https://policies.google.com/terms" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    Términos del servicio
+                  </a>
+                  {' '}de Google.
+                </p>
               </form>
             </TabsContent>
 
@@ -176,10 +258,42 @@ export default function CustomerLogin() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                {/* reCAPTCHA */}
+                <div className="flex justify-center">
+                  <ReCAPTCHA
+                    ref={signupCaptchaRef}
+                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                    onChange={onSignupCaptchaChange}
+                    theme="dark"
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading || !signupCaptchaToken}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Crear Cuenta
                 </Button>
+
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Este sitio está protegido por reCAPTCHA y aplican la{' '}
+                  <a 
+                    href="https://policies.google.com/privacy" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    Política de privacidad
+                  </a>
+                  {' '}y{' '}
+                  <a 
+                    href="https://policies.google.com/terms" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    Términos del servicio
+                  </a>
+                  {' '}de Google.
+                </p>
               </form>
             </TabsContent>
           </Tabs>
