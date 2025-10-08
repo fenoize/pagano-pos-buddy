@@ -69,7 +69,7 @@ export function useCustomerOrders() {
       }
 
       if (filters.paymentMethod) {
-        query = query.eq('payment_method', filters.paymentMethod);
+        query = query.eq('payment_method', filters.paymentMethod as any);
       }
 
       if (filters.dateFrom) {
@@ -246,7 +246,7 @@ export function useCustomerOrders() {
 
       const { data, error } = await supabase
         .from('orders')
-        .insert(insertData)
+        .insert(insertData as any)
         .select()
         .single();
 

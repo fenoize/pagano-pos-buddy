@@ -171,7 +171,7 @@ export function useOrderEdit() {
           delivery_fee: editData.delivery_fee,
           fulfillment: editData.fulfillment || currentOrder.fulfillment,
           total: editData.total,
-          payment_method: editData.payment_method,
+          payment_method: editData.payment_method as any,
           payment_efectivo: editData.payment_efectivo,
           payment_mp: editData.payment_mp,
           payment_pos: editData.payment_pos,
