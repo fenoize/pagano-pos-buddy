@@ -1859,6 +1859,7 @@ export type Database = {
           app_description: string
           app_name: string
           app_short_name: string
+          app_type: string
           background_color: string
           created_at: string
           icon_192_url: string | null
@@ -1872,6 +1873,7 @@ export type Database = {
           app_description?: string
           app_name?: string
           app_short_name?: string
+          app_type?: string
           background_color?: string
           created_at?: string
           icon_192_url?: string | null
@@ -1885,6 +1887,7 @@ export type Database = {
           app_description?: string
           app_name?: string
           app_short_name?: string
+          app_type?: string
           background_color?: string
           created_at?: string
           icon_192_url?: string | null

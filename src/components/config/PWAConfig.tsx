@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Upload, Smartphone } from 'lucide-react';
+import { Loader2, Smartphone, ShoppingCart } from 'lucide-react';
 
 interface PWAConfig {
   id: string;
+  app_type: 'customer' | 'pos';
   app_name: string;
   app_short_name: string;
   app_description: string;
@@ -21,7 +23,9 @@ interface PWAConfig {
 }
 
 export function PWAConfig() {
-  const [config, setConfig] = useState<PWAConfig | null>(null);
+  const [activeTab, setActiveTab] = useState<'customer' | 'pos'>('customer');
+  const [customerConfig, setCustomerConfig] = useState<PWAConfig | null>(null);
+  const [posConfig, setPosConfig] = useState<PWAConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -34,26 +38,45 @@ export function PWAConfig() {
   const [backgroundColor, setBackgroundColor] = useState('');
 
   useEffect(() => {
-    loadConfig();
+    loadConfigs();
   }, []);
 
-  const loadConfig = async () => {
+  useEffect(() => {
+    // Update form when switching tabs
+    const config = activeTab === 'customer' ? customerConfig : posConfig;
+    if (config) {
+      setAppName(config.app_name);
+      setAppShortName(config.app_short_name);
+      setAppDescription(config.app_description);
+      setThemeColor(config.theme_color);
+      setBackgroundColor(config.background_color);
+    }
+  }, [activeTab, customerConfig, posConfig]);
+
+  const loadConfigs = async () => {
     try {
       const { data, error } = await supabase
         .from('pwa_config')
-        .select('*')
-        .limit(1)
-        .maybeSingle();
+        .select('*');
 
       if (error) throw error;
 
       if (data) {
-        setConfig(data);
-        setAppName(data.app_name);
-        setAppShortName(data.app_short_name);
-        setAppDescription(data.app_description);
-        setThemeColor(data.theme_color);
-        setBackgroundColor(data.background_color);
+        const customer = data.find(c => c.app_type === 'customer') as PWAConfig | undefined;
+        const pos = data.find(c => c.app_type === 'pos') as PWAConfig | undefined;
+        
+        setCustomerConfig(customer || null);
+        setPosConfig(pos || null);
+
+        // Load first available config into form
+        const activeConfig = customer || pos;
+        if (activeConfig) {
+          setAppName(activeConfig.app_name);
+          setAppShortName(activeConfig.app_short_name);
+          setAppDescription(activeConfig.app_description);
+          setThemeColor(activeConfig.theme_color);
+          setBackgroundColor(activeConfig.background_color);
+        }
       }
     } catch (error) {
       console.error('Error loading PWA config:', error);
@@ -73,6 +96,7 @@ export function PWAConfig() {
 
     try {
       const configData = {
+        app_type: activeTab,
         app_name: appName,
         app_short_name: appShortName,
         app_description: appDescription,
@@ -81,12 +105,14 @@ export function PWAConfig() {
         updated_at: new Date().toISOString(),
       };
 
-      if (config) {
+      const currentConfig = activeTab === 'customer' ? customerConfig : posConfig;
+
+      if (currentConfig) {
         // Update existing config
         const { error } = await supabase
           .from('pwa_config')
           .update(configData)
-          .eq('id', config.id);
+          .eq('id', currentConfig.id);
 
         if (error) throw error;
       } else {
@@ -98,11 +124,16 @@ export function PWAConfig() {
           .single();
 
         if (error) throw error;
-        setConfig(data);
+        
+        if (activeTab === 'customer') {
+          setCustomerConfig(data as PWAConfig);
+        } else {
+          setPosConfig(data as PWAConfig);
+        }
       }
 
-      toast.success('Configuración guardada exitosamente');
-      await loadConfig();
+      toast.success(`Configuración ${activeTab === 'customer' ? 'del Portal' : 'del POS'} guardada exitosamente`);
+      await loadConfigs();
     } catch (error) {
       console.error('Error saving PWA config:', error);
       toast.error('Error al guardar la configuración');
@@ -155,7 +186,9 @@ export function PWAConfig() {
       const publicUrl = urlData.publicUrl;
 
       // Update config with new icon URL
-      if (!config) {
+      const currentConfig = activeTab === 'customer' ? customerConfig : posConfig;
+      
+      if (!currentConfig) {
         toast.error('Primero guarda la configuración básica');
         return;
       }
@@ -168,12 +201,12 @@ export function PWAConfig() {
       const { error: updateError } = await supabase
         .from('pwa_config')
         .update(updateData)
-        .eq('id', config.id);
+        .eq('id', currentConfig.id);
 
       if (updateError) throw updateError;
 
       toast.success(`Ícono ${iconType}x${iconType} subido exitosamente`);
-      await loadConfig();
+      await loadConfigs();
     } catch (error) {
       console.error('Error uploading icon:', error);
       toast.error('Error al subir el ícono');
@@ -192,6 +225,8 @@ export function PWAConfig() {
     );
   }
 
+  const currentConfig = activeTab === 'customer' ? customerConfig : posConfig;
+
   return (
     <Card>
       <CardHeader>
@@ -200,10 +235,37 @@ export function PWAConfig() {
           <CardTitle>Configuración de PWA</CardTitle>
         </div>
         <CardDescription>
-          Personaliza el nombre y los íconos de la aplicación móvil (PWA)
+          Personaliza el nombre y los íconos de las aplicaciones móviles (PWA)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'customer' | 'pos')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="customer" className="flex items-center gap-2">
+              <Smartphone className="h-4 w-4" />
+              Portal de Clientes
+            </TabsTrigger>
+            <TabsTrigger value="pos" className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Sistema POS
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="customer" className="space-y-6 mt-6">
+            {renderConfigForm()}
+          </TabsContent>
+
+          <TabsContent value="pos" className="space-y-6 mt-6">
+            {renderConfigForm()}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+
+  function renderConfigForm() {
+    return (
+      <>
         {/* Basic Information */}
         <div className="space-y-4">
           <div className="space-y-2">
@@ -304,7 +366,7 @@ export function PWAConfig() {
         </div>
 
         {/* Icon Uploads */}
-        {config && (
+        {currentConfig && (
           <div className="space-y-4 pt-4 border-t">
             <h3 className="font-semibold">Íconos de la aplicación</h3>
             <p className="text-sm text-muted-foreground">
@@ -313,18 +375,18 @@ export function PWAConfig() {
 
             {/* Icon 192x192 */}
             <div className="space-y-2">
-              <Label htmlFor="icon-192">Ícono 192x192</Label>
+              <Label htmlFor={`icon-192-${activeTab}`}>Ícono 192x192</Label>
               <div className="flex items-center gap-4">
-                {config.icon_192_url && (
+                {currentConfig.icon_192_url && (
                   <img
-                    src={config.icon_192_url}
+                    src={currentConfig.icon_192_url}
                     alt="Icon 192"
                     className="w-12 h-12 rounded border"
                   />
                 )}
                 <div className="flex-1">
                   <Input
-                    id="icon-192"
+                    id={`icon-192-${activeTab}`}
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleIconUpload(e, '192')}
@@ -337,60 +399,64 @@ export function PWAConfig() {
               </div>
             </div>
 
-            {/* Icon 512x512 */}
-            <div className="space-y-2">
-              <Label htmlFor="icon-512">Ícono 512x512</Label>
-              <div className="flex items-center gap-4">
-                {config.icon_512_url && (
-                  <img
-                    src={config.icon_512_url}
-                    alt="Icon 512"
-                    className="w-12 h-12 rounded border"
-                  />
-                )}
-                <div className="flex-1">
-                  <Input
-                    id="icon-512"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleIconUpload(e, '512')}
-                    disabled={!!uploading}
-                  />
+            {/* Icon 512x512 - Only for customer */}
+            {activeTab === 'customer' && (
+              <div className="space-y-2">
+                <Label htmlFor="icon-512">Ícono 512x512</Label>
+                <div className="flex items-center gap-4">
+                  {currentConfig.icon_512_url && (
+                    <img
+                      src={currentConfig.icon_512_url}
+                      alt="Icon 512"
+                      className="w-12 h-12 rounded border"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <Input
+                      id="icon-512"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleIconUpload(e, '512')}
+                      disabled={!!uploading}
+                    />
+                  </div>
+                  {uploading === '512' && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
                 </div>
-                {uploading === '512' && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
               </div>
-            </div>
+            )}
 
-            {/* Icon Maskable */}
-            <div className="space-y-2">
-              <Label htmlFor="icon-maskable">Ícono Maskable 512x512</Label>
-              <div className="flex items-center gap-4">
-                {config.icon_maskable_url && (
-                  <img
-                    src={config.icon_maskable_url}
-                    alt="Icon Maskable"
-                    className="w-12 h-12 rounded border"
-                  />
-                )}
-                <div className="flex-1">
-                  <Input
-                    id="icon-maskable"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleIconUpload(e, 'maskable')}
-                    disabled={!!uploading}
-                  />
+            {/* Icon Maskable - Only for customer */}
+            {activeTab === 'customer' && (
+              <div className="space-y-2">
+                <Label htmlFor="icon-maskable">Ícono Maskable 512x512</Label>
+                <div className="flex items-center gap-4">
+                  {currentConfig.icon_maskable_url && (
+                    <img
+                      src={currentConfig.icon_maskable_url}
+                      alt="Icon Maskable"
+                      className="w-12 h-12 rounded border"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <Input
+                      id="icon-maskable"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleIconUpload(e, 'maskable')}
+                      disabled={!!uploading}
+                    />
+                  </div>
+                  {uploading === 'maskable' && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
                 </div>
-                {uploading === 'maskable' && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
+                <p className="text-xs text-muted-foreground">
+                  Versión adaptativa del ícono con safe zone para diferentes formas
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Versión adaptativa del ícono con safe zone para diferentes formas
-              </p>
-            </div>
+            )}
           </div>
         )}
 
@@ -401,10 +467,15 @@ export function PWAConfig() {
             <li>Los cambios en el nombre se reflejarán cuando los usuarios reinstalen la PWA</li>
             <li>Los íconos deben ser imágenes cuadradas (mismo ancho y alto)</li>
             <li>Se recomienda usar formato PNG con fondo sólido</li>
-            <li>El ícono maskable debe tener un área de seguridad de 80% en el centro</li>
+            {activeTab === 'customer' && (
+              <li>El ícono maskable debe tener un área de seguridad de 80% en el centro</li>
+            )}
+            {activeTab === 'pos' && (
+              <li>El POS solo requiere ícono 192x192 y se muestra en modo navegador</li>
+            )}
           </ul>
         </div>
-      </CardContent>
-    </Card>
-  );
+      </>
+    );
+  }
 }
