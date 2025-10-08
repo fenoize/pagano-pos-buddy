@@ -16,11 +16,11 @@ import { AppRole } from "@/types";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { title: "Inicio", url: "/", icon: Home, roles: ['Administrador', 'Cajero'] },
-  { title: "Venta", url: "/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
-  { title: "Ventas", url: "/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
-  { title: "Cocina", url: "/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
-  { title: "Config", url: "/configuracion", icon: Settings, roles: ['Administrador'] },
+  { title: "Inicio", url: "/pos", icon: Home, roles: ['Administrador', 'Cajero'] },
+  { title: "Venta", url: "/pos/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
+  { title: "Ventas", url: "/pos/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
+  { title: "Cocina", url: "/pos/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
+  { title: "Config", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
 ];
 
 export function MobileNav() {

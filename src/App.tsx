@@ -4,11 +4,21 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AuthProvider, useAuthContext } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
+
+// Guards
+import { CustomerProtectedRoute } from "@/components/guards/CustomerProtectedRoute";
+import { StaffProtectedRoute } from "@/components/guards/StaffProtectedRoute";
+import { SmartRootRedirect } from "@/components/guards/SmartRootRedirect";
+
+// Customer Pages
+import CustomerLogin from '@/pages/customer/CustomerLogin';
+
+// Staff Pages
 import Login from "./pages/Login";
 import Dashboard from '@/pages/Dashboard';
 import Clientes from '@/pages/Clientes';
@@ -21,32 +31,12 @@ import Categorias from '@/pages/Categorias';
 import ConfiguracionPage from '@/pages/ConfiguracionPage';
 import CierresDiarios from '@/pages/CierresDiarios';
 import NotFound from '@/pages/NotFound';
-import CustomerLogin from '@/pages/customer/CustomerLogin';
-import CustomerPortal from '@/pages/customer/CustomerPortal';
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuthContext();
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <>{children}</>;
-}
-
-function AppLayout({ children }: { children: React.ReactNode }) {
+function StaffLayout({ children }: { children: React.ReactNode }) {
   const { isExpanded } = useKitchenExpanded();
-  const isKitchenRoute = window.location.pathname === '/cocina';
+  const isKitchenRoute = window.location.pathname === '/pos/cocina';
   
   // If on kitchen route and expanded, render without layout
   if (isKitchenRoute && isExpanded) {
@@ -67,7 +57,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
-      {/* Only show MobileNav when not in expanded kitchen mode */}
       {!(isKitchenRoute && isExpanded) && <MobileNav />}
     </SidebarProvider>
   );
@@ -82,96 +71,127 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              {/* Customer Portal Routes */}
-              <Route path="/customer/login" element={<CustomerLogin />} />
-              <Route path="/customer" element={<CustomerPortal />} />
+              {/* ==================== CUSTOMER ROUTES (ROOT) ==================== */}
+              <Route path="/" element={<SmartRootRedirect />} />
+              <Route path="/login" element={<CustomerLogin />} />
               
-              {/* Staff Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              {/* Legacy redirects for old customer routes */}
+              <Route path="/customer" element={<Navigate to="/" replace />} />
+              <Route path="/customer/login" element={<Navigate to="/login" replace />} />
+              
+              {/* ==================== STAFF ROUTES (/pos/*) ==================== */}
+              <Route path="/pos/login" element={<Login />} />
+              
+              <Route path="/pos" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <Dashboard />
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/nueva-venta" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/nueva-venta" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <NewSale />
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/ventas" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/ventas" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <Sales />
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/cocina" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/cocina" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <Kitchen />
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/pedido-listo" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/pedido-listo" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <div>Pedido Listo TV - En desarrollo</div>
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/productos" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/productos" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <Products />
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/categorias" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/categorias" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <Categorias />
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/inventario" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/inventario" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <div>Inventario - En desarrollo</div>
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/clientes" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/clientes" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <Clientes />
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/usuarios" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/usuarios" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <Users />
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/cierres-diarios" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/cierres-diarios" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <CierresDiarios />
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
-              <Route path="/configuracion" element={
-                <ProtectedRoute>
-                  <AppLayout>
+              
+              <Route path="/pos/configuracion" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
                     <ConfiguracionPage />
-                  </AppLayout>
-                </ProtectedRoute>
+                  </StaffLayout>
+                </StaffProtectedRoute>
               } />
+              
+              {/* Legacy redirects for old staff routes */}
+              <Route path="/nueva-venta" element={<Navigate to="/pos/nueva-venta" replace />} />
+              <Route path="/ventas" element={<Navigate to="/pos/ventas" replace />} />
+              <Route path="/cocina" element={<Navigate to="/pos/cocina" replace />} />
+              <Route path="/pedido-listo" element={<Navigate to="/pos/pedido-listo" replace />} />
+              <Route path="/productos" element={<Navigate to="/pos/productos" replace />} />
+              <Route path="/categorias" element={<Navigate to="/pos/categorias" replace />} />
+              <Route path="/inventario" element={<Navigate to="/pos/inventario" replace />} />
+              <Route path="/clientes" element={<Navigate to="/pos/clientes" replace />} />
+              <Route path="/usuarios" element={<Navigate to="/pos/usuarios" replace />} />
+              <Route path="/cierres-diarios" element={<Navigate to="/pos/cierres-diarios" replace />} />
+              <Route path="/configuracion" element={<Navigate to="/pos/configuracion" replace />} />
+              
+              {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

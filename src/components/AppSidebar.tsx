@@ -33,18 +33,18 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { AppRole } from "@/types";
 
 const menuItems = [
-  { title: "Escritorio", url: "/", icon: Home, roles: ['Administrador', 'Cajero'] },
-  { title: "Nueva Venta", url: "/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
-  { title: "Ventas", url: "/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
-  { title: "Cocina", url: "/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
-  { title: "Pedido Listo", url: "/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocinero', 'Preparador'] },
-  { title: "Productos", url: "/productos", icon: Package, roles: ['Administrador'] },
-  { title: "Categorías", url: "/categorias", icon: Tags, roles: ['Administrador'] },
-  { title: "Inventario", url: "/inventario", icon: Archive, roles: ['Administrador'] },
-  { title: "Clientes", url: "/clientes", icon: Users, roles: ['Administrador', 'Cajero'] },
-  { title: "Usuarios", url: "/usuarios", icon: User, roles: ['Administrador'] },
-  { title: "Cierres Diarios", url: "/cierres-diarios", icon: FileText, roles: ['Administrador'] },
-  { title: "Configuración", url: "/configuracion", icon: Settings, roles: ['Administrador'] },
+  { title: "Escritorio", url: "/pos", icon: Home, roles: ['Administrador', 'Cajero'] },
+  { title: "Nueva Venta", url: "/pos/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
+  { title: "Ventas", url: "/pos/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
+  { title: "Cocina", url: "/pos/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
+  { title: "Pedido Listo", url: "/pos/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocinero', 'Preparador'] },
+  { title: "Productos", url: "/pos/productos", icon: Package, roles: ['Administrador'] },
+  { title: "Categorías", url: "/pos/categorias", icon: Tags, roles: ['Administrador'] },
+  { title: "Inventario", url: "/pos/inventario", icon: Archive, roles: ['Administrador'] },
+  { title: "Clientes", url: "/pos/clientes", icon: Users, roles: ['Administrador', 'Cajero'] },
+  { title: "Usuarios", url: "/pos/usuarios", icon: User, roles: ['Administrador'] },
+  { title: "Cierres Diarios", url: "/pos/cierres-diarios", icon: FileText, roles: ['Administrador'] },
+  { title: "Configuración", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
 ];
 
 export function AppSidebar() {

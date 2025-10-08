@@ -36,7 +36,7 @@ export default function CustomerLogin() {
       });
     } else {
       toast.success('¡Bienvenido de vuelta!');
-      navigate('/customer');
+      navigate('/');
     }
 
     setLoading(false);

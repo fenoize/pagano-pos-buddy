@@ -24,7 +24,7 @@ export default function Login() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/pos');
     }
   }, [user, navigate]);
 
@@ -47,7 +47,7 @@ export default function Login() {
         title: "Bienvenido",
         description: "Inicio de sesión exitoso",
       });
-      navigate('/');
+      navigate('/pos');
     } else {
       toast({
         title: "Error",

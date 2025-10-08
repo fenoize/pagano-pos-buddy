@@ -72,7 +72,7 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
             name,
             phone,
           },
-          emailRedirectTo: `${window.location.origin}/customer`,
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
 
