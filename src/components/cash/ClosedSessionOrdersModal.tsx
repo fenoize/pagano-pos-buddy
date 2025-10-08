@@ -83,6 +83,19 @@ export function ClosedSessionOrdersModal({
     return order.nombre_resumen || 'Cliente';
   };
 
+  const getPaymentMethodLabel = (order: Order) => {
+    const { payment_efectivo, payment_mp, payment_pos, payment_aplicacion, payment_runas } = order;
+    const methods = [];
+    
+    if (payment_efectivo > 0) methods.push('Efectivo');
+    if (payment_mp > 0) methods.push('MP/Transf');
+    if (payment_pos > 0) methods.push('POS');
+    if (payment_aplicacion > 0) methods.push('App');
+    if (payment_runas > 0) methods.push('Runas');
+    
+    return methods.length > 1 ? 'Mixto' : (methods[0] || 'N/A');
+  };
+
   const handleOrderUpdated = () => {
     loadSessionOrders();
     onSessionUpdated();
@@ -116,6 +129,7 @@ export function ClosedSessionOrdersModal({
                     <TableHead>Cliente</TableHead>
                     <TableHead>Fecha/Hora</TableHead>
                     <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Pago</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Entrega</TableHead>
                     {user?.role === 'Administrador' && (
@@ -131,6 +145,11 @@ export function ClosedSessionOrdersModal({
                       <TableCell>{formatDateTime(order.created_at)}</TableCell>
                       <TableCell className="text-right font-medium">
                         {formatCurrency(order.total)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {getPaymentMethodLabel(order)}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={order.status === 'Entregado' ? 'default' : 'secondary'}>
