@@ -1,53 +1,36 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import type { User } from '@supabase/supabase-js';
 
-type CustomerAccount = Database['public']['Tables']['customer_accounts']['Row'];
 type Customer = Database['public']['Tables']['customers']['Row'];
 
-interface AuthResponse {
-  success: boolean;
-  account_id?: string;
-  error?: string;
-}
-
 interface CustomerAuthContextType {
-  customerAccount: CustomerAccount | null;
+  user: User | null;
   customer: Customer | null;
   loading: boolean;
   signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ error: Error | null }>;
-  resetPassword: (code: string, newPassword: string, email: string) => Promise<{ error: Error | null }>;
+  resetPassword: (newPassword: string) => Promise<{ error: Error | null }>;
   refreshCustomerData: () => Promise<void>;
 }
 
 const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(undefined);
 
 export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [customerAccount, setCustomerAccount] = useState<CustomerAccount | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadCustomerData = async (accountId: string) => {
+  const loadCustomerData = async (userId: string) => {
     try {
-      // Cargar cuenta
-      const { data: accountData, error: accountError } = await supabase
-        .from('customer_accounts')
-        .select('*')
-        .eq('id', accountId)
-        .single();
-
-      if (accountError) throw accountError;
-      setCustomerAccount(accountData);
-
-      // Cargar datos del cliente por account_id
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
         .select('*')
-        .eq('account_id', accountId)
-        .single();
+        .eq('auth_user_id', userId)
+        .maybeSingle();
 
       if (customerError) throw customerError;
       setCustomer(customerData);
@@ -57,42 +40,43 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   useEffect(() => {
-    // Verificar sesión existente en localStorage
-    const checkSession = async () => {
-      try {
-        const sessionData = localStorage.getItem('customer_session');
-        if (sessionData) {
-          const { account_id, expires_at } = JSON.parse(sessionData);
-          
-          // Verificar si no ha expirado
-          if (new Date(expires_at) > new Date()) {
-            await loadCustomerData(account_id);
-          } else {
-            localStorage.removeItem('customer_session');
-          }
-        }
-      } catch (error) {
-        console.error('Error checking session:', error);
-        localStorage.removeItem('customer_session');
-      } finally {
-        setLoading(false);
+    // Obtener sesión inicial
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadCustomerData(session.user.id);
       }
-    };
+      setLoading(false);
+    });
 
-    checkSession();
+    // Escuchar cambios de autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadCustomerData(session.user.id);
+      } else {
+        setCustomer(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, name: string, phone?: string) => {
     try {
-      const { data, error } = await supabase.rpc('register_customer', {
-        p_email: email,
-        p_password: password,
-        p_nombres: name,
-        p_phone: phone || null,
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            phone,
+          },
+          emailRedirectTo: `${window.location.origin}/customer`,
+        },
       });
 
       if (error) throw error;
-
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -101,40 +85,12 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.rpc('authenticate_customer', {
-        p_email: email,
-        p_password: password,
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
       if (error) throw error;
-      if (!data) throw new Error('Credenciales inválidas');
-
-      // Extraer account_id del objeto JSON devuelto
-      const authData = data as unknown as AuthResponse;
-      
-      if (!authData.success || !authData.account_id) {
-        const errorMessage = authData.error === 'INVALID_CREDENTIALS' 
-          ? 'Email o contraseña incorrectos'
-          : authData.error === 'ACCOUNT_INACTIVE'
-          ? 'Esta cuenta está inactiva'
-          : 'Error al iniciar sesión';
-        throw new Error(errorMessage);
-      }
-
-      const accountId = authData.account_id;
-
-      // Guardar sesión en localStorage
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24); // 24 horas
-
-      localStorage.setItem('customer_session', JSON.stringify({
-        account_id: accountId,
-        expires_at: expiresAt.toISOString(),
-      }));
-
-      // Cargar datos del cliente
-      await loadCustomerData(accountId);
-
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -142,15 +98,15 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const signOut = async () => {
-    localStorage.removeItem('customer_session');
-    setCustomerAccount(null);
+    await supabase.auth.signOut();
+    setUser(null);
     setCustomer(null);
   };
 
   const requestPasswordReset = async (email: string) => {
     try {
-      const { error } = await supabase.rpc('request_customer_password_reset', {
-        p_email: email,
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/customer/reset-password`,
       });
 
       if (error) throw error;
@@ -160,12 +116,10 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const resetPassword = async (code: string, newPassword: string, email: string) => {
+  const resetPassword = async (newPassword: string) => {
     try {
-      const { error } = await supabase.rpc('reset_customer_password', {
-        p_code: code,
-        p_email: email,
-        p_new_password: newPassword,
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
       });
 
       if (error) throw error;
@@ -176,13 +130,13 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const refreshCustomerData = async () => {
-    if (customerAccount?.id) {
-      await loadCustomerData(customerAccount.id);
+    if (user?.id) {
+      await loadCustomerData(user.id);
     }
   };
 
   const value = {
-    customerAccount,
+    user,
     customer,
     loading,
     signUp,

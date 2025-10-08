@@ -11,14 +11,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CustomerPortal() {
   const navigate = useNavigate();
-  const { customerAccount, customer, loading, signOut } = useCustomerAuth();
+  const { user, customer, loading, signOut } = useCustomerAuth();
   const { data: customerLevel } = useCustomerLevel(customer?.id);
 
   useEffect(() => {
-    if (!loading && !customerAccount) {
+    if (!loading && !user) {
       navigate('/customer/login');
     }
-  }, [loading, customerAccount, navigate]);
+  }, [loading, user, navigate]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -39,7 +39,7 @@ export default function CustomerPortal() {
     );
   }
 
-  if (!customerAccount || !customer) {
+  if (!user || !customer) {
     return null;
   }
 
@@ -57,7 +57,7 @@ export default function CustomerPortal() {
                 <div>
                   <CardTitle className="text-2xl">{customer.name || customer.nombres}</CardTitle>
                   <CardDescription className="text-muted-foreground">
-                    {customerAccount.email}
+                    {user.email}
                   </CardDescription>
                 </div>
               </div>

@@ -1153,6 +1153,7 @@ export type Database = {
           account_id: string | null
           apellido: string | null
           apellidos: string | null
+          auth_user_id: string | null
           avatar_url: string | null
           cantidad_runas: number | null
           created_at: string | null
@@ -1178,6 +1179,7 @@ export type Database = {
           account_id?: string | null
           apellido?: string | null
           apellidos?: string | null
+          auth_user_id?: string | null
           avatar_url?: string | null
           cantidad_runas?: number | null
           created_at?: string | null
@@ -1203,6 +1205,7 @@ export type Database = {
           account_id?: string | null
           apellido?: string | null
           apellidos?: string | null
+          auth_user_id?: string | null
           avatar_url?: string | null
           cantidad_runas?: number | null
           created_at?: string | null
