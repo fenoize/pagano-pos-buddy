@@ -5,6 +5,12 @@ import type { Database } from '@/integrations/supabase/types';
 type CustomerAccount = Database['public']['Tables']['customer_accounts']['Row'];
 type Customer = Database['public']['Tables']['customers']['Row'];
 
+interface AuthResponse {
+  success: boolean;
+  account_id?: string;
+  error?: string;
+}
+
 interface CustomerAuthContextType {
   customerAccount: CustomerAccount | null;
   customer: Customer | null;
@@ -103,7 +109,19 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (error) throw error;
       if (!data) throw new Error('Credenciales inválidas');
 
-      const accountId = typeof data === 'string' ? data : String(data);
+      // Extraer account_id del objeto JSON devuelto
+      const authData = data as unknown as AuthResponse;
+      
+      if (!authData.success || !authData.account_id) {
+        const errorMessage = authData.error === 'INVALID_CREDENTIALS' 
+          ? 'Email o contraseña incorrectos'
+          : authData.error === 'ACCOUNT_INACTIVE'
+          ? 'Esta cuenta está inactiva'
+          : 'Error al iniciar sesión';
+        throw new Error(errorMessage);
+      }
+
+      const accountId = authData.account_id;
 
       // Guardar sesión en localStorage
       const expiresAt = new Date();
