@@ -1,0 +1,21 @@
+{
+  "name": "Paganos — Punto de Venta",
+  "short_name": "Paganos POS",
+  "description": "Sistema de punto de venta para Paganos Burger (solo navegador)",
+  "start_url": "/pos",
+  "scope": "/pos/",
+  "display": "browser",
+  "orientation": "any",
+  "theme_color": "#cc0000",
+  "background_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/icons/paganos-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "es"
+}

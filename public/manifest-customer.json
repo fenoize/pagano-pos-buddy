@@ -1,0 +1,47 @@
+{
+  "name": "Paganos Burger — Portal de Clientes",
+  "short_name": "Paganos",
+  "description": "Portal de clientes de Paganos Burger - Pedidos y fidelización",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#cc0000",
+  "background_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/icons/paganos-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/paganos-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/paganos-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["food", "lifestyle"],
+  "lang": "es",
+  "shortcuts": [
+    {
+      "name": "Hacer Pedido",
+      "short_name": "Pedido",
+      "description": "Hacer un nuevo pedido",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icons/paganos-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

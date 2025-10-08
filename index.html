@@ -1,30 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Paganos — Punto de Venta</title>
-    <meta name="description" content="Sistema de punto de venta para Paganos Burger">
-    <meta name="author" content="Lovable" />
+    <title>Paganos Burger</title>
+    <meta name="description" content="Portal de clientes y sistema POS de Paganos Burger">
+    <meta name="author" content="Paganos Burger" />
     
-    <!-- PWA Meta Tags -->
+    <!-- PWA Meta Tags - se carga dinámicamente según la ruta -->
     <meta name="theme-color" content="#cc0000">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" id="manifest-placeholder" href="/manifest-customer.json">
     
     <!-- iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Paganos POS">
+    <meta name="apple-mobile-web-app-title" content="Paganos">
     <link rel="apple-touch-icon" href="/icons/paganos-180.png">
 
-    <meta property="og:title" content="pagano-pos-buddy" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <!-- Open Graph -->
+    <meta property="og:title" content="Paganos Burger" />
+    <meta property="og:description" content="Portal de clientes y pedidos" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/wVTlZ7C69hTXueuwzCN66OIBujU2/social-images/social-1757714703493-nuevo logoINSTAGRAM copia.jpg">
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/wVTlZ7C69hTXueuwzCN66OIBujU2/social-images/social-1757714703493-nuevo logoINSTAGRAM copia.jpg">
+    
+    <script>
+      // Cargar manifest apropiado según la ruta
+      (function() {
+        const path = window.location.pathname;
+        const manifestLink = document.getElementById('manifest-placeholder');
+        
+        if (path.startsWith('/pos')) {
+          // POS: usar manifest que no permite instalación
+          manifestLink.href = '/manifest-pos.json';
+          document.title = 'Paganos POS';
+        } else {
+          // Portal de clientes: manifest con instalación
+          manifestLink.href = '/manifest-customer.json';
+          document.title = 'Paganos Burger';
+        }
+      })();
+      
+      // Registrar Service Worker solo para el portal de clientes
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          const path = window.location.pathname;
+          
+          // Solo registrar SW si NO estamos en /pos/*
+          if (!path.startsWith('/pos')) {
+            navigator.serviceWorker.register('/sw.js')
+              .then(registration => {
+                console.log('SW registered:', registration);
+              })
+              .catch(error => {
+                console.log('SW registration failed:', error);
+              });
+          } else {
+            // Si estamos en /pos, asegurar que no haya SW activo
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+              for (let registration of registrations) {
+                registration.unregister();
+              }
+            });
+          }
+        });
+      }
+    </script>
   </head>
 
   <body>

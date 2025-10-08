@@ -1,14 +1,30 @@
+# robots.txt para app.paganosburger.cl
+
+User-agent: *
+
+# Permitir acceso al portal de clientes
+Allow: /
+Allow: /login
+
+# Bloquear acceso al POS/Admin (área privada)
+Disallow: /pos/
+
+# Bots específicos
 User-agent: Googlebot
 Allow: /
+Disallow: /pos/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /pos/
 
 User-agent: Twitterbot
 Allow: /
+Disallow: /pos/
 
 User-agent: facebookexternalhit
 Allow: /
+Disallow: /pos/
 
-User-agent: *
-Allow: /
+# Sitemaps (agregar cuando se generen)
+# Sitemap: https://app.paganosburger.cl/sitemap.xml

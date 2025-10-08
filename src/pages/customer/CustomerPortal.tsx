@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Flame, LogOut, ShoppingBag, MapPin, Award, User } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PWAInstallPrompt } from '@/components/customer/PWAInstallPrompt';
 
 export default function CustomerPortal() {
   const navigate = useNavigate();
@@ -153,6 +154,9 @@ export default function CustomerPortal() {
           </Card>
         </div>
       </div>
+      
+      {/* PWA Install Prompt - Solo para portal de clientes */}
+      <PWAInstallPrompt />
     </div>
   );
 }
