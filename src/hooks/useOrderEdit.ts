@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Order, OrderItem, PaymentMethod } from '@/types';
+import { useCustomerRunes } from '@/hooks/useCustomerRunes';
 
 export interface OrderEditData {
   items: OrderItem[];
@@ -35,6 +36,7 @@ export interface OrderEditAction {
 export function useOrderEdit() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { createEditAdjustmentTransaction, getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
 
   const calculateTotals = useCallback((items: OrderItem[], deliveryFee: number, discount: number) => {
     const subtotal = items.reduce((sum, item) => {
@@ -133,6 +135,32 @@ export function useOrderEdit() {
         deliveryPersonName = null;
       }
 
+      // Gestión de Runas: calcular delta y crear transacciones
+      const oldRunas = currentOrder.payment_runas || 0;
+      const newRunas = editData.payment_runas || 0;
+      const deltaRunas = newRunas - oldRunas;
+
+      let runasWarning = '';
+
+      if (deltaRunas !== 0 && currentOrder.customer_id) {
+        const currentBalance = await getCustomerRunasBalance(currentOrder.customer_id);
+        const newBalance = currentBalance - deltaRunas;
+
+        // Permitir con advertencia si queda negativo
+        if (newBalance < 0) {
+          runasWarning = ` ⚠️ ADVERTENCIA: El cliente quedará con saldo negativo (${newBalance} runas)`;
+        }
+
+        // Crear transacción de ajuste
+        const adjustmentReason = (reason || 'Edición de pedido') + runasWarning;
+        await createEditAdjustmentTransaction(
+          currentOrder.customer_id,
+          -deltaRunas, // Negativo porque es un canje
+          orderId,
+          adjustmentReason
+        );
+      }
+
       // Update order - Convert empty strings to null for UUID/nullable fields
       const { data: updatedOrder, error: updateError } = await supabase
         .from('orders')
@@ -176,6 +204,19 @@ export function useOrderEdit() {
             old_value: JSON.stringify({ reason: 'Edición completa del pedido' }),
             new_value: JSON.stringify(editData),
             reason
+          });
+      }
+
+      // Auditoría específica para cambios en runas
+      if (deltaRunas !== 0) {
+        await supabase
+          .from('order_audits')
+          .insert({
+            order_id: orderId,
+            field_name: 'payment_runas',
+            old_value: oldRunas.toString(),
+            new_value: newRunas.toString(),
+            reason: (reason || 'Edición de runas') + (runasWarning ? runasWarning : '')
           });
       }
 

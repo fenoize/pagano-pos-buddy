@@ -8,17 +8,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Order, OrderItem, Comuna } from '@/types';
 import { useOrderEdit, OrderEditData } from '@/hooks/useOrderEdit';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useComunas } from '@/hooks/useComunas';
 import { useUsers } from '@/hooks/useUsers';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
+import { useCustomerRunes } from '@/hooks/useCustomerRunes';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
+import { formatCurrency } from '@/lib/utils';
 import { OrderItemEditRow } from './OrderItemEditRow';
 import { ProductSelector } from './ProductSelector';
 import { OrderHistoryModal } from './OrderHistoryModal';
-import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet } from 'lucide-react';
+import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet, AlertTriangle } from 'lucide-react';
 
 interface OrderEditModalProps {
   order: Order | null;
@@ -33,12 +36,16 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const [reason, setReason] = useState('');
   const [showProductSelector, setShowProductSelector] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [runasEditadas, setRunasEditadas] = useState(0);
+  const [saldoRunasCliente, setSaldoRunasCliente] = useState(0);
+  const [valorRunaActual, setValorRunaActual] = useState(0);
   
   const { updateOrder, calculateTotals, isLoading } = useOrderEdit();
   const { customers } = useCustomers();
   const { comunas } = useComunas();
   const { users } = useUsers();
   const { paymentMethods } = usePaymentMethods();
+  const { getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
   
   const repartidores = users.filter(u => u.role === 'Reparto' && u.active);
 
@@ -49,12 +56,18 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
     return icons[iconName] || DollarSign;
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP'
-    }).format(price);
-  };
+  // Cargar saldo de runas y valor cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && order && order.customer_id) {
+      const loadRunasData = async () => {
+        const balance = await getCustomerRunasBalance(order.customer_id!);
+        const value = await fetchRunaValue();
+        setSaldoRunasCliente(balance);
+        setValorRunaActual(value);
+      };
+      loadRunasData();
+    }
+  }, [isOpen, order]);
 
   useEffect(() => {
     if (order && isEditMode && !editData) {
@@ -77,6 +90,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         delivery_reference: order.delivery_reference || '',
         delivery_person_id: order.delivery_person_id || null
       });
+      setRunasEditadas(order.payment_runas || 0);
     }
   }, [order, isEditMode, editData]);
 
@@ -90,12 +104,30 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const handleSave = async () => {
     if (!order || !editData) return;
 
+    // Validar si hay cambios en runas y requiere confirmación
+    if (editData.payment_runas !== order.payment_runas && order.customer_id) {
+      const deltaRunas = editData.payment_runas - (order.payment_runas || 0);
+      const newBalance = saldoRunasCliente - deltaRunas;
+
+      if (newBalance < 0) {
+        const confirmed = window.confirm(
+          `⚠️ Saldo insuficiente de Runas\n\n` +
+          `El cliente quedará con saldo negativo (${newBalance} runas).\n` +
+          `Esta operación quedará registrada en la auditoría y aparecerá como alerta en el cierre.\n\n` +
+          `¿Deseas continuar?`
+        );
+
+        if (!confirmed) return;
+      }
+    }
+
     try {
       const updatedOrder = await updateOrder(order.id, editData, reason);
       onOrderUpdated(updatedOrder as Order);
       setIsEditMode(false);
       setEditData(null);
       setReason('');
+      setRunasEditadas(0);
     } catch (error) {
       // Error handled in hook
     }
@@ -105,6 +137,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
     setIsEditMode(false);
     setEditData(null);
     setReason('');
+    setRunasEditadas(0);
   };
 
   const handleItemUpdate = (index: number, updates: Partial<OrderItem>) => {
@@ -139,6 +172,11 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       ...editData,
       [field]: value
     });
+
+    // Si se está editando runas, actualizar el estado local
+    if (field === 'payment_runas') {
+      setRunasEditadas(value);
+    }
   };
 
   if (!order) return null;
@@ -465,7 +503,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                 <div className="border-t mt-6 pt-4 space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>{formatPrice(isEditMode ? editData?.subtotal || 0 : order.subtotal)}</span>
+                    <span>{formatCurrency(isEditMode ? editData?.subtotal || 0 : order.subtotal)}</span>
                   </div>
                   
                   {/* Delivery Fee */}
@@ -482,20 +520,20 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                         />
                       </div>
                     ) : (
-                      <span>{formatPrice(order.delivery_fee || 0)}</span>
+                      <span>{formatCurrency(order.delivery_fee || 0)}</span>
                     )}
                   </div>
 
                   {(order.discount > 0 || (isEditMode && editData?.discount && editData.discount > 0)) && (
                     <div className="flex justify-between text-red-600">
                       <span>Descuento:</span>
-                      <span>-{formatPrice(isEditMode ? editData?.discount || 0 : order.discount)}</span>
+                      <span>-{formatCurrency(isEditMode ? editData?.discount || 0 : order.discount)}</span>
                     </div>
                   )}
                   
                   <div className="border-t pt-2 flex justify-between font-bold text-lg">
                     <span>Total:</span>
-                    <span>{formatPrice(isEditMode ? editData?.total || 0 : order.total)}</span>
+                    <span>{formatCurrency(isEditMode ? editData?.total || 0 : order.total)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -554,6 +592,58 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                         })}
                       </div>
                     )}
+
+                    {/* Campo especial para editar runas cuando es método único */}
+                    {editData?.payment_method === 'runas' && order?.customer_id && (
+                      <div className="space-y-4 p-4 bg-muted/50 rounded-lg border-2 border-primary/20">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-medium">Saldo disponible:</span>
+                          <span className="font-semibold text-primary">{saldoRunasCliente} runas</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="runas_cantidad" className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4" />
+                            Cantidad de Runas
+                          </Label>
+                          <Input
+                            id="runas_cantidad"
+                            type="number"
+                            value={runasEditadas}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              setRunasEditadas(value);
+                              setEditData(prev => prev ? { ...prev, payment_runas: value } : null);
+                            }}
+                            min="0"
+                            className="font-medium"
+                          />
+                        </div>
+
+                        <div className="flex justify-between text-sm border-t pt-2">
+                          <span>Valor equivalente:</span>
+                          <span className="font-semibold">{formatCurrency(runasEditadas * valorRunaActual)}</span>
+                        </div>
+
+                        {runasEditadas > saldoRunasCliente && (
+                          <Alert variant="destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Saldo insuficiente</AlertTitle>
+                            <AlertDescription>
+                              El cliente solo tiene {saldoRunasCliente} runas disponibles.
+                              Esta transacción quedará registrada como "pendiente de validación" en el cierre.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        <div className="flex justify-between text-sm bg-background p-2 rounded border">
+                          <span className="font-medium">Nuevo saldo del cliente:</span>
+                          <span className={runasEditadas > saldoRunasCliente ? "text-destructive font-bold" : "text-primary font-bold"}>
+                            {saldoRunasCliente - runasEditadas} runas
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="space-y-2">
@@ -567,13 +657,27 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                       
                       if (amount > 0) {
                         const Icon = getIconComponent(method.icon);
+                        
+                        // Mostrar formato especial para runas
+                        if (method.name === 'runas') {
+                          return (
+                            <div key={method.id} className="flex justify-between items-center">
+                              <span className="text-muted-foreground flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                {method.display_name}:
+                              </span>
+                              <span className="font-medium">{amount} runas ({formatCurrency(amount * valorRunaActual)})</span>
+                            </div>
+                          );
+                        }
+                        
                         return (
                           <div key={method.id} className="flex justify-between items-center">
                             <span className="text-muted-foreground flex items-center gap-2">
                               <Icon className="w-4 h-4" />
                               {method.display_name}:
                             </span>
-                            <span>{formatPrice(amount)}</span>
+                            <span>{formatCurrency(amount)}</span>
                           </div>
                         );
                       }
@@ -581,7 +685,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                     })}
                     <div className="border-t pt-2 flex justify-between font-bold">
                       <span>Total:</span>
-                      <span>{formatPrice(order.total)}</span>
+                      <span>{formatCurrency(order.total)}</span>
                     </div>
                   </div>
                 )}

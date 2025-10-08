@@ -275,6 +275,64 @@ export function useCustomerRunes() {
     }
   };
 
+  // Crear transacción de ajuste por edición de pedido
+  const createEditAdjustmentTransaction = async (
+    customerId: string,
+    deltaRunas: number,
+    orderId: string,
+    reason: string
+  ): Promise<RunasTransaction | null> => {
+    try {
+      const currentRunaValue = await fetchRunaValue();
+      
+      const { data, error } = await supabase
+        .from('runas_transactions')
+        .insert({
+          customer_id: customerId,
+          type: deltaRunas > 0 ? 'acumulacion' : 'canje',
+          runas: deltaRunas,
+          amount: Math.abs(deltaRunas * currentRunaValue),
+          origen: 'Edición' as OrigenMovimiento,
+          order_id: orderId,
+          responsable_id: user?.id,
+          motivo: reason
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Actualizar saldo del cliente
+      const newSaldo = await calculateRunasSaldo(customerId);
+      await supabase
+        .from('customers')
+        .update({ cantidad_runas: newSaldo })
+        .eq('id', customerId);
+
+      return data;
+    } catch (error) {
+      console.error('Error creating edit adjustment transaction:', error);
+      return null;
+    }
+  };
+
+  // Obtener saldo actual sin recalcular
+  const getCustomerRunasBalance = async (customerId: string): Promise<number> => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('cantidad_runas')
+        .eq('id', customerId)
+        .single();
+
+      if (error) throw error;
+      return data?.cantidad_runas || 0;
+    } catch (error) {
+      console.error('Error getting customer runas balance:', error);
+      return 0;
+    }
+  };
+
   // Calcular runas canjeables según tabla de conversión
   const calculateRedeemableAmount = (runas: number): number => {
     // Por ahora usamos la regla inversa del valor de runas
@@ -299,6 +357,8 @@ export function useCustomerRunes() {
     createAccumulationTransaction,
     createRedemptionTransaction,
     createManualAdjustment,
+    createEditAdjustmentTransaction,
+    getCustomerRunasBalance,
     calculateRedeemableAmount,
     calculateEarnableRunes
   };

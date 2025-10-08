@@ -1781,7 +1781,7 @@ export type Database = {
         | "Listo"
         | "Entregado"
         | "Cancelado"
-      origen_movimiento: "POS" | "Web" | "Manual"
+      origen_movimiento: "POS" | "Web" | "Manual" | "Edición"
       payment_method: "efectivo" | "mp" | "pos" | "mixto" | "aplicacion"
       runa_movement_type: "acumulacion" | "canje" | "ajuste" | "promo"
     }
@@ -1931,7 +1931,7 @@ export const Constants = {
         "Entregado",
         "Cancelado",
       ],
-      origen_movimiento: ["POS", "Web", "Manual"],
+      origen_movimiento: ["POS", "Web", "Manual", "Edición"],
       payment_method: ["efectivo", "mp", "pos", "mixto", "aplicacion"],
       runa_movement_type: ["acumulacion", "canje", "ajuste", "promo"],
     },

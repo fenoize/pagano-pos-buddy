@@ -4,7 +4,7 @@ export type OrderStatus = 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo'
 
 export type FulfillmentType = 'retiro' | 'delivery';
 
-export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'aplicacion' | 'mixto';
+export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'aplicacion' | 'runas' | 'mixto';
 
 export type CashMovementType = 'ingreso' | 'egreso';
 
@@ -82,7 +82,7 @@ export type EstadoCliente = 'Activo' | 'Inactivo' | 'Bloqueado';
 
 export type RunaMovementType = 'acumulacion' | 'canje' | 'ajuste' | 'promo';
 
-export type OrigenMovimiento = 'POS' | 'Web' | 'Manual';
+export type OrigenMovimiento = 'POS' | 'Web' | 'Manual' | 'Edición';
 
 // Cupones
 export type CouponType = 'percent' | 'fixed_cart' | 'fixed_product';
