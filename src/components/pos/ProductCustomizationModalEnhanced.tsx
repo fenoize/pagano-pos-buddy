@@ -32,6 +32,10 @@ interface ProductCustomizationModalEnhancedProps {
   product: Product;
   editingItem?: any;
   editingIndex?: number;
+  // Preloaded data
+  preloadedVariants?: ProductVariantOption[];
+  preloadedExtras?: ProductExtra[];
+  preloadedModifiers?: ProductModifier[];
 }
 
 export function ProductCustomizationModalEnhanced({ 
@@ -40,7 +44,10 @@ export function ProductCustomizationModalEnhanced({
   onAddToCart, 
   product, 
   editingItem, 
-  editingIndex 
+  editingIndex,
+  preloadedVariants = [],
+  preloadedExtras = [],
+  preloadedModifiers = []
 }: ProductCustomizationModalEnhancedProps) {
   // Variant system state
   const [availableVariants, setAvailableVariants] = useState<ProductVariantOption[]>([]);
@@ -63,34 +70,57 @@ export function ProductCustomizationModalEnhanced({
   
   const { toast } = useToast();
 
+  // Consolidated initialization effect with preloaded data
   useEffect(() => {
-    if (isOpen && product.id) {
-      fetchProductVariantsAndCustomizations();
-      fetchComboConfiguration();
+    if (!isOpen || !product.id) return;
+
+    // Use preloaded variants
+    setAvailableVariants(preloadedVariants);
+    
+    // Set default variant
+    if (preloadedVariants.length > 0) {
+      const defaultVariant = preloadedVariants.find(v => v.is_default) || preloadedVariants[0];
+      setSelectedVariantOption(defaultVariant);
       
-      if (editingItem) {
-        setQuantity(editingItem.quantity);
-        setSpecialNotes(editingItem.notes || '');
-        
-        // Set extras
-        const extrasMap: Record<string, number> = {};
-        editingItem.extras?.forEach((extra: any) => {
-          extrasMap[extra.key] = extra.quantity || 1;
-        });
-        setSelectedExtras(extrasMap);
-        
-        // Set modifiers
-        const modifierIds = editingItem.modifiers?.map((mod: any) => mod.id) || [];
-        setSelectedModifiers(modifierIds);
-        
-        // Set combo state
-        if (editingItem.is_combo_item) {
-          setUseCombo(true);
-          setComboSelections(editingItem.combo_selections || []);
+      // If editing and has variant_id, find and set it
+      if (editingItem?.product_variant_option_id) {
+        const editingVariant = preloadedVariants.find(v => v.id === editingItem.product_variant_option_id);
+        if (editingVariant) {
+          setSelectedVariantOption(editingVariant);
         }
       }
     }
-  }, [isOpen, product.id, editingItem]);
+
+    // Use preloaded extras and modifiers
+    setExtras(preloadedExtras);
+    setModifiers(preloadedModifiers);
+
+    // Load combo configuration (only this needs async)
+    loadComboConfig();
+    
+    // Initialize form if editing
+    if (editingItem) {
+      setQuantity(editingItem.quantity);
+      setSpecialNotes(editingItem.notes || '');
+      
+      // Set extras
+      const extrasMap: Record<string, number> = {};
+      editingItem.extras?.forEach((extra: any) => {
+        extrasMap[extra.key] = extra.quantity || 1;
+      });
+      setSelectedExtras(extrasMap);
+      
+      // Set modifiers
+      const modifierIds = editingItem.modifiers?.map((mod: any) => mod.id) || [];
+      setSelectedModifiers(modifierIds);
+      
+      // Set combo state
+      if (editingItem.is_combo_item) {
+        setUseCombo(true);
+        setComboSelections(editingItem.combo_selections || []);
+      }
+    }
+  }, [isOpen, product.id, editingItem, preloadedVariants, preloadedExtras, preloadedModifiers]);
 
   // Auto-enable combo if available
   useEffect(() => {
@@ -99,51 +129,7 @@ export function ProductCustomizationModalEnhanced({
     }
   }, [hasCombo]);
 
-  const fetchProductVariantsAndCustomizations = async () => {
-    try {
-      // Fetch product variants (new system)
-      const { data: variantsData, error: variantsError } = await supabase
-        .from('product_variant_options')
-        .select(`
-          *,
-          variant:category_variants(*)
-        `)
-        .eq('product_id', product.id)
-        .eq('active', true)
-        .eq('is_enabled', true) // Only enabled variants
-        .order('variant(display_order)');
-
-      if (variantsError) throw variantsError;
-
-      const variants = (variantsData || []) as ProductVariantOption[];
-      setAvailableVariants(variants);
-
-      // Set default variant
-      if (variants.length > 0) {
-        const defaultVariant = variants.find(v => v.is_default) || variants[0];
-        setSelectedVariantOption(defaultVariant);
-        
-        // If editing and has variant_id, find and set it
-        if (editingItem?.product_variant_option_id) {
-          const editingVariant = variants.find(v => v.id === editingItem.product_variant_option_id);
-          if (editingVariant) {
-            setSelectedVariantOption(editingVariant);
-          }
-        }
-      }
-
-      await fetchExtrasAndModifiers();
-    } catch (error) {
-      console.error('Error fetching product variants:', error);
-      toast({
-        title: "Error",
-        description: "Error al cargar las variantes del producto",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const fetchComboConfiguration = async () => {
+  const loadComboConfig = async () => {
     try {
       const { data: comboData, error } = await supabase
         .from('combo_products')
@@ -165,39 +151,6 @@ export function ProductCustomizationModalEnhanced({
       }
     } catch (error) {
       console.error('Error fetching combo configuration:', error);
-    }
-  };
-
-  const fetchExtrasAndModifiers = async () => {
-    try {
-      // Obtener categorías del producto
-      const { data: productCategories } = await supabase
-        .from('product_categories')
-        .select('category_id')
-        .eq('product_id', product.id);
-
-      const categoryIds = productCategories?.map(pc => pc.category_id) || [];
-
-      const [extrasRes, modifiersRes] = await Promise.all([
-        supabase
-          .from('product_extras')
-          .select('*')
-          .in('category_id', categoryIds.length > 0 ? categoryIds : [''])
-          .eq('active', true),
-        supabase
-          .from('product_modifiers')
-          .select('*')
-          .eq('product_id', product.id)
-          .eq('active', true),
-      ]);
-
-      if (extrasRes.error) throw extrasRes.error;
-      if (modifiersRes.error) throw modifiersRes.error;
-
-      setExtras(extrasRes.data || []);
-      setModifiers(modifiersRes.data || []);
-    } catch (error) {
-      console.error('Error fetching product customizations:', error);
     }
   };
 

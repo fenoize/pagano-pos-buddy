@@ -8,16 +8,51 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface ProductExtra {
+  id: string;
+  name: string;
+  price: number;
+  category_id: string;
+}
+
+interface ProductModifier {
+  id: string;
+  name: string;
+  price: number;
+  product_id: string;
+}
+
+interface ProductExtra {
+  id: string;
+  name: string;
+  price: number;
+  category_id: string;
+}
+
+interface ProductModifier {
+  id: string;
+  name: string;
+  price: number;
+  product_id: string;
+}
+
 interface ProductGridProps {
   products: Product[];
   onProductClick: (product: Product) => void;
+  onDataPreloaded?: (data: {
+    variants: Record<string, ProductVariantOption[]>;
+    extras: ProductExtra[];
+    modifiers: ProductModifier[];
+  }) => void;
 }
 
-export default function ProductGrid({ products, onProductClick }: ProductGridProps) {
+export default function ProductGrid({ products, onProductClick, onDataPreloaded }: ProductGridProps) {
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [productVariants, setProductVariants] = useState<Record<string, ProductVariantOption[]>>({});
+  const [productExtras, setProductExtras] = useState<ProductExtra[]>([]);
+  const [productModifiers, setProductModifiers] = useState<ProductModifier[]>([]);
 
   useEffect(() => {
     // Get unique categories from products
@@ -28,30 +63,56 @@ export default function ProductGrid({ products, onProductClick }: ProductGridPro
       setActiveCategory(uniqueCategories[0]);
     }
 
-    // Fetch product variants for all products
-    fetchProductVariants();
+    // Preload all data for products
+    preloadAllData();
   }, [products]);
 
-  const fetchProductVariants = async () => {
+  const preloadAllData = async () => {
     if (products.length === 0) return;
     
     try {
       const productIds = products.map(p => p.id!).filter(Boolean);
-      const { data: variants, error } = await supabase
-        .from('product_variant_options')
-        .select(`
-          *,
-          variant:category_variants(*)
-        `)
-        .in('product_id', productIds)
-        .eq('active', true)
-        .order('variant(display_order)');
+      
+      // Get all category IDs from products
+      const categoryIds = new Set<string>();
+      products.forEach(p => {
+        p.categories?.forEach(cat => {
+          if (cat?.id) categoryIds.add(cat.id);
+        });
+      });
 
-      if (error) throw error;
+      // Preload variants, extras, and modifiers in parallel
+      const [variantsRes, extrasRes, modifiersRes] = await Promise.all([
+        supabase
+          .from('product_variant_options')
+          .select(`
+            *,
+            variant:category_variants(*)
+          `)
+          .in('product_id', productIds)
+          .eq('active', true)
+          .eq('is_enabled', true)
+          .order('variant(display_order)'),
+        supabase
+          .from('product_extras')
+          .select('*')
+          .in('category_id', categoryIds.size > 0 ? Array.from(categoryIds) : [''])
+          .eq('active', true)
+          .order('display_order'),
+        supabase
+          .from('product_modifiers')
+          .select('*')
+          .in('product_id', productIds)
+          .eq('active', true)
+      ]);
+
+      if (variantsRes.error) throw variantsRes.error;
+      if (extrasRes.error) throw extrasRes.error;
+      if (modifiersRes.error) throw modifiersRes.error;
 
       // Group variants by product_id
       const variantsByProduct: Record<string, ProductVariantOption[]> = {};
-      variants?.forEach((variant) => {
+      variantsRes.data?.forEach((variant) => {
         const productId = variant.product_id;
         if (!variantsByProduct[productId]) {
           variantsByProduct[productId] = [];
@@ -60,8 +121,19 @@ export default function ProductGrid({ products, onProductClick }: ProductGridPro
       });
 
       setProductVariants(variantsByProduct);
+      setProductExtras(extrasRes.data || []);
+      setProductModifiers(modifiersRes.data || []);
+
+      // Notify parent component with preloaded data
+      if (onDataPreloaded) {
+        onDataPreloaded({
+          variants: variantsByProduct,
+          extras: extrasRes.data || [],
+          modifiers: modifiersRes.data || []
+        });
+      }
     } catch (error) {
-      console.error('Error fetching product variants:', error);
+      console.error('Error preloading product data:', error);
     }
   };
 

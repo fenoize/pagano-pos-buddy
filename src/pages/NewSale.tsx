@@ -12,7 +12,7 @@ import CustomerSearchWidget from '@/components/pos/CustomerSearchWidget';
 import FulfillmentStep, { DeliveryData } from '@/components/pos/FulfillmentStep';
 import { createDeliverySnapshot } from '@/lib/deliveryHelpers';
 import ProductGrid from '@/components/pos/ProductGrid';
-import { ProductCustomizationModal } from '@/components/pos/ProductCustomizationModal';
+import { ProductCustomizationModalEnhanced } from '@/components/pos/ProductCustomizationModalEnhanced';
 import Cart from '@/components/pos/Cart';
 import PaymentModal from '@/components/pos/PaymentModal';
 import RunasCalculator from '@/components/pos/RunasCalculator';
@@ -40,6 +40,13 @@ export default function NewSale() {
   const [appliedCoupons, setAppliedCoupons] = useState<CouponApplication[]>([]);
   const [manualDiscount, setManualDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number; amount: number } | null>(null);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  
+  // Preloaded customization data
+  const [preloadedData, setPreloadedData] = useState<{
+    variants: Record<string, any[]>;
+    extras: any[];
+    modifiers: any[];
+  }>({ variants: {}, extras: [], modifiers: [] });
   const { toast } = useToast();
   const { user } = useAuthContext();
   const { hasActiveSession } = useCashSession();
@@ -498,6 +505,7 @@ export default function NewSale() {
                 <ProductGrid 
                   products={products} 
                   onProductClick={handleProductClick}
+                  onDataPreloaded={setPreloadedData}
                 />
               </div>
 
@@ -634,7 +642,7 @@ export default function NewSale() {
 
       {/* Product Customization Modal */}
       {selectedProduct && (
-        <ProductCustomizationModal
+        <ProductCustomizationModalEnhanced
           isOpen={showCustomizationModal}
           onClose={() => {
             setShowCustomizationModal(false);
@@ -645,6 +653,9 @@ export default function NewSale() {
           product={selectedProduct}
           editingItem={editingItemIndex !== undefined ? cartItems[editingItemIndex] : undefined}
           editingIndex={editingItemIndex}
+          preloadedVariants={preloadedData.variants[selectedProduct.id!] || []}
+          preloadedExtras={preloadedData.extras}
+          preloadedModifiers={preloadedData.modifiers.filter(m => m.product_id === selectedProduct.id)}
         />
       )}
 
