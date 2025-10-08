@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Order, OrderItem, PaymentMethod } from '@/types';
 import { useCustomerRunes } from '@/hooks/useCustomerRunes';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { useCashSession } from '@/hooks/useCashSession';
 
 export interface OrderEditData {
   items: OrderItem[];
@@ -35,8 +37,10 @@ export interface OrderEditAction {
 
 export function useOrderEdit() {
   const { toast } = useToast();
+  const { user } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const { createEditAdjustmentTransaction, getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
+  const { getSessionSummary, logSessionAudit } = useCashSession();
 
   const calculateTotals = useCallback((items: OrderItem[], deliveryFee: number, discount: number) => {
     const subtotal = items.reduce((sum, item) => {
@@ -55,12 +59,23 @@ export function useOrderEdit() {
     editData: OrderEditData, 
     reason?: string
   ) => {
+    if (!user) {
+      throw new Error('Usuario no autenticado');
+    }
+
     setIsLoading(true);
     try {
-      // Check for concurrent changes and get current order data
+      // 1. Check for concurrent changes and get current order with cash_session info
       const { data: currentOrder, error: checkError } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          cash_sessions (
+            id,
+            closed_at,
+            opened_at
+          )
+        `)
         .eq('id', orderId)
         .single();
 
@@ -68,54 +83,66 @@ export function useOrderEdit() {
         throw new Error('Error verificando el pedido');
       }
 
-      // Prepare delivery audit if any delivery field changed
+      // 2. Check if order belongs to a closed session
+      const orderData = currentOrder as any;
+      const isClosed = orderData.cash_sessions?.closed_at != null;
+      const cashSessionId = orderData.cash_session_id;
+      
+      // 3. If closed, get session summary BEFORE changes
+      let oldSessionTotals = null;
+      if (isClosed && cashSessionId) {
+        const summaryBefore = await getSessionSummary(cashSessionId);
+        oldSessionTotals = summaryBefore?.summary;
+      }
+
+      // 4. Prepare delivery audit if any delivery field changed
       const deliveryChanges: Array<{ field: string; oldValue: string; newValue: string }> = [];
       
-      if (editData.delivery_address !== undefined && editData.delivery_address !== currentOrder.delivery_address) {
+      if (editData.delivery_address !== undefined && editData.delivery_address !== orderData.delivery_address) {
         deliveryChanges.push({
           field: 'delivery_address',
-          oldValue: currentOrder.delivery_address || '',
+          oldValue: orderData.delivery_address || '',
           newValue: editData.delivery_address
         });
       }
       
-      if (editData.delivery_number !== undefined && editData.delivery_number !== currentOrder.delivery_number) {
+      if (editData.delivery_number !== undefined && editData.delivery_number !== orderData.delivery_number) {
         deliveryChanges.push({
           field: 'delivery_number',
-          oldValue: currentOrder.delivery_number || '',
+          oldValue: orderData.delivery_number || '',
           newValue: editData.delivery_number
         });
       }
       
-      if (editData.delivery_comuna_id !== undefined && editData.delivery_comuna_id !== (currentOrder as any).delivery_comuna_id) {
+      if (editData.delivery_comuna_id !== undefined && editData.delivery_comuna_id !== orderData.delivery_comuna_id) {
         deliveryChanges.push({
           field: 'delivery_comuna_id',
-          oldValue: (currentOrder as any).delivery_comuna_id || '',
+          oldValue: orderData.delivery_comuna_id || '',
           newValue: editData.delivery_comuna_id
         });
       }
       
-      if (editData.delivery_reference !== undefined && editData.delivery_reference !== (currentOrder as any).delivery_reference) {
+      if (editData.delivery_reference !== undefined && editData.delivery_reference !== orderData.delivery_reference) {
         deliveryChanges.push({
           field: 'delivery_reference',
-          oldValue: (currentOrder as any).delivery_reference || '',
+          oldValue: orderData.delivery_reference || '',
           newValue: editData.delivery_reference
         });
       }
       
-      if (editData.delivery_person_id !== undefined && editData.delivery_person_id !== (currentOrder as any).delivery_person_id) {
+      if (editData.delivery_person_id !== undefined && editData.delivery_person_id !== orderData.delivery_person_id) {
         deliveryChanges.push({
           field: 'delivery_person_id',
-          oldValue: (currentOrder as any).delivery_person_id || '',
+          oldValue: orderData.delivery_person_id || '',
           newValue: editData.delivery_person_id || ''
         });
       }
 
-      // Get comuna name and delivery person name for snapshot
-      let comunaName = currentOrder.delivery_comuna;
-      let deliveryPersonName = (currentOrder as any).delivery_person_name;
+      // 5. Get comuna name and delivery person name for snapshot
+      let comunaName = orderData.delivery_comuna;
+      let deliveryPersonName = orderData.delivery_person_name;
       
-      if (editData.delivery_comuna_id && editData.delivery_comuna_id !== (currentOrder as any).delivery_comuna_id) {
+      if (editData.delivery_comuna_id && editData.delivery_comuna_id !== orderData.delivery_comuna_id) {
         const { data: comuna } = await (supabase as any)
           .from('comunas')
           .select('name')
@@ -124,7 +151,7 @@ export function useOrderEdit() {
         if (comuna) comunaName = comuna.name;
       }
       
-      if (editData.delivery_person_id && editData.delivery_person_id !== (currentOrder as any).delivery_person_id) {
+      if (editData.delivery_person_id && editData.delivery_person_id !== orderData.delivery_person_id) {
         const { data: user } = await supabase
           .from('users')
           .select('full_name, username')
@@ -135,15 +162,15 @@ export function useOrderEdit() {
         deliveryPersonName = null;
       }
 
-      // Gestión de Runas: calcular delta y crear transacciones
-      const oldRunas = currentOrder.payment_runas || 0;
+      // 6. Gestión de Runas: calcular delta y crear transacciones
+      const oldRunas = orderData.payment_runas || 0;
       const newRunas = editData.payment_runas || 0;
       const deltaRunas = newRunas - oldRunas;
 
       let runasWarning = '';
 
-      if (deltaRunas !== 0 && currentOrder.customer_id) {
-        const currentBalance = await getCustomerRunasBalance(currentOrder.customer_id);
+      if (deltaRunas !== 0 && orderData.customer_id) {
+        const currentBalance = await getCustomerRunasBalance(orderData.customer_id);
         const newBalance = currentBalance - deltaRunas;
 
         // Permitir con advertencia si queda negativo
@@ -154,14 +181,14 @@ export function useOrderEdit() {
         // Crear transacción de ajuste
         const adjustmentReason = (reason || 'Edición de pedido') + runasWarning;
         await createEditAdjustmentTransaction(
-          currentOrder.customer_id,
+          orderData.customer_id,
           -deltaRunas, // Negativo porque es un canje
           orderId,
           adjustmentReason
         );
       }
 
-      // Update order - Convert empty strings to null for UUID/nullable fields
+      // 7. Update order - Convert empty strings to null for UUID/nullable fields
       const { data: updatedOrder, error: updateError } = await supabase
         .from('orders')
         .update({
@@ -169,7 +196,7 @@ export function useOrderEdit() {
           subtotal: editData.subtotal,
           discount: editData.discount,
           delivery_fee: editData.delivery_fee,
-          fulfillment: editData.fulfillment || currentOrder.fulfillment,
+          fulfillment: editData.fulfillment || orderData.fulfillment,
           total: editData.total,
           payment_method: editData.payment_method as any,
           payment_efectivo: editData.payment_efectivo,
@@ -194,7 +221,36 @@ export function useOrderEdit() {
         throw new Error('Error actualizando el pedido');
       }
 
-      // Create general audit log if reason provided
+      // 8. If closed session, recalculate and audit
+      if (isClosed && cashSessionId) {
+        const summaryAfter = await getSessionSummary(cashSessionId);
+        
+        await logSessionAudit({
+          sessionId: cashSessionId,
+          orderId,
+          changedByUserId: user.id,
+          fieldName: 'order_edit',
+          oldValue: JSON.stringify({
+            total: orderData.total,
+            payment_runas: orderData.payment_runas,
+            payment_efectivo: orderData.payment_efectivo,
+            payment_mp: orderData.payment_mp,
+            payment_pos: orderData.payment_pos
+          }),
+          newValue: JSON.stringify({
+            total: editData.total,
+            payment_runas: editData.payment_runas,
+            payment_efectivo: editData.payment_efectivo,
+            payment_mp: editData.payment_mp,
+            payment_pos: editData.payment_pos
+          }),
+          reason: reason || 'Edición de pedido',
+          oldTotals: oldSessionTotals,
+          newTotals: summaryAfter?.summary
+        });
+      }
+
+      // 9. Create general audit log if reason provided
       if (reason) {
         await supabase
           .from('order_audits')
@@ -207,7 +263,7 @@ export function useOrderEdit() {
           });
       }
 
-      // Auditoría específica para cambios en runas
+      // 10. Auditoría específica para cambios en runas
       if (deltaRunas !== 0) {
         await supabase
           .from('order_audits')
@@ -220,7 +276,7 @@ export function useOrderEdit() {
           });
       }
 
-      // Create delivery audit logs for each changed field
+      // 11. Create delivery audit logs for each changed field
       if (deliveryChanges.length > 0) {
         const auditRecords = deliveryChanges.map(change => ({
           order_id: orderId,

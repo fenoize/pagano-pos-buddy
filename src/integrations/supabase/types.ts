@@ -104,6 +104,91 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_session_audits: {
+        Row: {
+          cash_session_id: string
+          changed_at: string
+          changed_by_user_id: string | null
+          field_name: string
+          id: string
+          new_totals: Json | null
+          new_value: string | null
+          old_totals: Json | null
+          old_value: string | null
+          order_id: string
+          reason: string | null
+        }
+        Insert: {
+          cash_session_id: string
+          changed_at?: string
+          changed_by_user_id?: string | null
+          field_name: string
+          id?: string
+          new_totals?: Json | null
+          new_value?: string | null
+          old_totals?: Json | null
+          old_value?: string | null
+          order_id: string
+          reason?: string | null
+        }
+        Update: {
+          cash_session_id?: string
+          changed_at?: string
+          changed_by_user_id?: string | null
+          field_name?: string
+          id?: string
+          new_totals?: Json | null
+          new_value?: string | null
+          old_totals?: Json | null
+          old_value?: string | null
+          order_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_session_audits_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_session_audits_changed_by_user_id_fkey"
+            columns: ["changed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_session_audits_changed_by_user_id_fkey"
+            columns: ["changed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_session_audits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_session_audits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_session_audits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_sessions: {
         Row: {
           closed_at: string | null
@@ -1088,6 +1173,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          cash_session_id: string | null
           combo_data: Json | null
           created_at: string | null
           created_by_user_id: string | null
@@ -1122,6 +1208,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          cash_session_id?: string | null
           combo_data?: Json | null
           created_at?: string | null
           created_by_user_id?: string | null
@@ -1156,6 +1243,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          cash_session_id?: string | null
           combo_data?: Json | null
           created_at?: string | null
           created_by_user_id?: string | null
@@ -1190,6 +1278,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_created_by_user_id_fkey"
             columns: ["created_by_user_id"]
@@ -1733,6 +1828,10 @@ export type Database = {
       }
     }
     Functions: {
+      assign_orders_to_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       auth_jwt: {
         Args: Record<PropertyKey, never>
         Returns: Json

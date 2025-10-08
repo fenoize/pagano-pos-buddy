@@ -312,6 +312,49 @@ export function useCashSession() {
     return !!currentSession;
   };
 
+  const recalculateClosedSession = async (sessionId: string) => {
+    try {
+      const summary = await getSessionSummary(sessionId);
+      return summary;
+    } catch (error) {
+      console.error('Error recalculating closed session:', error);
+      return null;
+    }
+  };
+
+  const logSessionAudit = async (params: {
+    sessionId: string;
+    orderId: string;
+    changedByUserId: string;
+    fieldName: string;
+    oldValue: string;
+    newValue: string;
+    reason: string;
+    oldTotals: any;
+    newTotals: any;
+  }) => {
+    try {
+      const { error } = await supabase
+        .from('cash_session_audits')
+        .insert({
+          cash_session_id: params.sessionId,
+          order_id: params.orderId,
+          changed_by_user_id: params.changedByUserId,
+          field_name: params.fieldName,
+          old_value: params.oldValue,
+          new_value: params.newValue,
+          reason: params.reason,
+          old_totals: params.oldTotals,
+          new_totals: params.newTotals
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error logging session audit:', error);
+      throw error;
+    }
+  };
+
   return {
     currentSession,
     loading,
@@ -322,6 +365,8 @@ export function useCashSession() {
     addCashMovement,
     getSessionSummary,
     updateSessionObservaciones,
-    updateClosingCash
+    updateClosingCash,
+    recalculateClosedSession,
+    logSessionAudit
   };
 }

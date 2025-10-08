@@ -264,6 +264,39 @@ export interface CashSession {
   observaciones?: string;
 }
 
+export interface CashSessionAudit {
+  id: string;
+  cash_session_id: string;
+  order_id: string;
+  changed_by_user_id?: string;
+  changed_at: string;
+  field_name: string;
+  old_value?: string;
+  new_value?: string;
+  reason?: string;
+  old_totals?: any;
+  new_totals?: any;
+}
+
+export interface SessionSummary {
+  session: CashSession;
+  orders: Order[];
+  cashMovements: CashMovement[];
+  runasTransactions: RunasTransaction[];
+  summary: {
+    totalEfectivo: number;
+    totalMP: number;
+    totalPOS: number;
+    totalAplicacion: number;
+    totalRunas: number;
+    totalSales: number;
+    totalIngresos: number;
+    totalEgresos: number;
+    expectedCash: number;
+    cashDifference: number;
+  };
+}
+
 export interface InventoryItem {
   id: string;
   ingredient: string;

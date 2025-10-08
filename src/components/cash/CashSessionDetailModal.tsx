@@ -12,8 +12,9 @@ import { useCashSession } from "@/hooks/useCashSession";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { FileDown, DollarSign, ShoppingCart, Truck, Coins, TrendingUp, TrendingDown, Edit, Save, X, User, Sparkles } from "lucide-react";
+import { FileDown, DollarSign, ShoppingCart, Truck, Coins, TrendingUp, TrendingDown, Edit, Save, X, User, Sparkles, Eye } from "lucide-react";
 import jsPDF from 'jspdf';
+import { ClosedSessionOrdersModal } from './ClosedSessionOrdersModal';
 
 interface CashSessionDetailModalProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export function CashSessionDetailModal({
   const [isUpdatingObservaciones, setIsUpdatingObservaciones] = useState(false);
   const [isEditingClosure, setIsEditingClosure] = useState(false);
   const [editedClosingCash, setEditedClosingCash] = useState<number>(0);
+  const [showOrdersModal, setShowOrdersModal] = useState(false);
   const { getSessionSummary, updateSessionObservaciones, updateClosingCash } = useCashSession();
   const { toast } = useToast();
   const { user } = useAuthContext();
@@ -401,10 +403,22 @@ export function CashSessionDetailModal({
                 {session?.closed_at ? format(new Date(session.closed_at), 'dd/MM/yyyy HH:mm', { locale: es }) : 'Activo'}
               </p>
             </div>
-            <Button onClick={exportToPDF} variant="outline" size="sm">
-              <FileDown className="w-4 h-4 mr-2" />
-              Exportar PDF
-            </Button>
+            <div className="flex gap-2">
+              {user?.role === 'Administrador' && session?.closed_at && (
+                <Button 
+                  onClick={() => setShowOrdersModal(true)} 
+                  variant="outline" 
+                  size="sm"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Ver Todos los Pedidos
+                </Button>
+              )}
+              <Button onClick={exportToPDF} variant="outline" size="sm">
+                <FileDown className="w-4 h-4 mr-2" />
+                Exportar PDF
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -689,6 +703,15 @@ export function CashSessionDetailModal({
           </Card>
         </div>
       </DialogContent>
+
+      <ClosedSessionOrdersModal
+        sessionId={sessionId}
+        isOpen={showOrdersModal}
+        onClose={() => setShowOrdersModal(false)}
+        onSessionUpdated={() => {
+          loadDetailData();
+        }}
+      />
     </Dialog>
   );
 }

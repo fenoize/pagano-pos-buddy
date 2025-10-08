@@ -21,6 +21,9 @@ import { formatCurrency } from '@/lib/utils';
 import { OrderItemEditRow } from './OrderItemEditRow';
 import { ProductSelector } from './ProductSelector';
 import { OrderHistoryModal } from './OrderHistoryModal';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet, AlertTriangle } from 'lucide-react';
 
 interface OrderEditModalProps {
@@ -39,6 +42,8 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const [runasEditadas, setRunasEditadas] = useState(0);
   const [saldoRunasCliente, setSaldoRunasCliente] = useState(0);
   const [valorRunaActual, setValorRunaActual] = useState(0);
+  const [belongsToClosedSession, setBelongsToClosedSession] = useState(false);
+  const [sessionInfo, setSessionInfo] = useState<any>(null);
   
   const { updateOrder, calculateTotals, isLoading } = useOrderEdit();
   const { customers } = useCustomers();
@@ -72,8 +77,42 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         };
         loadRunasData();
       }
+
+      // Check if order belongs to closed session
+      if (order?.id) {
+        checkIfClosedSession();
+      }
     }
   }, [isOpen, order]);
+
+  const checkIfClosedSession = async () => {
+    if (!order?.id) return;
+    
+    try {
+      const { data } = await supabase
+        .from('orders')
+        .select(`
+          cash_session_id,
+          cash_sessions:cash_sessions (
+            id,
+            closed_at,
+            opened_at
+          )
+        `)
+        .eq('id', order.id)
+        .single();
+      
+      if (data && data.cash_session_id && (data.cash_sessions as any)?.closed_at) {
+        setBelongsToClosedSession(true);
+        setSessionInfo((data.cash_sessions as any));
+      } else {
+        setBelongsToClosedSession(false);
+        setSessionInfo(null);
+      }
+    } catch (error) {
+      console.error('Error checking session status:', error);
+    }
+  };
 
   useEffect(() => {
     if (order && isEditMode && !editData) {
@@ -109,6 +148,12 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
 
   const handleSave = async () => {
     if (!order || !editData) return;
+
+    // Validate reason is required for closed sessions
+    if (belongsToClosedSession && !reason.trim()) {
+      alert('⚠️ Debe indicar el motivo del cambio en un pedido de cierre cerrado');
+      return;
+    }
 
     // Validar si hay cambios en runas y requiere confirmación
     if (editData.payment_runas !== order.payment_runas && order.customer_id) {
@@ -235,26 +280,47 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
 
           <div className="space-y-6">
             {isEditMode && (
-              <Card className="border-primary">
-                <CardHeader>
-                  <CardTitle className="text-sm text-primary">
-                    Modo Edición - Los cambios se aplicarán al guardar
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Label htmlFor="reason">Motivo del cambio (opcional)</Label>
-                    <Textarea
-                      id="reason"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      placeholder="Describe el motivo del cambio..."
-                      className="resize-none"
-                      rows={2}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+              <>
+                <Card className="border-primary">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-primary">
+                      Modo Edición - Los cambios se aplicarán al guardar
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <Label htmlFor="reason">
+                        Motivo del cambio {belongsToClosedSession && <span className="text-destructive">*</span>}
+                      </Label>
+                      <Textarea
+                        id="reason"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="Describe el motivo del cambio..."
+                        className="resize-none"
+                        rows={2}
+                      />
+                      {belongsToClosedSession && (
+                        <p className="text-xs text-muted-foreground">
+                          * Campo obligatorio para pedidos en cierres cerrados
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {belongsToClosedSession && (
+                  <Alert variant="destructive" className="border-amber-500 bg-amber-50 text-amber-900">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Pedido en Cierre Cerrado</AlertTitle>
+                    <AlertDescription>
+                      Este pedido pertenece a un cierre de caja realizado el{' '}
+                      {sessionInfo?.closed_at && format(new Date(sessionInfo.closed_at), "dd/MM/yyyy 'a las' HH:mm", { locale: es })}.
+                      Los cambios afectarán el resumen del cierre y quedarán registrados en el historial de auditoría.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </>
             )}
 
             {/* Order Information */}
