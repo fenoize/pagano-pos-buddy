@@ -18,8 +18,13 @@ import { CustomerProtectedRoute } from "@/components/guards/CustomerProtectedRou
 import { StaffProtectedRoute } from "@/components/guards/StaffProtectedRoute";
 import { SmartRootRedirect } from "@/components/guards/SmartRootRedirect";
 
-// Customer Pages (eager load - portal principal)
-import CustomerLogin from '@/pages/customer/CustomerLogin';
+// Customer Pages
+const CustomerLogin = lazy(() => import('@/pages/customer/CustomerLogin'));
+const CustomerPortal = lazy(() => import('@/pages/customer/CustomerPortal'));
+const MyOrders = lazy(() => import('@/pages/customer/MyOrders'));
+const MyAddresses = lazy(() => import('@/pages/customer/MyAddresses'));
+const MyRunes = lazy(() => import('@/pages/customer/MyRunes'));
+const MyBadges = lazy(() => import('@/pages/customer/MyBadges'));
 
 // Staff Pages - Lazy loading para code splitting
 const Login = lazy(() => import("./pages/Login"));
@@ -92,6 +97,31 @@ const App = () => (
               {/* ==================== CUSTOMER ROUTES (ROOT) ==================== */}
               <Route path="/" element={<SmartRootRedirect />} />
               <Route path="/login" element={<CustomerLogin />} />
+              <Route path="/portal" element={
+                <CustomerProtectedRoute>
+                  <CustomerPortal />
+                </CustomerProtectedRoute>
+              } />
+              <Route path="/my-orders" element={
+                <CustomerProtectedRoute>
+                  <MyOrders />
+                </CustomerProtectedRoute>
+              } />
+              <Route path="/my-addresses" element={
+                <CustomerProtectedRoute>
+                  <MyAddresses />
+                </CustomerProtectedRoute>
+              } />
+              <Route path="/my-runes" element={
+                <CustomerProtectedRoute>
+                  <MyRunes />
+                </CustomerProtectedRoute>
+              } />
+              <Route path="/my-badges" element={
+                <CustomerProtectedRoute>
+                  <MyBadges />
+                </CustomerProtectedRoute>
+              } />
               
               {/* Legacy redirects for old customer routes */}
               <Route path="/customer" element={<Navigate to="/" replace />} />

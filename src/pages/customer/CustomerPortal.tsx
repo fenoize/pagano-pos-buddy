@@ -17,13 +17,13 @@ export default function CustomerPortal() {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/customer/login');
+      navigate('/login');
     }
   }, [loading, user, navigate]);
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/customer/login');
+    navigate('/login');
   };
 
   if (loading) {
@@ -105,7 +105,10 @@ export default function CustomerPortal() {
 
         {/* Accesos rápidos */}
         <div className="grid gap-4 md:grid-cols-2">
-          <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
+          <Card 
+            className="border-border/50 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+            onClick={() => navigate('/my-orders')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ShoppingBag className="h-5 w-5 text-primary" />
@@ -117,7 +120,10 @@ export default function CustomerPortal() {
             </CardHeader>
           </Card>
 
-          <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
+          <Card 
+            className="border-border/50 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+            onClick={() => navigate('/my-addresses')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-primary" />
@@ -129,7 +135,10 @@ export default function CustomerPortal() {
             </CardHeader>
           </Card>
 
-          <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
+          <Card 
+            className="border-border/50 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+            onClick={() => navigate('/my-runes')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Flame className="h-5 w-5 text-primary" />
@@ -141,7 +150,10 @@ export default function CustomerPortal() {
             </CardHeader>
           </Card>
 
-          <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
+          <Card 
+            className="border-border/50 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+            onClick={() => navigate('/my-badges')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Award className="h-5 w-5 text-primary" />
