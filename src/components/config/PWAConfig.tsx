@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Smartphone, ShoppingCart } from 'lucide-react';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { setStaffContext } from '@/lib/dbContext';
 
 interface PWAConfig {
   id: string;
@@ -23,6 +25,7 @@ interface PWAConfig {
 }
 
 export function PWAConfig() {
+  const { user } = useAuthContext();
   const [activeTab, setActiveTab] = useState<'customer' | 'pos'>('customer');
   const [customerConfig, setCustomerConfig] = useState<PWAConfig | null>(null);
   const [posConfig, setPosConfig] = useState<PWAConfig | null>(null);
@@ -54,7 +57,12 @@ export function PWAConfig() {
   }, [activeTab, customerConfig, posConfig]);
 
   const loadConfigs = async () => {
+    if (!user?.id) return;
+    
     try {
+      // Establecer contexto de staff antes de leer
+      await setStaffContext(user.id);
+      
       const { data, error } = await supabase
         .from('pwa_config')
         .select('*');
@@ -87,6 +95,11 @@ export function PWAConfig() {
   };
 
   const handleSave = async () => {
+    if (!user?.id) {
+      toast.error('Usuario no autenticado');
+      return;
+    }
+    
     if (!appName || !appShortName) {
       toast.error('El nombre y nombre corto son obligatorios');
       return;
@@ -95,6 +108,9 @@ export function PWAConfig() {
     setSaving(true);
 
     try {
+      // Establecer contexto de staff antes de guardar
+      await setStaffContext(user.id);
+      
       const configData = {
         app_type: activeTab,
         app_name: appName,
@@ -146,6 +162,11 @@ export function PWAConfig() {
     event: React.ChangeEvent<HTMLInputElement>,
     iconType: '192' | '512' | 'maskable'
   ) => {
+    if (!user?.id) {
+      toast.error('Usuario no autenticado');
+      return;
+    }
+    
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -164,6 +185,9 @@ export function PWAConfig() {
     setUploading(iconType);
 
     try {
+      // Establecer contexto de staff antes de subir
+      await setStaffContext(user.id);
+      
       const fileExt = file.name.split('.').pop();
       const fileName = `icon-${iconType}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
