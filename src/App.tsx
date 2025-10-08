@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AuthProvider, useAuthContext } from "@/contexts/AuthContext";
+import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
@@ -20,6 +21,8 @@ import Categorias from '@/pages/Categorias';
 import ConfiguracionPage from '@/pages/ConfiguracionPage';
 import CierresDiarios from '@/pages/CierresDiarios';
 import NotFound from '@/pages/NotFound';
+import CustomerLogin from '@/pages/customer/CustomerLogin';
+import CustomerPortal from '@/pages/customer/CustomerPortal';
 
 const queryClient = new QueryClient();
 
@@ -73,100 +76,107 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/nueva-venta" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <NewSale />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/ventas" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Sales />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/cocina" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Kitchen />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/pedido-listo" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <div>Pedido Listo TV - En desarrollo</div>
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/productos" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Products />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/categorias" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Categorias />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/inventario" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <div>Inventario - En desarrollo</div>
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/clientes" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Clientes />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/usuarios" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Users />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/cierres-diarios" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <CierresDiarios />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/configuracion" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <ConfiguracionPage />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <CustomerAuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Customer Portal Routes */}
+              <Route path="/customer/login" element={<CustomerLogin />} />
+              <Route path="/customer" element={<CustomerPortal />} />
+              
+              {/* Staff Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Dashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/nueva-venta" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <NewSale />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/ventas" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Sales />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/cocina" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Kitchen />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/pedido-listo" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <div>Pedido Listo TV - En desarrollo</div>
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/productos" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Products />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/categorias" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Categorias />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/inventario" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <div>Inventario - En desarrollo</div>
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/clientes" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Clientes />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/usuarios" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Users />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/cierres-diarios" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CierresDiarios />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/configuracion" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ConfiguracionPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </CustomerAuthProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
