@@ -2172,7 +2172,7 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      is_admin_from_jwt: {
+      is_staff_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
