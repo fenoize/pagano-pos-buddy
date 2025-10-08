@@ -72,6 +72,13 @@ export type Database = {
             foreignKeyName: "fk_addresses_customer"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "fk_addresses_customer"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -851,6 +858,13 @@ export type Database = {
             foreignKeyName: "coupon_redemptions_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -955,10 +969,191 @@ export type Database = {
           },
         ]
       }
+      customer_accounts: {
+        Row: {
+          created_at: string
+          email: string
+          email_verified: boolean
+          id: string
+          last_login: string | null
+          pass_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          email_verified?: boolean
+          id?: string
+          last_login?: string | null
+          pass_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          email_verified?: boolean
+          id?: string
+          last_login?: string | null
+          pass_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_badges: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string
+          description: string | null
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string
+          description?: string | null
+          icon: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      customer_badges_awarded: {
+        Row: {
+          awarded_at: string
+          badge_id: string
+          customer_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          badge_id: string
+          customer_id: string
+        }
+        Update: {
+          awarded_at?: string
+          badge_id?: string
+          customer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_badges_awarded_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "customer_badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_badges_awarded_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_badges_awarded_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_email_verifications: {
+        Row: {
+          created_at: string
+          customer_account_id: string
+          expires_at: string
+          id: string
+          token_hash: string
+          used: boolean
+        }
+        Insert: {
+          created_at?: string
+          customer_account_id: string
+          expires_at: string
+          id?: string
+          token_hash: string
+          used?: boolean
+        }
+        Update: {
+          created_at?: string
+          customer_account_id?: string
+          expires_at?: string
+          id?: string
+          token_hash?: string
+          used?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_email_verifications_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_password_resets: {
+        Row: {
+          code_hash: string
+          created_at: string
+          customer_account_id: string
+          expires_at: string
+          id: string
+          ip_address: unknown | null
+          used: boolean
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          customer_account_id: string
+          expires_at: string
+          id?: string
+          ip_address?: unknown | null
+          used?: boolean
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          customer_account_id?: string
+          expires_at?: string
+          id?: string
+          ip_address?: unknown | null
+          used?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_password_resets_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
+          account_id: string | null
           apellido: string | null
           apellidos: string | null
+          avatar_url: string | null
           cantidad_runas: number | null
           created_at: string | null
           created_by_user_id: string | null
@@ -966,6 +1161,9 @@ export type Database = {
           estado_cliente: Database["public"]["Enums"]["estado_cliente"] | null
           fecha_nacimiento: string | null
           id: string
+          marketing_consent_date: string | null
+          marketing_consent_source: string | null
+          marketing_opt_in: boolean
           motivo_estado: string | null
           name: string | null
           nombres: string | null
@@ -977,8 +1175,10 @@ export type Database = {
           valor_cliente: number | null
         }
         Insert: {
+          account_id?: string | null
           apellido?: string | null
           apellidos?: string | null
+          avatar_url?: string | null
           cantidad_runas?: number | null
           created_at?: string | null
           created_by_user_id?: string | null
@@ -986,6 +1186,9 @@ export type Database = {
           estado_cliente?: Database["public"]["Enums"]["estado_cliente"] | null
           fecha_nacimiento?: string | null
           id?: string
+          marketing_consent_date?: string | null
+          marketing_consent_source?: string | null
+          marketing_opt_in?: boolean
           motivo_estado?: string | null
           name?: string | null
           nombres?: string | null
@@ -997,8 +1200,10 @@ export type Database = {
           valor_cliente?: number | null
         }
         Update: {
+          account_id?: string | null
           apellido?: string | null
           apellidos?: string | null
+          avatar_url?: string | null
           cantidad_runas?: number | null
           created_at?: string | null
           created_by_user_id?: string | null
@@ -1006,6 +1211,9 @@ export type Database = {
           estado_cliente?: Database["public"]["Enums"]["estado_cliente"] | null
           fecha_nacimiento?: string | null
           id?: string
+          marketing_consent_date?: string | null
+          marketing_consent_source?: string | null
+          marketing_opt_in?: boolean
           motivo_estado?: string | null
           name?: string | null
           nombres?: string | null
@@ -1016,7 +1224,15 @@ export type Database = {
           updated_by_user_id?: string | null
           valor_cliente?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       delivery_zones: {
         Row: {
@@ -1298,6 +1514,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "orders_customer_id_fkey"
@@ -1670,6 +1893,13 @@ export type Database = {
             foreignKeyName: "runas_transactions_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "runas_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -1826,6 +2056,33 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_levels: {
+        Row: {
+          cantidad_runas: number | null
+          customer_id: string | null
+          level_code: string | null
+          level_name: string | null
+          min_points: number | null
+          next_level_points: number | null
+        }
+        Insert: {
+          cantidad_runas?: number | null
+          customer_id?: string | null
+          level_code?: never
+          level_name?: never
+          min_points?: never
+          next_level_points?: never
+        }
+        Update: {
+          cantidad_runas?: number | null
+          customer_id?: string | null
+          level_code?: never
+          level_name?: never
+          min_points?: never
+          next_level_points?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_orders_to_sessions: {
@@ -1834,6 +2091,10 @@ export type Database = {
       }
       auth_jwt: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      authenticate_customer: {
+        Args: { p_email: string; p_password: string }
         Returns: Json
       }
       authenticate_user: {
@@ -1847,6 +2108,30 @@ export type Database = {
           username: string
         }[]
       }
+      citext: {
+        Args: { "": boolean } | { "": string } | { "": unknown }
+        Returns: string
+      }
+      citext_hash: {
+        Args: { "": string }
+        Returns: number
+      }
+      citextin: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      citextout: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      citextrecv: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      citextsend: {
+        Args: { "": string }
+        Returns: string
+      }
       cleanup_expired_reset_codes: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1855,9 +2140,36 @@ export type Database = {
         Args: { password: string }
         Returns: string
       }
+      register_customer: {
+        Args: {
+          p_apellidos?: string
+          p_email: string
+          p_marketing_opt_in?: boolean
+          p_nombres: string
+          p_password: string
+          p_phone?: string
+        }
+        Returns: Json
+      }
+      request_customer_password_reset: {
+        Args: { p_email: string; p_ip_address?: unknown }
+        Returns: Json
+      }
+      reset_customer_password: {
+        Args: { p_code: string; p_email: string; p_new_password: string }
+        Returns: Json
+      }
+      set_customer_context: {
+        Args: { p_account_id: string; p_customer_id: string }
+        Returns: undefined
+      }
       set_user_password: {
         Args: { new_password: string; user_uuid: string }
         Returns: boolean
+      }
+      verify_customer_email: {
+        Args: { p_token: string }
+        Returns: Json
       }
       verify_password: {
         Args: { hash: string; password: string }
