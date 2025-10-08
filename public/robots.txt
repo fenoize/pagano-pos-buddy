@@ -26,5 +26,5 @@ User-agent: facebookexternalhit
 Allow: /
 Disallow: /pos/
 
-# Sitemaps (agregar cuando se generen)
-# Sitemap: https://app.paganosburger.cl/sitemap.xml
+# Sitemap
+Sitemap: https://app.paganosburger.cl/sitemap.xml

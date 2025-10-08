@@ -11,28 +11,41 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { SEOHead } from "@/components/SEOHead";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
+import { Suspense, lazy } from "react";
 
 // Guards
 import { CustomerProtectedRoute } from "@/components/guards/CustomerProtectedRoute";
 import { StaffProtectedRoute } from "@/components/guards/StaffProtectedRoute";
 import { SmartRootRedirect } from "@/components/guards/SmartRootRedirect";
 
-// Customer Pages
+// Customer Pages (eager load - portal principal)
 import CustomerLogin from '@/pages/customer/CustomerLogin';
 
-// Staff Pages
-import Login from "./pages/Login";
-import Dashboard from '@/pages/Dashboard';
-import Clientes from '@/pages/Clientes';
-import NewSale from '@/pages/NewSale';
-import Sales from '@/pages/Sales';
-import Kitchen from '@/pages/Kitchen';
-import Users from '@/pages/Users';
-import Products from '@/pages/Products';
-import Categorias from '@/pages/Categorias';
-import ConfiguracionPage from '@/pages/ConfiguracionPage';
-import CierresDiarios from '@/pages/CierresDiarios';
-import NotFound from '@/pages/NotFound';
+// Staff Pages - Lazy loading para code splitting
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Clientes = lazy(() => import("@/pages/Clientes"));
+const NewSale = lazy(() => import("@/pages/NewSale"));
+const Sales = lazy(() => import("@/pages/Sales"));
+const Kitchen = lazy(() => import("@/pages/Kitchen"));
+const Users = lazy(() => import("@/pages/Users"));
+const Products = lazy(() => import("@/pages/Products"));
+const Categorias = lazy(() => import("@/pages/Categorias"));
+const ConfiguracionPage = lazy(() => import("@/pages/ConfiguracionPage"));
+const CierresDiarios = lazy(() => import("@/pages/CierresDiarios"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+
+// Loading component para Suspense
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <p className="text-muted-foreground">Cargando...</p>
+      </div>
+    </div>
+  );
+}
 
 const queryClient = new QueryClient();
 
@@ -74,7 +87,8 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <SEOHead />
-              <Routes>
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
               {/* ==================== CUSTOMER ROUTES (ROOT) ==================== */}
               <Route path="/" element={<SmartRootRedirect />} />
               <Route path="/login" element={<CustomerLogin />} />
@@ -195,13 +209,14 @@ const App = () => (
               <Route path="/cierres-diarios" element={<Navigate to="/pos/cierres-diarios" replace />} />
               <Route path="/configuracion" element={<Navigate to="/pos/configuracion" replace />} />
               
-              {/* 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </CustomerAuthProvider>
-    </AuthProvider>
+                {/* 404 */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </TooltipProvider>
+        </CustomerAuthProvider>
+      </AuthProvider>
     </HelmetProvider>
   </QueryClientProvider>
 );

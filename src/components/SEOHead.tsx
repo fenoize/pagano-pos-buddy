@@ -23,10 +23,14 @@ export function SEOHead() {
       <meta name="description" content="Pide tus hamburguesas favoritas de Paganos Burger. Programa de fidelización con Runas y beneficios exclusivos." />
       <meta name="keywords" content="paganos burger, hamburguesas, delivery, pedidos online, fidelización" />
       
+      {/* Canonical URL */}
+      <link rel="canonical" href={`https://app.paganosburger.cl${location.pathname}`} />
+      
       {/* Open Graph */}
       <meta property="og:title" content="Paganos Burger - Pedidos Online" />
       <meta property="og:description" content="Las mejores hamburguesas artesanales. Pide ahora y acumula Runas." />
       <meta property="og:type" content="website" />
+      <meta property="og:url" content={`https://app.paganosburger.cl${location.pathname}`} />
       
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
