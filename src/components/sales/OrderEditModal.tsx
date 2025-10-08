@@ -47,7 +47,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const { paymentMethods } = usePaymentMethods();
   const { getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
   
-  const repartidores = users.filter(u => u.role === 'Reparto' && u.active);
+  const repartidores = users.filter(u => u.can_do_delivery && u.active);
 
   const getIconComponent = (iconName: string) => {
     const icons: Record<string, any> = {

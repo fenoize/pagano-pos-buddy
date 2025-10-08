@@ -247,6 +247,7 @@ export default function Users() {
                   <TableHead>Usuario</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Rol</TableHead>
+                  <TableHead>Delivery</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Creado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -255,13 +256,13 @@ export default function Users() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       Cargando usuarios...
                     </TableCell>
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       No se encontraron usuarios
                     </TableCell>
                   </TableRow>
@@ -283,6 +284,15 @@ export default function Users() {
                       </TableCell>
                       <TableCell>
                         <Badge className={getRoleColor(user.role)}>{user.role}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {user.can_do_delivery ? (
+                          <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            Sí
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">No</Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={user.active ? "default" : "secondary"}>

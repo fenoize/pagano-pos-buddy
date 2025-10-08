@@ -87,7 +87,7 @@ export function CashSessionReport() {
       // Load users for filter
       const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select('id, username, role, active, created_at, updated_at')
+        .select('id, username, role, active, created_at, updated_at, can_do_delivery')
         .eq('active', true)
         .in('role', ['Administrador', 'Cajero'])
         .order('username');

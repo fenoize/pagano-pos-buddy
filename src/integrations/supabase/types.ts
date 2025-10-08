@@ -1604,6 +1604,7 @@ export type Database = {
       users: {
         Row: {
           active: boolean | null
+          can_do_delivery: boolean
           created_at: string | null
           email: string | null
           full_name: string | null
@@ -1615,6 +1616,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          can_do_delivery?: boolean
           created_at?: string | null
           email?: string | null
           full_name?: string | null
@@ -1626,6 +1628,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          can_do_delivery?: boolean
           created_at?: string | null
           email?: string | null
           full_name?: string | null

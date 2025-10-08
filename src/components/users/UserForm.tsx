@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -35,6 +36,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
     email: '',
     password: '',
     role: 'Cajero' as AppRole,
+    can_do_delivery: false,
   });
   const [loading, setLoading] = useState(false);
   const { createUser, updateUser } = useUsers();
@@ -51,6 +53,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           email: editingUser.email || '',
           password: '',
           role: editingUser.role,
+          can_do_delivery: editingUser.can_do_delivery || false,
         });
       } else {
         setFormData({
@@ -59,6 +62,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           email: '',
           password: '',
           role: 'Cajero',
+          can_do_delivery: false,
         });
       }
     }
@@ -104,6 +108,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           full_name: formData.full_name,
           email: formData.email,
           role: formData.role,
+          can_do_delivery: formData.can_do_delivery,
         });
         toast({
           title: "Usuario actualizado",
@@ -117,6 +122,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           email: formData.email,
           password: formData.password,
           role: formData.role,
+          can_do_delivery: formData.can_do_delivery,
         });
         toast({
           title: "Usuario creado",
@@ -261,6 +267,23 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-4 border rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="can_do_delivery">Puede hacer Deliveries</Label>
+                <p className="text-sm text-muted-foreground">
+                  Permitir a este usuario aparecer como repartidor en los pedidos de delivery
+                </p>
+              </div>
+              <Switch
+                id="can_do_delivery"
+                checked={formData.can_do_delivery}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, can_do_delivery: checked }))}
+                disabled={loading}
+              />
+            </div>
           </div>
 
           <DialogFooter className="gap-2">

@@ -59,6 +59,7 @@ export function useUsers() {
     email: string;
     password: string;
     role: AppRole;
+    can_do_delivery?: boolean;
   }) => {
     try {
       // First create the user with a temporary password
@@ -70,7 +71,8 @@ export function useUsers() {
           email: userData.email,
           pass_hash: 'temp', // Temporary value
           role: mapAppRoleToDatabase(userData.role) as any,
-          active: true
+          active: true,
+          can_do_delivery: userData.can_do_delivery ?? (userData.role === 'Reparto')
         })
         .select()
         .single();
@@ -101,6 +103,7 @@ export function useUsers() {
     full_name?: string;
     email?: string;
     role?: AppRole;
+    can_do_delivery?: boolean;
   }) => {
     try {
       const updateData: any = {};
@@ -108,6 +111,7 @@ export function useUsers() {
       if (userData.full_name !== undefined) updateData.full_name = userData.full_name;
       if (userData.email !== undefined) updateData.email = userData.email;
       if (userData.role) updateData.role = mapAppRoleToDatabase(userData.role);
+      if (userData.can_do_delivery !== undefined) updateData.can_do_delivery = userData.can_do_delivery;
       
       const { data, error } = await supabase
         .from('users')

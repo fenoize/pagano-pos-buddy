@@ -95,8 +95,8 @@ export default function FulfillmentStep({ fulfillment, customer, onFulfillmentCh
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, full_name, username, role, active, created_at, updated_at')
-        .eq('role', 'Reparto')
+        .select('id, full_name, username, role, active, created_at, updated_at, can_do_delivery')
+        .eq('can_do_delivery', true)
         .eq('active', true)
         .order('full_name');
       
