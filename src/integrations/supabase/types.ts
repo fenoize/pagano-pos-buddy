@@ -1854,6 +1854,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pwa_config: {
+        Row: {
+          app_description: string
+          app_name: string
+          app_short_name: string
+          background_color: string
+          created_at: string
+          icon_192_url: string | null
+          icon_512_url: string | null
+          icon_maskable_url: string | null
+          id: string
+          theme_color: string
+          updated_at: string
+        }
+        Insert: {
+          app_description?: string
+          app_name?: string
+          app_short_name?: string
+          background_color?: string
+          created_at?: string
+          icon_192_url?: string | null
+          icon_512_url?: string | null
+          icon_maskable_url?: string | null
+          id?: string
+          theme_color?: string
+          updated_at?: string
+        }
+        Update: {
+          app_description?: string
+          app_name?: string
+          app_short_name?: string
+          background_color?: string
+          created_at?: string
+          icon_192_url?: string | null
+          icon_512_url?: string | null
+          icon_maskable_url?: string | null
+          id?: string
+          theme_color?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       runas_transactions: {
         Row: {
           amount: number

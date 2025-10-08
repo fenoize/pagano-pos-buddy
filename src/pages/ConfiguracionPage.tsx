@@ -2,10 +2,11 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign, MapPin, Star, CreditCard, Tag } from 'lucide-react';
+import { Settings, DollarSign, MapPin, Star, CreditCard, Tag, Smartphone } from 'lucide-react';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
 import { FidelizationConfig } from '@/components/config/FidelizationConfig';
 import { PaymentMethodsConfig } from '@/components/config/PaymentMethodsConfig';
+import { PWAConfig } from '@/components/config/PWAConfig';
 import CouponsManagement from './CouponsManagement';
 
 export default function ConfiguracionPage() {
@@ -35,30 +36,34 @@ export default function ConfiguracionPage() {
       </div>
 
       <Tabs defaultValue="zones" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7 md:grid-cols-7">
           <TabsTrigger value="zones" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
-            Zonas Delivery
+            <span className="hidden sm:inline">Zonas</span>
           </TabsTrigger>
           <TabsTrigger value="delivery" className="flex items-center gap-2">
             <DollarSign className="w-4 h-4" />
-            Delivery
+            <span className="hidden sm:inline">Delivery</span>
           </TabsTrigger>
           <TabsTrigger value="payments" className="flex items-center gap-2">
             <CreditCard className="w-4 h-4" />
-            Medios de Pago
+            <span className="hidden sm:inline">Pagos</span>
           </TabsTrigger>
           <TabsTrigger value="fidelization" className="flex items-center gap-2">
             <Star className="w-4 h-4" />
-            Fidelización
+            <span className="hidden sm:inline">Runas</span>
           </TabsTrigger>
           <TabsTrigger value="coupons" className="flex items-center gap-2">
             <Tag className="w-4 h-4" />
-            Cupones
+            <span className="hidden sm:inline">Cupones</span>
+          </TabsTrigger>
+          <TabsTrigger value="pwa" className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4" />
+            <span className="hidden sm:inline">PWA</span>
           </TabsTrigger>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
-            General
+            <span className="hidden sm:inline">General</span>
           </TabsTrigger>
         </TabsList>
 
@@ -90,6 +95,10 @@ export default function ConfiguracionPage() {
 
         <TabsContent value="coupons" className="space-y-6">
           <CouponsManagement />
+        </TabsContent>
+
+        <TabsContent value="pwa" className="space-y-6">
+          <PWAConfig />
         </TabsContent>
 
         <TabsContent value="general" className="space-y-6">
