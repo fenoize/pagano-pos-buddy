@@ -2215,6 +2215,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_active_user: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_staff_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
