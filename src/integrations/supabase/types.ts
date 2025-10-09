@@ -2236,6 +2236,17 @@ export type Database = {
         }
         Relationships: []
       }
+      debug_policies: {
+        Row: {
+          cmd: string | null
+          permissive: string | null
+          policyname: unknown | null
+          qual_expression: string | null
+          roles: unknown[] | null
+          tablename: unknown | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_orders_to_sessions: {
