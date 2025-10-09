@@ -2303,8 +2303,20 @@ export type Database = {
         Args: { _token: string }
         Returns: boolean
       }
+      is_active_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_active_staff: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_active_user: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      is_cashier_or_admin: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       is_staff_admin: {
