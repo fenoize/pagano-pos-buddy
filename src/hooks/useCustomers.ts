@@ -4,6 +4,7 @@ import { Customer, EstadoCliente } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from './usePermissions';
+import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 
 export interface CustomerFilters {
   search?: string;
@@ -47,56 +48,54 @@ export function useCustomers() {
     try {
       setLoading(true);
       
-      let query = supabase
-        .from('customers')
-        .select(`
-          *,
-          addresses (
-            id,
-            customer_id,
-            alias,
-            calle,
-            numero,
-            depto,
-            comuna,
-            ciudad,
-            observaciones,
-            is_default,
-            created_at,
-            updated_at
-          )
-        `, { count: 'exact' });
+      // 1. Obtener token de sesión
+      const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
 
-      // Aplicar filtros
+      // 2. Construir query params
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        offset: (page * limit).toString(),
+      });
+
       if (filters.search) {
-        const searchTerm = `%${filters.search}%`;
-        query = query.or(`nombres.ilike.${searchTerm},apellidos.ilike.${searchTerm},name.ilike.${searchTerm},apellido.ilike.${searchTerm},email.ilike.${searchTerm},phone.ilike.${searchTerm},rut.ilike.${searchTerm}`);
+        params.append('q', filters.search);
       }
-
       if (filters.estado) {
-        query = query.eq('estado_cliente', filters.estado);
+        params.append('estado', filters.estado);
+      }
+      if (filters.hasRunas !== undefined) {
+        params.append('hasRunas', filters.hasRunas.toString());
       }
 
-      if (filters.comuna) {
-        query = query.eq('addresses.comuna', filters.comuna);
+      // 3. Llamar Edge Function
+      const response = await fetch(
+        `https://lxxfhayifyiioglfbsyj.supabase.co/functions/v1/staff-list-customers?${params}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token inválido/expirado - forzar logout
+          clearStaffStorage();
+          window.location.href = '/pos/login';
+          return;
+        }
+        throw new Error(`Error ${response.status}: ${await response.text()}`);
       }
 
-      if (filters.hasRunas) {
-        query = query.gt('cantidad_runas', 0);
-      }
+      const result = await response.json();
 
-      // Paginación
-      query = query
-        .order('created_at', { ascending: false })
-        .range(page * limit, (page + 1) * limit - 1);
-
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      // Calcular saldo real de runas para cada cliente
+      // 4. Calcular saldo real de runas para cada cliente
       const customersWithRunas = await Promise.all(
-        (data || []).map(async (customer) => {
+        (result.data || []).map(async (customer: any) => {
           const runasSaldo = await calculateRunasSaldo(customer.id);
           return {
             ...customer,
@@ -106,12 +105,13 @@ export function useCustomers() {
       );
 
       setCustomers(customersWithRunas);
-      setTotalCount(count || 0);
+      setTotalCount(result.count || 0);
+      
     } catch (error) {
       console.error('Error fetching customers:', error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los clientes",
+        description: error instanceof Error ? error.message : "No se pudieron cargar los clientes",
         variant: "destructive"
       });
     } finally {

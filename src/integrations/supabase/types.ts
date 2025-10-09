@@ -2001,6 +2001,48 @@ export type Database = {
           },
         ]
       }
+      staff_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2223,6 +2265,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_staff_session: {
+        Args: { _user_id: string }
+        Returns: {
+          expires_at: string
+          token: string
+        }[]
+      }
       generate_simple_hash: {
         Args: { password: string }
         Returns: string
@@ -2244,6 +2293,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      invalidate_staff_session: {
+        Args: { _token: string }
         Returns: boolean
       }
       is_active_user: {

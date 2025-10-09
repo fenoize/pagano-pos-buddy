@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.generate-manifest]
 verify_jwt = false
+
+[functions.staff-list-customers]
+verify_jwt = false

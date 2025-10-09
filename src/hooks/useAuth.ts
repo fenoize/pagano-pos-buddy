@@ -92,7 +92,7 @@ export function useAuth() {
     try {
       console.log('Attempting login for username:', username);
       
-      // Use the secure authentication function
+      // 1. Autenticar usuario
       const { data: userData, error: userError } = await supabase
         .rpc('authenticate_user', {
           _username: username,
@@ -114,7 +114,20 @@ export function useAuth() {
       const userRecord = userData[0];
       console.log('Authentication successful for user:', userRecord.username);
 
-      // Map database role to app role and store user in localStorage
+      // 2. Crear sesión de staff
+      const { data: sessionData, error: sessionError } = await supabase
+        .rpc('create_staff_session', {
+          _user_id: userRecord.user_id
+        });
+
+      if (sessionError || !sessionData || sessionData.length === 0) {
+        console.error('Failed to create staff session:', sessionError);
+        throw new Error('Error al crear sesión');
+      }
+
+      const { token, expires_at } = sessionData[0];
+
+      // 3. Guardar usuario y token en localStorage
       const mappedUser = {
         id: userRecord.user_id,
         username: userRecord.username,
@@ -125,13 +138,13 @@ export function useAuth() {
       } as User;
       
       localStorage.setItem(STORAGE_KEYS.STAFF_USER, JSON.stringify(mappedUser));
+      localStorage.setItem(STORAGE_KEYS.STAFF_TOKEN, token);
 
-      // CRITICAL: Establecer contexto DB para staff
+      // 4. Establecer contexto DB (opcional, para otras operaciones)
       try {
         await setStaffContext(mappedUser.id);
       } catch (contextError) {
         console.error('Failed to set staff DB context:', contextError);
-        // No bloqueamos el login si falla el contexto, pero lo logueamos
       }
 
       setAuthState({
@@ -140,8 +153,9 @@ export function useAuth() {
         error: null,
       });
 
-      console.log('Login successful');
+      console.log('Login successful, token expires at:', expires_at);
       return { success: true };
+      
     } catch (error) {
       console.error('Login error:', error);
       const message = error instanceof Error ? error.message : 'Error de autenticación';
@@ -156,10 +170,16 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      // Limpiar contexto DB antes del logout
-      await clearDBContext();
+      // 1. Invalidar token en backend
+      const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
+      if (token) {
+        await supabase.rpc('invalidate_staff_session', { _token: token });
+      }
       
+      // 2. Limpiar contexto DB y localStorage
+      await clearDBContext();
       clearStaffStorage();
+      
       setAuthState({
         user: null,
         loading: false,
@@ -167,6 +187,13 @@ export function useAuth() {
       });
     } catch (error) {
       console.error('Logout failed:', error);
+      // Forzar limpieza local incluso si falla backend
+      clearStaffStorage();
+      setAuthState({
+        user: null,
+        loading: false,
+        error: null,
+      });
     }
   };
 

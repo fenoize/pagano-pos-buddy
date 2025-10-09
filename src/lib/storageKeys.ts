@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   // Staff (POS) authentication
   STAFF_SESSION: 'paganos_staff_session',
   STAFF_USER: 'paganos_staff_user',
+  STAFF_TOKEN: 'paganos_staff_token',
   
   // Customer (Portal) authentication
   CUSTOMER_SESSION: 'paganos_customer_session',
@@ -21,6 +22,7 @@ export const STORAGE_KEYS = {
 export const clearStaffStorage = () => {
   localStorage.removeItem(STORAGE_KEYS.STAFF_SESSION);
   localStorage.removeItem(STORAGE_KEYS.STAFF_USER);
+  localStorage.removeItem(STORAGE_KEYS.STAFF_TOKEN);
 };
 
 /**
