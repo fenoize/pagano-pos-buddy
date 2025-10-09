@@ -163,6 +163,14 @@ export default function PaymentModal({
     return Math.max(0, total - getTotalPaid());
   };
 
+  const getCurrentPaymentAmount = () => {
+    if (currentMethod === 'Runas') {
+      const runasNum = parseFloat(currentRunas) || 0;
+      return runasNum * runaValue;
+    }
+    return parseFloat(currentAmount) || 0;
+  };
+
   const calculateChange = () => {
     const efectivoPayments = payments.filter(p => p.method === 'Efectivo');
     const totalEfectivo = efectivoPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -264,7 +272,101 @@ export default function PaymentModal({
   };
 
   const handleConfirm = () => {
-    if (getTotalPaid() < total) {
+    let finalPayments = [...payments];
+    
+    // Si no hay pagos en la lista, agregar el pago actual directamente
+    if (payments.length === 0) {
+      const amount = parseFloat(currentAmount) || 0;
+      
+      // Validar método actual
+      if (currentMethod !== 'Runas' && amount <= 0) {
+        toast({
+          title: "Error",
+          description: "Ingrese un monto válido",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (currentMethod === 'POS' && !currentReceiptNumber.trim()) {
+        toast({
+          title: "Error",
+          description: "Ingrese el número de boleta",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if ((currentMethod === 'Transferencia' || currentMethod === 'Aplicación') && !currentOperationNumber.trim()) {
+        toast({
+          title: "Error",
+          description: "Ingrese el número de operación",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (currentMethod === 'Runas') {
+        const runasNum = parseFloat(currentRunas) || 0;
+        if (runasNum <= 0) {
+          toast({
+            title: "Error",
+            description: "Ingrese cantidad de runas",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        if (runasNum > (customer.cantidad_runas || 0)) {
+          toast({
+            title: "Error",
+            description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles`,
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const runasValue = runasNum * runaValue;
+        if (runasValue < total) {
+          toast({
+            title: "Error",
+            description: `Se necesitan al menos ${Math.ceil(total / runaValue)} runas para cubrir el total`,
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      if (currentMethod === 'Efectivo' && amount <= 0) {
+        toast({
+          title: "Error",
+          description: "Ingrese un monto válido para efectivo",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Crear el pago actual
+      const currentPayment: SinglePayment = {
+        method: currentMethod,
+        amount: currentMethod === 'Runas' ? 0 : amount,
+        receiptNumber: currentMethod === 'POS' ? currentReceiptNumber : undefined,
+        operationNumber: (currentMethod === 'Transferencia' || currentMethod === 'Aplicación') ? currentOperationNumber : undefined,
+        runas: currentMethod === 'Runas' ? parseFloat(currentRunas) : undefined,
+      };
+      
+      finalPayments = [currentPayment];
+    }
+    
+    // Validar total pagado
+    const totalPaid = finalPayments.reduce((sum, payment) => {
+      if (payment.method === 'Runas') {
+        return sum + (payment.runas || 0) * runaValue;
+      }
+      return sum + payment.amount;
+    }, 0);
+    
+    if (totalPaid < total) {
       toast({
         title: "Error",
         description: "El total pagado es menor al total de la venta",
@@ -274,7 +376,7 @@ export default function PaymentModal({
     }
 
     const paymentData: PaymentData = {
-      payments,
+      payments: finalPayments,
       fulfillment: deliveryData?.zone ? 'delivery' : 'retiro',
       notes: notes.trim() || undefined,
     };
@@ -282,7 +384,43 @@ export default function PaymentModal({
   };
 
   const isValidPayment = () => {
-    return payments.length > 0 && getTotalPaid() >= total;
+    // Si hay pagos en la lista, validar como antes
+    if (payments.length > 0) {
+      return getTotalPaid() >= total;
+    }
+    
+    // Si no hay pagos en la lista, validar el método actual
+    const currentPaymentAmount = getCurrentPaymentAmount();
+    
+    // Validar que el pago actual cubra el total
+    if (currentPaymentAmount < total) {
+      return false;
+    }
+    
+    // Validar campos requeridos según método
+    if (currentMethod === 'POS' && !currentReceiptNumber.trim()) {
+      return false;
+    }
+    
+    if ((currentMethod === 'Transferencia' || currentMethod === 'Aplicación') && !currentOperationNumber.trim()) {
+      return false;
+    }
+    
+    if (currentMethod === 'Runas') {
+      const runasNum = parseFloat(currentRunas) || 0;
+      if (runasNum <= 0 || runasNum > (customer.cantidad_runas || 0)) {
+        return false;
+      }
+    }
+    
+    if (currentMethod === 'Efectivo') {
+      const amount = parseFloat(currentAmount) || 0;
+      if (amount <= 0) {
+        return false;
+      }
+    }
+    
+    return true;
   };
 
   return (
@@ -643,7 +781,7 @@ export default function PaymentModal({
                 disabled={!currentAmount && !currentRunas}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Agregar este pago
+                {payments.length > 0 ? 'Agregar otro método de pago' : 'Agregar método de pago (para pago mixto)'}
               </Button>
             </CardContent>
           </Card>
@@ -677,7 +815,7 @@ export default function PaymentModal({
               disabled={!isValidPayment()}
               className="flex-1"
             >
-              Confirmar Pago
+              {payments.length === 0 ? 'Confirmar Pago' : `Confirmar Pago Mixto (${payments.length} métodos)`}
             </Button>
           </div>
         </div>
