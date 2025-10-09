@@ -85,6 +85,32 @@ export default function PaymentModal({
     }
   }, [isOpen]);
 
+  // Auto-llenar campos al cambiar método de pago
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const remainingBalance = getRemainingBalance();
+    
+    // Auto-llenar monto para métodos que requieren comprobante/operación
+    if (['POS', 'Transferencia', 'Aplicación'].includes(currentMethod)) {
+      setCurrentAmount(remainingBalance.toString());
+    }
+    
+    // Auto-llenar runas necesarias
+    if (currentMethod === 'Runas' && remainingBalance > 0) {
+      const runasNeeded = Math.ceil(remainingBalance / runaValue);
+      
+      // Usar la cantidad necesaria, sin importar si se pasa
+      setCurrentRunas(runasNeeded.toString());
+      setCurrentAmount((runasNeeded * runaValue).toString());
+    }
+    
+    // Limpiar campos para Efectivo (mantener comportamiento actual)
+    if (currentMethod === 'Efectivo') {
+      setCurrentAmount('');
+    }
+  }, [currentMethod, total, payments, runaValue, isOpen]);
+
   const fetchConfig = async () => {
     try {
       const { data } = await supabase
@@ -190,10 +216,24 @@ export default function PaymentModal({
         });
         return;
       }
+      
+      // Validar que el cliente tenga suficientes runas
       if (runasNum > (customer.cantidad_runas || 0)) {
         toast({
           title: "Error",
-          description: "Runas insuficientes",
+          description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Validar que las runas cubran al menos el saldo restante
+      const runasValue = runasNum * runaValue;
+      const remainingBalance = getRemainingBalance();
+      if (runasValue < remainingBalance) {
+        toast({
+          title: "Error",
+          description: `Se necesitan al menos ${Math.ceil(remainingBalance / runaValue)} runas para cubrir el saldo restante`,
           variant: "destructive"
         });
         return;
@@ -556,16 +596,21 @@ export default function PaymentModal({
 
               {currentMethod === 'Runas' && (
                 <div className="space-y-3">
-                  <div className="p-3 bg-primary/5 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div className="p-3 bg-primary/5 rounded-lg space-y-2">
+                    <div className="flex items-center gap-2">
                       <Coins className="h-4 w-4 text-primary" />
                       <span className="text-sm font-medium">
                         Cliente tiene <strong>{customer.cantidad_runas || 0} runas</strong> disponibles
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      Valor: 1 runa = {formatPrice(runaValue)}
-                    </span>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Valor: 1 runa = {formatPrice(runaValue)}</span>
+                      {getRemainingBalance() > 0 && (
+                        <span className="text-primary font-medium">
+                          Se necesitan: {Math.ceil(getRemainingBalance() / runaValue)} runas
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor="runas">Cantidad de runas a usar</Label>
@@ -583,6 +628,9 @@ export default function PaymentModal({
                         }
                       }}
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Valor total: {formatPrice(parseInt(currentRunas || '0') * runaValue)}
+                    </p>
                   </div>
                 </div>
               )}
