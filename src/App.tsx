@@ -37,6 +37,7 @@ const Users = lazy(() => import("@/pages/Users"));
 const Products = lazy(() => import("@/pages/Products"));
 const Categorias = lazy(() => import("@/pages/Categorias"));
 const ConfiguracionPage = lazy(() => import("@/pages/ConfiguracionPage"));
+const PermisosManagement = lazy(() => import("@/pages/PermisosManagement"));
 const CierresDiarios = lazy(() => import("@/pages/CierresDiarios"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
@@ -222,6 +223,14 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <ConfiguracionPage />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/configuracion/permisos" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <PermisosManagement />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Customer, EstadoCliente } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from './usePermissions';
 
 export interface CustomerFilters {
   search?: string;
@@ -29,9 +30,8 @@ export function useCustomers() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Verificar permisos
-  const canManageCustomers = user?.role === 'Administrador' || user?.role === 'Cajero';
-  const canViewCustomers = canManageCustomers || user?.role === 'Reparto';
+  // Usar hook de permisos centralizado
+  const { canManageCustomers, canViewCustomers, canExportCustomers } = usePermissions();
 
   const fetchCustomers = async (
     filters: CustomerFilters = {},

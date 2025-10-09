@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { RunasTransaction, RunaMovementType, OrigenMovimiento } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from './usePermissions';
 
 export interface RunasAdjustmentData {
   runas: number;
@@ -22,8 +23,8 @@ export function useCustomerRunes() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const canAdjustRunes = user?.role === 'Administrador';
-  const canViewRunes = user?.role === 'Administrador' || user?.role === 'Cajero';
+  // Usar hook de permisos centralizado
+  const { canAdjustRunes, canViewRunes } = usePermissions();
 
   // Obtener valor actual de las runas desde config
   const fetchRunaValue = async (): Promise<number> => {

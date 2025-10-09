@@ -1,8 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign, MapPin, Star, CreditCard, Tag, Smartphone } from 'lucide-react';
+import { Settings, DollarSign, MapPin, Star, CreditCard, Tag, Smartphone, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
 import { FidelizationConfig } from '@/components/config/FidelizationConfig';
 import { PaymentMethodsConfig } from '@/components/config/PaymentMethodsConfig';
@@ -11,6 +13,7 @@ import CouponsManagement from './CouponsManagement';
 
 export default function ConfiguracionPage() {
   const { user } = useAuthContext();
+  const navigate = useNavigate();
 
   // Check if user is admin
   if (user?.role !== 'Administrador') {
@@ -36,7 +39,7 @@ export default function ConfiguracionPage() {
       </div>
 
       <Tabs defaultValue="zones" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7 md:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8 md:grid-cols-8">
           <TabsTrigger value="zones" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
             <span className="hidden sm:inline">Zonas</span>
@@ -60,6 +63,10 @@ export default function ConfiguracionPage() {
           <TabsTrigger value="pwa" className="flex items-center gap-2">
             <Smartphone className="w-4 h-4" />
             <span className="hidden sm:inline">PWA</span>
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            <span className="hidden sm:inline">Permisos</span>
           </TabsTrigger>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
@@ -99,6 +106,31 @@ export default function ConfiguracionPage() {
 
         <TabsContent value="pwa" className="space-y-6">
           <PWAConfig />
+        </TabsContent>
+
+        <TabsContent value="permissions" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Gestión de Permisos
+              </CardTitle>
+              <CardDescription>
+                Administra los permisos de cada rol en el sistema de forma centralizada
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  El sistema de permisos te permite controlar qué puede hacer cada rol (Administrador, Cajero, Cocina, Reparto, Viewer) en cada módulo de la aplicación.
+                </p>
+                <Button onClick={() => navigate('/pos/configuracion/permisos')}>
+                  <Shield className="h-4 w-4 mr-2" />
+                  Ir a Gestión de Permisos
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="general" className="space-y-6">

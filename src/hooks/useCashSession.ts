@@ -2,11 +2,16 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CashSession, CashMovement } from '@/types';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { usePermissions } from './usePermissions';
 
 export function useCashSession() {
   const [currentSession, setCurrentSession] = useState<CashSession | null>(null);
   const [loading, setLoading] = useState(false);
   const { user } = useAuthContext();
+
+  // Usar hook de permisos centralizado
+  const { canManageOwnCashSession, canManageCashSessions } = usePermissions();
+  const canManageCashSession = canManageOwnCashSession || canManageCashSessions;
 
   useEffect(() => {
     if (user?.id) {
