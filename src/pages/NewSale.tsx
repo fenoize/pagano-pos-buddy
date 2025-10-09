@@ -330,7 +330,8 @@ export default function NewSale() {
           .select('role')
           .eq('user_id', user.id)
           .in('role', ['Cajero', 'Administrador'])
-          .single();
+          .limit(1)
+          .maybeSingle();
 
         if (roleError || !userRole) {
           console.error('Error validating user role:', roleError);
