@@ -303,20 +303,41 @@ export default function NewSale() {
         }
       }
 
-        // Validate user exists in database before creating order
-        let validUserId = null;
-        if (user?.id) {
-          const { data: dbUser } = await supabase
-            .from('users')
-            .select('id')
-            .eq('id', user.id)
-            .eq('active', true)
-            .maybeSingle();
-          
-          if (dbUser) {
-            validUserId = user.id;
-          }
+        // Validate user exists in database before creating order - ROBUST
+        if (!user?.id) {
+          throw new Error('Usuario no autenticado. Por favor, inicie sesión nuevamente.');
         }
+
+        // Use .single() to ensure explicit failure if user not found
+        const { data: dbUser, error: userError } = await supabase
+          .from('users')
+          .select('id, active')
+          .eq('id', user.id)
+          .single();
+
+        if (userError) {
+          console.error('Error validating user:', userError);
+          throw new Error('Usuario no encontrado en la base de datos. Contacte al administrador.');
+        }
+
+        if (!dbUser?.active) {
+          throw new Error('Usuario inactivo. No puede crear órdenes.');
+        }
+
+        // Validate user has required role (Cajero or Administrador)
+        const { data: userRole, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .in('role', ['Cajero', 'Administrador'])
+          .single();
+
+        if (roleError || !userRole) {
+          console.error('Error validating user role:', roleError);
+          throw new Error('Usuario sin permisos para crear órdenes. Se requiere rol de Cajero o Administrador.');
+        }
+
+        const validUserId = user.id;
 
         // Calculate payment totals by method
         const totals = paymentData.payments.reduce(
