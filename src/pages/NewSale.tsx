@@ -397,13 +397,25 @@ export default function NewSale() {
           })
         };
 
-      const { data: orderResult, error: orderError } = await supabase
-        .from('orders')
-        .insert(orderData)
-        .select()
-        .single();
+      // Crear orden usando función transaccional que maneja el contexto
+      const { data: orderResult, error: orderError } = await supabase.rpc('create_order_with_context', {
+        p_user_id: validUserId,
+        p_order_data: orderData
+      });
 
       if (orderError) throw orderError;
+      
+      // Cast del resultado de la función RPC
+      const orderInfo = orderResult as unknown as { id: string; order_number: number };
+      
+      // La función RPC retorna { id, order_number }, necesitamos el objeto completo para el resto del flujo
+      const { data: fullOrderData, error: fetchError } = await supabase
+        .from('orders')
+        .select()
+        .eq('id', orderInfo.id)
+        .single();
+      
+      if (fetchError) throw fetchError;
 
       // Save address if requested
       if (fulfillment === 'delivery' && deliveryData?.saveAddress && customerId) {
@@ -431,7 +443,7 @@ export default function NewSale() {
         if (totals.runas > 0) {
           transactions.push({
             customer_id: customerId,
-            order_id: orderResult.id,
+            order_id: orderInfo.id,
             type: 'canje',
             amount: totals.runas * runaRewardValue,
             runas: -totals.runas,
@@ -448,7 +460,7 @@ export default function NewSale() {
         if (runasEarned > 0) {
           transactions.push({
             customer_id: customerId,
-            order_id: orderResult.id,
+            order_id: orderInfo.id,
             type: 'acumulacion',
             amount: earnableAmount,
             runas: runasEarned,
@@ -470,7 +482,7 @@ export default function NewSale() {
 
       toast({
         title: "¡Éxito!",
-        description: `Pedido #${orderResult.order_number} creado y enviado a cocina`
+        description: `Pedido #${orderInfo.order_number} creado y enviado a cocina`
       });
 
       // Reset form

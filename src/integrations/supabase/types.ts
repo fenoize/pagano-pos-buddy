@@ -2265,6 +2265,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_order_with_context: {
+        Args: { p_order_data: Json; p_user_id: string }
+        Returns: Json
+      }
       create_staff_session: {
         Args: { _user_id: string }
         Returns: {
