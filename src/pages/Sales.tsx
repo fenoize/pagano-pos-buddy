@@ -22,8 +22,10 @@ import { Order } from '@/types';
 
 interface Customer {
   id: string;
-  name: string;
+  name?: string;
+  nombres?: string;
   apellido?: string;
+  apellidos?: string;
   phone?: string;
   rut?: string;
 }
@@ -97,7 +99,7 @@ export default function Sales() {
     try {
       const { data, error } = await supabase
         .from('customers')
-        .select('id, name, apellido, phone, rut')
+        .select('id, name, nombres, apellido, apellidos, phone, rut')
         .order('name');
 
       if (error) throw error;
@@ -105,6 +107,21 @@ export default function Sales() {
     } catch (error) {
       console.error('Error loading customers:', error);
     }
+  };
+
+  const getFullCustomerName = (customer: Customer): string => {
+    // Prioridad 1: Si existe 'name' (nombre completo), usarlo
+    if (customer.name && customer.name.trim()) {
+      return customer.name.trim();
+    }
+    
+    // Prioridad 2: Construir desde 'nombres' y 'apellidos'
+    if (customer.nombres || customer.apellidos) {
+      return `${customer.nombres || ''} ${customer.apellidos || ''}`.trim();
+    }
+    
+    // Fallback: cualquier combinación disponible
+    return `${customer.name || ''} ${customer.apellido || ''}`.trim() || 'Cliente';
   };
 
   const applyFilters = () => {
@@ -152,7 +169,7 @@ export default function Sales() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(order => {
         const customer = customers.find(c => c.id === order.customer_id);
-        const customerName = customer ? `${customer.name} ${customer.apellido || ''}`.toLowerCase() : '';
+        const customerName = customer ? getFullCustomerName(customer).toLowerCase() : '';
         const orderNumber = order.order_number.toString();
         
         return orderNumber.includes(query) || 
@@ -177,7 +194,7 @@ export default function Sales() {
       if (order.customer_id) {
         const customer = customers.find(c => c.id === order.customer_id);
         if (customer) {
-          customerName = `${customer.name} ${customer.apellido || ''}`.trim();
+          customerName = getFullCustomerName(customer);
         }
       } else {
         // Si no está registrado, usar nombre_resumen
@@ -253,7 +270,7 @@ export default function Sales() {
     if (order.customer_id) {
       const customer = customers.find(c => c.id === order.customer_id);
       if (customer) {
-        const customerName = `${customer.name} ${customer.apellido || ''}`.trim();
+        const customerName = getFullCustomerName(customer);
         return (
           <button
             className="text-primary hover:underline text-left"
@@ -451,7 +468,7 @@ export default function Sales() {
                     <SelectItem value="all">Todos los clientes</SelectItem>
                     {customers.map(customer => (
                       <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name} {customer.apellido || ''}
+                        {getFullCustomerName(customer)}
                       </SelectItem>
                     ))}
                   </SelectContent>
