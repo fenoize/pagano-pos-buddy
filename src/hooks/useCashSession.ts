@@ -172,20 +172,21 @@ export function useCashSession() {
 
       console.log('Looking for orders between:', sessionStart, 'and', sessionEnd);
 
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          customers (
-            id,
-            name,
-            nombres,
-            apellidos
-          )
-        `)
-        .gte('created_at', sessionStart)
-        .lte('created_at', sessionEnd)
-        .order('created_at');
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        customers (
+          id,
+          name,
+          nombres,
+          apellidos
+        )
+      `)
+      .gte('created_at', sessionStart)
+      .lte('created_at', sessionEnd)
+      .eq('status', 'Entregado')
+      .order('created_at');
 
       if (ordersError) {
         console.error('Orders error:', ordersError);
