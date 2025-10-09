@@ -303,25 +303,9 @@ export default function NewSale() {
         }
       }
 
-        // Validate user exists in database before creating order - ROBUST
+        // Validate user is authenticated
         if (!user?.id) {
           throw new Error('Usuario no autenticado. Por favor, inicie sesión nuevamente.');
-        }
-
-        // Use .single() to ensure explicit failure if user not found
-        const { data: dbUser, error: userError } = await supabase
-          .from('users')
-          .select('id, active')
-          .eq('id', user.id)
-          .single();
-
-        if (userError) {
-          console.error('Error validating user:', userError);
-          throw new Error('Usuario no encontrado en la base de datos. Contacte al administrador.');
-        }
-
-        if (!dbUser?.active) {
-          throw new Error('Usuario inactivo. No puede crear órdenes.');
         }
 
         // Validate user has required role (Cajero or Administrador)
