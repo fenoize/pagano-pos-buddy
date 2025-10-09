@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CashSession, CashMovement } from '@/types';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { usePermissions } from './usePermissions';
+import { setStaffContext } from '@/lib/dbContext';
 
 export function useCashSession() {
   const [currentSession, setCurrentSession] = useState<CashSession | null>(null);
@@ -24,6 +25,9 @@ export function useCashSession() {
 
     setLoading(true);
     try {
+      // Establecer contexto antes de la query
+      await setStaffContext(user.id);
+      
       const { data, error } = await supabase
         .from('cash_sessions')
         .select('*')
@@ -49,6 +53,9 @@ export function useCashSession() {
     if (!user?.id) throw new Error('User not authenticated');
 
     try {
+      // Establecer contexto antes de las queries
+      await setStaffContext(user.id);
+      
       // Check if there's already an active session
       const { data: existingSession } = await supabase
         .from('cash_sessions')
@@ -84,6 +91,11 @@ export function useCashSession() {
     if (!currentSession) throw new Error('No active session to close');
 
     try {
+      // Establecer contexto antes de la query
+      if (user?.id) {
+        await setStaffContext(user.id);
+      }
+      
       const { error } = await supabase
         .from('cash_sessions')
         .update({
@@ -109,6 +121,11 @@ export function useCashSession() {
     if (!currentSession) throw new Error('No active session');
 
     try {
+      // Establecer contexto antes de la query
+      if (user?.id) {
+        await setStaffContext(user.id);
+      }
+      
       const { data, error } = await supabase
         .from('cash_movements')
         .insert({
@@ -138,6 +155,11 @@ export function useCashSession() {
     console.log('Getting session summary for ID:', sessionToQuery);
 
     try {
+      // Establecer contexto antes de las queries
+      if (user?.id) {
+        await setStaffContext(user.id);
+      }
+      
       // Get session details
       const { data: session, error: sessionError } = await supabase
         .from('cash_sessions')
