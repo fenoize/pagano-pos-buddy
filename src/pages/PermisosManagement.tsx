@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,14 +41,18 @@ export default function PermisosManagement() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changedPermissions, setChangedPermissions] = useState<Set<string>>(new Set());
+  const { user } = useAuthContext();
   const { canManageConfig } = usePermissions();
   const { toast } = useToast();
 
+  // Administradores siempre tienen acceso
+  const hasAccess = user?.role === 'Administrador' || canManageConfig;
+
   useEffect(() => {
-    if (canManageConfig) {
+    if (hasAccess) {
       fetchPermissions();
     }
-  }, [canManageConfig]);
+  }, [hasAccess]);
 
   const fetchPermissions = async () => {
     setLoading(true);
@@ -137,7 +142,7 @@ export default function PermisosManagement() {
     return perm?.description || permission;
   };
 
-  if (!canManageConfig) {
+  if (!hasAccess) {
     return (
       <div className="container mx-auto p-6">
         <Card>
