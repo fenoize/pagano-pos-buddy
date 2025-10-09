@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useCashSession } from '@/hooks/useCashSession';
 import { CashSessionStatus } from '@/components/cash/CashSessionStatus';
 import CustomerSearchStep from '@/components/pos/CustomerSearchStep';
@@ -49,6 +50,7 @@ export default function NewSale() {
   }>({ variants: {}, extras: [], modifiers: [] });
   const { toast } = useToast();
   const { user } = useAuthContext();
+  const { canCreateOrders, loading: permissionsLoading } = usePermissions();
   const { hasActiveSession } = useCashSession();
 
   const subtotal = cartItems.reduce((sum, item) => {
@@ -303,22 +305,12 @@ export default function NewSale() {
         }
       }
 
-        // Validate user is authenticated
+        // Validate user is authenticated and has permissions
         if (!user?.id) {
           throw new Error('Usuario no autenticado. Por favor, inicie sesión nuevamente.');
         }
 
-        // Validate user has required role (Cajero or Administrador)
-        const { data: userRole, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .in('role', ['Cajero', 'Administrador'])
-          .limit(1)
-          .maybeSingle();
-
-        if (roleError || !userRole) {
-          console.error('Error validating user role:', roleError);
+        if (!canCreateOrders) {
           throw new Error('Usuario sin permisos para crear órdenes. Se requiere rol de Cajero o Administrador.');
         }
 
