@@ -8,6 +8,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCashSession } from '@/hooks/useCashSession';
 import { CashSessionStatus } from '@/components/cash/CashSessionStatus';
+import { setStaffContext } from '@/lib/dbContext';
 import CustomerSearchStep from '@/components/pos/CustomerSearchStep';
 import CustomerSearchWidget from '@/components/pos/CustomerSearchWidget';
 import FulfillmentStep, { DeliveryData } from '@/components/pos/FulfillmentStep';
@@ -323,6 +324,14 @@ export default function NewSale() {
         }
 
         const validUserId = user.id;
+
+        // Establecer contexto de staff antes de crear orden
+        try {
+          await setStaffContext(validUserId);
+        } catch (contextError) {
+          console.error('Error estableciendo contexto de staff:', contextError);
+          throw new Error('Error al establecer contexto de usuario');
+        }
 
         // Calculate payment totals by method
         const totals = paymentData.payments.reduce(
