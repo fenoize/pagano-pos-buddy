@@ -36,7 +36,8 @@ export default function NewSale() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
   const [editingItemIndex, setEditingItemIndex] = useState<number | undefined>(undefined);
-  const [runaValue, setRunaValue] = useState(1000);
+  const [runaValue, setRunaValue] = useState(10000); // Valor para ganar 1 runa (acumulación)
+  const [runaRewardValue, setRunaRewardValue] = useState(1300); // Valor de cada runa al canjear
   const [usedRunas, setUsedRunas] = useState(0);
   const [appliedCoupons, setAppliedCoupons] = useState<CouponApplication[]>([]);
   const [manualDiscount, setManualDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number; amount: number } | null>(null);
@@ -62,7 +63,7 @@ export default function NewSale() {
   const couponDiscount = appliedCoupons.reduce((sum, coupon) => 
     sum + Number(coupon.discount_products) + Number(coupon.discount_delivery), 0);
   const manualDiscountAmount = manualDiscount ? manualDiscount.amount : 0;
-  const runasDiscount = usedRunas * runaValue;
+  const runasDiscount = usedRunas * runaRewardValue; // Usar valor de canje
   const totalDiscount = couponDiscount + manualDiscountAmount + runasDiscount;
   const totalBeforeDelivery = Math.max(0, subtotal - totalDiscount);
   const total = totalBeforeDelivery + deliveryFee;
@@ -73,7 +74,7 @@ export default function NewSale() {
 
   const fetchData = async () => {
     try {
-      const [productsRes, runaRes] = await Promise.all([
+      const [productsRes, runaConfigRes] = await Promise.all([
         supabase
           .from('products')
           .select(`
@@ -86,7 +87,7 @@ export default function NewSale() {
             )
           `)
           .eq('active', true),
-        supabase.from('config').select('value').eq('key', 'runa_value').single()
+        supabase.from('config').select('key, value').in('key', ['runa_value', 'runa_reward_value'])
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -96,8 +97,15 @@ export default function NewSale() {
         categories: p.product_categories?.map((pc: any) => pc.categories) || []
       })) as Product[]);
       
-      if (runaRes.data) {
-        setRunaValue(runaRes.data.value as number);
+      // Cargar ambos valores de runas
+      if (runaConfigRes.data) {
+        runaConfigRes.data.forEach((config) => {
+          if (config.key === 'runa_value') {
+            setRunaValue(config.value as number); // Para acumulación
+          } else if (config.key === 'runa_reward_value') {
+            setRunaRewardValue(config.value as number); // Para canje
+          }
+        });
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -410,21 +418,23 @@ export default function NewSale() {
       if (customerId && (totals.runas > 0 || total > 0)) {
         const transactions = [];
         
-        // Runas spent
+        // Runas spent (usar valor de canje)
         if (totals.runas > 0) {
           transactions.push({
             customer_id: customerId,
             order_id: orderResult.id,
             type: 'canje',
-            amount: totals.runas * runaValue,
+            amount: totals.runas * runaRewardValue,
             runas: -totals.runas,
             origen: 'POS'
           });
         }
 
         // Runas earned (from total amount paid, excluding runas discount)
-        const runasDiscountAmount = totals.runas * runaValue;
+        // Usar valor de canje para calcular el descuento aplicado
+        const runasDiscountAmount = totals.runas * runaRewardValue;
         const earnableAmount = total - runasDiscountAmount;
+        // Usar valor de acumulación para calcular cuántas runas se ganan
         const runasEarned = Math.floor(earnableAmount / runaValue);
         if (runasEarned > 0) {
           transactions.push({

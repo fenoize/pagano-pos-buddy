@@ -68,7 +68,7 @@ export default function PaymentModal({
   const [notes, setNotes] = useState('');
   const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [cashDenominations, setCashDenominations] = useState<number[]>([]);
-  const [runaValue, setRunaValue] = useState(1000);
+  const [runaRewardValue, setRunaRewardValue] = useState(1300); // Valor de cada runa al canjear
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
   const { toast } = useToast();
 
@@ -98,31 +98,31 @@ export default function PaymentModal({
     
     // Auto-llenar runas necesarias
     if (currentMethod === 'Runas' && remainingBalance > 0) {
-      const runasNeeded = Math.ceil(remainingBalance / runaValue);
+      const runasNeeded = Math.ceil(remainingBalance / runaRewardValue);
       
       // Usar la cantidad necesaria, sin importar si se pasa
       setCurrentRunas(runasNeeded.toString());
-      setCurrentAmount((runasNeeded * runaValue).toString());
+      setCurrentAmount((runasNeeded * runaRewardValue).toString());
     }
     
     // Limpiar campos para Efectivo (mantener comportamiento actual)
     if (currentMethod === 'Efectivo') {
       setCurrentAmount('');
     }
-  }, [currentMethod, total, payments, runaValue, isOpen]);
+  }, [currentMethod, total, payments, runaRewardValue, isOpen]);
 
   const fetchConfig = async () => {
     try {
       const { data } = await supabase
         .from('config')
         .select('*')
-        .in('key', ['payment_methods', 'runa_value', 'cash_denominations']);
+        .in('key', ['payment_methods', 'runa_reward_value', 'cash_denominations']);
 
       data?.forEach((config) => {
         if (config.key === 'payment_methods') {
           setPaymentMethods(config.value as string[]);
-        } else if (config.key === 'runa_value') {
-          setRunaValue(config.value as number);
+        } else if (config.key === 'runa_reward_value') {
+          setRunaRewardValue(config.value as number);
         } else if (config.key === 'cash_denominations') {
           setCashDenominations(config.value as number[]);
         }
@@ -153,7 +153,7 @@ export default function PaymentModal({
   const getTotalPaid = () => {
     return payments.reduce((sum, payment) => {
       if (payment.method === 'Runas') {
-        return sum + (payment.runas || 0) * runaValue;
+        return sum + (payment.runas || 0) * runaRewardValue;
       }
       return sum + payment.amount;
     }, 0);
@@ -166,7 +166,7 @@ export default function PaymentModal({
   const getCurrentPaymentAmount = () => {
     if (currentMethod === 'Runas') {
       const runasNum = parseFloat(currentRunas) || 0;
-      return runasNum * runaValue;
+      return runasNum * runaRewardValue;
     }
     return parseFloat(currentAmount) || 0;
   };
@@ -177,7 +177,7 @@ export default function PaymentModal({
     const otherPayments = payments.filter(p => p.method !== 'Efectivo');
     const totalOther = otherPayments.reduce((sum, p) => {
       if (p.method === 'Runas') {
-        return sum + (p.runas || 0) * runaValue;
+        return sum + (p.runas || 0) * runaRewardValue;
       }
       return sum + p.amount;
     }, 0);
@@ -236,12 +236,12 @@ export default function PaymentModal({
       }
       
       // Validar que las runas cubran al menos el saldo restante
-      const runasValue = runasNum * runaValue;
+      const runasValue = runasNum * runaRewardValue;
       const remainingBalance = getRemainingBalance();
       if (runasValue < remainingBalance) {
         toast({
           title: "Error",
-          description: `Se necesitan al menos ${Math.ceil(remainingBalance / runaValue)} runas para cubrir el saldo restante`,
+          description: `Se necesitan al menos ${Math.ceil(remainingBalance / runaRewardValue)} runas para cubrir el saldo restante`,
           variant: "destructive"
         });
         return;
@@ -326,11 +326,11 @@ export default function PaymentModal({
           return;
         }
         
-        const runasValue = runasNum * runaValue;
+        const runasValue = runasNum * runaRewardValue;
         if (runasValue < total) {
           toast({
             title: "Error",
-            description: `Se necesitan al menos ${Math.ceil(total / runaValue)} runas para cubrir el total`,
+            description: `Se necesitan al menos ${Math.ceil(total / runaRewardValue)} runas para cubrir el total`,
             variant: "destructive"
           });
           return;
@@ -361,7 +361,7 @@ export default function PaymentModal({
     // Validar total pagado
     const totalPaid = finalPayments.reduce((sum, payment) => {
       if (payment.method === 'Runas') {
-        return sum + (payment.runas || 0) * runaValue;
+        return sum + (payment.runas || 0) * runaRewardValue;
       }
       return sum + payment.amount;
     }, 0);
@@ -572,7 +572,7 @@ export default function PaymentModal({
                           <span className="text-sm font-medium">{payment.method}</span>
                           {payment.method === 'Runas' ? (
                             <span className="text-xs text-muted-foreground">
-                              {payment.runas} runas = {formatPrice((payment.runas || 0) * runaValue)}
+                              {payment.runas} runas = {formatPrice((payment.runas || 0) * runaRewardValue)}
                             </span>
                           ) : (
                             <span className="text-xs text-muted-foreground">
@@ -742,10 +742,10 @@ export default function PaymentModal({
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Valor: 1 runa = {formatPrice(runaValue)}</span>
+                      <span>Valor: 1 runa = {formatPrice(runaRewardValue)}</span>
                       {getRemainingBalance() > 0 && (
                         <span className="text-primary font-medium">
-                          Se necesitan: {Math.ceil(getRemainingBalance() / runaValue)} runas
+                          Se necesitan: {Math.ceil(getRemainingBalance() / runaRewardValue)} runas
                         </span>
                       )}
                     </div>
@@ -762,12 +762,12 @@ export default function PaymentModal({
                         const val = parseInt(e.target.value) || 0;
                         if (val <= (customer.cantidad_runas || 0)) {
                           setCurrentRunas(e.target.value);
-                          setCurrentAmount((val * runaValue).toString());
+                          setCurrentAmount((val * runaRewardValue).toString());
                         }
                       }}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Valor total: {formatPrice(parseInt(currentRunas || '0') * runaValue)}
+                      Valor total: {formatPrice(parseInt(currentRunas || '0') * runaRewardValue)}
                     </p>
                   </div>
                 </div>
