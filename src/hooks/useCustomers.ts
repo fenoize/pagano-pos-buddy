@@ -93,18 +93,8 @@ export function useCustomers() {
 
       const result = await response.json();
 
-      // 4. Calcular saldo real de runas para cada cliente
-      const customersWithRunas = await Promise.all(
-        (result.data || []).map(async (customer: any) => {
-          const runasSaldo = await calculateRunasSaldo(customer.id);
-          return {
-            ...customer,
-            cantidad_runas: runasSaldo
-          };
-        })
-      );
-
-      setCustomers(customersWithRunas);
+      // 4. Los clientes ya vienen con cantidad_runas desde el backend
+      setCustomers(result.data || []);
       setTotalCount(result.count || 0);
       
     } catch (error) {
@@ -119,21 +109,6 @@ export function useCustomers() {
     }
   };
 
-  const calculateRunasSaldo = async (customerId: string): Promise<number> => {
-    try {
-      const { data, error } = await supabase
-        .from('runas_transactions')
-        .select('runas')
-        .eq('customer_id', customerId);
-
-      if (error) throw error;
-
-      return data?.reduce((total, transaction) => total + transaction.runas, 0) || 0;
-    } catch (error) {
-      console.error('Error calculating runas saldo:', error);
-      return 0;
-    }
-  };
 
   const getCustomerById = async (id: string): Promise<Customer | null> => {
     if (!canViewCustomers) return null;
@@ -163,15 +138,7 @@ export function useCustomers() {
 
       if (error) throw error;
 
-      if (data) {
-        const runasSaldo = await calculateRunasSaldo(data.id);
-        return {
-          ...data,
-          cantidad_runas: runasSaldo
-        };
-      }
-
-      return null;
+      return data || null;
     } catch (error) {
       console.error('Error fetching customer by id:', error);
       return null;
