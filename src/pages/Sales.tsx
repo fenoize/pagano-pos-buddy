@@ -32,7 +32,9 @@ interface Customer {
 
 interface SalesFilters {
   startDate?: Date;
+  startTime?: string;
   endDate?: Date;
+  endTime?: string;
   minAmount?: number;
   maxAmount?: number;
   customerId?: string;
@@ -127,17 +129,29 @@ export default function Sales() {
   const applyFilters = () => {
     let filtered = [...orders];
 
-    // Filter by date range
+    // Filter by date range with time
     if (filters.startDate) {
+      const startDateTime = new Date(filters.startDate);
+      if (filters.startTime) {
+        const [hours, minutes] = filters.startTime.split(':');
+        startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      } else {
+        startDateTime.setHours(0, 0, 0, 0);
+      }
       filtered = filtered.filter(order => 
-        new Date(order.created_at) >= filters.startDate!
+        new Date(order.created_at) >= startDateTime
       );
     }
     if (filters.endDate) {
-      const endOfDay = new Date(filters.endDate);
-      endOfDay.setHours(23, 59, 59, 999);
+      const endDateTime = new Date(filters.endDate);
+      if (filters.endTime) {
+        const [hours, minutes] = filters.endTime.split(':');
+        endDateTime.setHours(parseInt(hours), parseInt(minutes), 59, 999);
+      } else {
+        endDateTime.setHours(23, 59, 59, 999);
+      }
       filtered = filtered.filter(order => 
-        new Date(order.created_at) <= endOfDay
+        new Date(order.created_at) <= endDateTime
       );
     }
 
@@ -404,6 +418,12 @@ export default function Sales() {
                     />
                   </PopoverContent>
                 </Popover>
+                <Input
+                  type="time"
+                  value={filters.startTime || ''}
+                  onChange={(e) => setFilters({...filters, startTime: e.target.value})}
+                  placeholder="00:00"
+                />
               </div>
 
               <div className="space-y-2">
@@ -434,6 +454,12 @@ export default function Sales() {
                     />
                   </PopoverContent>
                 </Popover>
+                <Input
+                  type="time"
+                  value={filters.endTime || ''}
+                  onChange={(e) => setFilters({...filters, endTime: e.target.value})}
+                  placeholder="23:59"
+                />
               </div>
 
               {/* Amount Range */}
