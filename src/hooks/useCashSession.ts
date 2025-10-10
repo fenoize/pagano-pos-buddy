@@ -91,24 +91,41 @@ export function useCashSession() {
     if (!currentSession) throw new Error('No active session to close');
 
     try {
+      console.log('🔒 Cerrando sesión:', {
+        sessionId: currentSession.id,
+        closingCash,
+        userId: user?.id
+      });
+
       // Establecer contexto antes de la query
       if (user?.id) {
         await setStaffContext(user.id);
       }
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('cash_sessions')
         .update({
           closed_at: new Date().toISOString(),
           closing_cash: closingCash
         })
-        .eq('id', currentSession.id);
+        .eq('id', currentSession.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error de Supabase al cerrar sesión:', error);
+        throw new Error(`Error al cerrar sesión: ${error.message}`);
+      }
 
+      // Verificar que se actualizó la sesión
+      if (!data || data.length === 0) {
+        console.error('❌ No se encontró la sesión para actualizar');
+        throw new Error('No se pudo actualizar la sesión. Verifica que exista y tengas permisos.');
+      }
+
+      console.log('✅ Sesión cerrada exitosamente:', data[0]);
       setCurrentSession(null);
     } catch (error) {
-      console.error('Error closing session:', error);
+      console.error('❌ Error closing session:', error);
       throw error;
     }
   };

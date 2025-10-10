@@ -57,11 +57,28 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
           break;
         
         case 'close':
-          await closeSession(amountValue);
-          toast({
-            title: "Turno cerrado",
-            description: "El turno ha sido cerrado correctamente."
-          });
+          try {
+            await closeSession(amountValue);
+            
+            // Solo cerrar modal y mostrar éxito si llegamos aquí
+            toast({
+              title: "✅ Turno cerrado",
+              description: "El turno ha sido cerrado correctamente."
+            });
+            
+            setAmount('');
+            setNote('');
+            onClose();
+          } catch (error: any) {
+            console.error('Error cerrando turno:', error);
+            toast({
+              title: "❌ Error al cerrar turno",
+              description: error.message || "No se pudo cerrar el turno. Intenta nuevamente.",
+              variant: "destructive"
+            });
+            setLoading(false);
+            return; // Detener ejecución y NO cerrar el modal
+          }
           break;
         
         case 'movement':
