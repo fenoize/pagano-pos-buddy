@@ -125,6 +125,11 @@ export function useKitchenOrders() {
       } as Order;
 
       setOrders(prev => {
+        // Si el pedido está Entregado o Cancelado, removerlo del KDS
+        if (orderWithItems.status === 'Entregado' || orderWithItems.status === 'Cancelado') {
+          return prev.filter(order => order.id !== orderId);
+        }
+        
         const existingIndex = prev.findIndex(order => order.id === orderId);
         if (existingIndex >= 0) {
           // Update existing order
@@ -132,7 +137,7 @@ export function useKitchenOrders() {
           updated[existingIndex] = orderWithItems;
           return updated;
         } else {
-          // Add new order
+          // Add new order (solo si NO está Entregado/Cancelado)
           return [...prev, orderWithItems];
         }
       });
