@@ -71,7 +71,8 @@ export function useKitchenOrders() {
             updated_at
           )
         `)
-        .not('status', 'in', '("Entregado","Cancelado")')
+        .neq('status', 'Entregado')
+        .neq('status', 'Cancelado')
         .order('created_at', { ascending: true });
 
       if (error) throw error;
