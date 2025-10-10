@@ -47,7 +47,7 @@ interface ProductGridProps {
 }
 
 export default function ProductGrid({ products, onProductClick, onDataPreloaded }: ProductGridProps) {
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [productVariants, setProductVariants] = useState<Record<string, ProductVariantOption[]>>({});
@@ -55,17 +55,33 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
   const [productModifiers, setProductModifiers] = useState<ProductModifier[]>([]);
 
   useEffect(() => {
-    // Get unique categories from products
-    const uniqueCategories = [...new Set(products.map(p => p.category))];
-    setCategories(['all', ...uniqueCategories]);
-    
-    if (uniqueCategories.length > 0) {
-      setActiveCategory(uniqueCategories[0]);
-    }
-
+    // Load categories from database
+    fetchCategories();
     // Preload all data for products
     preloadAllData();
   }, [products]);
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name')
+        .eq('active', true)
+        .order('name');
+
+      if (error) throw error;
+      
+      // Set categories with 'all' option first
+      setCategories(data || []);
+      
+      // Set first category as active if available
+      if (data && data.length > 0) {
+        setActiveCategory(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   const preloadAllData = async () => {
     if (products.length === 0) return;
@@ -168,14 +184,16 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
     if (searchTerm.trim().length >= 2) {
       const searchLower = searchTerm.toLowerCase().trim();
       filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchLower) ||
-        product.category.toLowerCase().includes(searchLower)
+        product.name.toLowerCase().includes(searchLower)
       );
     }
 
     // Filtrar por categoría solo si no hay búsqueda activa
     if (searchTerm.trim().length < 2 && activeCategory !== 'all') {
-      filtered = filtered.filter(p => p.category === activeCategory);
+      // Filter by category ID - check if product has this category assigned
+      filtered = filtered.filter(p => 
+        p.categories?.some(cat => cat.id === activeCategory)
+      );
     }
 
     return filtered;
@@ -193,16 +211,10 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
     setSearchTerm('');
   };
 
-  const getCategoryDisplayName = (category: string) => {
-    const categoryNames: Record<string, string> = {
-      'hamburguesas': 'Hamburguesas',
-      'papas': 'Papas Fritas',
-      'bebidas': 'Bebidas',
-      'sides': 'Acompañamientos',
-      'otros': 'Otros',
-      'all': 'Todos'
-    };
-    return categoryNames[category] || category;
+  const getCategoryDisplayName = (categoryId: string) => {
+    if (categoryId === 'all') return 'Todos';
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.name || categoryId;
   };
 
   if (products.length === 0) {
@@ -250,12 +262,15 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
       )}
 
       {/* Category Filters - Solo mostrar si no hay búsqueda activa */}
-      {searchTerm.trim().length < 2 && (
+      {searchTerm.trim().length < 2 && categories.length > 0 && (
         <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${Math.min(categories.length + 1, 6)}, minmax(0, 1fr))` }}>
+            <TabsTrigger value="all" className="text-sm">
+              Todos
+            </TabsTrigger>
             {categories.map((category) => (
-              <TabsTrigger key={category} value={category} className="text-sm">
-                {getCategoryDisplayName(category)}
+              <TabsTrigger key={category.id} value={category.id} className="text-sm">
+                {category.name}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -295,10 +310,16 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
                   {product.name}
                 </h3>
                 
-                {/* Category */}
-                <Badge variant="secondary" className="text-xs w-fit">
-                  {getCategoryDisplayName(product.category)}
-                </Badge>
+                {/* Categories */}
+                {product.categories && product.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {product.categories.map((cat: any) => (
+                      <Badge key={cat.id} variant="secondary" className="text-xs">
+                        {cat.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 
                 {/* Price */}
                 <div>

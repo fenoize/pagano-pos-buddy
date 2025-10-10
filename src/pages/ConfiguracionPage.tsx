@@ -9,6 +9,7 @@ import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManage
 import { FidelizationConfig } from '@/components/config/FidelizationConfig';
 import { PaymentMethodsConfig } from '@/components/config/PaymentMethodsConfig';
 import { PWAConfig } from '@/components/config/PWAConfig';
+import { CategoryConfig } from '@/components/config/CategoryConfig';
 import CouponsManagement from './CouponsManagement';
 
 export default function ConfiguracionPage() {
@@ -135,17 +136,7 @@ export default function ConfiguracionPage() {
           </TabsContent>
 
           <TabsContent value="general" className="mt-0 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuración General</CardTitle>
-                <CardDescription>
-                  Ajustes generales del sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">En desarrollo...</p>
-              </CardContent>
-            </Card>
+            <CategoryConfig />
           </TabsContent>
         </div>
       </Tabs>
