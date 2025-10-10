@@ -505,7 +505,6 @@ export function useCustomers() {
     deleteCustomer,
     deleteCustomerPermanently,
     searchCustomers,
-    calculateRunasSaldo,
     exportCustomersCSV
   };
 }
