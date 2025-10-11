@@ -118,7 +118,12 @@ export function useKitchenOrders() {
         .eq('id', orderId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Si el pedido no existe o no se puede acceder, removerlo del estado local
+        console.error('Error fetching order:', error);
+        setOrders(prev => prev.filter(order => order.id !== orderId));
+        return;
+      }
 
       const orderWithItems = {
         ...data,
@@ -128,27 +133,44 @@ export function useKitchenOrders() {
       setOrders(prev => {
         // Si el pedido está Entregado o Cancelado, removerlo del KDS
         if (orderWithItems.status === 'Entregado' || orderWithItems.status === 'Cancelado') {
+          console.log(`[KDS] Removing order #${orderWithItems.order_number} from KDS (status: ${orderWithItems.status})`);
           return prev.filter(order => order.id !== orderId);
         }
         
         const existingIndex = prev.findIndex(order => order.id === orderId);
         if (existingIndex >= 0) {
           // Update existing order
+          console.log(`[KDS] Updating order #${orderWithItems.order_number} (status: ${orderWithItems.status})`);
           const updated = [...prev];
           updated[existingIndex] = orderWithItems;
           return updated;
         } else {
           // Add new order (solo si NO está Entregado/Cancelado)
+          console.log(`[KDS] Adding new order #${orderWithItems.order_number} to KDS (status: ${orderWithItems.status})`);
           return [...prev, orderWithItems];
         }
       });
     } catch (error) {
       console.error('Error fetching order:', error);
+      // En caso de error, remover del estado local por seguridad
+      setOrders(prev => prev.filter(order => order.id !== orderId));
     }
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    console.log(`[KDS] Updating order ${orderId} to status: ${newStatus}`);
+    
     try {
+      // Obtener info del pedido para notificaciones
+      const order = orders.find(o => o.id === orderId);
+      
+      // PRIMERO: Si el nuevo estado es Entregado/Cancelado, remover inmediatamente del estado local
+      if (['Entregado', 'Cancelado'].includes(newStatus)) {
+        console.log(`[KDS] Removing order from local state immediately (status: ${newStatus})`);
+        setOrders(prev => prev.filter(order => order.id !== orderId));
+      }
+
+      // SEGUNDO: Actualizar en la base de datos
       const { error } = await supabase
         .from('orders')
         .update({ 
@@ -159,20 +181,31 @@ export function useKitchenOrders() {
 
       if (error) throw error;
 
-      // Update local state
-      setOrders(prev => prev.map(order => 
-        order.id === orderId 
-          ? { ...order, status: newStatus, updated_at: new Date().toISOString() }
-          : order
-      ));
+      // TERCERO: Si NO es Entregado/Cancelado, actualizar estado local
+      if (!['Entregado', 'Cancelado'].includes(newStatus)) {
+        setOrders(prev => prev.map(order => 
+          order.id === orderId 
+            ? { ...order, status: newStatus, updated_at: new Date().toISOString() }
+            : order
+        ));
+      }
 
-      // Show notification for status changes
-      const order = orders.find(o => o.id === orderId);
+      // Mostrar notificación
       if (order) {
         if (newStatus === 'Listo') {
           toast({
             title: "¡Pedido Listo!",
             description: `Pedido #${order.order_number} está listo para ${order.fulfillment}`,
+          });
+        } else if (newStatus === 'Entregado') {
+          toast({
+            title: "¡Pedido Entregado!",
+            description: `Pedido #${order.order_number} ha sido entregado`,
+          });
+        } else if (newStatus === 'Cancelado') {
+          toast({
+            title: "Pedido Cancelado",
+            description: `Pedido #${order.order_number} ha sido cancelado`,
           });
         } else {
           toast({
@@ -182,11 +215,6 @@ export function useKitchenOrders() {
         }
       }
 
-      // Remove from kitchen view if delivered or cancelled
-      if (['Entregado', 'Cancelado'].includes(newStatus)) {
-        setOrders(prev => prev.filter(order => order.id !== orderId));
-      }
-
     } catch (error) {
       console.error('Error updating order status:', error);
       toast({
@@ -194,6 +222,8 @@ export function useKitchenOrders() {
         description: "No se pudo actualizar el estado del pedido",
         variant: "destructive"
       });
+      // Si hay error, recargar desde la BD para tener datos consistentes
+      fetchOrders();
     }
   };
 
