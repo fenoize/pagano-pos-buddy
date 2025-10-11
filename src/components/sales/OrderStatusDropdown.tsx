@@ -88,32 +88,27 @@ export const OrderStatusDropdown: React.FC<OrderStatusDropdownProps> = ({
     setIsOpen(false);
     
     try {
+      console.log(`[OrderStatusDropdown] Updating order ${orderId} to status: ${newStatus}`);
+      
       const { data, error } = await supabase
         .from('orders')
         .update({ 
-          status: newStatus as any, // Cast to avoid enum type issues
+          status: newStatus as any,
           updated_at: new Date().toISOString()
         })
         .eq('id', orderId)
-        .eq('updated_at', updatedAt) // Optimistic concurrency check
         .select('status, updated_at')
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          toast.error('El pedido fue actualizado por otro usuario. Recarga e intenta de nuevo.');
-          return;
-        }
-        throw error;
-      }
+      if (error) throw error;
 
+      // El realtime se encargará de actualizar el estado
       onStatusChange(data.status, data.updated_at);
       toast.success('Estado actualizado');
       
     } catch (error: any) {
-      console.error('Error updating order status:', error);
+      console.error('[OrderStatusDropdown] Error updating order status:', error);
       
-      // Handle specific error messages
       if (error.message?.includes('permission')) {
         toast.error('No tienes permisos para cambiar este estado.');
       } else if (error.message?.includes('transition')) {

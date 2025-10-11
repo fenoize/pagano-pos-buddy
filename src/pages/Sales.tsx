@@ -111,6 +111,49 @@ export default function Sales() {
     }
   };
 
+  // Suscripción realtime a cambios en orders
+  useEffect(() => {
+    console.log('[Sales] Setting up realtime subscription');
+    
+    const channel = supabase
+      .channel('sales-orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders'
+        },
+        (payload) => {
+          console.log('[Sales] Realtime event:', payload.eventType, payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newOrder = payload.new as Order;
+            setOrders(prev => [newOrder, ...prev]);
+            console.log(`[Sales] New order added: #${newOrder.order_number}`);
+          } 
+          else if (payload.eventType === 'UPDATE') {
+            const updatedOrder = payload.new as Order;
+            setOrders(prev => prev.map(order => 
+              order.id === updatedOrder.id ? updatedOrder : order
+            ));
+            console.log(`[Sales] Order updated: #${updatedOrder.order_number}, status: ${updatedOrder.status}`);
+          } 
+          else if (payload.eventType === 'DELETE') {
+            const deletedOrder = payload.old as Order;
+            setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+            console.log(`[Sales] Order deleted: #${deletedOrder.order_number}`);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('[Sales] Cleaning up realtime subscription');
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const getFullCustomerName = (customer: Customer): string => {
     // Prioridad 1: Si existe 'name' (nombre completo), usarlo
     if (customer.name && customer.name.trim()) {
@@ -270,13 +313,9 @@ export default function Sales() {
   };
 
   const handleStatusChange = (orderId: string, newStatus: string, newUpdatedAt: string) => {
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { ...order, status: newStatus as any, updated_at: newUpdatedAt }
-          : order
-      )
-    );
+    // El realtime ya actualiza el estado automáticamente
+    // Esta función solo se mantiene por compatibilidad con OrderStatusDropdown
+    console.log(`[Sales] Status change callback: ${orderId} -> ${newStatus}`);
   };
 
   const getCustomerInfo = (order: Order) => {
