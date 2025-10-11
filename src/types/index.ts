@@ -55,6 +55,8 @@ export interface Category {
   name: string;
   description?: string;
   active: boolean;
+  display_order: number;
+  is_default: boolean;
   created_at?: string;
   updated_at?: string;
 }

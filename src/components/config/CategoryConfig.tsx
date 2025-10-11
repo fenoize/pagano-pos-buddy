@@ -8,16 +8,138 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, Grip } from 'lucide-react';
+import { Plus, Edit, Trash2, Grip, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { usePOSConfig } from '@/hooks/usePOSConfig';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Category {
   id: string;
   name: string;
   description?: string;
   active: boolean;
+  display_order: number;
+  is_default: boolean;
   created_at?: string;
   updated_at?: string;
+}
+
+// Sortable Category Item Component
+function SortableCategoryItem({ 
+  category, 
+  onEdit, 
+  onDelete, 
+  onToggleActive,
+  onSetDefault
+}: { 
+  category: Category;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleActive: () => void;
+  onSetDefault: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card ref={setNodeRef} style={style} className="overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          <div 
+            className="flex items-center justify-center text-muted-foreground cursor-grab active:cursor-grabbing"
+            {...attributes}
+            {...listeners}
+          >
+            <Grip className="w-5 h-5" />
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h4 className="font-medium truncate">{category.name}</h4>
+              <Badge variant={category.active ? "default" : "secondary"}>
+                {category.active ? 'Activa' : 'Inactiva'}
+              </Badge>
+              {category.is_default && (
+                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                  <Star className="w-3 h-3 mr-1 fill-yellow-600" />
+                  Predeterminada
+                </Badge>
+              )}
+            </div>
+            {category.description && (
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+                {category.description}
+              </p>
+            )}
+          </div>
+
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onSetDefault}
+              title={category.is_default ? 'Es la predeterminada' : 'Establecer como predeterminada'}
+              disabled={category.is_default}
+            >
+              <Star className={`w-4 h-4 ${category.is_default ? 'fill-yellow-600 text-yellow-600' : ''}`} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleActive}
+              title={category.active ? 'Desactivar' : 'Activar'}
+            >
+              <Switch checked={category.active} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onEdit}
+              title="Editar"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              title="Eliminar"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function CategoryConfig() {
@@ -30,6 +152,14 @@ export function CategoryConfig() {
     active: true
   });
   const { toast } = useToast();
+  const { config, updateGridColumns } = usePOSConfig();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     fetchCategories();
@@ -40,7 +170,7 @@ export function CategoryConfig() {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
-        .order('name');
+        .order('display_order', { ascending: true });
 
       if (error) throw error;
       setCategories(data || []);
@@ -125,9 +255,15 @@ export function CategoryConfig() {
 
   const toggleActive = async (category: Category) => {
     try {
+      // Si se desactiva la categoría por defecto, quitarle el flag
+      const updates: any = { active: !category.active };
+      if (category.is_default && !category.active) {
+        updates.is_default = false;
+      }
+
       const { error } = await supabase
         .from('categories')
-        .update({ active: !category.active })
+        .update(updates)
         .eq('id', category.id);
 
       if (error) throw error;
@@ -143,6 +279,76 @@ export function CategoryConfig() {
         description: error.message || "No se pudo actualizar la categoría",
         variant: "destructive"
       });
+    }
+  };
+
+  const setDefaultCategory = async (categoryId: string) => {
+    try {
+      // Desmarcar todas las demás como default
+      await supabase
+        .from('categories')
+        .update({ is_default: false })
+        .neq('id', categoryId);
+      
+      // Marcar la seleccionada como default
+      const { error } = await supabase
+        .from('categories')
+        .update({ is_default: true })
+        .eq('id', categoryId);
+
+      if (error) throw error;
+      
+      fetchCategories();
+      toast({
+        title: "Éxito",
+        description: "Categoría predeterminada actualizada"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar la categoría predeterminada",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+    
+    const oldIndex = categories.findIndex(c => c.id === active.id);
+    const newIndex = categories.findIndex(c => c.id === over.id);
+    
+    const newOrder = arrayMove(categories, oldIndex, newIndex);
+    setCategories(newOrder);
+    
+    // Actualizar display_order en base de datos
+    try {
+      const updates = newOrder.map((cat, index) => ({
+        id: cat.id,
+        display_order: index
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from('categories')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id);
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Orden de categorías actualizado"
+      });
+    } catch (error: any) {
+      console.error('Error updating category order:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el orden",
+        variant: "destructive"
+      });
+      fetchCategories(); // Revert on error
     }
   };
 
@@ -171,15 +377,47 @@ export function CategoryConfig() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-start">
+    <div className="space-y-4">
+      {/* Configuración de Visualización del POS */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Configuración de Visualización del POS</CardTitle>
+          <CardDescription>
+            Define cuántas columnas se mostrarán en la grilla de productos
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <div>
-            <CardTitle>Categorías del Sistema</CardTitle>
-            <CardDescription>
-              Gestiona las categorías que se mostrarán en el POS y otros módulos
-            </CardDescription>
+            <Label>Columnas en grilla de productos</Label>
+            <div className="flex gap-2 mt-2">
+              {[3, 4, 5, 6].map(num => (
+                <Button
+                  key={num}
+                  variant={config.gridColumns === num ? "default" : "outline"}
+                  onClick={() => updateGridColumns(num)}
+                  className="flex-1"
+                >
+                  {num}
+                </Button>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Actualmente: <strong>{config.gridColumns} columnas</strong>
+            </p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Gestión de Categorías */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle>Categorías del Sistema</CardTitle>
+              <CardDescription>
+                Arrastra para reordenar, marca la predeterminada con ⭐
+              </CardDescription>
+            </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={openNewDialog}>
@@ -245,71 +483,42 @@ export function CategoryConfig() {
             <p className="text-sm mt-2">Crea la primera categoría para comenzar.</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {categories.map((category) => (
-              <Card key={category.id} className="overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center text-muted-foreground">
-                      <Grip className="w-5 h-5" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium truncate">{category.name}</h4>
-                        <Badge variant={category.active ? "default" : "secondary"}>
-                          {category.active ? 'Activa' : 'Inactiva'}
-                        </Badge>
-                      </div>
-                      {category.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
-                          {category.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleActive(category)}
-                        title={category.active ? 'Desactivar' : 'Activar'}
-                      >
-                        <Switch checked={category.active} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(category)}
-                        title="Editar"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteCategory(category)}
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={categories.map(c => c.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2">
+                {categories.map((category) => (
+                  <SortableCategoryItem
+                    key={category.id}
+                    category={category}
+                    onEdit={() => openEditDialog(category)}
+                    onDelete={() => deleteCategory(category)}
+                    onToggleActive={() => toggleActive(category)}
+                    onSetDefault={() => setDefaultCategory(category.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
 
         <div className="mt-6 p-4 bg-muted/50 rounded-lg">
           <h4 className="font-medium mb-2 text-sm">💡 Información</h4>
           <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• Las categorías activas se mostrarán en el POS como tabs de filtrado</li>
-            <li>• Puedes activar/desactivar categorías sin eliminarlas</li>
+            <li>• Arrastra las categorías para cambiar su orden en el POS</li>
+            <li>• La categoría con ⭐ será la seleccionada al abrir "Nueva Venta"</li>
+            <li>• Las categorías activas se muestran en el POS como tabs de filtrado</li>
             <li>• Los productos se asocian a estas categorías desde el módulo de Productos</li>
           </ul>
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }

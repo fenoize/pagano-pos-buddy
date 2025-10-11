@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePOSConfig } from '@/hooks/usePOSConfig';
 
 interface ProductExtra {
   id: string;
@@ -47,12 +48,13 @@ interface ProductGridProps {
 }
 
 export default function ProductGrid({ products, onProductClick, onDataPreloaded }: ProductGridProps) {
-  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; is_default?: boolean }>>([]);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [productVariants, setProductVariants] = useState<Record<string, ProductVariantOption[]>>({});
   const [productExtras, setProductExtras] = useState<ProductExtra[]>([]);
   const [productModifiers, setProductModifiers] = useState<ProductModifier[]>([]);
+  const { config } = usePOSConfig();
 
   useEffect(() => {
     // Load categories from database
@@ -65,17 +67,20 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
     try {
       const { data, error } = await supabase
         .from('categories')
-        .select('id, name')
+        .select('id, name, is_default')
         .eq('active', true)
-        .order('name');
+        .order('display_order', { ascending: true });
 
       if (error) throw error;
       
-      // Set categories with 'all' option first
       setCategories(data || []);
       
-      // Set first category as active if available
-      if (data && data.length > 0) {
+      // Buscar la categoría marcada como default
+      const defaultCategory = data?.find(cat => cat.is_default);
+      
+      if (defaultCategory) {
+        setActiveCategory(defaultCategory.id);
+      } else if (data && data.length > 0) {
         setActiveCategory(data[0].id);
       }
     } catch (error) {
@@ -278,7 +283,12 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
       )}
 
       {/* Products Grid */}
-      <div className="pos-grid">
+      <div 
+        className="grid gap-4"
+        style={{
+          gridTemplateColumns: `repeat(${config.gridColumns}, minmax(0, 1fr))`
+        }}
+      >
         {filteredProducts.map((product) => (
           <Card 
             key={product.id} 

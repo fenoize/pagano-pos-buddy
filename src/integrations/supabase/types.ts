@@ -231,7 +231,9 @@ export type Database = {
           active: boolean | null
           created_at: string | null
           description: string | null
+          display_order: number
           id: string
+          is_default: boolean
           name: string
           updated_at: string | null
         }
@@ -239,7 +241,9 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           description?: string | null
+          display_order?: number
           id?: string
+          is_default?: boolean
           name: string
           updated_at?: string | null
         }
@@ -247,7 +251,9 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           description?: string | null
+          display_order?: number
           id?: string
+          is_default?: boolean
           name?: string
           updated_at?: string | null
         }
