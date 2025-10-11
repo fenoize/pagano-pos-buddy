@@ -328,11 +328,6 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
                     {formatPrice(getMinPrice(product))}
                   </div>
                 </div>
-
-                {/* Quick actions hint */}
-                <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-                  Toca para personalizar
-                </div>
               </div>
             </CardContent>
           </Card>
