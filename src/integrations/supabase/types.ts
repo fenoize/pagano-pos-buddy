@@ -1860,6 +1860,187 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          purchase_id: string | null
+          qty: number
+          raw_material_id: string | null
+          total_cost: number | null
+          unit_cost: number
+          uom_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          purchase_id?: string | null
+          qty: number
+          raw_material_id?: string | null
+          total_cost?: number | null
+          unit_cost: number
+          uom_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          purchase_id?: string | null
+          qty?: number
+          raw_material_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number
+          uom_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_items_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_items_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_items_uom_id_fkey"
+            columns: ["uom_id"]
+            isOneToOne: false
+            referencedRelation: "unit_of_measures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_order_status_history: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          new_status: Database["public"]["Enums"]["po_status"]
+          notes: string | null
+          old_status: Database["public"]["Enums"]["po_status"] | null
+          purchase_id: string | null
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_status: Database["public"]["Enums"]["po_status"]
+          notes?: string | null
+          old_status?: Database["public"]["Enums"]["po_status"] | null
+          purchase_id?: string | null
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_status?: Database["public"]["Enums"]["po_status"]
+          notes?: string | null
+          old_status?: Database["public"]["Enums"]["po_status"] | null
+          purchase_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_status_history_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          po_number: string | null
+          status: Database["public"]["Enums"]["po_status"]
+          subtotal: number | null
+          supplier_id: string | null
+          tax: number | null
+          total: number | null
+          updated_at: string | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          po_number?: string | null
+          status?: Database["public"]["Enums"]["po_status"]
+          subtotal?: number | null
+          supplier_id?: string | null
+          tax?: number | null
+          total?: number | null
+          updated_at?: string | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          po_number?: string | null
+          status?: Database["public"]["Enums"]["po_status"]
+          subtotal?: number | null
+          supplier_id?: string | null
+          tax?: number | null
+          total?: number | null
+          updated_at?: string | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pwa_config: {
         Row: {
           app_description: string
@@ -1904,6 +2085,115 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      raw_materials: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          min_stock: number | null
+          name: string
+          uom_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          min_stock?: number | null
+          name: string
+          uom_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          min_stock?: number | null
+          name?: string
+          uom_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_materials_uom_id_fkey"
+            columns: ["uom_id"]
+            isOneToOne: false
+            referencedRelation: "unit_of_measures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipes: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          product_id: string | null
+          qty_required: number
+          raw_material_id: string | null
+          uom_id: string | null
+          updated_at: string | null
+          variant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          qty_required: number
+          raw_material_id?: string | null
+          uom_id?: string | null
+          updated_at?: string | null
+          variant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          qty_required?: number
+          raw_material_id?: string | null
+          uom_id?: string | null
+          updated_at?: string | null
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_uom_id_fkey"
+            columns: ["uom_id"]
+            isOneToOne: false
+            referencedRelation: "unit_of_measures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variant_options"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
@@ -2049,6 +2339,265 @@ export type Database = {
           },
         ]
       }
+      stock_balances: {
+        Row: {
+          avg_cost: number
+          qty_on_hand: number
+          raw_material_id: string
+          updated_at: string | null
+          warehouse_id: string
+        }
+        Insert: {
+          avg_cost?: number
+          qty_on_hand?: number
+          raw_material_id: string
+          updated_at?: string | null
+          warehouse_id: string
+        }
+        Update: {
+          avg_cost?: number
+          qty_on_hand?: number
+          raw_material_id?: string
+          updated_at?: string | null
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_balances_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_balances_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_lots: {
+        Row: {
+          created_at: string | null
+          exp_date: string | null
+          id: string
+          lot_code: string | null
+          raw_material_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          exp_date?: string | null
+          id?: string
+          lot_code?: string | null
+          raw_material_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          exp_date?: string | null
+          id?: string
+          lot_code?: string | null
+          raw_material_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_lots_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_moves: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          move_type: Database["public"]["Enums"]["stock_move_type"]
+          notes: string | null
+          qty_in: number
+          qty_out: number
+          raw_material_id: string | null
+          related_lot_id: string | null
+          related_order_id: string | null
+          related_purchase_id: string | null
+          unit_cost: number | null
+          uom_id: string | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          move_type: Database["public"]["Enums"]["stock_move_type"]
+          notes?: string | null
+          qty_in?: number
+          qty_out?: number
+          raw_material_id?: string | null
+          related_lot_id?: string | null
+          related_order_id?: string | null
+          related_purchase_id?: string | null
+          unit_cost?: number | null
+          uom_id?: string | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          move_type?: Database["public"]["Enums"]["stock_move_type"]
+          notes?: string | null
+          qty_in?: number
+          qty_out?: number
+          raw_material_id?: string | null
+          related_lot_id?: string | null
+          related_order_id?: string | null
+          related_purchase_id?: string | null
+          unit_cost?: number | null
+          uom_id?: string | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_moves_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_moves_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_moves_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_moves_related_lot_id_fkey"
+            columns: ["related_lot_id"]
+            isOneToOne: false
+            referencedRelation: "stock_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_moves_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_moves_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_moves_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_moves_related_purchase_id_fkey"
+            columns: ["related_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_moves_uom_id_fkey"
+            columns: ["uom_id"]
+            isOneToOne: false
+            referencedRelation: "unit_of_measures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_moves_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          rut: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          rut?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          rut?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      unit_of_measures: {
+        Row: {
+          base_unit: string | null
+          code: string
+          conversion_factor: number | null
+          created_at: string | null
+          id: string
+          is_base: boolean
+          name: string
+        }
+        Insert: {
+          base_unit?: string | null
+          code: string
+          conversion_factor?: number | null
+          created_at?: string | null
+          id?: string
+          is_base?: boolean
+          name: string
+        }
+        Update: {
+          base_unit?: string | null
+          code?: string
+          conversion_factor?: number | null
+          created_at?: string | null
+          id?: string
+          is_base?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2121,6 +2670,42 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
           username?: string
+        }
+        Relationships: []
+      }
+      warehouses: {
+        Row: {
+          address: string | null
+          code: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          notes?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2401,7 +2986,15 @@ export type Database = {
         | "Cancelado"
       origen_movimiento: "POS" | "Web" | "Manual" | "Edición"
       payment_method: "efectivo" | "mp" | "pos" | "mixto" | "aplicacion"
+      po_status: "draft" | "sent" | "received" | "rejected"
       runa_movement_type: "acumulacion" | "canje" | "ajuste" | "promo"
+      stock_move_type:
+        | "purchase"
+        | "sale"
+        | "adjustment"
+        | "transfer_in"
+        | "transfer_out"
+        | "waste"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2551,7 +3144,16 @@ export const Constants = {
       ],
       origen_movimiento: ["POS", "Web", "Manual", "Edición"],
       payment_method: ["efectivo", "mp", "pos", "mixto", "aplicacion"],
+      po_status: ["draft", "sent", "received", "rejected"],
       runa_movement_type: ["acumulacion", "canje", "ajuste", "promo"],
+      stock_move_type: [
+        "purchase",
+        "sale",
+        "adjustment",
+        "transfer_in",
+        "transfer_out",
+        "waste",
+      ],
     },
   },
 } as const
