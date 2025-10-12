@@ -2867,6 +2867,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      convert_uom_to_base: {
+        Args: {
+          p_from_uom_id: string
+          p_quantity: number
+          p_raw_material_id: string
+        }
+        Returns: number
+      }
       create_order_with_context: {
         Args: { p_order_data: Json; p_user_id: string }
         Returns: Json
@@ -2878,6 +2886,14 @@ export type Database = {
           token: string
         }[]
       }
+      ensure_stock_balance: {
+        Args: {
+          p_lot_id?: string
+          p_raw_material_id: string
+          p_warehouse_id: string
+        }
+        Returns: string
+      }
       generate_simple_hash: {
         Args: { password: string }
         Returns: string
@@ -2888,6 +2904,10 @@ export type Database = {
       }
       get_current_staff_user_id: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_material_base_uom: {
+        Args: { p_raw_material_id: string }
         Returns: string
       }
       has_permission: {
