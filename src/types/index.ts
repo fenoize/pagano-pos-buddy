@@ -91,38 +91,83 @@ export type OrigenMovimiento = 'POS' | 'Web' | 'Manual' | 'Edición';
 export type CouponType = 'percent' | 'fixed_cart' | 'fixed_product';
 export type DeliveryMode = 'free' | 'fixed' | 'percent';
 
-// Inventario y Recetas - Estructura actual de la BD
+// Inventario y Recetas - Nueva estructura (Fase 1 completada)
+
+// Unidades de medida (UOM)
+export interface UnitOfMeasure {
+  id: string;
+  code: string;
+  name: string;
+  abbreviation: string;
+  is_base_unit: boolean;
+  conversion_factor?: number;
+  base_unit_id?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Relación
+  base_unit?: UnitOfMeasure;
+}
+
+// Materias primas
 export interface RawMaterial {
   id: string;
   code?: string;
   name: string;
   description?: string;
-  uom_id?: string;
+  base_uom_id?: string;
+  conversion_to_base?: number;
   min_stock?: number;
+  last_cost?: number;
+  avg_cost?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Relación
+  base_uom?: UnitOfMeasure;
 }
 
-export interface InventoryRecipe {
+// Recetas (cabecera)
+export interface Recipe {
   id: string;
-  product_id?: string;
-  variant_id?: string;
-  raw_material_id?: string;
-  qty_required: number;
-  uom_id?: string;
+  product_id: string;
+  category_variant_id?: string;
+  name: string;
+  description?: string;
+  yield_quantity: number;
+  yield_uom_id?: string;
+  preparation_notes?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Relaciones
+  product?: { name: string; id: string };
+  category_variant?: { name: string; id: string };
+  yield_uom?: UnitOfMeasure;
+  ingredients?: RecipeIngredient[];
+}
+
+// Ingredientes de recetas (detalle)
+export interface RecipeIngredient {
+  id: string;
+  recipe_id: string;
+  raw_material_id: string;
+  quantity_per_unit: number;
+  uom_id: string;
+  is_optional: boolean;
+  is_active: boolean;
   notes?: string;
   created_at: string;
   updated_at: string;
+  // Relaciones
+  raw_material?: RawMaterial;
+  uom?: UnitOfMeasure;
 }
 
-export interface UnitOfMeasure {
-  id: string;
-  code: string;
-  name: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+// Mantener para compatibilidad con código legacy
+export interface InventoryRecipe extends Recipe {
+  variant_id?: string;
+  qty_required?: number;
 }
 
 export interface Warehouse {
@@ -459,7 +504,8 @@ export interface CouponEligibilityResult {
   };
 }
 
-export interface Recipe {
+// DEPRECATED: Esta interfaz ya no se usa, reemplazada por Recipe + RecipeIngredient
+export interface LegacyInventoryRecipe {
   burger: {
     simple: Record<string, number>;
     doble: Record<string, number>;
