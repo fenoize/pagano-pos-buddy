@@ -224,13 +224,12 @@ export function ProductCustomizationModalEnhanced({
       return false;
     }
     
-    // Si es combo Invok2, verificar selecciones requeridas
-    if (useCombo && product.name?.toLowerCase().includes('invok2')) {
-      // Verificar que se hayan seleccionado exactamente 2 bebidas
-      const bebidaSelections = comboSelections.filter(sel => 
-        sel.category_name?.toLowerCase().includes('bebida')
+    // Si es combo, verificar que todas las selecciones estén completas
+    if (useCombo) {
+      // Validar que todas las selecciones tengan producto y variante
+      return comboSelections.every(sel => 
+        sel.selectedProduct && sel.selectedVariant
       );
-      return bebidaSelections.length === 2;
     }
     
     return true;
@@ -247,10 +246,10 @@ export function ProductCustomizationModalEnhanced({
         return;
       }
       
-      if (useCombo && product.name?.toLowerCase().includes('invok2')) {
+      if (useCombo) {
         toast({
           title: "Selección incompleta",
-          description: "Debes seleccionar exactamente 2 bebidas para el combo Invok2",
+          description: "Debes completar todas las selecciones del combo",
           variant: "destructive",
         });
         return;
