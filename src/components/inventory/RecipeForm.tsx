@@ -189,7 +189,6 @@ export function RecipeForm({ open, onOpenChange, recipe, onSave }: RecipeFormPro
                       <SelectValue placeholder="Sin variante (receta general)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin variante</SelectItem>
                       {variants.map((v) => (
                         <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
                       ))}
