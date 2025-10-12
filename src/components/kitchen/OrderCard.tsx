@@ -173,19 +173,25 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
                       {item.combo_selections.map((comboItem: any, comboIndex: number) => (
                         <div key={comboIndex} className="mb-1">
                           <span className="font-medium">
-                            {comboItem.quantity}x {comboItem.product_name}
-                            {comboItem.variant_name ? ` - ${comboItem.variant_name}` : ''}
+                            {comboItem.quantity}x {comboItem.selectedProduct?.name || 'Producto'}
+                            {comboItem.selectedVariant?.variant?.name ? ` - ${comboItem.selectedVariant.variant.name}` : ''}
                           </span>
-                          {/* Combo item extras */}
-                          {comboItem.extras && comboItem.extras.length > 0 && (
-                            <div className="ml-2 text-muted-foreground">
-                              Extras: {comboItem.extras.map((extra: any) => 
-                                `${extra.quantity || 1}x ${extra.label}`
-                              ).join(', ')}
-                            </div>
-                          )}
+                          {/* Combo item extras - handle both object and array */}
+                          {comboItem.extras && (() => {
+                            const extrasArray = Array.isArray(comboItem.extras) 
+                              ? comboItem.extras 
+                              : Object.values(comboItem.extras).filter((e: any) => e);
+                            
+                            return extrasArray.length > 0 && (
+                              <div className="ml-2 text-muted-foreground">
+                                Extras: {extrasArray.map((extra: any) => 
+                                  `${extra.quantity || 1}x ${extra.label || extra.name}`
+                                ).join(', ')}
+                              </div>
+                            );
+                          })()}
                           {/* Combo item modifiers */}
-                          {comboItem.modifiers && comboItem.modifiers.length > 0 && (
+                          {comboItem.modifiers && Array.isArray(comboItem.modifiers) && comboItem.modifiers.length > 0 && (
                             <div className="ml-2 text-muted-foreground">
                               Modificadores: {comboItem.modifiers.map((mod: any) => mod.name).join(', ')}
                             </div>

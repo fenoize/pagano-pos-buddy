@@ -45,17 +45,23 @@ export function OrderItemEditRow({ item, index, isEditMode, onUpdate, onRemove }
                 {item.combo_selections.map((comboItem: any, idx: number) => (
                   <div key={idx} className="text-xs space-y-0.5">
                     <div className="font-medium">
-                      {comboItem.quantity}x {comboItem.product_name}
-                      {comboItem.variant_name && ` - ${comboItem.variant_name}`}
+                      {comboItem.quantity}x {comboItem.selectedProduct?.name || 'Producto'}
+                      {comboItem.selectedVariant?.variant?.name && ` - ${comboItem.selectedVariant.variant.name}`}
                     </div>
-                    {comboItem.extras && comboItem.extras.length > 0 && (
-                      <div className="pl-2">
-                        Extras: {comboItem.extras.map((e: any) => 
-                          `${e.quantity || 1}x ${e.label}`
-                        ).join(', ')}
-                      </div>
-                    )}
-                    {comboItem.modifiers && comboItem.modifiers.length > 0 && (
+                    {comboItem.extras && (() => {
+                      const extrasArray = Array.isArray(comboItem.extras) 
+                        ? comboItem.extras 
+                        : Object.values(comboItem.extras).filter((e: any) => e);
+                      
+                      return extrasArray.length > 0 && (
+                        <div className="pl-2">
+                          Extras: {extrasArray.map((e: any) => 
+                            `${e.quantity || 1}x ${e.label || e.name}`
+                          ).join(', ')}
+                        </div>
+                      );
+                    })()}
+                    {comboItem.modifiers && Array.isArray(comboItem.modifiers) && comboItem.modifiers.length > 0 && (
                       <div className="pl-2">
                         Mods: {comboItem.modifiers.map((m: any) => m.name).join(', ')}
                       </div>
