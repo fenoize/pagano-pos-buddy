@@ -2088,39 +2088,58 @@ export type Database = {
       }
       raw_materials: {
         Row: {
+          avg_cost: number | null
+          base_uom_id: string | null
           code: string | null
+          conversion_to_base: number | null
           created_at: string | null
           description: string | null
           id: string
           is_active: boolean
+          last_cost: number | null
           min_stock: number | null
           name: string
           uom_id: string | null
           updated_at: string | null
         }
         Insert: {
+          avg_cost?: number | null
+          base_uom_id?: string | null
           code?: string | null
+          conversion_to_base?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
+          last_cost?: number | null
           min_stock?: number | null
           name: string
           uom_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          avg_cost?: number | null
+          base_uom_id?: string | null
           code?: string | null
+          conversion_to_base?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
+          last_cost?: number | null
           min_stock?: number | null
           name?: string
           uom_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "raw_materials_base_uom_id_fkey"
+            columns: ["base_uom_id"]
+            isOneToOne: false
+            referencedRelation: "units_of_measure"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "raw_materials_uom_id_fkey"
             columns: ["uom_id"]
@@ -2130,7 +2149,132 @@ export type Database = {
           },
         ]
       }
+      recipe_ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_optional: boolean
+          notes: string | null
+          quantity_per_unit: number
+          raw_material_id: string
+          recipe_id: string
+          uom_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_optional?: boolean
+          notes?: string | null
+          quantity_per_unit: number
+          raw_material_id: string
+          recipe_id: string
+          uom_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_optional?: boolean
+          notes?: string | null
+          quantity_per_unit?: number
+          raw_material_id?: string
+          recipe_id?: string
+          uom_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_uom_id_fkey"
+            columns: ["uom_id"]
+            isOneToOne: false
+            referencedRelation: "units_of_measure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
+        Row: {
+          category_variant_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          preparation_notes: string | null
+          product_id: string
+          updated_at: string
+          yield_quantity: number
+          yield_uom_id: string | null
+        }
+        Insert: {
+          category_variant_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          preparation_notes?: string | null
+          product_id: string
+          updated_at?: string
+          yield_quantity?: number
+          yield_uom_id?: string | null
+        }
+        Update: {
+          category_variant_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          preparation_notes?: string | null
+          product_id?: string
+          updated_at?: string
+          yield_quantity?: number
+          yield_uom_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipes_category_variant_id_fkey"
+            columns: ["category_variant_id"]
+            isOneToOne: false
+            referencedRelation: "category_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_product_id_fkey1"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_yield_uom_id_fkey"
+            columns: ["yield_uom_id"]
+            isOneToOne: false
+            referencedRelation: "units_of_measure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipes_old_backup: {
         Row: {
           created_at: string | null
           id: string
@@ -2597,6 +2741,53 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      units_of_measure: {
+        Row: {
+          abbreviation: string
+          base_unit_id: string | null
+          code: string
+          conversion_factor: number | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_base_unit: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          abbreviation: string
+          base_unit_id?: string | null
+          code: string
+          conversion_factor?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_base_unit?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          abbreviation?: string
+          base_unit_id?: string | null
+          code?: string
+          conversion_factor?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_base_unit?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "units_of_measure_base_unit_id_fkey"
+            columns: ["base_unit_id"]
+            isOneToOne: false
+            referencedRelation: "units_of_measure"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
