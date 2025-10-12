@@ -2886,6 +2886,15 @@ export type Database = {
           token: string
         }[]
       }
+      deduct_from_recipe: {
+        Args: {
+          p_order_id: string
+          p_quantity: number
+          p_recipe_id: string
+          p_warehouse_id: string
+        }
+        Returns: undefined
+      }
       ensure_stock_balance: {
         Args: {
           p_lot_id?: string
@@ -2944,6 +2953,43 @@ export type Database = {
       is_staff_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      process_purchase_receipt: {
+        Args: {
+          p_expiry_date?: string
+          p_lot_number?: string
+          p_purchase_id: string
+          p_quantity: number
+          p_raw_material_id: string
+          p_unit_cost: number
+          p_uom_id: string
+          p_warehouse_id: string
+        }
+        Returns: string
+      }
+      process_stock_adjustment: {
+        Args: {
+          p_adjusted_by_user_id: string
+          p_adjustment_qty: number
+          p_lot_id: string
+          p_raw_material_id: string
+          p_reason: string
+          p_warehouse_id: string
+        }
+        Returns: string
+      }
+      process_stock_transfer: {
+        Args: {
+          p_from_warehouse_id: string
+          p_lot_id: string
+          p_notes: string
+          p_quantity: number
+          p_raw_material_id: string
+          p_to_warehouse_id: string
+          p_transferred_by_user_id: string
+          p_uom_id: string
+        }
+        Returns: string[]
       }
       register_customer: {
         Args: {
