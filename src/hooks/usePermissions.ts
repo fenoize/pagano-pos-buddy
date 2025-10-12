@@ -109,6 +109,17 @@ export function usePermissions() {
   const canManageConfig = useMemo(() => can('config.manage'), [can]);
   const canManageCoupons = useMemo(() => can('coupons.manage'), [can]);
   const canApplyCoupons = useMemo(() => can('coupons.apply'), [can]);
+  
+  // Permisos de Inventario
+  const canManageInventory = useMemo(() => can('inventory.manage'), [can]);
+  const canViewInventory = useMemo(() => can('inventory.view'), [can]);
+  const canManageWarehouses = useMemo(() => can('warehouses.manage'), [can]);
+  const canManageRawMaterials = useMemo(() => can('raw_materials.manage'), [can]);
+  const canManageRecipes = useMemo(() => can('recipes.manage'), [can]);
+  const canManagePurchases = useMemo(() => can('purchases.manage'), [can]);
+  const canAdjustStock = useMemo(() => can('stock.adjust'), [can]);
+  const canTransferStock = useMemo(() => can('stock.transfer'), [can]);
+  const canViewKardex = useMemo(() => can('kardex.view'), [can]);
 
   return {
     // Estado
@@ -141,5 +152,16 @@ export function usePermissions() {
     canManageConfig,
     canManageCoupons,
     canApplyCoupons,
+    
+    // Inventario
+    canManageInventory,
+    canViewInventory,
+    canManageWarehouses,
+    canManageRawMaterials,
+    canManageRecipes,
+    canManagePurchases,
+    canAdjustStock,
+    canTransferStock,
+    canViewKardex,
   };
 }

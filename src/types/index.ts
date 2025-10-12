@@ -91,36 +91,27 @@ export type OrigenMovimiento = 'POS' | 'Web' | 'Manual' | 'Edición';
 export type CouponType = 'percent' | 'fixed_cart' | 'fixed_product';
 export type DeliveryMode = 'free' | 'fixed' | 'percent';
 
-// Inventario y Recetas
-export interface Recipe {
-  id: string;
-  product_id: string;
-  category_variant_id?: string;
-  name: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface RecipeIngredient {
-  id: string;
-  recipe_id: string;
-  raw_material_id: string;
-  quantity_per_unit: number;
-  uom_id: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
+// Inventario y Recetas - Estructura actual de la BD
 export interface RawMaterial {
   id: string;
-  code: string;
+  code?: string;
   name: string;
   description?: string;
-  base_uom_id: string;
-  conversion_to_base?: number;
+  uom_id?: string;
+  min_stock?: number;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InventoryRecipe {
+  id: string;
+  product_id?: string;
+  variant_id?: string;
+  raw_material_id?: string;
+  qty_required: number;
+  uom_id?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
@@ -132,32 +123,6 @@ export interface UnitOfMeasure {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
-
-export interface StockBalance {
-  id: string;
-  raw_material_id: string;
-  warehouse_id: string;
-  lot_id?: string;
-  quantity_base_uom: number;
-  last_cost: number;
-  updated_at: string;
-}
-
-export interface StockMovement {
-  id: string;
-  movement_type: 'ENTRADA' | 'SALIDA';
-  raw_material_id: string;
-  warehouse_id: string;
-  lot_id?: string;
-  quantity_base_uom: number;
-  uom_id?: string;
-  unit_cost?: number;
-  reference_type: 'COMPRA' | 'VENTA' | 'AJUSTE' | 'TRANSFERENCIA';
-  reference_id?: string;
-  notes?: string;
-  created_by_user_id?: string;
-  created_at: string;
 }
 
 export interface Warehouse {

@@ -20,7 +20,7 @@ const menuItems = [
   { title: "Venta", url: "/pos/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
   { title: "Ventas", url: "/pos/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
   { title: "Cocina", url: "/pos/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
-  { title: "Config", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
+  { title: "Inventario", url: "/pos/inventario", icon: Archive, roles: ['Administrador'] },
 ];
 
 export function MobileNav() {

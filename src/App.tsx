@@ -41,6 +41,13 @@ const PermisosManagement = lazy(() => import("@/pages/PermisosManagement"));
 const CierresDiarios = lazy(() => import("@/pages/CierresDiarios"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
+// Inventory Pages
+const InventoryHub = lazy(() => import("@/pages/inventory/InventoryHub"));
+const Warehouses = lazy(() => import("@/pages/inventory/Warehouses"));
+const RawMaterials = lazy(() => import("@/pages/inventory/RawMaterials"));
+const Recipes = lazy(() => import("@/pages/inventory/Recipes"));
+const Kardex = lazy(() => import("@/pages/inventory/Kardex"));
+
 // Loading component para Suspense
 function LoadingFallback() {
   return (
@@ -190,7 +197,79 @@ const App = () => (
               <Route path="/pos/inventario" element={
                 <StaffProtectedRoute>
                   <StaffLayout>
-                    <div>Inventario - En desarrollo</div>
+                    <InventoryHub />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/almacenes" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <Warehouses />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/materias-primas" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <RawMaterials />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/recetas" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <Recipes />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/kardex" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <Kardex />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/compras" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <div className="p-6 text-center text-muted-foreground">
+                      Órdenes de Compra - En desarrollo
+                    </div>
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/ajustes" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <div className="p-6 text-center text-muted-foreground">
+                      Ajustes de Inventario - En desarrollo
+                    </div>
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/transferencias" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <div className="p-6 text-center text-muted-foreground">
+                      Transferencias - En desarrollo
+                    </div>
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/reportes" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <div className="p-6 text-center text-muted-foreground">
+                      Reportes de Inventario - En desarrollo
+                    </div>
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />
