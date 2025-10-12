@@ -8,9 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertTriangle, Plus, Minus } from 'lucide-react';
+import { AlertTriangle, Plus, Minus, ChevronRight } from 'lucide-react';
 import VariantSelector from './VariantSelector';
 import ComboSelector from './ComboSelector';
+import { ExtrasModal } from './ExtrasModal';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductExtra {
@@ -69,6 +70,9 @@ export function ProductCustomizationModalEnhanced({
   const [comboSelections, setComboSelections] = useState<any[]>([]);
   const [comboTotal, setComboTotal] = useState(0);
   const [useCombo, setUseCombo] = useState(false);
+  
+  // Extras modal state
+  const [showExtrasModal, setShowExtrasModal] = useState(false);
   
   const { toast } = useToast();
 
@@ -386,48 +390,68 @@ export function ProductCustomizationModalEnhanced({
 
           {/* Extras - Solo mostrar para productos individuales */}
           {!hasCombo && extras.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Extras</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Los extras tienen costo adicional
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {extras.map((extra) => (
-                    <div key={extra.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium">{extra.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatPrice(extra.price)}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleExtraChange(extra.id, -1)}
-                          disabled={(selectedExtras[extra.id] || 0) === 0}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center">
-                          {selectedExtras[extra.id] || 0}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleExtraChange(extra.id, 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Extras</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Los extras tienen costo adicional
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between h-auto py-3"
+                    onClick={() => setShowExtrasModal(true)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      <span>Agregar Extras</span>
+                      {Object.keys(selectedExtras).length > 0 && (
+                        <Badge variant="secondary">
+                          {Object.keys(selectedExtras).length}
+                        </Badge>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">
+                        {formatPrice(getExtrasTotal())}
+                      </span>
+                      <ChevronRight className="h-4 w-4" />
+                    </div>
+                  </Button>
+
+                  {/* Resumen de extras seleccionados */}
+                  {Object.keys(selectedExtras).length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      {Object.entries(selectedExtras).map(([extraId, qty]) => {
+                        const extra = extras.find(e => e.id === extraId);
+                        if (!extra) return null;
+                        return (
+                          <div key={extraId} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {extra.name} × {qty}
+                            </span>
+                            <span className="font-medium">
+                              {formatPrice(extra.price * qty)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Modal secundario de extras */}
+              <ExtrasModal
+                isOpen={showExtrasModal}
+                onClose={() => setShowExtrasModal(false)}
+                extras={extras}
+                selectedExtras={selectedExtras}
+                onExtrasChange={setSelectedExtras}
+              />
+            </>
           )}
 
           {/* Modificaciones - Solo mostrar para productos individuales */}
