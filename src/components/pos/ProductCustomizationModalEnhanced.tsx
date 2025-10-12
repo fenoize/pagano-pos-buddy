@@ -502,39 +502,42 @@ export function ProductCustomizationModalEnhanced({
             </CardContent>
           </Card>
 
-          {/* Cantidad */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Cantidad</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="text-2xl font-bold">{quantity}</span>
-                <Button
-                  variant="outline"
-                  onClick={() => setQuantity(quantity + 1)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Footer with price and actions */}
         <div className="border-t pt-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="text-lg font-medium">Total:</span>
-            <span className="text-2xl font-bold text-primary">
-              {formatPrice(getTotalPrice())}
-            </span>
+          {/* Fila con Total y Cantidad */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            {/* Total a la izquierda */}
+            <div className="flex flex-col">
+              <span className="text-sm text-muted-foreground">Total</span>
+              <span className="text-2xl font-bold text-primary">
+                {formatPrice(getTotalPrice())}
+              </span>
+            </div>
+            
+            {/* Controles de cantidad a la derecha */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground mr-1">Cantidad:</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                disabled={quantity <= 1}
+                className="h-9 w-9 p-0"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="text-xl font-bold w-8 text-center">{quantity}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setQuantity(quantity + 1)}
+                className="h-9 w-9 p-0"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           
           {!canAddToCart && (
