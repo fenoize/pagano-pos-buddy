@@ -14,6 +14,7 @@ interface ComboSelectorProps {
   product: Product;
   onComboItemsChange: (items: ComboItemSelection[]) => void;
   onComboTotalChange: (total: number) => void;
+  preloadedComboData?: any;
 }
 
 interface ComboItemSelection {
@@ -28,7 +29,8 @@ interface ComboItemSelection {
 const ComboSelector: React.FC<ComboSelectorProps> = ({
   product,
   onComboItemsChange,
-  onComboTotalChange
+  onComboTotalChange,
+  preloadedComboData = null
 }) => {
   const [comboConfig, setComboConfig] = useState<ComboProduct | null>(null);
   const [comboSlots, setComboSlots] = useState<ComboItem[]>([]);
@@ -52,6 +54,54 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const fetchComboData = async () => {
     try {
       setLoading(true);
+
+      // Use preloaded data if available
+      if (preloadedComboData) {
+        console.log('[ComboSelector] Using preloaded combo data');
+        
+        setComboConfig(preloadedComboData.config);
+        setComboSlots(preloadedComboData.slots);
+        setCategories(preloadedComboData.categories);
+        setSlotProducts(preloadedComboData.slotProducts);
+        setProductVariants(preloadedComboData.productVariants);
+        setProductExtras(preloadedComboData.productExtras);
+        setProductModifiers(preloadedComboData.productModifiers);
+
+        // Initialize selections with defaults
+        const initialSelections: ComboItemSelection[] = (preloadedComboData.slots || []).map((slot: ComboItem) => {
+          const categoryProducts = preloadedComboData.slotProducts[slot.category_id] || [];
+          const defaultProduct = slot.default_product_id 
+            ? categoryProducts.find((p: Product) => p.id === slot.default_product_id)
+            : categoryProducts[0];
+
+          const productVariants = defaultProduct ? preloadedComboData.productVariants[defaultProduct.id!] || [] : [];
+          const defaultVariant = slot.default_variant_id
+            ? productVariants.find((v: ProductVariantOption) => v.id === slot.default_variant_id)
+            : productVariants.find((v: ProductVariantOption) => v.is_default) || productVariants[0];
+
+          return {
+            comboSlot: slot,
+            selectedProduct: defaultProduct,
+            selectedVariant: defaultVariant,
+            quantity: slot.quantity,
+            extras: {},
+            modifiers: []
+          };
+        });
+
+        setSelections(initialSelections);
+        
+        // Notify parent immediately with preloaded selections
+        const total = calculateComboTotalFromSelections(initialSelections, preloadedComboData.config, preloadedComboData.productExtras, preloadedComboData.productVariants);
+        onComboTotalChange(total);
+        onComboItemsChange(initialSelections);
+        
+        setLoading(false);
+        return;
+      }
+
+      // Fallback: fetch data if not preloaded
+      console.log('[ComboSelector] Fetching combo data (no preload available)');
 
       // Fetch combo configuration
       const { data: comboData, error: comboError } = await supabase
@@ -256,6 +306,62 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
   const selectVariant = (slotIndex: number, variant: ProductVariantOption) => {
     updateSelection(slotIndex, { selectedVariant: variant });
+  };
+
+  const calculateComboTotalFromSelections = (
+    selections: ComboItemSelection[], 
+    config: ComboProduct,
+    extrasData: Record<string, any[]>,
+    variantsData: Record<string, ProductVariantOption[]>
+  ): number => {
+    if (!config) return 0;
+
+    let total = 0;
+
+    if (config.pricing_mode === 'fixed') {
+      total = config.base_price;
+      
+      selections.forEach(selection => {
+        if (selection.selectedVariant) {
+          const slot = selection.comboSlot;
+          const availableVariants = selection.selectedProduct ? variantsData[selection.selectedProduct.id!] || [] : [];
+          const defaultVariant = slot.default_variant_id
+            ? availableVariants.find(v => v.id === slot.default_variant_id)
+            : availableVariants.find(v => v.is_default);
+          
+          if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
+            total += selection.selectedVariant.price * selection.quantity;
+          }
+        }
+      });
+    } else {
+      total = config.base_price;
+      
+      selections.forEach(selection => {
+        if (selection.selectedVariant) {
+          const discountedPrice = selection.selectedVariant.price * (1 - (config.combo_discount || 0) / 100);
+          total += discountedPrice * selection.quantity;
+        } else if (selection.selectedProduct) {
+          const basePrice = getProductBasePrice(selection.selectedProduct);
+          const discountedPrice = basePrice * (1 - (config.combo_discount || 0) / 100);
+          total += discountedPrice * selection.quantity;
+        }
+      });
+    }
+
+    selections.forEach(selection => {
+      if (selection.extras) {
+        Object.entries(selection.extras).forEach(([extraId, qty]) => {
+          const categoryExtras = extrasData[selection.comboSlot.category_id] || [];
+          const extra = categoryExtras.find(e => e.id === extraId);
+          if (extra) {
+            total += extra.price * qty * selection.quantity;
+          }
+        });
+      }
+    });
+
+    return Math.max(0, total);
   };
 
   const calculateComboTotal = (): number => {

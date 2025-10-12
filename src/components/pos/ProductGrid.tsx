@@ -44,6 +44,7 @@ interface ProductGridProps {
     variants: Record<string, ProductVariantOption[]>;
     extras: ProductExtra[];
     modifiers: ProductModifier[];
+    combos: Record<string, any>;
   }) => void;
 }
 
@@ -88,13 +89,144 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
     }
   };
 
+  const preloadComboData = async (productIds: string[]) => {
+    try {
+      const { data: comboConfigs } = await supabase
+        .from('combo_products')
+        .select('*')
+        .in('product_id', productIds)
+        .eq('active', true);
+
+      if (!comboConfigs || comboConfigs.length === 0) {
+        return {};
+      }
+
+      const comboIds = comboConfigs.map(c => c.id);
+
+      const [slotsRes, categoriesRes] = await Promise.all([
+        supabase
+          .from('combo_items')
+          .select('*')
+          .in('combo_product_id', comboIds)
+          .order('display_order'),
+        
+        supabase
+          .from('combo_items')
+          .select('category_id')
+          .in('combo_product_id', comboIds)
+          .then(async (res) => {
+            const categoryIds = [...new Set(res.data?.map(s => s.category_id) || [])];
+            return supabase
+              .from('categories')
+              .select('*')
+              .in('id', categoryIds);
+          })
+      ]);
+
+      const slots = slotsRes.data || [];
+      const categories = categoriesRes.data || [];
+      const categoryIds = categories.map(c => c.id);
+
+      if (categoryIds.length === 0) {
+        return {};
+      }
+
+      const [productsRes, variantsRes, extrasRes, modifiersRes] = await Promise.all([
+        supabase
+          .from('products')
+          .select(`
+            *,
+            product_categories!inner(category_id)
+          `)
+          .in('product_categories.category_id', categoryIds)
+          .eq('active', true),
+        
+        supabase
+          .from('product_variant_options')
+          .select(`
+            *,
+            variant:category_variants(*)
+          `)
+          .eq('active', true),
+        
+        supabase
+          .from('product_extras')
+          .select('*')
+          .in('category_id', categoryIds)
+          .eq('active', true),
+        
+        supabase
+          .from('product_modifiers')
+          .select('*')
+          .eq('active', true)
+      ]);
+
+      const comboDataByProduct: Record<string, any> = {};
+      
+      comboConfigs.forEach(config => {
+        const comboSlots = slots.filter(s => s.combo_product_id === config.id);
+        
+        const slotProducts: Record<string, any[]> = {};
+        productsRes.data?.forEach((dbProduct: any) => {
+          dbProduct.product_categories?.forEach((pc: any) => {
+            if (!slotProducts[pc.category_id]) {
+              slotProducts[pc.category_id] = [];
+            }
+            slotProducts[pc.category_id].push({
+              ...dbProduct,
+              prices: dbProduct.prices as any
+            });
+          });
+        });
+
+        const productVariants: Record<string, any[]> = {};
+        variantsRes.data?.forEach((variant) => {
+          if (!productVariants[variant.product_id]) {
+            productVariants[variant.product_id] = [];
+          }
+          productVariants[variant.product_id].push(variant);
+        });
+
+        const productExtras: Record<string, any[]> = {};
+        extrasRes.data?.forEach((extra) => {
+          if (!productExtras[extra.category_id]) {
+            productExtras[extra.category_id] = [];
+          }
+          productExtras[extra.category_id].push(extra);
+        });
+
+        const productModifiers: Record<string, any[]> = {};
+        modifiersRes.data?.forEach((modifier) => {
+          if (!productModifiers[modifier.product_id]) {
+            productModifiers[modifier.product_id] = [];
+          }
+          productModifiers[modifier.product_id].push(modifier);
+        });
+
+        comboDataByProduct[config.product_id] = {
+          config,
+          slots: comboSlots,
+          categories,
+          slotProducts,
+          productVariants,
+          productExtras,
+          productModifiers
+        };
+      });
+
+      return comboDataByProduct;
+    } catch (error) {
+      console.error('Error preloading combo data:', error);
+      return {};
+    }
+  };
+
   const preloadAllData = async () => {
     if (products.length === 0) return;
     
     try {
       const productIds = products.map(p => p.id!).filter(Boolean);
       
-      // Get all category IDs from products
       const categoryIds = new Set<string>();
       products.forEach(p => {
         p.categories?.forEach(cat => {
@@ -102,8 +234,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         });
       });
 
-      // Preload variants, extras, and modifiers in parallel
-      const [variantsRes, extrasRes, modifiersRes] = await Promise.all([
+      const [variantsRes, extrasRes, modifiersRes, combos] = await Promise.all([
         supabase
           .from('product_variant_options')
           .select(`
@@ -124,14 +255,14 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           .from('product_modifiers')
           .select('*')
           .in('product_id', productIds)
-          .eq('active', true)
+          .eq('active', true),
+        preloadComboData(productIds)
       ]);
 
       if (variantsRes.error) throw variantsRes.error;
       if (extrasRes.error) throw extrasRes.error;
       if (modifiersRes.error) throw modifiersRes.error;
 
-      // Group variants by product_id
       const variantsByProduct: Record<string, ProductVariantOption[]> = {};
       variantsRes.data?.forEach((variant) => {
         const productId = variant.product_id;
@@ -145,12 +276,12 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
       setProductExtras(extrasRes.data || []);
       setProductModifiers(modifiersRes.data || []);
 
-      // Notify parent component with preloaded data
       if (onDataPreloaded) {
         onDataPreloaded({
           variants: variantsByProduct,
           extras: extrasRes.data || [],
-          modifiers: modifiersRes.data || []
+          modifiers: modifiersRes.data || [],
+          combos
         });
       }
     } catch (error) {

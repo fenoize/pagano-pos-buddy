@@ -49,7 +49,8 @@ export default function NewSale() {
     variants: Record<string, any[]>;
     extras: any[];
     modifiers: any[];
-  }>({ variants: {}, extras: [], modifiers: [] });
+    combos: Record<string, any>;
+  }>({ variants: {}, extras: [], modifiers: [], combos: {} });
   const { toast } = useToast();
   const { user } = useAuthContext();
   const { canCreateOrders, loading: permissionsLoading } = usePermissions();
@@ -677,6 +678,7 @@ export default function NewSale() {
           preloadedVariants={preloadedData.variants[selectedProduct.id!] || []}
           preloadedExtras={preloadedData.extras}
           preloadedModifiers={preloadedData.modifiers.filter(m => m.product_id === selectedProduct.id)}
+          preloadedComboData={preloadedData.combos[selectedProduct.id!]}
         />
       )}
 

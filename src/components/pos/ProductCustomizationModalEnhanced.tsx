@@ -36,6 +36,7 @@ interface ProductCustomizationModalEnhancedProps {
   preloadedVariants?: ProductVariantOption[];
   preloadedExtras?: ProductExtra[];
   preloadedModifiers?: ProductModifier[];
+  preloadedComboData?: any;
 }
 
 export function ProductCustomizationModalEnhanced({ 
@@ -47,7 +48,8 @@ export function ProductCustomizationModalEnhanced({
   editingIndex,
   preloadedVariants = [],
   preloadedExtras = [],
-  preloadedModifiers = []
+  preloadedModifiers = [],
+  preloadedComboData = null
 }: ProductCustomizationModalEnhancedProps) {
   // Variant system state
   const [availableVariants, setAvailableVariants] = useState<ProductVariantOption[]>([]);
@@ -95,8 +97,14 @@ export function ProductCustomizationModalEnhanced({
     setExtras(preloadedExtras);
     setModifiers(preloadedModifiers);
 
-    // Load combo configuration (only this needs async)
-    loadComboConfig();
+    // Use preloaded combo data if available
+    if (preloadedComboData) {
+      setHasCombo(true);
+      setComboConfig(preloadedComboData.config);
+    } else {
+      // Fallback: load combo config if not preloaded
+      loadComboConfig();
+    }
     
     // Initialize form if editing
     if (editingItem) {
@@ -116,11 +124,11 @@ export function ProductCustomizationModalEnhanced({
       
       // Set combo state
       if (editingItem.is_combo_item) {
-        setUseCombo(true);
-        setComboSelections(editingItem.combo_selections || []);
-      }
+      setUseCombo(true);
+      setComboSelections(editingItem.combo_selections || []);
     }
-  }, [isOpen, product.id, editingItem, preloadedVariants, preloadedExtras, preloadedModifiers]);
+  }
+}, [isOpen, product.id, editingItem, preloadedVariants, preloadedExtras, preloadedModifiers, preloadedComboData]);
 
   // Auto-enable combo if available
   useEffect(() => {
@@ -342,6 +350,7 @@ export function ProductCustomizationModalEnhanced({
               product={product}
               onComboItemsChange={setComboSelections}
               onComboTotalChange={setComboTotal}
+              preloadedComboData={preloadedComboData}
             />
           ) : (
             <Card>
