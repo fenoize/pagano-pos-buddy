@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface InventoryDeductionResult {
+  success: boolean;
+  processed: number;
+  errors: string[];
+}
+
 export const useInventory = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -14,83 +20,46 @@ export const useInventory = () => {
   const deductInventoryFromOrder = async (
     orderId: string,
     warehouseId?: string
-  ): Promise<{ success: boolean; errors: string[] }> => {
+  ): Promise<InventoryDeductionResult> => {
     setIsLoading(true);
-    const errors: string[] = [];
 
     try {
-      // Obtener almacén predeterminado si no se especifica
-      let targetWarehouseId = warehouseId;
-      if (!targetWarehouseId) {
-        const whResult: any = await supabase
-          .from('warehouses')
-          .select('id')
-          .eq('is_default', true)
-          .eq('is_active', true)
-          .single();
+      const { data, error } = await supabase.rpc('deduct_inventory_from_order', {
+        p_order_id: orderId,
+        p_warehouse_id: warehouseId || null,
+      });
 
-        if (!whResult.data) {
-          errors.push('No se encontró almacén predeterminado');
-          return { success: false, errors };
-        }
-        targetWarehouseId = whResult.data.id;
+      if (error) {
+        console.error('Error en deduct_inventory_from_order:', error);
+        return {
+          success: false,
+          processed: 0,
+          errors: [error.message],
+        };
       }
 
-      // Obtener los items de la orden
-      const orderResult: any = await supabase
-        .from('orders')
-        .select('id, items')
-        .eq('id', orderId)
-        .single();
+      const result = data as { success: boolean; processed: number; errors: string[]; error?: string };
 
-      if (orderResult.error || !orderResult.data) {
-        errors.push('No se pudo obtener la orden');
-        return { success: false, errors };
-      }
-
-      const items = orderResult.data.items as any[];
-
-      // Procesar cada item de la orden
-      for (const item of items) {
-        // Buscar receta para el producto
-        const recipesResult: any = await supabase
-          .from('recipes')
-          .select('id')
-          .eq('product_id', item.productId)
-          .eq('is_active', true);
-
-        if (recipesResult.error || !recipesResult.data || recipesResult.data.length === 0) {
-          console.log(`Producto ${item.productName} no tiene receta configurada, omitiendo descuento de inventario`);
-          continue;
-        }
-
-        // Seleccionar la primera receta disponible
-        const selectedRecipe = recipesResult.data[0];
-
-        // Llamar a la función SQL para descontar inventario
-        const { error: deductError } = await supabase.rpc('deduct_from_recipe', {
-          p_order_id: orderId,
-          p_recipe_id: selectedRecipe.id,
-          p_quantity: item.quantity,
-          p_warehouse_id: targetWarehouseId,
-        });
-
-        if (deductError) {
-          console.error(`Error descontando inventario para ${item.productName}:`, deductError);
-          errors.push(`Error al descontar inventario de ${item.productName}: ${deductError.message}`);
-        } else {
-          console.log(`✓ Inventario descontado para ${item.productName} x${item.quantity}`);
-        }
+      if (!result.success && result.error) {
+        return {
+          success: false,
+          processed: result.processed || 0,
+          errors: [result.error],
+        };
       }
 
       return {
-        success: errors.length === 0,
-        errors,
+        success: result.success,
+        processed: result.processed,
+        errors: result.errors || [],
       };
     } catch (error) {
-      console.error('Error en deductInventoryFromOrder:', error);
-      errors.push(error instanceof Error ? error.message : 'Error desconocido');
-      return { success: false, errors };
+      console.error('Error calling deduct_inventory_from_order:', error);
+      return {
+        success: false,
+        processed: 0,
+        errors: [error instanceof Error ? error.message : 'Error desconocido'],
+      };
     } finally {
       setIsLoading(false);
     }

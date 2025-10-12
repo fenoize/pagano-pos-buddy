@@ -2895,6 +2895,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      deduct_inventory_from_order: {
+        Args: { p_order_id: string; p_warehouse_id?: string }
+        Returns: Json
+      }
       ensure_stock_balance: {
         Args: {
           p_lot_id?: string
