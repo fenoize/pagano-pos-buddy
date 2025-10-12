@@ -447,10 +447,6 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
             <CardContent className="p-4 pt-0">
               {/* Product Info - Responsive Layout */}
               <div className="space-y-3">
-                <h3 className="font-semibold text-lg leading-tight line-clamp-2">
-                  {product.name}
-                </h3>
-                
                 {/* Categories */}
                 {product.categories && product.categories.length > 0 && (
                   <div className="flex flex-wrap gap-1">
@@ -461,6 +457,10 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
                     ))}
                   </div>
                 )}
+                
+                <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+                  {product.name}
+                </h3>
                 
                 {/* Price */}
                 <div>
