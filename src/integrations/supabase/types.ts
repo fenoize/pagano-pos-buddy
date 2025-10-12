@@ -2259,7 +2259,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "recipes_product_id_fkey1"
+            foreignKeyName: "recipes_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -2270,71 +2270,6 @@ export type Database = {
             columns: ["yield_uom_id"]
             isOneToOne: false
             referencedRelation: "units_of_measure"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      recipes_old_backup: {
-        Row: {
-          created_at: string | null
-          id: string
-          notes: string | null
-          product_id: string | null
-          qty_required: number
-          raw_material_id: string | null
-          uom_id: string | null
-          updated_at: string | null
-          variant_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          notes?: string | null
-          product_id?: string | null
-          qty_required: number
-          raw_material_id?: string | null
-          uom_id?: string | null
-          updated_at?: string | null
-          variant_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          notes?: string | null
-          product_id?: string | null
-          qty_required?: number
-          raw_material_id?: string | null
-          uom_id?: string | null
-          updated_at?: string | null
-          variant_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recipes_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recipes_raw_material_id_fkey"
-            columns: ["raw_material_id"]
-            isOneToOne: false
-            referencedRelation: "raw_materials"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recipes_uom_id_fkey"
-            columns: ["uom_id"]
-            isOneToOne: false
-            referencedRelation: "unit_of_measures"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recipes_variant_id_fkey"
-            columns: ["variant_id"]
-            isOneToOne: false
-            referencedRelation: "product_variant_options"
             referencedColumns: ["id"]
           },
         ]
