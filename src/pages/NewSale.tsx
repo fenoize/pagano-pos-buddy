@@ -21,6 +21,7 @@ import RunasCalculator from '@/components/pos/RunasCalculator';
 import { CouponManager } from '@/components/pos/CouponManager';
 import { CouponModal } from '@/components/pos/CouponModal';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { useInventory } from '@/hooks/useInventory';
 
 export default function NewSale() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -55,6 +56,7 @@ export default function NewSale() {
   const { user } = useAuthContext();
   const { canCreateOrders, loading: permissionsLoading } = usePermissions();
   const { hasActiveSession } = useCashSession();
+  const { deductInventoryFromOrder } = useInventory();
 
   const subtotal = cartItems.reduce((sum, item) => {
     const extrasTotal = item.extras.reduce((extraSum, extra) => extraSum + (extra.price * (extra.quantity || 1)), 0);
@@ -471,6 +473,20 @@ export default function NewSale() {
             .update({ cantidad_runas: Math.max(0, newBalance) })
             .eq('id', customerId);
         }
+      }
+
+      // Descontar inventario automáticamente según recetas
+      try {
+        const inventoryResult = await deductInventoryFromOrder(fullOrderData.id);
+        
+        if (!inventoryResult.success && inventoryResult.errors.length > 0) {
+          console.warn('Advertencias de inventario:', inventoryResult.errors);
+          // No bloqueamos la venta si hay error de inventario, solo registramos
+          // Esto permite que la venta se procese incluso si el inventario no está configurado
+        }
+      } catch (inventoryError) {
+        console.error('Error al descontar inventario (no crítico):', inventoryError);
+        // Continuar con la venta incluso si falla el descuento de inventario
       }
 
       toast({
