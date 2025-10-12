@@ -164,6 +164,30 @@ export function useKitchenOrders() {
       // Obtener info del pedido para notificaciones
       const order = orders.find(o => o.id === orderId);
       
+      // NUEVO: Obtener usuario actual desde localStorage
+      const storedUser = localStorage.getItem('paganos_staff_user');
+      if (!storedUser) {
+        throw new Error('No hay usuario autenticado en el KDS');
+      }
+      
+      const currentUser = JSON.parse(storedUser);
+      if (!currentUser?.id) {
+        throw new Error('Usuario sin ID válido');
+      }
+      
+      // NUEVO: Establecer contexto de staff ANTES del UPDATE
+      console.log(`[KDS] Setting staff context for user: ${currentUser.id}`);
+      const { error: contextError } = await supabase.rpc('set_staff_context', {
+        p_user_id: currentUser.id
+      });
+      
+      if (contextError) {
+        console.error('[KDS] Error setting staff context:', contextError);
+        throw contextError;
+      }
+      
+      console.log('[KDS] Staff context established successfully');
+      
       // PRIMERO: Si el nuevo estado es Entregado/Cancelado, remover inmediatamente del estado local
       if (['Entregado', 'Cancelado'].includes(newStatus)) {
         console.log(`[KDS] Removing order from local state immediately (status: ${newStatus})`);
@@ -171,6 +195,7 @@ export function useKitchenOrders() {
       }
 
       // SEGUNDO: Actualizar en la base de datos
+      console.log(`[KDS] Updating order in database (status: ${newStatus})`);
       const { error } = await supabase
         .from('orders')
         .update({ 
@@ -179,7 +204,12 @@ export function useKitchenOrders() {
         })
         .eq('id', orderId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[KDS] Database update error:', error);
+        throw error;
+      }
+      
+      console.log(`[KDS] Order ${orderId} successfully updated to ${newStatus} in database`);
 
       // TERCERO: Si NO es Entregado/Cancelado, actualizar estado local
       if (!['Entregado', 'Cancelado'].includes(newStatus)) {
