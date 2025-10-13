@@ -329,25 +329,6 @@ export function ProductCustomizationModalEnhanced({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-          {/* Auto-select combo if available */}
-          {hasCombo && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Tipo de Pedido</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <Badge variant="default" className="text-base px-4 py-2">
-                    Combo
-                  </Badge>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Este producto está disponible como combo
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Combo Configuration o Variant Selection */}
           {hasCombo ? (
             <ComboSelector
