@@ -21,6 +21,7 @@ import { CouponManager } from '@/components/pos/CouponManager';
 import { CouponModal } from '@/components/pos/CouponModal';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function NewSale() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -547,8 +548,9 @@ export default function NewSale() {
               </div>
 
               {/* Cart */}
-              <div className="space-y-4">
-                <Cart 
+              <ScrollArea className="h-[calc(100vh-12rem)]">
+                <div className="space-y-4 pr-4">
+                  <Cart
                   items={cartItems}
                   onUpdateQuantity={updateItemQuantity}
                   onRemoveItem={removeItem}
@@ -601,7 +603,8 @@ export default function NewSale() {
                   onRunasChange={setUsedRunas}
                   usedRunas={usedRunas}
                 />
-              </div>
+                </div>
+              </ScrollArea>
             </div>
           </div>
         );
