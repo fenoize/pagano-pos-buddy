@@ -400,12 +400,19 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
       {/* Category Filters - Solo mostrar si no hay búsqueda activa */}
       {searchTerm.trim().length < 2 && categories.length > 0 && (
         <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${Math.min(categories.length + 1, 6)}, minmax(0, 1fr))` }}>
-            <TabsTrigger value="all" className="text-sm">
+          <TabsList className="inline-flex h-auto flex-wrap gap-2 bg-transparent p-0">
+            <TabsTrigger 
+              value="all" 
+              className="h-10 rounded-full px-6 text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:bg-secondary data-[state=inactive]:text-secondary-foreground data-[state=inactive]:hover:bg-secondary/80"
+            >
               Todos
             </TabsTrigger>
             {categories.map((category) => (
-              <TabsTrigger key={category.id} value={category.id} className="text-sm">
+              <TabsTrigger 
+                key={category.id} 
+                value={category.id} 
+                className="h-10 rounded-full px-6 text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:bg-secondary data-[state=inactive]:text-secondary-foreground data-[state=inactive]:hover:bg-secondary/80"
+              >
                 {category.name}
               </TabsTrigger>
             ))}
