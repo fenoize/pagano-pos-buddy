@@ -236,12 +236,16 @@ export function ProductCustomizationModalEnhanced({
       return false;
     }
     
-    // Si es combo, verificar que todas las selecciones estén completas
+    // Si es combo, verificar que todas las selecciones tengan producto
     if (useCombo) {
-      // Validar que todas las selecciones tengan producto y variante
-      return comboSelections.every(sel => 
-        sel.selectedProduct && sel.selectedVariant
-      );
+      // Si no hay selecciones aún, no es válido
+      if (comboSelections.length === 0) {
+        return false;
+      }
+      
+      // Validar que todas las selecciones tengan al menos producto seleccionado
+      // La variante puede ser undefined si el producto no tiene variantes configuradas
+      return comboSelections.every(sel => sel.selectedProduct);
     }
     
     return true;
