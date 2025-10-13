@@ -10,6 +10,7 @@ import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { SEOHead } from "@/components/SEOHead";
+import { CashSessionTopBar } from "@/components/cash/CashSessionTopBar";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
 import { Suspense, lazy } from "react";
 
@@ -76,9 +77,12 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center border-b bg-background px-4 md:px-6">
-            <SidebarTrigger />
-            <h2 className="ml-4 font-semibold text-primary">Paganos POS</h2>
+          <header className="h-14 flex items-center justify-between border-b bg-background px-4 md:px-6">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger />
+              <h2 className="font-semibold text-primary">Paganos POS</h2>
+            </div>
+            <CashSessionTopBar />
           </header>
           <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
             {children}

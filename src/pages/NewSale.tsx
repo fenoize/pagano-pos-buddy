@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCashSession } from '@/hooks/useCashSession';
-import { CashSessionStatus } from '@/components/cash/CashSessionStatus';
 import { setStaffContext } from '@/lib/dbContext';
 import CustomerSearchStep from '@/components/pos/CustomerSearchStep';
 import CustomerSearchWidget from '@/components/pos/CustomerSearchWidget';
@@ -642,9 +641,6 @@ export default function NewSale() {
 
   return (
     <div className="space-y-6">
-      {/* Cash Session Status - Show for Cajero and Administrador */}
-      <CashSessionStatus />
-      
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Nueva Venta - {getStepTitle()}</h1>
