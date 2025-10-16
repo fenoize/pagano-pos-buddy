@@ -3181,7 +3181,13 @@ export type Database = {
         | "Entregado"
         | "Cancelado"
       origen_movimiento: "POS" | "Web" | "Manual" | "Edición"
-      payment_method: "efectivo" | "mp" | "pos" | "mixto" | "aplicacion"
+      payment_method:
+        | "efectivo"
+        | "mp"
+        | "pos"
+        | "mixto"
+        | "aplicacion"
+        | "runas"
       po_status: "draft" | "sent" | "received" | "rejected"
       runa_movement_type: "acumulacion" | "canje" | "ajuste" | "promo"
       stock_move_type:
@@ -3339,7 +3345,7 @@ export const Constants = {
         "Cancelado",
       ],
       origen_movimiento: ["POS", "Web", "Manual", "Edición"],
-      payment_method: ["efectivo", "mp", "pos", "mixto", "aplicacion"],
+      payment_method: ["efectivo", "mp", "pos", "mixto", "aplicacion", "runas"],
       po_status: ["draft", "sent", "received", "rejected"],
       runa_movement_type: ["acumulacion", "canje", "ajuste", "promo"],
       stock_move_type: [

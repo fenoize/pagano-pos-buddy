@@ -1,0 +1,2 @@
+-- Agregar 'runas' al tipo enum payment_method
+ALTER TYPE payment_method ADD VALUE IF NOT EXISTS 'runas';
