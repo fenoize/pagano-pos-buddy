@@ -16,6 +16,7 @@ import { useComunas } from '@/hooks/useComunas';
 import { useUsers } from '@/hooks/useUsers';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { useCustomerRunes } from '@/hooks/useCustomerRunes';
+import { useCashSession } from '@/hooks/useCashSession';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { formatCurrency } from '@/lib/utils';
 import { OrderItemEditRow } from './OrderItemEditRow';
@@ -51,6 +52,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const { users, fetchUsers } = useUsers();
   const { paymentMethods } = usePaymentMethods();
   const { getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
+  const { checkActiveSession } = useCashSession();
   
   const repartidores = users.filter(u => u.can_do_delivery && u.active);
 
@@ -179,6 +181,9 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       setEditData(null);
       setReason('');
       setRunasEditadas(0);
+      
+      // Recargar sesión de caja para actualizar los totales
+      await checkActiveSession();
     } catch (error) {
       // Error handled in hook
     }

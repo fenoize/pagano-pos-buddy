@@ -119,9 +119,11 @@ export function CashSessionReport() {
 
               // Calculate totals
               const totalSales = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
-              const totalCash = orders?.reduce((sum, order) => sum + order.payment_efectivo, 0) || 0;
-              const totalMP = orders?.reduce((sum, order) => sum + order.payment_mp, 0) || 0;
-              const totalPOS = orders?.reduce((sum, order) => sum + order.payment_pos, 0) || 0;
+              const totalCash = orders?.reduce((sum, order) => sum + (order.payment_efectivo || 0), 0) || 0;
+              const totalMP = orders?.reduce((sum, order) => sum + (order.payment_mp || 0), 0) || 0;
+              const totalPOS = orders?.reduce((sum, order) => sum + (order.payment_pos || 0), 0) || 0;
+              const totalAplicacion = orders?.reduce((sum, order) => sum + (order.payment_aplicacion || 0), 0) || 0;
+              const totalRunas = orders?.reduce((sum, order) => sum + (order.payment_runas || 0), 0) || 0;
 
               const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
               const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
@@ -137,6 +139,8 @@ export function CashSessionReport() {
                   totalCash,
                   totalMP,
                   totalPOS,
+                  totalAplicacion,
+                  totalRunas,
                   ingresos,
                   egresos,
                   expectedCash,
