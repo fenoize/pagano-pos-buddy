@@ -180,12 +180,16 @@ export function useOrderEdit() {
 
         // Crear transacción de ajuste
         const adjustmentReason = (reason || 'Edición de pedido') + runasWarning;
-        await createEditAdjustmentTransaction(
+        const runaTransaction = await createEditAdjustmentTransaction(
           orderData.customer_id,
           -deltaRunas, // Negativo porque es un canje
           orderId,
           adjustmentReason
         );
+
+        if (!runaTransaction) {
+          throw new Error('Error al crear la transacción de runas. Verifica el saldo del cliente.');
+        }
       }
 
       // 7. Update order - Convert empty strings to null for UUID/nullable fields
@@ -218,7 +222,8 @@ export function useOrderEdit() {
         .single();
 
       if (updateError) {
-        throw new Error('Error actualizando el pedido');
+        console.error('Supabase update error:', updateError);
+        throw new Error(`Error actualizando el pedido: ${updateError.message || JSON.stringify(updateError)}`);
       }
 
       // 8. If closed session, recalculate and audit

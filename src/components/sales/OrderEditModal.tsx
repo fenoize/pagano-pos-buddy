@@ -623,7 +623,39 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                       <Label htmlFor="payment-method">Método de Pago</Label>
                       <Select
                         value={editData?.payment_method || ''}
-                        onValueChange={(value: any) => setEditData(prev => prev ? { ...prev, payment_method: value } : null)}
+                        onValueChange={(value: any) => {
+                          setEditData(prev => {
+                            if (!prev) return null;
+                            
+                            // Al cambiar el método de pago, resetear todos los valores de pago
+                            const resetPayments = {
+                              payment_efectivo: 0,
+                              payment_mp: 0,
+                              payment_pos: 0,
+                              payment_aplicacion: 0,
+                              payment_runas: 0
+                            };
+
+                            // Si es un método específico (no mixto), configurar solo ese método con el total
+                            if (value !== 'mixto') {
+                              const fieldName = `payment_${value}` as keyof typeof resetPayments;
+                              if (fieldName in resetPayments) {
+                                resetPayments[fieldName] = prev.total;
+                              }
+                            }
+
+                            return { 
+                              ...prev, 
+                              payment_method: value,
+                              ...resetPayments
+                            };
+                          });
+                          
+                          // Si cambió a runas, actualizar el estado local
+                          if (value === 'runas' && editData?.total) {
+                            setRunasEditadas(Math.ceil(editData.total / (valorRunaActual || 1)));
+                          }
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccionar método" />
@@ -681,7 +713,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                           <Input
                             id="runas_cantidad"
                             type="number"
-                            value={runasEditadas}
+                            value={editData.payment_runas || runasEditadas}
                             onChange={(e) => {
                               const value = parseInt(e.target.value) || 0;
                               setRunasEditadas(value);
@@ -694,26 +726,17 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
 
                         <div className="flex justify-between text-sm border-t pt-2">
                           <span>Valor equivalente:</span>
-                          <span className="font-semibold">{formatCurrency(runasEditadas * valorRunaActual)}</span>
+                          <span className="font-semibold">{formatCurrency((editData.payment_runas || runasEditadas) * valorRunaActual)}</span>
                         </div>
 
-                        {runasEditadas > saldoRunasCliente && (
-                          <Alert variant="destructive">
+                        {(editData.payment_runas || runasEditadas) > saldoRunasCliente && (
+                          <Alert variant="destructive" className="py-2">
                             <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>Saldo insuficiente</AlertTitle>
-                            <AlertDescription>
-                              El cliente solo tiene {saldoRunasCliente} runas disponibles.
-                              Esta transacción quedará registrada como "pendiente de validación" en el cierre.
+                            <AlertDescription className="text-xs">
+                              El cliente no tiene suficientes runas. El saldo quedará negativo.
                             </AlertDescription>
                           </Alert>
                         )}
-
-                        <div className="flex justify-between text-sm bg-background p-2 rounded border">
-                          <span className="font-medium">Nuevo saldo del cliente:</span>
-                          <span className={runasEditadas > saldoRunasCliente ? "text-destructive font-bold" : "text-primary font-bold"}>
-                            {saldoRunasCliente - runasEditadas} runas
-                          </span>
-                        </div>
                       </div>
                     )}
                   </>
