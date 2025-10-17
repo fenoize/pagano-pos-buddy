@@ -70,6 +70,7 @@ export default function PaymentModal({
   const [cashDenominations, setCashDenominations] = useState<number[]>([]);
   const [runaRewardValue, setRunaRewardValue] = useState(1300); // Valor de cada runa al canjear
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export default function PaymentModal({
       setCurrentOperationNumber('');
       setCurrentRunas('');
       setNotes('');
+      setIsSubmitting(false);
       fetchConfig();
     }
   }, [isOpen]);
@@ -272,6 +274,11 @@ export default function PaymentModal({
   };
 
   const handleConfirm = () => {
+    // Prevenir múltiples clics
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
     let finalPayments = [...payments];
     
     // Si no hay pagos en la lista, agregar el pago actual directamente
@@ -380,6 +387,8 @@ export default function PaymentModal({
       fulfillment: deliveryData?.zone ? 'delivery' : 'retiro',
       notes: notes.trim() || undefined,
     };
+    
+    // Llamar onConfirm - el modal se cerrará y el estado se reseteará desde el padre
     onConfirm(paymentData);
   };
 
@@ -812,10 +821,10 @@ export default function PaymentModal({
             </Button>
             <Button 
               onClick={handleConfirm} 
-              disabled={!isValidPayment()}
+              disabled={!isValidPayment() || isSubmitting}
               className="flex-1"
             >
-              {payments.length === 0 ? 'Confirmar Pago' : `Confirmar Pago Mixto (${payments.length} métodos)`}
+              {isSubmitting ? 'Procesando...' : (payments.length === 0 ? 'Confirmar Pago' : `Confirmar Pago Mixto (${payments.length} métodos)`)}
             </Button>
           </div>
         </div>

@@ -44,6 +44,7 @@ export default function NewSale() {
   const [appliedCoupons, setAppliedCoupons] = useState<CouponApplication[]>([]);
   const [manualDiscount, setManualDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number; amount: number } | null>(null);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   
   // Preloaded customization data
   const [preloadedData, setPreloadedData] = useState<{
@@ -274,15 +275,105 @@ export default function NewSale() {
     fulfillment: FulfillmentType;
     notes?: string;
   }) => {
+    // Prevenir procesamiento duplicado
+    if (isProcessingOrder) {
+      toast({
+        title: "Procesando",
+        description: "Ya hay un pedido siendo procesado",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validaciones inmediatas
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "Usuario no autenticado. Por favor, inicie sesión nuevamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!canCreateOrders) {
+      toast({
+        title: "Error",
+        description: "Usuario sin permisos para crear órdenes. Se requiere rol de Cajero o Administrador.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Preparar snapshot de todos los datos
+    const orderSnapshot = {
+      cartItems: [...cartItems],
+      customer: { ...customer },
+      orderName: orderName.trim() || null,
+      fulfillment,
+      deliveryData: deliveryData ? { ...deliveryData } : null,
+      deliveryFee,
+      deliveryZone,
+      subtotal,
+      totalDiscount,
+      total,
+      appliedCoupons: [...appliedCoupons],
+      manualDiscount: manualDiscount ? { ...manualDiscount } : null,
+      usedRunas,
+      runaValue,
+      runaRewardValue,
+      userId: user.id
+    };
+
+    // Cerrar modal y resetear estado INMEDIATAMENTE
+    setShowPaymentModal(false);
+    setCartItems([]);
+    setCustomer({});
+    setOrderName('');
+    setUsedRunas(0);
+    setFulfillment('retiro');
+    setDeliveryFee(0);
+    setDeliveryZone('');
+    setDeliveryData(null);
+    setAppliedCoupons([]);
+    setManualDiscount(null);
+    setCurrentStep(1);
+
+    // Mostrar feedback inicial
+    toast({
+      title: "Procesando pedido...",
+      description: "El pedido se está enviando a cocina"
+    });
+
+    // Marcar como procesando
+    setIsProcessingOrder(true);
+
+    // Procesar en segundo plano
+    processOrderInBackground(orderSnapshot, paymentData);
+  };
+
+  const processOrderInBackground = async (
+    orderSnapshot: any,
+    paymentData: {
+      payments: Array<{
+        method: string;
+        amount: number;
+        receiptNumber?: string;
+        operationNumber?: string;
+        runas?: number;
+      }>;
+      fulfillment: FulfillmentType;
+      notes?: string;
+    }
+  ) => {
     try {
       // Create or update customer if needed
-      let customerId = customer.id;
-      if (!customerId && (customer.name || customer.phone)) {
+      let customerId = orderSnapshot.customer.id;
+      if (!customerId && (orderSnapshot.customer.name || orderSnapshot.customer.phone)) {
         // Check if customer exists
         const { data: existingCustomers } = await supabase
           .from('customers')
           .select('id')
-          .or(`phone.eq.${customer.phone},rut.eq.${customer.rut}`)
+          .or(`phone.eq.${orderSnapshot.customer.phone},rut.eq.${orderSnapshot.customer.rut}`)
           .limit(1);
 
         if (existingCustomers && existingCustomers.length > 0) {
@@ -291,11 +382,11 @@ export default function NewSale() {
           await supabase
             .from('customers')
             .update({
-              name: customer.name,
-              apellido: customer.apellido,
-              email: customer.email,
-              phone: customer.phone,
-              rut: customer.rut
+              name: orderSnapshot.customer.name,
+              apellido: orderSnapshot.customer.apellido,
+              email: orderSnapshot.customer.email,
+              phone: orderSnapshot.customer.phone,
+              rut: orderSnapshot.customer.rut
             })
             .eq('id', customerId);
         } else {
@@ -303,11 +394,11 @@ export default function NewSale() {
           const { data: customerData, error: customerError } = await supabase
             .from('customers')
             .insert({
-              name: customer.name,
-              apellido: customer.apellido,
-              email: customer.email,
-              phone: customer.phone,
-              rut: customer.rut
+              name: orderSnapshot.customer.name,
+              apellido: orderSnapshot.customer.apellido,
+              email: orderSnapshot.customer.email,
+              phone: orderSnapshot.customer.phone,
+              rut: orderSnapshot.customer.rut
             })
             .select()
             .single();
@@ -317,91 +408,82 @@ export default function NewSale() {
         }
       }
 
-        // Validate user is authenticated and has permissions
-        if (!user?.id) {
-          throw new Error('Usuario no autenticado. Por favor, inicie sesión nuevamente.');
-        }
+      const validUserId = orderSnapshot.userId;
 
-        if (!canCreateOrders) {
-          throw new Error('Usuario sin permisos para crear órdenes. Se requiere rol de Cajero o Administrador.');
-        }
+      // Establecer contexto de staff antes de crear orden
+      try {
+        await setStaffContext(validUserId);
+      } catch (contextError) {
+        console.error('Error estableciendo contexto de staff:', contextError);
+        throw new Error('Error al establecer contexto de usuario');
+      }
 
-        const validUserId = user.id;
+      // Calculate payment totals by method
+      const totals = paymentData.payments.reduce(
+        (acc, payment) => {
+          if (payment.method === 'Efectivo') {
+            acc.efectivo += payment.amount;
+          } else if (payment.method === 'POS') {
+            acc.pos += payment.amount;
+          } else if (payment.method === 'Transferencia') {
+            acc.mp += payment.amount;
+          } else if (payment.method === 'Aplicación') {
+            acc.aplicacion += payment.amount;
+          } else if (payment.method === 'Runas') {
+            acc.runas += payment.runas || 0;
+          }
+          return acc;
+        },
+        { efectivo: 0, pos: 0, mp: 0, aplicacion: 0, runas: 0 }
+      );
 
-        // Establecer contexto de staff antes de crear orden
-        try {
-          await setStaffContext(validUserId);
-        } catch (contextError) {
-          console.error('Error estableciendo contexto de staff:', contextError);
-          throw new Error('Error al establecer contexto de usuario');
-        }
+      // Determine payment method
+      const paymentMethod: 'efectivo' | 'pos' | 'mp' | 'aplicacion' | 'mixto' | 'runas' =
+        paymentData.payments.length === 1
+          ? (() => {
+              const method = paymentData.payments[0].method;
+              if (method === 'Efectivo') return 'efectivo';
+              if (method === 'POS') return 'pos';
+              if (method === 'Transferencia') return 'mp';
+              if (method === 'Aplicación') return 'aplicacion';
+              if (method === 'Runas') return 'runas';
+              return 'efectivo';
+            })()
+          : 'mixto';
 
-        // Calculate payment totals by method
-        const totals = paymentData.payments.reduce(
-          (acc, payment) => {
-            if (payment.method === 'Efectivo') {
-              acc.efectivo += payment.amount;
-            } else if (payment.method === 'POS') {
-              acc.pos += payment.amount;
-            } else if (payment.method === 'Transferencia') {
-              acc.mp += payment.amount;
-            } else if (payment.method === 'Aplicación') {
-              acc.aplicacion += payment.amount;
-            } else if (payment.method === 'Runas') {
-              acc.runas += payment.runas || 0;
-            }
-            return acc;
-          },
-          { efectivo: 0, pos: 0, mp: 0, aplicacion: 0, runas: 0 }
-        );
+      const orderData = {
+        customer_id: customerId,
+        created_by_user_id: validUserId,
+        nombre_resumen: orderSnapshot.orderName,
+        fulfillment: orderSnapshot.fulfillment,
+        items: orderSnapshot.cartItems as any,
+        subtotal: orderSnapshot.subtotal,
+        delivery_fee: orderSnapshot.deliveryFee,
+        discount: orderSnapshot.totalDiscount,
+        total: orderSnapshot.total,
+        payment_efectivo: totals.efectivo,
+        payment_mp: totals.mp,
+        payment_pos: totals.pos,
+        payment_aplicacion: totals.aplicacion,
+        payment_runas: totals.runas,
+        payment_method: paymentMethod,
+        status: 'Pendiente' as const,
+        notes: paymentData.notes || null,
+        // Delivery snapshot fields
+        ...(orderSnapshot.fulfillment === 'delivery' && orderSnapshot.deliveryData && {
+          delivery_zone_id: orderSnapshot.deliveryData.zone?.id,
+          delivery_zone_name: orderSnapshot.deliveryData.zone?.name,
+          delivery_address: orderSnapshot.deliveryData.addressLine,
+          delivery_number: orderSnapshot.deliveryData.addressNumber,
+          delivery_comuna_id: orderSnapshot.deliveryData.comunaId,
+          delivery_comuna: orderSnapshot.deliveryData.comunaName,
+          delivery_reference: orderSnapshot.deliveryData.reference,
+          delivery_person_id: orderSnapshot.deliveryData.repartidorId || null,
+          delivery_person_name: orderSnapshot.deliveryData.repartidorName || null
+        })
+      };
 
-        // Determine payment method
-        const paymentMethod: 'efectivo' | 'pos' | 'mp' | 'aplicacion' | 'mixto' =
-          paymentData.payments.length === 1
-            ? (() => {
-                const method = paymentData.payments[0].method;
-                if (method === 'Efectivo') return 'efectivo';
-                if (method === 'POS') return 'pos';
-                if (method === 'Transferencia') return 'mp';
-                if (method === 'Aplicación') return 'aplicacion';
-                return 'efectivo';
-              })()
-            : 'mixto';
-
-        const orderData = {
-          customer_id: customerId,
-          created_by_user_id: validUserId,
-          nombre_resumen: orderName.trim() || null,
-          fulfillment: fulfillment,
-          items: cartItems as any,
-          subtotal,
-          delivery_fee: deliveryFee,
-          discount: totalDiscount,
-          total,
-          payment_efectivo: totals.efectivo,
-          payment_mp: totals.mp,
-          payment_pos: totals.pos,
-          payment_aplicacion: totals.aplicacion,
-          payment_runas: totals.runas,
-          payment_method: paymentMethod,
-          status: 'Pendiente' as const,
-          notes: paymentData.notes || null,
-          // Delivery snapshot fields
-          ...(fulfillment === 'delivery' && deliveryData && {
-            delivery_zone_id: deliveryData.zone?.id,
-            delivery_zone_name: deliveryData.zone?.name,
-            delivery_address: deliveryData.addressLine,
-            delivery_number: deliveryData.addressNumber,
-            delivery_comuna_id: deliveryData.comunaId,
-            delivery_comuna: deliveryData.comunaName,
-            delivery_reference: deliveryData.reference,
-            delivery_person_id: deliveryData.repartidorId || null,
-            delivery_person_name: deliveryData.repartidorName || null
-          })
-        };
-
-      // Crear orden usando función transaccional que maneja el contexto
-      // La función RPC ahora retorna la orden completa, no necesitamos hacer SELECT adicional
+      // Crear orden usando función transaccional
       const { data: orderResult, error: orderError } = await supabase.rpc('create_order_with_context', {
         p_user_id: validUserId,
         p_order_data: orderData
@@ -409,49 +491,43 @@ export default function NewSale() {
 
       if (orderError) throw orderError;
       
-      // La función RPC retorna la orden completa directamente
       const fullOrderData = orderResult as any;
 
       // Save address if requested
-      if (fulfillment === 'delivery' && deliveryData?.saveAddress && customerId) {
+      if (orderSnapshot.fulfillment === 'delivery' && orderSnapshot.deliveryData?.saveAddress && customerId) {
         try {
           await supabase.from('addresses').insert({
             customer_id: customerId,
-            calle: deliveryData.addressLine,
-            numero: deliveryData.addressNumber,
-            comuna_id: deliveryData.comunaId,
-            comuna: deliveryData.comunaName,
-            observaciones: deliveryData.reference,
+            calle: orderSnapshot.deliveryData.addressLine,
+            numero: orderSnapshot.deliveryData.addressNumber,
+            comuna_id: orderSnapshot.deliveryData.comunaId,
+            comuna: orderSnapshot.deliveryData.comunaName,
+            observaciones: orderSnapshot.deliveryData.reference,
             is_default: false
           });
         } catch (error) {
           console.error('Error saving address:', error);
-          // Don't fail the order if address save fails
         }
       }
 
       // Handle runas transactions if applicable
-      if (customerId && (totals.runas > 0 || total > 0)) {
+      if (customerId && (totals.runas > 0 || orderSnapshot.total > 0)) {
         const transactions = [];
         
-        // Runas spent (usar valor de canje)
         if (totals.runas > 0) {
           transactions.push({
             customer_id: customerId,
             order_id: fullOrderData.id,
             type: 'canje',
-            amount: totals.runas * runaRewardValue,
+            amount: totals.runas * orderSnapshot.runaRewardValue,
             runas: -totals.runas,
             origen: 'POS'
           });
         }
 
-        // Runas earned (from total amount paid, excluding runas discount)
-        // Usar valor de canje para calcular el descuento aplicado
-        const runasDiscountAmount = totals.runas * runaRewardValue;
-        const earnableAmount = total - runasDiscountAmount;
-        // Usar valor de acumulación para calcular cuántas runas se ganan
-        const runasEarned = Math.floor(earnableAmount / runaValue);
+        const runasDiscountAmount = totals.runas * orderSnapshot.runaRewardValue;
+        const earnableAmount = orderSnapshot.total - runasDiscountAmount;
+        const runasEarned = Math.floor(earnableAmount / orderSnapshot.runaValue);
         if (runasEarned > 0) {
           transactions.push({
             customer_id: customerId,
@@ -466,8 +542,7 @@ export default function NewSale() {
         if (transactions.length > 0) {
           await supabase.from('runas_transactions').insert(transactions);
           
-          // Update customer runas balance
-          const newBalance = (customer.cantidad_runas || 0) - totals.runas + runasEarned;
+          const newBalance = (orderSnapshot.customer.cantidad_runas || 0) - totals.runas + runasEarned;
           await supabase
             .from('customers')
             .update({ cantidad_runas: Math.max(0, newBalance) })
@@ -475,38 +550,22 @@ export default function NewSale() {
         }
       }
 
-      // Descontar inventario automáticamente según recetas
+      // Descontar inventario
       try {
         const inventoryResult = await deductInventoryFromOrder(fullOrderData.id);
         
         if (!inventoryResult.success && inventoryResult.errors.length > 0) {
           console.warn('Advertencias de inventario:', inventoryResult.errors);
-          // No bloqueamos la venta si hay error de inventario, solo registramos
-          // Esto permite que la venta se procese incluso si el inventario no está configurado
         }
       } catch (inventoryError) {
         console.error('Error al descontar inventario (no crítico):', inventoryError);
-        // Continuar con la venta incluso si falla el descuento de inventario
       }
 
       toast({
-        title: "¡Éxito!",
-        description: `Pedido #${fullOrderData.order_number} creado y enviado a cocina`
+        title: "¡Pedido creado!",
+        description: `Pedido #${fullOrderData.order_number} enviado a cocina exitosamente`,
+        duration: 5000
       });
-
-      // Reset form
-      setCartItems([]);
-      setCustomer({});
-      setOrderName('');
-      setUsedRunas(0);
-      setFulfillment('retiro');
-      setDeliveryFee(0);
-      setDeliveryZone('');
-      setDeliveryData(null);
-      setAppliedCoupons([]);
-      setManualDiscount(null);
-      setCurrentStep(1);
-      setShowPaymentModal(false);
 
     } catch (error) {
       console.error('Error processing order:', error);
@@ -517,10 +576,13 @@ export default function NewSale() {
       }
       
       toast({
-        title: "Error",
+        title: "Error al procesar pedido",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
+        duration: 7000
       });
+    } finally {
+      setIsProcessingOrder(false);
     }
   };
 
