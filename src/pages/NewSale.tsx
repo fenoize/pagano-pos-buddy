@@ -10,6 +10,7 @@ import { useCashSession } from '@/hooks/useCashSession';
 import { setStaffContext } from '@/lib/dbContext';
 import CustomerSearchStep from '@/components/pos/CustomerSearchStep';
 import CustomerSearchWidget from '@/components/pos/CustomerSearchWidget';
+import { CustomerModal } from '@/components/pos/CustomerModal';
 import FulfillmentStep, { DeliveryData } from '@/components/pos/FulfillmentStep';
 import { createDeliverySnapshot } from '@/lib/deliveryHelpers';
 import ProductGrid from '@/components/pos/ProductGrid';
@@ -19,7 +20,7 @@ import PaymentModal from '@/components/pos/PaymentModal';
 import RunasCalculator from '@/components/pos/RunasCalculator';
 import { CouponManager } from '@/components/pos/CouponManager';
 import { CouponModal } from '@/components/pos/CouponModal';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, User, Ticket } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -44,6 +45,7 @@ export default function NewSale() {
   const [appliedCoupons, setAppliedCoupons] = useState<CouponApplication[]>([]);
   const [manualDiscount, setManualDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number; amount: number } | null>(null);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   
   // Preloaded customization data
@@ -612,6 +614,32 @@ export default function NewSale() {
               {/* Cart */}
               <ScrollArea className="h-[calc(100vh-12rem)]">
                 <div className="space-y-4 pr-4">
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start gap-2"
+                      onClick={() => setIsCustomerModalOpen(true)}
+                    >
+                      <User className="w-4 h-4" />
+                      <span className="truncate">
+                        {customer.id ? customer.name : 'Cliente'}
+                      </span>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start gap-2"
+                      onClick={() => setIsCouponModalOpen(true)}
+                    >
+                      <Ticket className="w-4 h-4" />
+                      <span className="truncate">
+                        {appliedCoupons.length > 0 || manualDiscount 
+                          ? `Descuento${appliedCoupons.length > 1 ? 's' : ''}` 
+                          : 'Cupón'}
+                      </span>
+                    </Button>
+                  </div>
+
                   <Cart
                   items={cartItems}
                   onUpdateQuantity={updateItemQuantity}
@@ -640,30 +668,6 @@ export default function NewSale() {
                       }
                       setCurrentStep(2);
                     }}
-                />
-
-                {/* Coupon Manager */}
-                <CouponManager 
-                  appliedCoupons={appliedCoupons}
-                  onAddCoupon={() => setIsCouponModalOpen(true)}
-                  onRemoveCoupon={(couponId) => {
-                    setAppliedCoupons(prev => prev.filter(c => c.coupon_id !== couponId));
-                  }}
-                  subtotal={subtotal}
-                  cartItems={cartItems}
-                  totalCouponDiscount={couponDiscount}
-                  manualDiscount={manualDiscount}
-                  onManualDiscountChange={setManualDiscount}
-                />
-
-                {/* Customer Search Widget */}
-                <CustomerSearchWidget
-                  customer={customer}
-                  onCustomerChange={setCustomer}
-                  totalAmount={total}
-                  runaValue={runaValue}
-                  onRunasChange={setUsedRunas}
-                  usedRunas={usedRunas}
                 />
                 </div>
               </ScrollArea>
@@ -782,13 +786,30 @@ export default function NewSale() {
         onClose={() => setIsCouponModalOpen(false)}
         onApply={(coupon) => {
           setAppliedCoupons(prev => [...prev, coupon]);
-          setIsCouponModalOpen(false);
         }}
         cartItems={cartItems}
         subtotal={subtotal}
         deliveryFee={deliveryFee}
         customer={customer}
         existingCoupons={appliedCoupons}
+        onRemoveCoupon={(couponId) => {
+          setAppliedCoupons(prev => prev.filter(c => c.coupon_id !== couponId));
+        }}
+        manualDiscount={manualDiscount}
+        onManualDiscountChange={setManualDiscount}
+      />
+
+      {/* Customer Modal */}
+      <CustomerModal
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        customer={customer}
+        onCustomerChange={setCustomer}
+        totalAmount={total}
+        runaValue={runaValue}
+        runaRewardValue={runaRewardValue}
+        onRunasChange={setUsedRunas}
+        usedRunas={usedRunas}
       />
     </div>
   );
