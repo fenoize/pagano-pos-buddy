@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign, MapPin, Star, CreditCard, Tag, Smartphone, Shield } from 'lucide-react';
+import { Settings, DollarSign, MapPin, Star, CreditCard, Tag, Smartphone, Shield, Medal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
 import { FidelizationConfig } from '@/components/config/FidelizationConfig';
+import { BadgesConfig } from '@/components/config/BadgesConfig';
 import { PaymentMethodsConfig } from '@/components/config/PaymentMethodsConfig';
 import { PWAConfig } from '@/components/config/PWAConfig';
 import { CategoryConfig } from '@/components/config/CategoryConfig';
@@ -57,6 +58,10 @@ export default function ConfiguracionPage() {
             <Star className="w-4 h-4" />
             <span>Runas</span>
           </TabsTrigger>
+          <TabsTrigger value="badges" className="w-full justify-start gap-3 px-4 py-2.5">
+            <Medal className="w-4 h-4" />
+            <span>Insignias</span>
+          </TabsTrigger>
           <TabsTrigger value="coupons" className="w-full justify-start gap-3 px-4 py-2.5">
             <Tag className="w-4 h-4" />
             <span>Cupones</span>
@@ -100,6 +105,10 @@ export default function ConfiguracionPage() {
 
           <TabsContent value="fidelization" className="mt-0 space-y-6">
             <FidelizationConfig />
+          </TabsContent>
+
+          <TabsContent value="badges" className="mt-0 space-y-6">
+            <BadgesConfig />
           </TabsContent>
 
           <TabsContent value="coupons" className="mt-0 space-y-6">

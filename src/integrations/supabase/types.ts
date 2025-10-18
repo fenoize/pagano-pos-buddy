@@ -2989,6 +2989,10 @@ export type Database = {
           username: string
         }[]
       }
+      check_and_award_badge: {
+        Args: { p_badge_code: string; p_customer_id: string }
+        Returns: boolean
+      }
       cleanup_expired_reset_codes: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -3048,6 +3052,10 @@ export type Database = {
       get_material_base_uom: {
         Args: { p_raw_material_id: string }
         Returns: string
+      }
+      has_orders_in_last_4_weeks: {
+        Args: { p_customer_id: string }
+        Returns: boolean
       }
       has_permission: {
         Args: { _permission: string; _user_id: string }

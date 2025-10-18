@@ -23,6 +23,7 @@ import { CouponModal } from '@/components/pos/CouponModal';
 import { ArrowLeft, ArrowRight, User, Ticket } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { checkAndAwardBadges } from '@/lib/badgeAwarder';
 
 export default function NewSale() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -512,10 +513,28 @@ export default function NewSale() {
         }
       }
 
-      // Handle runas transactions if applicable
+      // Load runas configuration
+      const { data: runaConfigData } = await supabase
+        .from('config')
+        .select('key, value')
+        .in('key', [
+          'runa_value',
+          'runa_reward_value',
+          'runas_exclude_if_paid_with_runas',
+          'runas_exclude_if_discounted',
+          'runas_min_eligible_amount'
+        ]);
+
+      const runaConfig = runaConfigData?.reduce((acc, item) => {
+        acc[item.key] = item.value;
+        return acc;
+      }, {} as Record<string, any>) || {};
+
+      // Handle runas transactions with business rules
       if (customerId && (totals.runas > 0 || orderSnapshot.total > 0)) {
         const transactions = [];
         
+        // Redemption transaction (always recorded if runas are used)
         if (totals.runas > 0) {
           transactions.push({
             customer_id: customerId,
@@ -527,28 +546,78 @@ export default function NewSale() {
           });
         }
 
-        const runasDiscountAmount = totals.runas * orderSnapshot.runaRewardValue;
-        const earnableAmount = orderSnapshot.total - runasDiscountAmount;
-        const runasEarned = Math.floor(earnableAmount / orderSnapshot.runaValue);
-        if (runasEarned > 0) {
-          transactions.push({
-            customer_id: customerId,
-            order_id: fullOrderData.id,
-            type: 'acumulacion',
-            amount: earnableAmount,
-            runas: runasEarned,
-            origen: 'POS'
-          });
+        // Accumulation transaction (WITH BUSINESS RULES)
+        let canEarnRunas = true;
+        let reason = '';
+        
+        // Rule 1: Do not accumulate if paid with runas
+        if (runaConfig.runas_exclude_if_paid_with_runas && totals.runas > 0) {
+          canEarnRunas = false;
+          reason = 'Pago con runas';
+        }
+        
+        // Rule 2: Do not accumulate if there are discounts/coupons
+        if (runaConfig.runas_exclude_if_discounted && orderSnapshot.totalDiscount > 0) {
+          canEarnRunas = false;
+          reason = 'Descuento aplicado';
+        }
+        
+        // Rule 3: Minimum eligible amount
+        const eligibleAmount = orderSnapshot.total;
+        if (eligibleAmount < (runaConfig.runas_min_eligible_amount || 0)) {
+          canEarnRunas = false;
+          reason = 'Monto insuficiente';
+        }
+        
+        if (canEarnRunas) {
+          const runasDiscountAmount = totals.runas * orderSnapshot.runaRewardValue;
+          const earnableAmount = orderSnapshot.total - runasDiscountAmount;
+          const runasEarned = Math.floor(earnableAmount / orderSnapshot.runaValue);
+          
+          if (runasEarned > 0) {
+            transactions.push({
+              customer_id: customerId,
+              order_id: fullOrderData.id,
+              type: 'acumulacion',
+              amount: earnableAmount,
+              runas: runasEarned,
+              origen: 'POS'
+            });
+          }
+        } else {
+          console.log(`No se acumulan runas en orden ${fullOrderData.id}: ${reason}`);
         }
 
+        // Insert transactions and update balance
         if (transactions.length > 0) {
           await supabase.from('runas_transactions').insert(transactions);
           
-          const newBalance = (orderSnapshot.customer.cantidad_runas || 0) - totals.runas + runasEarned;
+          const runasChange = transactions.reduce((sum, t) => sum + t.runas, 0);
+          const newBalance = (orderSnapshot.customer.cantidad_runas || 0) + runasChange;
+          
           await supabase
             .from('customers')
             .update({ cantidad_runas: Math.max(0, newBalance) })
             .eq('id', customerId);
+        }
+      }
+
+      // Check and award badges
+      if (customerId) {
+        try {
+          const badgeResults = await checkAndAwardBadges(customerId, fullOrderData.id);
+          const newBadges = badgeResults.filter(r => r.awarded);
+          
+          if (newBadges.length > 0) {
+            console.log(`✨ Nuevas insignias otorgadas: ${newBadges.map(b => b.badgeCode).join(', ')}`);
+            toast({
+              title: '🏆 ¡Nueva insignia!',
+              description: `El cliente ha ganado ${newBadges.length} insignia(s) nueva(s)`,
+            });
+          }
+        } catch (badgeError) {
+          console.error('Error otorgando insignias:', badgeError);
+          // Not critical, don't interrupt flow
         }
       }
 

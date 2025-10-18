@@ -10,12 +10,15 @@ import { Star, Save, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface FidelizationSettings {
-  runa_value: number; // Cuánto se debe gastar para ganar 1 runa
-  runa_reward_value: number; // Valor de cada runa al canjear
-  max_runas_per_order: number; // Máximo de runas que se pueden usar por pedido
-  min_purchase_for_runas: number; // Compra mínima para empezar a acumular runas
-  runa_expiry_days: number; // Días de validez de las runas (0 = no expiran)
-  fidelization_active: boolean; // Sistema de runas activo/inactivo
+  runa_value: number;
+  runa_reward_value: number;
+  max_runas_per_order: number;
+  min_purchase_for_runas: number;
+  runa_expiry_days: number;
+  fidelization_active: boolean;
+  runas_exclude_if_paid_with_runas: boolean;
+  runas_exclude_if_discounted: boolean;
+  runas_min_eligible_amount: number;
 }
 
 export function FidelizationConfig() {
@@ -25,7 +28,10 @@ export function FidelizationConfig() {
     max_runas_per_order: 50,
     min_purchase_for_runas: 1000,
     runa_expiry_days: 0,
-    fidelization_active: true
+    fidelization_active: true,
+    runas_exclude_if_paid_with_runas: true,
+    runas_exclude_if_discounted: true,
+    runas_min_eligible_amount: 1000,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,7 +52,10 @@ export function FidelizationConfig() {
           'max_runas_per_order',
           'min_purchase_for_runas',
           'runa_expiry_days',
-          'fidelization_active'
+          'fidelization_active',
+          'runas_exclude_if_paid_with_runas',
+          'runas_exclude_if_discounted',
+          'runas_min_eligible_amount'
         ]);
 
       if (error) throw error;
@@ -62,7 +71,10 @@ export function FidelizationConfig() {
         max_runas_per_order: configMap.max_runas_per_order || 50,
         min_purchase_for_runas: configMap.min_purchase_for_runas || 1000,
         runa_expiry_days: configMap.runa_expiry_days || 0,
-        fidelization_active: configMap.fidelization_active !== false
+        fidelization_active: configMap.fidelization_active !== false,
+        runas_exclude_if_paid_with_runas: configMap.runas_exclude_if_paid_with_runas !== false,
+        runas_exclude_if_discounted: configMap.runas_exclude_if_discounted !== false,
+        runas_min_eligible_amount: configMap.runas_min_eligible_amount || 1000,
       });
     } catch (error) {
       console.error('Error loading fidelization settings:', error);
@@ -273,9 +285,76 @@ export function FidelizationConfig() {
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Restricciones de Acumulación</CardTitle>
+          <CardDescription>
+            Define cuándo NO se deben acumular runas
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5 flex-1">
+              <Label htmlFor="runas_exclude_if_paid_with_runas" className="text-base font-medium">
+                No acumular si se paga con runas
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Los clientes no ganan runas en compras pagadas con runas
+              </p>
+            </div>
+            <Switch
+              id="runas_exclude_if_paid_with_runas"
+              checked={settings.runas_exclude_if_paid_with_runas}
+              onCheckedChange={(checked) => handleInputChange('runas_exclude_if_paid_with_runas', checked)}
+              disabled={!settings.fidelization_active}
+            />
+          </div>
 
           <Separator />
 
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5 flex-1">
+              <Label htmlFor="runas_exclude_if_discounted" className="text-base font-medium">
+                No acumular si hay descuentos o cupones
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Los clientes no ganan runas en compras con descuentos aplicados
+              </p>
+            </div>
+            <Switch
+              id="runas_exclude_if_discounted"
+              checked={settings.runas_exclude_if_discounted}
+              onCheckedChange={(checked) => handleInputChange('runas_exclude_if_discounted', checked)}
+              disabled={!settings.fidelization_active}
+            />
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <Label htmlFor="runas_min_eligible_amount">
+              Monto mínimo para acumular runas
+            </Label>
+            <Input
+              id="runas_min_eligible_amount"
+              type="number"
+              value={settings.runas_min_eligible_amount}
+              onChange={(e) => handleInputChange('runas_min_eligible_amount', e.target.value)}
+              min="0"
+              disabled={!settings.fidelization_active}
+            />
+            <p className="text-xs text-muted-foreground">
+              Compras bajo este monto no acumulan runas ({formatCurrency(settings.runas_min_eligible_amount)})
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
           {/* Botón de Guardar */}
           <div className="flex justify-end">
             <Button 
@@ -297,6 +376,8 @@ export function FidelizationConfig() {
             </Button>
           </div>
 
+          <Separator />
+
           {/* Resumen de Configuración */}
           <Card className="bg-muted/50">
             <CardHeader>
@@ -315,6 +396,12 @@ export function FidelizationConfig() {
               </p>
               <p>
                 <strong>Expiración:</strong> {settings.runa_expiry_days === 0 ? 'Sin expiración' : `${settings.runa_expiry_days} días`}
+              </p>
+              <p>
+                <strong>Restricciones:</strong> 
+                {settings.runas_exclude_if_paid_with_runas && ' Sin runas si paga con runas.'}
+                {settings.runas_exclude_if_discounted && ' Sin runas si hay descuentos.'}
+                {settings.runas_min_eligible_amount > 0 && ` Mínimo ${formatCurrency(settings.runas_min_eligible_amount)}.`}
               </p>
             </CardContent>
           </Card>
