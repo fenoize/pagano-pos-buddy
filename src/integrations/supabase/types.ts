@@ -191,6 +191,13 @@ export type Database = {
             foreignKeyName: "cash_session_audits_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "cash_session_audits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -676,6 +683,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "app_orders_kitchen"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_applications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "coupon_applications_order_id_fkey"
@@ -1273,6 +1287,63 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_closures: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          date_end: string
+          date_start: string
+          id: string
+          is_locked: boolean
+          notes: string | null
+          period_type: string
+          totals: Json
+          tz: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          date_end: string
+          date_start: string
+          id?: string
+          is_locked?: boolean
+          notes?: string | null
+          period_type: string
+          totals?: Json
+          tz?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          date_end?: string
+          date_start?: string
+          id?: string
+          is_locked?: boolean
+          notes?: string | null
+          period_type?: string
+          totals?: Json
+          tz?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_closures_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_closures_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory: {
         Row: {
           id: string
@@ -1386,6 +1457,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "app_orders_kitchen"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_delivery_audit_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "order_delivery_audit_order_id_fkey"
@@ -2371,6 +2449,13 @@ export type Database = {
             foreignKeyName: "runas_transactions_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "runas_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -2580,6 +2665,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "app_orders_kitchen"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_moves_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "stock_moves_related_order_id_fkey"
@@ -2964,6 +3056,30 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_export_v: {
+        Row: {
+          created_at_cl: string | null
+          direccion_completa: string | null
+          monto_delivery: number | null
+          order_id: string | null
+          order_number: string | null
+        }
+        Insert: {
+          created_at_cl?: never
+          direccion_completa?: never
+          monto_delivery?: never
+          order_id?: string | null
+          order_number?: never
+        }
+        Update: {
+          created_at_cl?: never
+          direccion_completa?: never
+          monto_delivery?: never
+          order_id?: string | null
+          order_number?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_orders_to_sessions: {
@@ -3029,6 +3145,15 @@ export type Database = {
         Args: { p_order_id: string; p_warehouse_id?: string }
         Returns: Json
       }
+      delivery_export_range: {
+        Args: { _end: string; _start: string; _tz?: string }
+        Returns: {
+          direccion: string
+          fecha_hora: string
+          monto_delivery: string
+          numero_orden: string
+        }[]
+      }
       ensure_stock_balance: {
         Args: {
           p_lot_id?: string
@@ -3036,6 +3161,28 @@ export type Database = {
           p_warehouse_id: string
         }
         Returns: string
+      }
+      finance_generate_closure: {
+        Args: {
+          _created_by: string
+          _end: string
+          _notes: string
+          _period_type: string
+          _start: string
+          _tz?: string
+        }
+        Returns: string
+      }
+      finance_get_kpis: {
+        Args: { _end: string; _start: string; _tz?: string }
+        Returns: Json
+      }
+      finance_normalize_range: {
+        Args: { _end: string; _start: string; _tz?: string }
+        Returns: {
+          ts_end: string
+          ts_start: string
+        }[]
       }
       generate_simple_hash: {
         Args: { password: string }

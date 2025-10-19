@@ -72,6 +72,12 @@ const inventoryItems = [
   { title: "Reportes", url: "/pos/inventario/reportes", icon: TrendingUpIcon, roles: ['Administrador'] },
 ];
 
+const financeItems = [
+  { title: "Indicadores (KPIs)", url: "/pos/finanzas/kpis", icon: TrendingUpIcon, roles: ['Administrador', 'Cajero'] },
+  { title: "Cierres Financieros", url: "/pos/finanzas/cierres", icon: FileText, roles: ['Administrador'] },
+  { title: "Exportaciones", url: "/pos/finanzas/exportaciones", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
@@ -79,6 +85,9 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const [inventoryOpen, setInventoryOpen] = useState(
     currentPath.startsWith("/pos/inventario")
+  );
+  const [financeOpen, setFinanceOpen] = useState(
+    currentPath.startsWith("/pos/finanzas")
   );
 
   const isCollapsed = state === "collapsed";
@@ -160,6 +169,61 @@ export function AppSidebar() {
                     {!isCollapsed && (
                       <CollapsibleContent className="mt-1 space-y-1">
                         {inventoryItems
+                          .filter(item => canAccessRoute(item.roles as AppRole[]))
+                          .map((item) => (
+                          <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton asChild>
+                              <NavLink
+                                to={item.url}
+                                end
+                                className={({ isActive }) =>
+                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
+                                }
+                              >
+                                <item.icon className="h-3 w-3 shrink-0" />
+                                <span className="text-xs">{item.title}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </CollapsibleContent>
+                    )}
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
+              
+              {/* Finanzas Collapsible Group */}
+              {canAccessRoute(['Administrador', 'Cajero'] as AppRole[]) && (
+                <Collapsible
+                  open={financeOpen}
+                  onOpenChange={setFinanceOpen}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                          currentPath.startsWith("/pos/finanzas")
+                            ? "bg-primary text-primary-foreground font-semibold"
+                            : "text-primary hover:bg-primary hover:text-primary-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <TrendingUpIcon className="h-4 w-4 shrink-0" />
+                          {!isCollapsed && <span>Finanzas</span>}
+                        </div>
+                        {!isCollapsed && (
+                          financeOpen ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    {!isCollapsed && (
+                      <CollapsibleContent className="mt-1 space-y-1">
+                        {financeItems
                           .filter(item => canAccessRoute(item.roles as AppRole[]))
                           .map((item) => (
                           <SidebarMenuItem key={item.title}>

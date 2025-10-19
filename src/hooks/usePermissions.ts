@@ -121,6 +121,11 @@ export function usePermissions() {
   const canTransferStock = useMemo(() => can('stock.transfer'), [can]);
   const canViewKardex = useMemo(() => can('kardex.view'), [can]);
 
+  // Permisos de Finanzas
+  const canViewFinance = useMemo(() => can('finance.view'), [can]);
+  const canManageClosures = useMemo(() => can('finance.manage_closures'), [can]);
+  const canExportFinance = useMemo(() => can('finance.export'), [can]);
+
   return {
     // Estado
     permissions,
@@ -163,5 +168,10 @@ export function usePermissions() {
     canAdjustStock,
     canTransferStock,
     canViewKardex,
+    
+    // Finanzas
+    canViewFinance,
+    canManageClosures,
+    canExportFinance,
   };
 }

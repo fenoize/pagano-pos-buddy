@@ -49,6 +49,11 @@ const RawMaterials = lazy(() => import("@/pages/inventory/RawMaterials"));
 const Recipes = lazy(() => import("@/pages/inventory/Recipes"));
 const Kardex = lazy(() => import("@/pages/inventory/Kardex"));
 
+// Finance Pages
+const FinanceKPIs = lazy(() => import("@/pages/finance/FinanceKPIs"));
+const FinanceCierres = lazy(() => import("@/pages/finance/FinanceCierres"));
+const FinanceExport = lazy(() => import("@/pages/finance/FinanceExport"));
+
 // Loading component para Suspense
 function LoadingFallback() {
   return (
@@ -274,6 +279,31 @@ const App = () => (
                     <div className="p-6 text-center text-muted-foreground">
                       Reportes de Inventario - En desarrollo
                     </div>
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              {/* Finance Routes */}
+              <Route path="/pos/finanzas/kpis" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <FinanceKPIs />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/finanzas/cierres" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <FinanceCierres />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/finanzas/exportaciones" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <FinanceExport />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />
