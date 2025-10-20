@@ -8,7 +8,9 @@ import { CalendarIcon, TrendingUp, DollarSign, ShoppingCart, Truck, Percent, Rec
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { KPICard } from '@/components/finance/KPICard';
+import { DashboardCharts } from '@/components/finance/DashboardCharts';
 import { useFinanceKPIs } from '@/hooks/useFinanceKPIs';
+import { useFinanceDailyData } from '@/hooks/useFinanceDailyData';
 import { DateRangePreset } from '@/types/finance';
 import { cn } from '@/lib/utils';
 
@@ -20,6 +22,7 @@ export default function FinanceKPIs() {
   const [endCalendarOpen, setEndCalendarOpen] = useState(false);
 
   const { kpis, loading } = useFinanceKPIs(startDate, endDate);
+  const { dailyData, loading: loadingDaily } = useFinanceDailyData(startDate, endDate);
 
   const handlePresetChange = (value: DateRangePreset) => {
     setPreset(value);
@@ -182,6 +185,9 @@ export default function FinanceKPIs() {
               trend={kpis.costs.gross_margin_pct > 60 ? 'up' : 'neutral'}
             />
           </div>
+
+          {/* Dashboard Charts */}
+          <DashboardCharts kpis={kpis} dailyData={dailyData} loading={loadingDaily} />
         </>
       ) : (
         <div className="text-center py-12 text-muted-foreground">

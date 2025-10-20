@@ -3173,6 +3173,17 @@ export type Database = {
         }
         Returns: string
       }
+      finance_get_daily_data: {
+        Args: { _end: string; _start: string; _tz?: string }
+        Returns: {
+          cogs: number
+          day: string
+          discounts: number
+          gross_sales: number
+          net_sales: number
+          orders_count: number
+        }[]
+      }
       finance_get_kpis: {
         Args: { _end: string; _start: string; _tz?: string }
         Returns: Json

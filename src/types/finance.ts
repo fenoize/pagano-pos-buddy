@@ -42,3 +42,12 @@ export interface DeliveryExportRow {
 }
 
 export type DateRangePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
+
+export interface FinanceDailyData {
+  day: string;
+  gross_sales: number;
+  net_sales: number;
+  discounts: number;
+  orders_count: number;
+  cogs: number;
+}
