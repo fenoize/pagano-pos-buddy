@@ -7,10 +7,6 @@ export function useFinanceDailyData(startDate: Date, endDate: Date) {
   const [dailyData, setDailyData] = useState<FinanceDailyData[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchDailyData();
-  }, [startDate, endDate]);
-
   const fetchDailyData = async () => {
     setLoading(true);
     try {
@@ -20,15 +16,23 @@ export function useFinanceDailyData(startDate: Date, endDate: Date) {
         _tz: 'America/Santiago'
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching daily data:', error);
+        toast.error('Error cargando datos diarios');
+        throw error;
+      }
       setDailyData((data as unknown as FinanceDailyData[]) || []);
     } catch (error) {
       console.error('Error fetching daily data:', error);
-      toast.error('Error cargando datos diarios');
+      setDailyData([]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDailyData();
+  }, [startDate, endDate]);
 
   return { dailyData, loading, refetch: fetchDailyData };
 }

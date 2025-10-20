@@ -7,10 +7,6 @@ export function useFinanceKPIs(startDate: Date, endDate: Date) {
   const [kpis, setKpis] = useState<FinancialKPIs | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchKPIs();
-  }, [startDate, endDate]);
-
   const fetchKPIs = async () => {
     setLoading(true);
     try {
@@ -20,15 +16,23 @@ export function useFinanceKPIs(startDate: Date, endDate: Date) {
         _tz: 'America/Santiago'
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching KPIs:', error);
+        toast.error('Error cargando indicadores financieros');
+        throw error;
+      }
       setKpis(data as unknown as FinancialKPIs);
     } catch (error) {
       console.error('Error fetching KPIs:', error);
-      toast.error('Error cargando indicadores financieros');
+      setKpis(null);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchKPIs();
+  }, [startDate, endDate]);
 
   return { kpis, loading, refetch: fetchKPIs };
 }
