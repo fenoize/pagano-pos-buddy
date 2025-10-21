@@ -64,7 +64,7 @@ export default function FinanceKPIs() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <TrendingUp className="w-8 h-8 text-primary" />
-          <h1 className="text-3xl font-bold">Indicadores Financieros</h1>
+          <h1 className="text-3xl font-bold">Escritorio</h1>
         </div>
 
         {/* Filtros de rango */}
