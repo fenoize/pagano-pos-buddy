@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Clock, Users, Maximize2, Minimize2, X, RefreshCw } from 'lucide-react';
 
 export default function Kitchen() {
-  const { orders, updateOrderStatus, loading, refetch } = useKitchenOrders();
+  const { orders, updateOrderStatus, loading, refetch, updatingOrders } = useKitchenOrders();
   const { config } = useKitchenConfig();
   const { isExpanded, toggleExpanded, exitExpanded } = useKitchenExpanded();
   const isMobile = useIsMobile();
@@ -116,6 +116,7 @@ export default function Kitchen() {
                     config={config}
                     onStatusChange={updateOrderStatus}
                     compact={isMobile}
+                    isUpdating={updatingOrders.has(order.id)}
                   />
                 ))}
             </div>
@@ -208,6 +209,7 @@ export default function Kitchen() {
                 config={config}
                 onStatusChange={updateOrderStatus}
                 compact={isMobile}
+                isUpdating={updatingOrders.has(order.id)}
               />
             ))}
         </div>

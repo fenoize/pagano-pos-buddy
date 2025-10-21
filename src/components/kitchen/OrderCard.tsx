@@ -3,7 +3,7 @@ import { Order, OrderStatus } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, MapPin, Phone, User, Package, MessageSquare } from 'lucide-react';
+import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -21,9 +21,10 @@ interface OrderCardProps {
   config: KDSConfig;
   onStatusChange: (orderId: string, status: OrderStatus) => void;
   compact?: boolean;
+  isUpdating?: boolean;
 }
 
-export function OrderCard({ order, config, onStatusChange, compact = false }: OrderCardProps) {
+export function OrderCard({ order, config, onStatusChange, compact = false, isUpdating = false }: OrderCardProps) {
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
 
   useEffect(() => {
@@ -237,8 +238,16 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
               variant="outline"
               size={compact ? "sm" : "sm"}
               onClick={() => onStatusChange(order.id, 'En pausa')}
+              disabled={isUpdating}
             >
-              <span className={compact ? 'text-xs' : ''}>Pausar</span>
+              {isUpdating ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  <span className={compact ? 'text-xs' : ''}>Pausando...</span>
+                </>
+              ) : (
+                <span className={compact ? 'text-xs' : ''}>Pausar</span>
+              )}
             </Button>
           )}
           
@@ -247,8 +256,16 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
               variant="default"
               size={compact ? "sm" : "sm"}
               onClick={() => onStatusChange(order.id, 'En preparación')}
+              disabled={isUpdating}
             >
-              <span className={compact ? 'text-xs' : ''}>Reanudar</span>
+              {isUpdating ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  <span className={compact ? 'text-xs' : ''}>Reanudando...</span>
+                </>
+              ) : (
+                <span className={compact ? 'text-xs' : ''}>Reanudar</span>
+              )}
             </Button>
           )}
 
@@ -258,12 +275,20 @@ export function OrderCard({ order, config, onStatusChange, compact = false }: Or
               size={compact ? "sm" : "sm"}
               onClick={() => onStatusChange(order.id, nextStatus)}
               className="flex-1"
+              disabled={isUpdating}
             >
-              <span className={compact ? 'text-xs' : ''}>
-                {nextStatus === 'En preparación' && 'Iniciar'}
-                {nextStatus === 'Listo' && 'Marcar Listo'}
-                {nextStatus === 'Entregado' && 'Entregar'}
-              </span>
+              {isUpdating ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  <span className={compact ? 'text-xs' : ''}>Procesando...</span>
+                </>
+              ) : (
+                <span className={compact ? 'text-xs' : ''}>
+                  {nextStatus === 'En preparación' && 'Iniciar'}
+                  {nextStatus === 'Listo' && 'Marcar Listo'}
+                  {nextStatus === 'Entregado' && 'Entregar'}
+                </span>
+              )}
             </Button>
           )}
         </div>

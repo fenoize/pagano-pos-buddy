@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 export function useKitchenOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -160,11 +161,34 @@ export function useKitchenOrders() {
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     console.log(`[KDS] Updating order ${orderId} to status: ${newStatus}`);
     
+    // Guardar estado anterior para rollback
+    const previousOrder = orders.find(o => o.id === orderId);
+    if (!previousOrder) {
+      console.error('[KDS] Order not found in local state');
+      return;
+    }
+
     try {
-      // Obtener info del pedido para notificaciones
-      const order = orders.find(o => o.id === orderId);
+      // PASO 1: Marcar como "updating" para deshabilitar botones
+      setUpdatingOrders(prev => new Set(prev).add(orderId));
+
+      // PASO 2: UPDATE OPTIMISTA - Actualizar UI inmediatamente
+      console.log(`[KDS] Optimistic update to status: ${newStatus}`);
       
-      // NUEVO: Obtener usuario actual desde localStorage
+      if (['Entregado', 'Cancelado'].includes(newStatus)) {
+        // Remover inmediatamente si es final
+        setOrders(prev => prev.filter(order => order.id !== orderId));
+      } else {
+        // Actualizar estado local
+        setOrders(prev => prev.map(order => 
+          order.id === orderId 
+            ? { ...order, status: newStatus, updated_at: new Date().toISOString() }
+            : order
+        ));
+      }
+
+      // PASO 3: UPDATE EN BD (segundo plano)
+      // Obtener usuario actual
       const storedUser = localStorage.getItem('paganos_staff_user');
       if (!storedUser) {
         throw new Error('No hay usuario autenticado en el KDS');
@@ -175,7 +199,7 @@ export function useKitchenOrders() {
         throw new Error('Usuario sin ID válido');
       }
       
-      // NUEVO: Establecer contexto de staff ANTES del UPDATE
+      // Establecer contexto de staff
       console.log(`[KDS] Setting staff context for user: ${currentUser.id}`);
       const { error: contextError } = await supabase.rpc('set_staff_context', {
         p_user_id: currentUser.id
@@ -186,15 +210,7 @@ export function useKitchenOrders() {
         throw contextError;
       }
       
-      console.log('[KDS] Staff context established successfully');
-      
-      // PRIMERO: Si el nuevo estado es Entregado/Cancelado, remover inmediatamente del estado local
-      if (['Entregado', 'Cancelado'].includes(newStatus)) {
-        console.log(`[KDS] Removing order from local state immediately (status: ${newStatus})`);
-        setOrders(prev => prev.filter(order => order.id !== orderId));
-      }
-
-      // SEGUNDO: Actualizar en la base de datos
+      // Actualizar en BD
       console.log(`[KDS] Updating order in database (status: ${newStatus})`);
       const { error } = await supabase
         .from('orders')
@@ -211,55 +227,65 @@ export function useKitchenOrders() {
       
       console.log(`[KDS] Order ${orderId} successfully updated to ${newStatus} in database`);
 
-      // TERCERO: Si NO es Entregado/Cancelado, actualizar estado local
-      if (!['Entregado', 'Cancelado'].includes(newStatus)) {
-        setOrders(prev => prev.map(order => 
-          order.id === orderId 
-            ? { ...order, status: newStatus, updated_at: new Date().toISOString() }
-            : order
-        ));
-      }
-
-      // Mostrar notificación
-      if (order) {
-        if (newStatus === 'Listo') {
-          toast({
-            title: "¡Pedido Listo!",
-            description: `Pedido #${order.order_number} está listo para ${order.fulfillment}`,
-          });
-        } else if (newStatus === 'Entregado') {
-          toast({
-            title: "¡Pedido Entregado!",
-            description: `Pedido #${order.order_number} ha sido entregado`,
-          });
-        } else if (newStatus === 'Cancelado') {
-          toast({
-            title: "Pedido Cancelado",
-            description: `Pedido #${order.order_number} ha sido cancelado`,
-          });
-        } else {
-          toast({
-            title: "Estado Actualizado",
-            description: `Pedido #${order.order_number}: ${newStatus}`,
-          });
-        }
+      // PASO 4: Mostrar notificación de éxito
+      if (newStatus === 'Listo') {
+        toast({
+          title: "¡Pedido Listo!",
+          description: `Pedido #${previousOrder.order_number} está listo para ${previousOrder.fulfillment}`,
+        });
+      } else if (newStatus === 'Entregado') {
+        toast({
+          title: "¡Pedido Entregado!",
+          description: `Pedido #${previousOrder.order_number} ha sido entregado`,
+        });
+      } else if (newStatus === 'Cancelado') {
+        toast({
+          title: "Pedido Cancelado",
+          description: `Pedido #${previousOrder.order_number} ha sido cancelado`,
+        });
+      } else {
+        toast({
+          title: "Estado Actualizado",
+          description: `Pedido #${previousOrder.order_number}: ${newStatus}`,
+        });
       }
 
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error('[KDS] Error updating order status:', error);
+      
+      // ROLLBACK: Restaurar estado anterior
+      console.log('[KDS] Rolling back to previous state');
+      setOrders(prev => {
+        // Si el pedido fue removido, agregarlo de vuelta
+        const exists = prev.find(o => o.id === orderId);
+        if (!exists) {
+          return [...prev, previousOrder];
+        }
+        // Si existe, restaurar estado anterior
+        return prev.map(order => 
+          order.id === orderId ? previousOrder : order
+        );
+      });
+      
       toast({
         title: "Error",
-        description: "No se pudo actualizar el estado del pedido",
+        description: "No se pudo actualizar el estado del pedido. Intenta nuevamente.",
         variant: "destructive"
       });
-      // Si hay error, recargar desde la BD para tener datos consistentes
-      fetchOrders();
+    } finally {
+      // PASO 5: Remover de "updating"
+      setUpdatingOrders(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(orderId);
+        return newSet;
+      });
     }
   };
 
   return {
     orders,
     loading,
+    updatingOrders,
     updateOrderStatus,
     refetch: fetchOrders
   };
