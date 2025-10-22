@@ -2,17 +2,19 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Order, OrderStatus } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useKDSHistory } from '@/hooks/useKDSHistory';
 
 export function useKitchenOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  const { addToHistory, isInHistory } = useKDSHistory();
 
   useEffect(() => {
     fetchOrders();
     
-    // Subscribe to real-time updates
+    // Subscribe to real-time updates con manejo robusto de errores
     const channel = supabase
       .channel('kitchen-orders')
       .on(
@@ -23,29 +25,76 @@ export function useKitchenOrders() {
           table: 'orders'
         },
         (payload) => {
-          console.log('Order change:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            // Fetch the complete order with customer data
-            fetchOrderById(payload.new.id);
+          try {
+            console.log('[KDS] Order change:', payload.eventType, payload);
             
-            // Show notification for new orders
+            // Validar estructura del payload
+            if (!payload || !payload.eventType) {
+              console.error('[KDS] Invalid payload structure:', payload);
+              return;
+            }
+            
+            if (payload.eventType === 'INSERT') {
+              // Validar que new existe
+              if (!payload.new || !payload.new.id) {
+                console.error('[KDS] INSERT event missing required data:', payload);
+                return;
+              }
+              
+              // Fetch the complete order with customer data
+              fetchOrderById(payload.new.id);
+              
+              // Show notification for new orders
+              toast({
+                title: "¡Nuevo Pedido!",
+                description: `Pedido #${payload.new.order_number} recibido`,
+              });
+            } else if (payload.eventType === 'UPDATE') {
+              // Validar que new existe
+              if (!payload.new || !payload.new.id) {
+                console.error('[KDS] UPDATE event missing required data:', payload);
+                return;
+              }
+              
+              // Update existing order
+              fetchOrderById(payload.new.id);
+            } else if (payload.eventType === 'DELETE') {
+              // Validar que old existe
+              if (!payload.old || !payload.old.id) {
+                console.error('[KDS] DELETE event missing required data:', payload);
+                return;
+              }
+              
+              // Remove deleted order
+              setOrders(prev => prev.filter(order => order.id !== payload.old.id));
+            }
+          } catch (error) {
+            console.error('[KDS] Error handling realtime event:', error);
             toast({
-              title: "¡Nuevo Pedido!",
-              description: `Pedido #${payload.new.order_number} recibido`,
+              title: "Error de sincronización",
+              description: "Hubo un problema al actualizar los pedidos. Intenta refrescar.",
+              variant: "destructive"
             });
-          } else if (payload.eventType === 'UPDATE') {
-            // Update existing order
-            fetchOrderById(payload.new.id);
-          } else if (payload.eventType === 'DELETE') {
-            // Remove deleted order
-            setOrders(prev => prev.filter(order => order.id !== payload.old.id));
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[KDS] Subscription status:', status);
+        
+        if (status === 'CHANNEL_ERROR') {
+          console.error('[KDS] Channel error, attempting to reconnect...');
+          toast({
+            title: "Error de conexión",
+            description: "Reconectando en tiempo real...",
+            variant: "destructive"
+          });
+        } else if (status === 'SUBSCRIBED') {
+          console.log('[KDS] Successfully subscribed to realtime updates');
+        }
+      });
 
     return () => {
+      console.log('[KDS] Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
   }, []);
@@ -78,12 +127,19 @@ export function useKitchenOrders() {
 
       if (error) throw error;
 
-      setOrders(data.map(order => ({
+      // Filtrar órdenes que están en history (no mostrar si están en cache reciente)
+      const ordersWithItems = (data || []).map(order => ({
         ...order,
         items: order.items as any
-      })) as Order[]);
+      })) as Order[];
+      
+      const filtered = ordersWithItems.filter(order => !isInHistory(order.id));
+      
+      console.log(`[KDS] Loaded ${ordersWithItems.length} orders, showing ${filtered.length} (${ordersWithItems.length - filtered.length} filtered from history)`);
+      
+      setOrders(filtered);
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error('[KDS] Error fetching orders:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los pedidos",
@@ -94,8 +150,18 @@ export function useKitchenOrders() {
     }
   };
 
-  const fetchOrderById = async (orderId: string) => {
+  const fetchOrderById = async (orderId: string, retryCount = 0) => {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000; // 1 segundo
+    
     try {
+      // Si la orden está en history, no la procesamos
+      if (isInHistory(orderId)) {
+        console.log(`[KDS] Order ${orderId} is in history, skipping`);
+        setOrders(prev => prev.filter(order => order.id !== orderId));
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -121,7 +187,18 @@ export function useKitchenOrders() {
 
       if (error) {
         // Si el pedido no existe o no se puede acceder, removerlo del estado local
-        console.error('Error fetching order:', error);
+        console.error(`[KDS] Error fetching order (attempt ${retryCount + 1}/${MAX_RETRIES}):`, error);
+        
+        // Retry con backoff exponencial
+        if (retryCount < MAX_RETRIES && error.code !== 'PGRST116') { // PGRST116 = not found
+          console.log(`[KDS] Retrying in ${RETRY_DELAY * (retryCount + 1)}ms...`);
+          setTimeout(() => {
+            fetchOrderById(orderId, retryCount + 1);
+          }, RETRY_DELAY * (retryCount + 1));
+          return;
+        }
+        
+        // Si agotamos los reintentos o el pedido no existe, remover
         setOrders(prev => prev.filter(order => order.id !== orderId));
         return;
       }
@@ -132,9 +209,10 @@ export function useKitchenOrders() {
       } as Order;
 
       setOrders(prev => {
-        // Si el pedido está Entregado o Cancelado, removerlo del KDS
+        // Si el pedido está Entregado o Cancelado, agregarlo a history y removerlo del KDS
         if (orderWithItems.status === 'Entregado' || orderWithItems.status === 'Cancelado') {
-          console.log(`[KDS] Removing order #${orderWithItems.order_number} from KDS (status: ${orderWithItems.status})`);
+          console.log(`[KDS] Order #${orderWithItems.order_number} marked as ${orderWithItems.status}, adding to history`);
+          addToHistory(orderId);
           return prev.filter(order => order.id !== orderId);
         }
         
@@ -146,15 +224,23 @@ export function useKitchenOrders() {
           updated[existingIndex] = orderWithItems;
           return updated;
         } else {
-          // Add new order (solo si NO está Entregado/Cancelado)
+          // Add new order (solo si NO está Entregado/Cancelado y NO está en history)
           console.log(`[KDS] Adding new order #${orderWithItems.order_number} to KDS (status: ${orderWithItems.status})`);
           return [...prev, orderWithItems];
         }
       });
     } catch (error) {
-      console.error('Error fetching order:', error);
-      // En caso de error, remover del estado local por seguridad
-      setOrders(prev => prev.filter(order => order.id !== orderId));
+      console.error(`[KDS] Unexpected error fetching order (attempt ${retryCount + 1}/${MAX_RETRIES}):`, error);
+      
+      // Retry en caso de error inesperado
+      if (retryCount < MAX_RETRIES) {
+        setTimeout(() => {
+          fetchOrderById(orderId, retryCount + 1);
+        }, RETRY_DELAY * (retryCount + 1));
+      } else {
+        // En caso de error, remover del estado local por seguridad
+        setOrders(prev => prev.filter(order => order.id !== orderId));
+      }
     }
   };
 
@@ -176,7 +262,8 @@ export function useKitchenOrders() {
       console.log(`[KDS] Optimistic update to status: ${newStatus}`);
       
       if (['Entregado', 'Cancelado'].includes(newStatus)) {
-        // Remover inmediatamente si es final
+        // Agregar a history y remover inmediatamente si es final
+        addToHistory(orderId);
         setOrders(prev => prev.filter(order => order.id !== orderId));
       } else {
         // Actualizar estado local

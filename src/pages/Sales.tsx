@@ -111,7 +111,7 @@ export default function Sales() {
     }
   };
 
-  // Suscripción realtime a cambios en orders
+  // Suscripción realtime a cambios en orders con manejo robusto de errores
   useEffect(() => {
     console.log('[Sales] Setting up realtime subscription');
     
@@ -125,34 +125,86 @@ export default function Sales() {
           table: 'orders'
         },
         (payload) => {
-          console.log('[Sales] Realtime event:', payload.eventType, payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newOrder = payload.new as Order;
-            setOrders(prev => [newOrder, ...prev]);
-            console.log(`[Sales] New order added: #${newOrder.order_number}`);
-          } 
-          else if (payload.eventType === 'UPDATE') {
-            const updatedOrder = payload.new as Order;
-            setOrders(prev => prev.map(order => 
-              order.id === updatedOrder.id ? updatedOrder : order
-            ));
-            console.log(`[Sales] Order updated: #${updatedOrder.order_number}, status: ${updatedOrder.status}`);
-          } 
-          else if (payload.eventType === 'DELETE') {
-            const deletedOrder = payload.old as Order;
-            setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
-            console.log(`[Sales] Order deleted: #${deletedOrder.order_number}`);
+          try {
+            console.log('[Sales] Realtime event:', payload.eventType, payload);
+            
+            // Validar estructura del payload
+            if (!payload || !payload.eventType) {
+              console.error('[Sales] Invalid payload structure:', payload);
+              return;
+            }
+            
+            if (payload.eventType === 'INSERT') {
+              // Validar que new existe y tiene estructura válida
+              if (!payload.new || !payload.new.id) {
+                console.error('[Sales] INSERT event missing required data:', payload);
+                return;
+              }
+              
+              const newOrder = payload.new as Order;
+              setOrders(prev => [newOrder, ...prev]);
+              console.log(`[Sales] New order added: #${newOrder.order_number}`);
+              
+              // Notificación discreta
+              toast.success(`Nueva venta: Pedido #${newOrder.order_number}`);
+            } 
+            else if (payload.eventType === 'UPDATE') {
+              // Validar que new existe y tiene estructura válida
+              if (!payload.new || !payload.new.id) {
+                console.error('[Sales] UPDATE event missing required data:', payload);
+                return;
+              }
+              
+              const updatedOrder = payload.new as Order;
+              setOrders(prev => prev.map(order => 
+                order.id === updatedOrder.id ? updatedOrder : order
+              ));
+              console.log(`[Sales] Order updated: #${updatedOrder.order_number}, status: ${updatedOrder.status}`);
+              
+              // Actualizar selectedOrder si está abierto
+              setSelectedOrder(prev => 
+                prev?.id === updatedOrder.id ? updatedOrder : prev
+              );
+            } 
+            else if (payload.eventType === 'DELETE') {
+              // Validar que old existe
+              if (!payload.old || !payload.old.id) {
+                console.error('[Sales] DELETE event missing required data:', payload);
+                return;
+              }
+              
+              const deletedOrder = payload.old as Order;
+              setOrders(prev => prev.filter(order => order.id !== deletedOrder.id));
+              console.log(`[Sales] Order deleted: #${deletedOrder.order_number}`);
+              
+              // Cerrar modal si es la orden que se está viendo
+              if (selectedOrder?.id === deletedOrder.id) {
+                setSelectedOrder(null);
+                setShowDetailModal(false);
+              }
+            }
+          } catch (error) {
+            console.error('[Sales] Error handling realtime event:', error);
+            toast.error('Error al sincronizar pedidos. Intenta refrescar la página.');
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[Sales] Subscription status:', status);
+        
+        if (status === 'CHANNEL_ERROR') {
+          console.error('[Sales] Channel error, attempting to reconnect...');
+          toast.error('Error de conexión. Reconectando...');
+        } else if (status === 'SUBSCRIBED') {
+          console.log('[Sales] Successfully subscribed to realtime updates');
+        }
+      });
 
     return () => {
       console.log('[Sales] Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [selectedOrder]);
 
   const getFullCustomerName = (customer: Customer): string => {
     // Prioridad 1: Si existe 'name' (nombre completo), usarlo

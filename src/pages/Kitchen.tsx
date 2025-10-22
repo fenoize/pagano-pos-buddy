@@ -8,7 +8,8 @@ import { KitchenSounds } from '@/components/kitchen/KitchenSounds';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, Users, Maximize2, Minimize2, X, RefreshCw } from 'lucide-react';
+import { Clock, Users, Maximize2, Minimize2, X, RefreshCw, History } from 'lucide-react';
+import { KitchenHistory } from '@/components/kitchen/KitchenHistory';
 
 export default function Kitchen() {
   const { orders, updateOrderStatus, loading, refetch, updatingOrders } = useKitchenOrders();
@@ -16,6 +17,7 @@ export default function Kitchen() {
   const { isExpanded, toggleExpanded, exitExpanded } = useKitchenExpanded();
   const isMobile = useIsMobile();
   const [lastOrderCount, setLastOrderCount] = useState(0);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (orders.length > lastOrderCount) {
@@ -74,6 +76,15 @@ export default function Kitchen() {
             >
               <RefreshCw className="w-4 h-4" />
               Actualizar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHistory(true)}
+              className="flex items-center gap-2"
+            >
+              <History className="w-4 h-4" />
+              Historial
             </Button>
           </div>
           <Button 
@@ -155,6 +166,15 @@ export default function Kitchen() {
             <RefreshCw className="w-4 h-4" />
             Actualizar
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowHistory(true)}
+            className="flex items-center gap-2"
+          >
+            <History className="w-4 h-4" />
+            Historial
+          </Button>
         </div>
         
         {/* Stats */}
@@ -219,6 +239,12 @@ export default function Kitchen() {
       <KitchenSounds 
         orders={orders}
         soundEnabled={config.soundEnabled}
+      />
+
+      {/* History Modal */}
+      <KitchenHistory 
+        open={showHistory}
+        onOpenChange={setShowHistory}
       />
     </div>
   );
