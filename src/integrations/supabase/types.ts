@@ -3145,6 +3145,15 @@ export type Database = {
           numero_orden: string
         }[]
       }
+      delivery_export_range_with_time: {
+        Args: { _end: string; _start: string; _tz?: string }
+        Returns: {
+          direccion: string
+          fecha_hora: string
+          monto_delivery: string
+          numero_orden: string
+        }[]
+      }
       ensure_stock_balance: {
         Args: {
           p_lot_id?: string

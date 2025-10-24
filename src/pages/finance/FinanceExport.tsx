@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Download, Search } from 'lucide-react';
-import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { CalendarIcon, Download, Search, Clock } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, set } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -15,6 +16,8 @@ import { ExportTable } from '@/components/finance/ExportTable';
 export default function FinanceExport() {
   const [startDate, setStartDate] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [endDate, setEndDate] = useState<Date>(endOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [startTime, setStartTime] = useState<string>('00:00');
+  const [endTime, setEndTime] = useState<string>('23:59');
   const [startCalendarOpen, setStartCalendarOpen] = useState(false);
   const [endCalendarOpen, setEndCalendarOpen] = useState(false);
   const [deliveryData, setDeliveryData] = useState<DeliveryExportRow[]>([]);
@@ -26,9 +29,16 @@ export default function FinanceExport() {
   const loadDeliveries = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('delivery_export_range', {
-        _start: format(startDate, 'yyyy-MM-dd'),
-        _end: format(endDate, 'yyyy-MM-dd'),
+      // Combinar fecha y hora para crear timestamps completos
+      const [startHour, startMinute] = startTime.split(':').map(Number);
+      const [endHour, endMinute] = endTime.split(':').map(Number);
+      
+      const startDateTime = set(startDate, { hours: startHour, minutes: startMinute, seconds: 0 });
+      const endDateTime = set(endDate, { hours: endHour, minutes: endMinute, seconds: 59 });
+      
+      const { data, error } = await supabase.rpc('delivery_export_range_with_time', {
+        _start: startDateTime.toISOString(),
+        _end: endDateTime.toISOString(),
         _tz: 'America/Santiago'
       });
 
@@ -115,18 +125,18 @@ export default function FinanceExport() {
       {/* Header */}
       <div className="flex items-center gap-2">
         <Download className="w-8 h-8 text-primary" />
-        <h1 className="text-3xl font-bold">Exportaciones</h1>
+        <h1 className="text-3xl font-bold">Delivery</h1>
       </div>
 
       {/* Export Delivery */}
       <Card>
         <CardHeader>
-          <CardTitle>Exportar Deliverys</CardTitle>
+          <CardTitle>Filtrar Deliverys</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Fecha Inicio</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fecha Inicio</label>
               <Popover open={startCalendarOpen} onOpenChange={setStartCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn('w-full justify-start text-left font-normal')}>
@@ -146,10 +156,20 @@ export default function FinanceExport() {
                   />
                 </PopoverContent>
               </Popover>
+              
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
             </div>
 
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Fecha Fin</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fecha Fin</label>
               <Popover open={endCalendarOpen} onOpenChange={setEndCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn('w-full justify-start text-left font-normal')}>
@@ -169,6 +189,16 @@ export default function FinanceExport() {
                   />
                 </PopoverContent>
               </Popover>
+              
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
             </div>
           </div>
 
@@ -196,7 +226,7 @@ export default function FinanceExport() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Primero carga los deliveries para visualizarlos en una tabla, luego puedes exportar a CSV.
+            Selecciona fecha y hora de inicio y fin, luego filtra para ver el detalle de los deliveries.
           </p>
         </CardContent>
       </Card>

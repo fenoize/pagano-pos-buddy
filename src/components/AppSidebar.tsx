@@ -75,7 +75,7 @@ const inventoryItems = [
 const financeItems = [
   { title: "Indicadores (KPIs)", url: "/pos/finanzas/kpis", icon: TrendingUpIcon, roles: ['Administrador', 'Cajero'] },
   { title: "Cierres Financieros", url: "/pos/finanzas/cierres", icon: FileText, roles: ['Administrador'] },
-  { title: "Exportaciones", url: "/pos/finanzas/exportaciones", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
+  { title: "Delivery", url: "/pos/finanzas/exportaciones", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
 ];
 
 export function AppSidebar() {
