@@ -1137,7 +1137,7 @@ export type Database = {
           customer_account_id: string
           expires_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           used: boolean
         }
         Insert: {
@@ -1146,7 +1146,7 @@ export type Database = {
           customer_account_id: string
           expires_at: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           used?: boolean
         }
         Update: {
@@ -1155,7 +1155,7 @@ export type Database = {
           customer_account_id?: string
           expires_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           used?: boolean
         }
         Relationships: [
@@ -3049,10 +3049,10 @@ export type Database = {
         Row: {
           cmd: string | null
           permissive: string | null
-          policyname: unknown | null
+          policyname: unknown
           qual_expression: string | null
           roles: unknown[] | null
-          tablename: unknown | null
+          tablename: unknown
         }
         Relationships: []
       }
@@ -3082,14 +3082,8 @@ export type Database = {
       }
     }
     Functions: {
-      assign_orders_to_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      auth_jwt: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      assign_orders_to_sessions: { Args: never; Returns: undefined }
+      auth_jwt: { Args: never; Returns: Json }
       authenticate_customer: {
         Args: { p_email: string; p_password: string }
         Returns: Json
@@ -3109,10 +3103,7 @@ export type Database = {
         Args: { p_badge_code: string; p_customer_id: string }
         Returns: boolean
       }
-      cleanup_expired_reset_codes: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_reset_codes: { Args: never; Returns: undefined }
       convert_uom_to_base: {
         Args: {
           p_from_uom_id: string
@@ -3195,18 +3186,9 @@ export type Database = {
           ts_start: string
         }[]
       }
-      generate_simple_hash: {
-        Args: { password: string }
-        Returns: string
-      }
-      get_current_customer_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_staff_user_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_simple_hash: { Args: { password: string }; Returns: string }
+      get_current_customer_id: { Args: never; Returns: string }
+      get_current_staff_user_id: { Args: never; Returns: string }
       get_material_base_uom: {
         Args: { p_raw_material_id: string }
         Returns: string
@@ -3226,30 +3208,12 @@ export type Database = {
         }
         Returns: boolean
       }
-      invalidate_staff_session: {
-        Args: { _token: string }
-        Returns: boolean
-      }
-      is_active_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_active_staff: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_active_user: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
-      is_cashier_or_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_staff_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      invalidate_staff_session: { Args: { _token: string }; Returns: boolean }
+      is_active_admin: { Args: never; Returns: boolean }
+      is_active_staff: { Args: never; Returns: boolean }
+      is_active_user: { Args: { _user_id: string }; Returns: boolean }
+      is_cashier_or_admin: { Args: never; Returns: boolean }
+      is_staff_admin: { Args: never; Returns: boolean }
       process_purchase_receipt: {
         Args: {
           p_expiry_date?: string
@@ -3287,6 +3251,13 @@ export type Database = {
         }
         Returns: string[]
       }
+      refresh_staff_token: {
+        Args: { _token: string }
+        Returns: {
+          expires_at: string
+          new_token: string
+        }[]
+      }
       register_customer: {
         Args: {
           p_apellidos?: string
@@ -3310,18 +3281,20 @@ export type Database = {
         Args: { p_account_id: string; p_customer_id: string }
         Returns: undefined
       }
-      set_staff_context: {
-        Args: { p_user_id: string }
-        Returns: undefined
-      }
+      set_staff_context: { Args: { p_user_id: string }; Returns: undefined }
       set_user_password: {
         Args: { new_password: string; user_uuid: string }
         Returns: boolean
       }
-      verify_customer_email: {
-        Args: { p_token: string }
-        Returns: Json
+      validate_staff_token: {
+        Args: { _token: string }
+        Returns: {
+          expires_at: string
+          is_valid: boolean
+          user_id: string
+        }[]
       }
+      verify_customer_email: { Args: { p_token: string }; Returns: Json }
       verify_password: {
         Args: { hash: string; password: string }
         Returns: boolean

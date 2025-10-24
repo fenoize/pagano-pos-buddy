@@ -12,6 +12,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { SEOHead } from "@/components/SEOHead";
 import { CashSessionTopBar } from "@/components/cash/CashSessionTopBar";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
+import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
 import { Suspense, lazy } from "react";
 
 // Guards
@@ -71,6 +72,9 @@ const queryClient = new QueryClient();
 function StaffLayout({ children }: { children: React.ReactNode }) {
   const { isExpanded } = useKitchenExpanded();
   const isKitchenRoute = window.location.pathname === '/pos/cocina';
+  
+  // Activar keep-alive de sesión para staff autenticado
+  useSessionKeepAlive();
   
   // If on kitchen route and expanded, render without layout
   if (isKitchenRoute && isExpanded) {

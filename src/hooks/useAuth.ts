@@ -31,9 +31,26 @@ export function useAuth() {
   useEffect(() => {
     const validateStoredUser = async () => {
       const storedUser = localStorage.getItem(STORAGE_KEYS.STAFF_USER);
-      if (storedUser) {
+      const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
+      
+      if (storedUser && token) {
         try {
           const user = JSON.parse(storedUser);
+          
+          // Validar que el token sigue activo
+          const { data: tokenData, error: tokenError } = await supabase
+            .rpc('validate_staff_token', { _token: token });
+          
+          if (tokenError || !tokenData || tokenData.length === 0 || !tokenData[0].is_valid) {
+            console.log('Token expired or invalid, clearing session');
+            clearStaffStorage();
+            setAuthState({
+              user: null,
+              loading: false,
+              error: null,
+            });
+            return;
+          }
           
           // Validate that the user still exists in the database
           const { data: dbUser, error } = await supabase
