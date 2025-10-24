@@ -126,16 +126,15 @@ export function ImageUpload({ imageUrl, onImageChange, productName = 'producto' 
           id="image-upload"
           className="hidden"
         />
-        <Label htmlFor="image-upload" asChild>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={uploading}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            {uploading ? 'Subiendo...' : 'Subir Imagen'}
-          </Button>
-        </Label>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={uploading}
+          onClick={() => document.getElementById('image-upload')?.click()}
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          {uploading ? 'Subiendo...' : 'Subir Imagen'}
+        </Button>
         
         {imageUrl && (
           <Button
