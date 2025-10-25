@@ -87,15 +87,27 @@ export async function checkAndAwardBadges(
  */
 async function awardBadge(customerId: string, badgeCode: string): Promise<boolean> {
   try {
+    console.log(`🏅 Intentando otorgar insignia ${badgeCode} a cliente ${customerId}`);
+    
     const { data, error } = await supabase.rpc('check_and_award_badge', {
       p_customer_id: customerId,
       p_badge_code: badgeCode,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error(`❌ Error SQL al otorgar ${badgeCode}:`, error);
+      throw error;
+    }
+    
+    if (data === true) {
+      console.log(`✅ Insignia ${badgeCode} otorgada exitosamente`);
+    } else {
+      console.log(`ℹ️ Insignia ${badgeCode} no otorgada (ya la tiene o no existe)`);
+    }
+    
     return data === true;
-  } catch (error) {
-    console.error(`Error awarding badge ${badgeCode}:`, error);
+  } catch (error: any) {
+    console.error(`❌ Error awarding badge ${badgeCode}:`, error);
     return false;
   }
 }
@@ -105,14 +117,21 @@ async function awardBadge(customerId: string, badgeCode: string): Promise<boolea
  */
 async function checkConsecutiveWeeks(customerId: string): Promise<boolean> {
   try {
+    console.log(`📅 Verificando pedidos en 4 semanas consecutivas para cliente ${customerId}`);
+    
     const { data, error } = await supabase.rpc('has_orders_in_last_4_weeks', {
       p_customer_id: customerId,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error verificando semanas consecutivas:', error);
+      throw error;
+    }
+    
+    console.log(`✅ Resultado verificación 4 semanas: ${data}`);
     return data === true;
-  } catch (error) {
-    console.error('Error checking consecutive weeks:', error);
+  } catch (error: any) {
+    console.error('❌ Error checking consecutive weeks:', error);
     return false;
   }
 }

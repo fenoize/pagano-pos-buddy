@@ -61,38 +61,23 @@ export default function MyRunes() {
   return (
     <CustomerLayout title="Mis Runas">
       <div className="space-y-6">
-        <RunasDisplay runas={customer?.cantidad_runas || 0} showEquivalent runaValue={runaValue} />
+        <RunasDisplay runas={customer?.cantidad_runas || 0} showEquivalent={false} runaValue={runaValue} />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Valor Equivalente</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{formatCLP((customer?.cantidad_runas || 0) * runaValue)}</p>
-              <p className="text-xs text-muted-foreground">en compras acumuladas</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                ¿Cómo funcionan?
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger><Info className="h-4 w-4" /></TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      Por cada {formatCLP(runaValue)} en compras, ganas 1 runa. Puedes canjear tus runas por descuentos en futuras compras.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm">Por cada <strong>{formatCLP(runaValue)}</strong> ganas 1 runa</p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              ¿Cómo funcionan las runas?
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>• Por cada compra acumulas runas</li>
+              <li>• Puedes canjear tus runas por descuentos en futuras compras</li>
+              <li>• Revisa tu historial para ver cómo has ganado y usado tus runas</li>
+            </ul>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -114,7 +99,6 @@ export default function MyRunes() {
                       <TableHead>Fecha</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead className="text-right">Runas</TableHead>
-                      <TableHead className="text-right">Monto</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -127,7 +111,6 @@ export default function MyRunes() {
                         <TableCell className="text-right font-medium">
                           {t.runas > 0 ? '+' : ''}{formatRunas(t.runas)}
                         </TableCell>
-                        <TableCell className="text-right">{formatCLP(t.amount)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

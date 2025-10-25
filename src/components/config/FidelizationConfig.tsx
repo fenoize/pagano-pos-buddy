@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Star, Save, Loader2 } from 'lucide-react';
+import { Star, Save, Loader2, Award } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface FidelizationSettings {
@@ -33,12 +35,14 @@ export function FidelizationConfig() {
     runas_exclude_if_discounted: true,
     runas_min_eligible_amount: 1000,
   });
+  const [levels, setLevels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadSettings();
+    loadLevels();
   }, []);
 
   const loadSettings = async () => {
@@ -48,43 +52,57 @@ export function FidelizationConfig() {
         .select('key, value')
         .in('key', [
           'runa_value',
-          'runa_reward_value', 
+          'runa_reward_value',
           'max_runas_per_order',
           'min_purchase_for_runas',
           'runa_expiry_days',
           'fidelization_active',
           'runas_exclude_if_paid_with_runas',
           'runas_exclude_if_discounted',
-          'runas_min_eligible_amount'
+          'runas_min_eligible_amount',
         ]);
 
       if (error) throw error;
 
-      const configMap = data?.reduce((acc, item) => {
-        acc[item.key] = item.value;
-        return acc;
-      }, {} as Record<string, any>) || {};
+      const configMap: any = {};
+      data?.forEach(item => {
+        configMap[item.key] = typeof item.value === 'object' ? item.value : item.value;
+      });
 
       setSettings({
-        runa_value: configMap.runa_value || 1000,
-        runa_reward_value: configMap.runa_reward_value || 1000,
-        max_runas_per_order: configMap.max_runas_per_order || 50,
-        min_purchase_for_runas: configMap.min_purchase_for_runas || 1000,
-        runa_expiry_days: configMap.runa_expiry_days || 0,
-        fidelization_active: configMap.fidelization_active !== false,
-        runas_exclude_if_paid_with_runas: configMap.runas_exclude_if_paid_with_runas !== false,
-        runas_exclude_if_discounted: configMap.runas_exclude_if_discounted !== false,
-        runas_min_eligible_amount: configMap.runas_min_eligible_amount || 1000,
+        runa_value: Number(configMap.runa_value) || 1000,
+        runa_reward_value: Number(configMap.runa_reward_value) || 1000,
+        max_runas_per_order: Number(configMap.max_runas_per_order) || 50,
+        min_purchase_for_runas: Number(configMap.min_purchase_for_runas) || 1000,
+        runa_expiry_days: Number(configMap.runa_expiry_days) || 0,
+        fidelization_active: Boolean(configMap.fidelization_active ?? true),
+        runas_exclude_if_paid_with_runas: Boolean(configMap.runas_exclude_if_paid_with_runas ?? true),
+        runas_exclude_if_discounted: Boolean(configMap.runas_exclude_if_discounted ?? true),
+        runas_min_eligible_amount: Number(configMap.runas_min_eligible_amount) || 1000,
       });
-    } catch (error) {
-      console.error('Error loading fidelization settings:', error);
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "No se pudieron cargar las configuraciones",
-        variant: "destructive"
+        title: 'Error',
+        description: 'No se pudo cargar la configuración',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLevels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_level_definitions')
+        .select('*')
+        .eq('is_active', true)
+        .order('level_order', { ascending: true });
+
+      if (error) throw error;
+      setLevels(data || []);
+    } catch (error: any) {
+      console.error('Error loading levels:', error);
     }
   };
 
@@ -405,6 +423,53 @@ export function FidelizationConfig() {
               </p>
             </CardContent>
           </Card>
+        </CardContent>
+      </Card>
+
+      {/* Configuración de Niveles */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="w-5 h-5" />
+            Sistema de Niveles
+          </CardTitle>
+          <CardDescription>
+            Los niveles se calculan automáticamente según las runas acumuladas del cliente
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nivel</TableHead>
+                <TableHead>Runas Mínimas</TableHead>
+                <TableHead>Runas Máximas</TableHead>
+                <TableHead>Descripción</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {levels.map((level) => (
+                <TableRow key={level.id}>
+                  <TableCell>
+                    <Badge variant="outline" className={level.color}>
+                      {level.level_name}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{level.min_points}</TableCell>
+                  <TableCell>{level.max_points ?? '∞'}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {level.description}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {levels.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No hay niveles configurados</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

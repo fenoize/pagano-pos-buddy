@@ -1130,6 +1130,51 @@ export type Database = {
           },
         ]
       }
+      customer_level_definitions: {
+        Row: {
+          benefits: Json | null
+          color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          level_code: string
+          level_name: string
+          level_order: number
+          max_points: number | null
+          min_points: number
+        }
+        Insert: {
+          benefits?: Json | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          level_code: string
+          level_name: string
+          level_order: number
+          max_points?: number | null
+          min_points: number
+        }
+        Update: {
+          benefits?: Json | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          level_code?: string
+          level_name?: string
+          level_order?: number
+          max_points?: number | null
+          min_points?: number
+        }
+        Relationships: []
+      }
       customer_password_resets: {
         Row: {
           code_hash: string
@@ -3020,28 +3065,16 @@ export type Database = {
       }
       customer_levels: {
         Row: {
+          benefits: Json | null
           cantidad_runas: number | null
+          color: string | null
           customer_id: string | null
+          icon: string | null
           level_code: string | null
           level_name: string | null
           min_points: number | null
+          next_level_name: string | null
           next_level_points: number | null
-        }
-        Insert: {
-          cantidad_runas?: number | null
-          customer_id?: string | null
-          level_code?: never
-          level_name?: never
-          min_points?: never
-          next_level_points?: never
-        }
-        Update: {
-          cantidad_runas?: number | null
-          customer_id?: string | null
-          level_code?: never
-          level_name?: never
-          min_points?: never
-          next_level_points?: never
         }
         Relationships: []
       }
