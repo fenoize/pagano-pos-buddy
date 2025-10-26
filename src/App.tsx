@@ -38,6 +38,7 @@ const Kitchen = lazy(() => import("@/pages/Kitchen"));
 const Users = lazy(() => import("@/pages/Users"));
 const Products = lazy(() => import("@/pages/Products"));
 const Categorias = lazy(() => import("@/pages/Categorias"));
+const NivelesManagement = lazy(() => import("@/pages/NivelesManagement"));
 const ConfiguracionPage = lazy(() => import("@/pages/ConfiguracionPage"));
 const PermisosManagement = lazy(() => import("@/pages/PermisosManagement"));
 const CierresDiarios = lazy(() => import("@/pages/CierresDiarios"));
@@ -203,6 +204,14 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <Categorias />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/niveles" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <NivelesManagement />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />

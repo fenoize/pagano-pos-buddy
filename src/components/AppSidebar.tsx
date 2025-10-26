@@ -54,6 +54,7 @@ const menuItems = [
   { title: "Pedido Listo", url: "/pos/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocinero', 'Preparador'] },
   { title: "Productos", url: "/pos/productos", icon: Package, roles: ['Administrador'] },
   { title: "Categorías", url: "/pos/categorias", icon: Tags, roles: ['Administrador'] },
+  { title: "Niveles", url: "/pos/niveles", icon: User, roles: ['Administrador'] },
   { title: "Clientes", url: "/pos/clientes", icon: Users, roles: ['Administrador', 'Cajero'] },
   { title: "Usuarios", url: "/pos/usuarios", icon: User, roles: ['Administrador'] },
   { title: "Cierres Diarios", url: "/pos/cierres-diarios", icon: FileText, roles: ['Administrador'] },
