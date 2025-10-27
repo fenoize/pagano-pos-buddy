@@ -12,6 +12,23 @@ import {
 } from 'lucide-react';
 import { usePaymentMethods, PaymentMethod } from '@/hooks/usePaymentMethods';
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -50,6 +67,95 @@ function getIconComponent(iconName: string) {
   return iconOption ? iconOption.icon : DollarSign;
 }
 
+function SortableRow({ method, onEdit, onDelete, onToggleActive }: {
+  method: PaymentMethod;
+  onEdit: (method: PaymentMethod) => void;
+  onDelete: (id: string) => void;
+  onToggleActive: (method: PaymentMethod) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: method.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const Icon = getIconComponent(method.icon);
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell>
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+          <GripVertical className="w-4 h-4 text-muted-foreground" />
+        </div>
+      </TableCell>
+      <TableCell>
+        <Icon className="w-5 h-5" />
+      </TableCell>
+      <TableCell className="font-mono text-sm">{method.name}</TableCell>
+      <TableCell>{method.display_name}</TableCell>
+      <TableCell>
+        <Switch
+          checked={method.is_active}
+          onCheckedChange={() => onToggleActive(method)}
+        />
+      </TableCell>
+      <TableCell>
+        {method.requires_change ? (
+          <Badge variant="secondary">Sí</Badge>
+        ) : (
+          <Badge variant="outline">No</Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        {method.requires_receipt ? (
+          <Badge variant="secondary">Sí</Badge>
+        ) : (
+          <Badge variant="outline">No</Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        {method.requires_operation_number ? (
+          <Badge variant="secondary">Sí</Badge>
+        ) : (
+          <Badge variant="outline">No</Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        {method.counts_as_real_sale ? (
+          <Badge>Sí</Badge>
+        ) : (
+          <Badge variant="destructive">No</Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        <div className="flex gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => onEdit(method)}
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => onDelete(method.id)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export function PaymentMethodsConfig() {
   const { 
     paymentMethods, 
@@ -57,8 +163,16 @@ export function PaymentMethodsConfig() {
     createPaymentMethod, 
     updatePaymentMethod, 
     deletePaymentMethod,
+    reorderPaymentMethods,
     restoreDefaults 
   } = usePaymentMethods();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
@@ -129,6 +243,22 @@ export function PaymentMethodsConfig() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = paymentMethods.findIndex((item) => item.id === active.id);
+      const newIndex = paymentMethods.findIndex((item) => item.id === over.id);
+
+      const reordered = arrayMove(paymentMethods, oldIndex, newIndex).map((method, index) => ({
+        ...method,
+        display_order: index
+      }));
+
+      await reorderPaymentMethods(reordered);
+    }
+  };
+
   if (loading) {
     return <div>Cargando...</div>;
   }
@@ -154,91 +284,44 @@ export function PaymentMethodsConfig() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12"></TableHead>
-                <TableHead>Icono</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Nombre Mostrado</TableHead>
-                <TableHead>Activo</TableHead>
-                <TableHead>Req. Vuelto</TableHead>
-                <TableHead>Req. Comprobante</TableHead>
-                <TableHead>Req. N° Op.</TableHead>
-                <TableHead>Cuenta como Venta</TableHead>
-                <TableHead className="w-24">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paymentMethods.map((method) => {
-                const Icon = getIconComponent(method.icon);
-                return (
-                  <TableRow key={method.id}>
-                    <TableCell>
-                      <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-                    </TableCell>
-                    <TableCell>
-                      <Icon className="w-5 h-5" />
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{method.name}</TableCell>
-                    <TableCell>{method.display_name}</TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={method.is_active}
-                        onCheckedChange={() => handleToggleActive(method)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {method.requires_change ? (
-                        <Badge variant="secondary">Sí</Badge>
-                      ) : (
-                        <Badge variant="outline">No</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {method.requires_receipt ? (
-                        <Badge variant="secondary">Sí</Badge>
-                      ) : (
-                        <Badge variant="outline">No</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {method.requires_operation_number ? (
-                        <Badge variant="secondary">Sí</Badge>
-                      ) : (
-                        <Badge variant="outline">No</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {method.counts_as_real_sale ? (
-                        <Badge>Sí</Badge>
-                      ) : (
-                        <Badge variant="destructive">No</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleOpenModal(method)}
-                        >
-                          <Settings className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleDelete(method.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12"></TableHead>
+                  <TableHead>Icono</TableHead>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Nombre Mostrado</TableHead>
+                  <TableHead>Activo</TableHead>
+                  <TableHead>Req. Vuelto</TableHead>
+                  <TableHead>Req. Comprobante</TableHead>
+                  <TableHead>Req. N° Op.</TableHead>
+                  <TableHead>Cuenta como Venta</TableHead>
+                  <TableHead className="w-24">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <SortableContext
+                  items={paymentMethods.map(m => m.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {paymentMethods.map((method) => (
+                    <SortableRow
+                      key={method.id}
+                      method={method}
+                      onEdit={handleOpenModal}
+                      onDelete={handleDelete}
+                      onToggleActive={handleToggleActive}
+                    />
+                  ))}
+                </SortableContext>
+              </TableBody>
+            </Table>
+          </DndContext>
         </CardContent>
       </Card>
 
