@@ -39,6 +39,8 @@ export interface DeliveryExportRow {
   numero_orden: string;
   direccion: string;
   monto_delivery: string;
+  repartidor_id: string;
+  repartidor_nombre: string;
 }
 
 export type DateRangePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';

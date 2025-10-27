@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, User } from 'lucide-react';
 import { DeliveryExportRow } from '@/types/finance';
 
 interface ExportTableProps {
@@ -47,6 +47,7 @@ export function ExportTable({ data, currentPage, itemsPerPage, onPageChange, onI
             <TableRow>
               <TableHead>Fecha y Hora</TableHead>
               <TableHead>Nº Orden</TableHead>
+              <TableHead>Repartidor</TableHead>
               <TableHead>Dirección</TableHead>
               <TableHead className="text-right">Monto Delivery</TableHead>
             </TableRow>
@@ -56,6 +57,14 @@ export function ExportTable({ data, currentPage, itemsPerPage, onPageChange, onI
               <TableRow key={`${row.numero_orden}-${index}`}>
                 <TableCell>{row.fecha_hora}</TableCell>
                 <TableCell className="font-medium">{row.numero_orden}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    {row.repartidor_nombre || (
+                      <span className="text-muted-foreground italic">Sin asignar</span>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell className="max-w-md truncate">{row.direccion}</TableCell>
                 <TableCell className="text-right font-medium">
                   {formatCurrency(row.monto_delivery)}

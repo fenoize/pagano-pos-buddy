@@ -3179,12 +3179,19 @@ export type Database = {
         }[]
       }
       delivery_export_range_with_time: {
-        Args: { _end: string; _start: string; _tz?: string }
+        Args: {
+          _delivery_person_id?: string
+          _end: string
+          _start: string
+          _tz?: string
+        }
         Returns: {
           direccion: string
           fecha_hora: string
           monto_delivery: string
           numero_orden: string
+          repartidor_id: string
+          repartidor_nombre: string
         }[]
       }
       ensure_stock_balance: {
