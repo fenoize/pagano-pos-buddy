@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, ShoppingCart, Clock, DollarSign } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Clock, DollarSign, Calendar, Package, Star } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { CajeroDashboard } from '@/components/dashboard/CajeroDashboard';
 import { ActiveShiftWidget } from '@/components/dashboard/ActiveShiftWidget';
+import { Badge } from '@/components/ui/badge';
 
 interface DashboardStats {
   totalSales: number;
@@ -15,6 +16,14 @@ interface DashboardStats {
   cashSales: number;
   mpSales: number;
   posSales: number;
+  runasSales: number;
+  appSales: number;
+  weeklySales: number;
+  weeklySalesCount: number;
+  topProduct: {
+    name: string;
+    quantity: number;
+  } | null;
 }
 
 export default function Dashboard() {
@@ -38,17 +47,32 @@ function DefaultDashboard() {
     cashSales: 0,
     mpSales: 0,
     posSales: 0,
+    runasSales: 0,
+    appSales: 0,
+    weeklySales: 0,
+    weeklySalesCount: 0,
+    topProduct: null,
   });
   const [loading, setLoading] = useState(true);
   const { user } = useAuthContext();
 
   useEffect(() => {
     loadDashboardStats();
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      loadDashboardStats();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadDashboardStats = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const weekStart = sevenDaysAgo.toISOString().split('T')[0];
       
       // Get today's orders
       const { data: orders, error } = await supabase
@@ -59,8 +83,17 @@ function DefaultDashboard() {
 
       if (error) throw error;
 
+      // Get weekly orders
+      const { data: weeklyOrders, error: weekError } = await supabase
+        .from('orders')
+        .select('*')
+        .gte('created_at', `${weekStart}T00:00:00`)
+        .neq('status', 'Cancelado');
+
+      if (weekError) throw weekError;
+
       const completedOrders = orders?.filter(order => 
-        order.status === 'Entregado'
+        order.status !== 'Cancelado'
       ) || [];
 
       const pendingOrders = orders?.filter(order => 
@@ -72,9 +105,45 @@ function DefaultDashboard() {
       const averageTicket = salesCount > 0 ? totalSales / salesCount : 0;
 
       // Calculate payment method totals
-      const cashSales = completedOrders.reduce((sum, order) => sum + order.payment_efectivo, 0);
-      const mpSales = completedOrders.reduce((sum, order) => sum + order.payment_mp, 0);
-      const posSales = completedOrders.reduce((sum, order) => sum + order.payment_pos, 0);
+      const cashSales = completedOrders.reduce((sum, order) => sum + (order.payment_efectivo || 0), 0);
+      const mpSales = completedOrders.reduce((sum, order) => sum + (order.payment_mp || 0), 0);
+      const posSales = completedOrders.reduce((sum, order) => sum + (order.payment_pos || 0), 0);
+      const runasSales = completedOrders.reduce((sum, order) => sum + (order.payment_runas || 0), 0);
+      const appSales = completedOrders.reduce((sum, order) => sum + (order.payment_aplicacion || 0), 0);
+
+      // Weekly stats
+      const weeklySales = (weeklyOrders || []).reduce((sum, order) => sum + order.total, 0);
+      const weeklySalesCount = (weeklyOrders || []).length;
+
+      // Calculate top product
+      const productCounts = new Map<string, { name: string; quantity: number }>();
+      
+      completedOrders.forEach(order => {
+        const items = order.items as any[];
+        items.forEach(item => {
+          const key = item.productId || item.productName;
+          const existing = productCounts.get(key);
+          
+          if (existing) {
+            existing.quantity += item.quantity;
+          } else {
+            productCounts.set(key, {
+              name: item.productName || 'Sin nombre',
+              quantity: item.quantity,
+            });
+          }
+        });
+      });
+
+      let topProduct = null;
+      let maxQuantity = 0;
+      
+      productCounts.forEach(product => {
+        if (product.quantity > maxQuantity) {
+          maxQuantity = product.quantity;
+          topProduct = product;
+        }
+      });
 
       setStats({
         totalSales,
@@ -84,6 +153,11 @@ function DefaultDashboard() {
         cashSales,
         mpSales,
         posSales,
+        runasSales,
+        appSales,
+        weeklySales,
+        weeklySalesCount,
+        topProduct,
       });
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
@@ -101,25 +175,25 @@ function DefaultDashboard() {
       color: 'text-primary',
     },
     {
+      title: 'Ventas Semanales',
+      value: formatCurrency(stats.weeklySales),
+      description: `${stats.weeklySalesCount} ventas (últimos 7 días)`,
+      icon: Calendar,
+      color: 'text-blue-500',
+    },
+    {
       title: 'Ticket Promedio',
       value: formatCurrency(stats.averageTicket),
       description: 'Promedio por venta',
       icon: TrendingUp,
-      color: 'text-success',
+      color: 'text-green-500',
     },
     {
       title: 'Pedidos Pendientes',
       value: stats.pendingOrders.toString(),
       description: 'En cocina y preparación',
       icon: Clock,
-      color: 'text-warning',
-    },
-    {
-      title: 'Total Órdenes',
-      value: stats.salesCount.toString(),
-      description: 'Completadas hoy',
-      icon: ShoppingCart,
-      color: 'text-primary',
+      color: 'text-amber-500',
     },
   ];
 
@@ -127,19 +201,31 @@ function DefaultDashboard() {
     {
       name: 'Efectivo',
       amount: stats.cashSales,
-      color: 'bg-primary',
+      color: 'bg-green-500',
+      count: 0,
     },
     {
-      name: 'MercadoPago/Transfer',
+      name: 'Transferencia/MP',
       amount: stats.mpSales,
-      color: 'bg-secondary',
+      color: 'bg-blue-500',
+      count: 0,
     },
     {
-      name: 'POS',
+      name: 'POS (Débito/Crédito)',
       amount: stats.posSales,
-      color: 'bg-accent',
+      color: 'bg-purple-500',
+      count: 0,
+    },
+    {
+      name: 'Aplicación',
+      amount: stats.appSales,
+      color: 'bg-orange-500',
+      count: 0,
     },
   ];
+
+  // Calculate total WITHOUT runas
+  const totalPayments = stats.cashSales + stats.mpSales + stats.posSales + stats.appSales;
 
   return (
     <div className="space-y-6">
@@ -177,19 +263,51 @@ function DefaultDashboard() {
         ))}
       </div>
 
+      {/* Top Product */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5 text-primary" />
+            Producto Más Vendido
+          </CardTitle>
+          <CardDescription>
+            Del día de hoy
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-muted-foreground">Cargando...</p>
+          ) : stats.topProduct ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-semibold">{stats.topProduct.name}</span>
+                <Badge variant="default" className="text-lg px-3 py-1">
+                  {stats.topProduct.quantity} unidades
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                El producto con más ventas del día
+              </p>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No hay ventas hoy</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Payment Methods */}
       <Card>
         <CardHeader>
           <CardTitle>Ventas por Método de Pago</CardTitle>
           <CardDescription>
-            Distribución de pagos del día
+            Desglose detallado de pagos del día (actualizado cada 30 seg)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {paymentMethods.map((method, index) => (
-            <div key={index} className="flex items-center justify-between">
+            <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors">
               <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${method.color}`} />
+                <div className={`w-4 h-4 rounded-full ${method.color}`} />
                 <span className="font-medium">{method.name}</span>
               </div>
               <span className="font-semibold currency">
@@ -197,11 +315,34 @@ function DefaultDashboard() {
               </span>
             </div>
           ))}
-          <div className="border-t pt-4 flex items-center justify-between font-bold">
-            <span>Total</span>
-            <span className="currency">
-              {loading ? '...' : formatCurrency(stats.totalSales)}
+          
+          {/* Runas - Shown but not in total */}
+          <div className="flex items-center justify-between p-2 rounded-lg border border-dashed">
+            <div className="flex items-center gap-3">
+              <Star className="w-4 h-4 text-amber-500" />
+              <span className="font-medium text-muted-foreground">Runas (no monetario)</span>
+            </div>
+            <span className="font-semibold text-muted-foreground">
+              {loading ? '...' : formatCurrency(stats.runasSales)}
             </span>
+          </div>
+
+          <div className="border-t pt-3 mt-3">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-muted-foreground">Subtotal Monetario</span>
+              <span className="font-semibold currency">
+                {loading ? '...' : formatCurrency(totalPayments)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between mt-2 text-lg">
+              <span className="font-bold">Total General</span>
+              <span className="font-bold currency">
+                {loading ? '...' : formatCurrency(stats.totalSales)}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {stats.salesCount} ventas completadas • {stats.pendingOrders} pendientes
+            </p>
           </div>
         </CardContent>
       </Card>
