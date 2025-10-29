@@ -20,10 +20,10 @@ interface DashboardStats {
   appSales: number;
   weeklySales: number;
   weeklySalesCount: number;
-  topProduct: {
+  topProducts: Array<{
     name: string;
     quantity: number;
-  } | null;
+  }>;
 }
 
 export default function Dashboard() {
@@ -51,7 +51,7 @@ function DefaultDashboard() {
     appSales: 0,
     weeklySales: 0,
     weeklySalesCount: 0,
-    topProduct: null,
+    topProducts: [],
   });
   const [loading, setLoading] = useState(true);
   const { user } = useAuthContext();
@@ -115,10 +115,10 @@ function DefaultDashboard() {
       const weeklySales = (weeklyOrders || []).reduce((sum, order) => sum + order.total, 0);
       const weeklySalesCount = (weeklyOrders || []).length;
 
-      // Calculate top product
+      // Calculate top products from WEEKLY data
       const productCounts = new Map<string, { name: string; quantity: number }>();
       
-      completedOrders.forEach(order => {
+      (weeklyOrders || []).forEach(order => {
         const items = order.items as any[];
         items.forEach(item => {
           const key = item.productId || item.productName;
@@ -135,15 +135,10 @@ function DefaultDashboard() {
         });
       });
 
-      let topProduct = null;
-      let maxQuantity = 0;
-      
-      productCounts.forEach(product => {
-        if (product.quantity > maxQuantity) {
-          maxQuantity = product.quantity;
-          topProduct = product;
-        }
-      });
+      // Get top 10 products sorted by quantity
+      const topProducts = Array.from(productCounts.values())
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 10);
 
       setStats({
         totalSales,
@@ -157,7 +152,7 @@ function DefaultDashboard() {
         appSales,
         weeklySales,
         weeklySalesCount,
-        topProduct,
+        topProducts,
       });
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
@@ -263,34 +258,41 @@ function DefaultDashboard() {
         ))}
       </div>
 
-      {/* Top Product */}
+      {/* Top Products */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
-            Producto Más Vendido
+            Productos Más Vendidos
           </CardTitle>
           <CardDescription>
-            Del día de hoy
+            Últimos 7 días
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <p className="text-muted-foreground">Cargando...</p>
-          ) : stats.topProduct ? (
+          ) : stats.topProducts.length > 0 ? (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-semibold">{stats.topProduct.name}</span>
-                <Badge variant="default" className="text-lg px-3 py-1">
-                  {stats.topProduct.quantity} unidades
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                El producto con más ventas del día
-              </p>
+              {stats.topProducts.map((product, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-border/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                      {index + 1}
+                    </div>
+                    <span className="font-medium">{product.name}</span>
+                  </div>
+                  <Badge variant="secondary" className="px-3 py-1">
+                    {product.quantity} pedidos
+                  </Badge>
+                </div>
+              ))}
             </div>
           ) : (
-            <p className="text-muted-foreground">No hay ventas hoy</p>
+            <p className="text-muted-foreground">No hay ventas esta semana</p>
           )}
         </CardContent>
       </Card>
