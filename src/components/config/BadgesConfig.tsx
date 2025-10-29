@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Award, Edit, Trash2, Plus, Trophy, Medal, Star, Zap, Crown, Target, Gift } from 'lucide-react';
 
@@ -46,6 +47,8 @@ export function BadgesConfig() {
   const [saving, setSaving] = useState(false);
   const [editingBadge, setEditingBadge] = useState<Badge | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreateMode, setIsCreateMode] = useState(false);
+  const [badgeToDelete, setBadgeToDelete] = useState<Badge | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -96,7 +99,23 @@ export function BadgesConfig() {
     }
   };
 
+  const handleCreate = () => {
+    setIsCreateMode(true);
+    setEditingBadge({
+      id: '',
+      code: '',
+      name: '',
+      description: '',
+      icon: 'Award',
+      category: 'especiales',
+      sort_order: badges.length,
+      is_active: true,
+    });
+    setIsDialogOpen(true);
+  };
+
   const handleEdit = (badge: Badge) => {
+    setIsCreateMode(false);
     setEditingBadge(badge);
     setIsDialogOpen(true);
   };
@@ -104,29 +123,83 @@ export function BadgesConfig() {
   const handleSave = async () => {
     if (!editingBadge) return;
 
+    // Validación
+    if (!editingBadge.name.trim()) {
+      toast({
+        title: 'Error',
+        description: 'El nombre es obligatorio',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (isCreateMode && !editingBadge.code.trim()) {
+      toast({
+        title: 'Error',
+        description: 'El código es obligatorio',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('customer_badges')
-        .update({
-          name: editingBadge.name,
-          description: editingBadge.description,
-          icon: editingBadge.icon,
-          category: editingBadge.category,
-          sort_order: editingBadge.sort_order,
-        })
-        .eq('id', editingBadge.id);
+      if (isCreateMode) {
+        // Verificar que el código no exista
+        const { data: existing } = await supabase
+          .from('customer_badges')
+          .select('id')
+          .eq('code', editingBadge.code)
+          .single();
 
-      if (error) throw error;
+        if (existing) {
+          throw new Error('Ya existe una insignia con ese código');
+        }
 
-      setBadges(badges.map(b => b.id === editingBadge.id ? editingBadge : b));
+        const { data, error } = await supabase
+          .from('customer_badges')
+          .insert({
+            code: editingBadge.code,
+            name: editingBadge.name,
+            description: editingBadge.description,
+            icon: editingBadge.icon,
+            category: editingBadge.category,
+            sort_order: editingBadge.sort_order,
+            is_active: editingBadge.is_active,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setBadges([...badges, data]);
+        toast({
+          title: 'Creado',
+          description: 'Insignia creada correctamente',
+        });
+      } else {
+        const { error } = await supabase
+          .from('customer_badges')
+          .update({
+            name: editingBadge.name,
+            description: editingBadge.description,
+            icon: editingBadge.icon,
+            category: editingBadge.category,
+            sort_order: editingBadge.sort_order,
+          })
+          .eq('id', editingBadge.id);
+
+        if (error) throw error;
+
+        setBadges(badges.map(b => b.id === editingBadge.id ? editingBadge : b));
+        toast({
+          title: 'Guardado',
+          description: 'Insignia actualizada correctamente',
+        });
+      }
+
       setIsDialogOpen(false);
       setEditingBadge(null);
-
-      toast({
-        title: 'Guardado',
-        description: 'Insignia actualizada correctamente',
-      });
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -135,6 +208,33 @@ export function BadgesConfig() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!badgeToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('customer_badges')
+        .delete()
+        .eq('id', badgeToDelete.id);
+
+      if (error) throw error;
+
+      setBadges(badges.filter(b => b.id !== badgeToDelete.id));
+      setBadgeToDelete(null);
+
+      toast({
+        title: 'Eliminado',
+        description: 'Insignia eliminada correctamente',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -158,10 +258,18 @@ export function BadgesConfig() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Gestión de Insignias</CardTitle>
-          <CardDescription>
-            Configura las insignias que se otorgan automáticamente a los clientes
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Gestión de Insignias</CardTitle>
+              <CardDescription>
+                Crea y configura las insignias que se otorgan a los clientes
+              </CardDescription>
+            </div>
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Insignia
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -200,13 +308,22 @@ export function BadgesConfig() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(badge)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(badge)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setBadgeToDelete(badge)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -231,16 +348,31 @@ export function BadgesConfig() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Editar Insignia</DialogTitle>
+            <DialogTitle>{isCreateMode ? 'Crear Insignia' : 'Editar Insignia'}</DialogTitle>
             <DialogDescription>
-              Modifica los detalles de la insignia
+              {isCreateMode ? 'Crea una nueva insignia para otorgar a clientes' : 'Modifica los detalles de la insignia'}
             </DialogDescription>
           </DialogHeader>
 
           {editingBadge && (
             <div className="space-y-4">
+              {isCreateMode && (
+                <div className="space-y-2">
+                  <Label htmlFor="code">Código *</Label>
+                  <Input
+                    id="code"
+                    value={editingBadge.code}
+                    onChange={(e) => setEditingBadge({ ...editingBadge, code: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                    placeholder="ej: primera_compra"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Identificador único (snake_case)
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
+                <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
                   value={editingBadge.name}
@@ -321,6 +453,24 @@ export function BadgesConfig() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!badgeToDelete} onOpenChange={() => setBadgeToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar insignia?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará permanentemente la insignia "{badgeToDelete?.name}".
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
