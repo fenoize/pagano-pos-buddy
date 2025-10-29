@@ -11,6 +11,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { SEOHead } from "@/components/SEOHead";
 import { CashSessionTopBar } from "@/components/cash/CashSessionTopBar";
+import { SessionExpiryModal } from "@/components/auth/SessionExpiryModal";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
 import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
 import { Suspense, lazy } from "react";
@@ -76,7 +77,7 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
   const isKitchenRoute = window.location.pathname === '/pos/cocina';
   
   // Activar keep-alive de sesión para staff autenticado
-  useSessionKeepAlive();
+  const { showExpiryModal, handleStayActive, handleForceLogout } = useSessionKeepAlive();
   
   // If on kitchen route and expanded, render without layout
   if (isKitchenRoute && isExpanded) {
@@ -85,6 +86,13 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
+      {/* Modal de expiración - se renderiza globalmente */}
+      <SessionExpiryModal
+        isOpen={showExpiryModal}
+        onStayActive={handleStayActive}
+        onLogout={handleForceLogout}
+      />
+      
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">

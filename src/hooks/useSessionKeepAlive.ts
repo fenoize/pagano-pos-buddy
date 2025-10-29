@@ -1,16 +1,58 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import { toast } from '@/hooks/use-toast';
 
 const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutos
-const EXPIRY_THRESHOLD = 2 * 60 * 60 * 1000; // Renovar si expira en <2 horas
-const WARNING_THRESHOLD = 30 * 60 * 1000; // Advertir a 30 minutos
+const EXPIRY_WARNING = 5 * 60 * 1000; // Mostrar modal si expira en <5 minutos
 
 export function useSessionKeepAlive() {
-  useEffect(() => {
-    let hasShownWarning = false;
+  const [showExpiryModal, setShowExpiryModal] = useState(false);
+  const handleStayActive = async () => {
+    setShowExpiryModal(false);
+    const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
+    
+    if (!token) return;
+    
+    try {
+      const { data: refreshData, error: refreshError } = await supabase
+        .rpc('refresh_staff_token', { _token: token });
+      
+      if (refreshError || !refreshData || refreshData.length === 0) {
+        console.error('Error al renovar token:', refreshError);
+        handleForceLogout(); // Si falla, cerrar sesión
+        return;
+      }
+      
+      const newToken = refreshData[0].new_token;
+      localStorage.setItem(STORAGE_KEYS.STAFF_TOKEN, newToken);
+      
+      toast({
+        title: "Sesión renovada",
+        description: "Tu sesión ha sido extendida exitosamente.",
+      });
+      
+      console.log('Token renovado manualmente, expira:', refreshData[0].expires_at);
+    } catch (error) {
+      console.error('Error renovando sesión:', error);
+      handleForceLogout();
+    }
+  };
 
+  const handleForceLogout = () => {
+    setShowExpiryModal(false);
+    clearStaffStorage();
+    toast({
+      title: "Sesión cerrada",
+      description: "Tu sesión ha sido cerrada.",
+      variant: "destructive",
+    });
+    setTimeout(() => {
+      window.location.href = '/pos/login';
+    }, 1000);
+  };
+
+  useEffect(() => {
     const checkAndRefresh = async () => {
       const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
       if (!token) return;
@@ -28,49 +70,20 @@ export function useSessionKeepAlive() {
         const tokenData = validation[0];
 
         if (!tokenData.is_valid) {
-          // Token inválido - cerrar sesión
-          console.log('Token inválido detectado, cerrando sesión');
-          clearStaffStorage();
-          toast({
-            title: "Sesión expirada",
-            description: "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
-            variant: "destructive",
-          });
-          setTimeout(() => {
-            window.location.href = '/pos/login';
-          }, 2000);
+          // Token inválido - mostrar modal
+          console.log('Token inválido detectado, mostrando modal de expiración');
+          setShowExpiryModal(true);
           return;
         }
 
         const expiresAt = new Date(tokenData.expires_at);
         const timeUntilExpiry = expiresAt.getTime() - Date.now();
 
-        // Advertencia si expira en menos de 30 minutos
-        if (timeUntilExpiry < WARNING_THRESHOLD && !hasShownWarning) {
-          hasShownWarning = true;
-          const minutesLeft = Math.floor(timeUntilExpiry / 60000);
-          toast({
-            title: "Sesión por expirar",
-            description: `Tu sesión expirará en ${minutesLeft} minutos. Se renovará automáticamente.`,
-          });
-        }
-
-        // Renovar si expira en menos de 2 horas
-        if (timeUntilExpiry < EXPIRY_THRESHOLD) {
-          console.log('Renovando token automáticamente...');
-          const { data: refreshData, error: refreshError } = await supabase
-            .rpc('refresh_staff_token', { _token: token });
-
-          if (refreshError || !refreshData || refreshData.length === 0) {
-            console.error('Error al renovar token:', refreshError);
-            return;
-          }
-
-          // Actualizar token en localStorage
-          const newToken = refreshData[0].new_token;
-          localStorage.setItem(STORAGE_KEYS.STAFF_TOKEN, newToken);
-          hasShownWarning = false; // Reset warning para el nuevo token
-          console.log('Token renovado exitosamente, expira:', refreshData[0].expires_at);
+        // Mostrar modal si expira en menos de 5 minutos
+        if (timeUntilExpiry < EXPIRY_WARNING && timeUntilExpiry > 0) {
+          console.log('Sesión próxima a expirar, mostrando modal');
+          setShowExpiryModal(true);
+          return;
         }
       } catch (error) {
         console.error('Error en keep-alive:', error);
@@ -85,4 +98,10 @@ export function useSessionKeepAlive() {
 
     return () => clearInterval(intervalId);
   }, []);
+
+  return {
+    showExpiryModal,
+    handleStayActive,
+    handleForceLogout
+  };
 }
