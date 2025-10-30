@@ -7,12 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { CreditCard, Banknote, Smartphone, Coins, Bike, Plus, X } from 'lucide-react';
+import { 
+  CreditCard, Banknote, Smartphone, Coins, Bike, Plus, X,
+  AppWindow, Sparkles, DollarSign, Wallet
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DeliveryData } from './FulfillmentStep';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { CouponApplication } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { PaymentMethod as ConfiguredPaymentMethod } from '@/hooks/usePaymentMethods';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -60,32 +64,40 @@ export default function PaymentModal({
   manualDiscount 
 }: PaymentModalProps) {
   const [payments, setPayments] = useState<SinglePayment[]>([]);
-  const [currentMethod, setCurrentMethod] = useState('Efectivo');
+  const [currentMethod, setCurrentMethod] = useState('');
   const [currentAmount, setCurrentAmount] = useState('');
   const [currentReceiptNumber, setCurrentReceiptNumber] = useState('');
   const [currentOperationNumber, setCurrentOperationNumber] = useState('');
   const [currentRunas, setCurrentRunas] = useState('');
   const [notes, setNotes] = useState('');
-  const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<ConfiguredPaymentMethod[]>([]);
   const [cashDenominations, setCashDenominations] = useState<number[]>([]);
-  const [runaRewardValue, setRunaRewardValue] = useState(1300); // Valor de cada runa al canjear
+  const [runaRewardValue, setRunaRewardValue] = useState(1300);
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
+      fetchConfig();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && paymentMethods.length > 0 && !currentMethod) {
+      const firstActiveMethod = paymentMethods.find(m => m.is_active);
+      if (firstActiveMethod) {
+        setCurrentMethod(firstActiveMethod.name);
+      }
       setPayments([]);
-      setCurrentMethod('Efectivo');
       setCurrentAmount('');
       setCurrentReceiptNumber('');
       setCurrentOperationNumber('');
       setCurrentRunas('');
       setNotes('');
       setIsSubmitting(false);
-      fetchConfig();
     }
-  }, [isOpen]);
+  }, [isOpen, paymentMethods]);
 
   // Auto-llenar campos al cambiar método de pago
   useEffect(() => {
@@ -94,12 +106,12 @@ export default function PaymentModal({
     const remainingBalance = getRemainingBalance();
     
     // Auto-llenar monto para métodos que requieren comprobante/operación
-    if (['POS', 'Transferencia', 'Aplicación'].includes(currentMethod)) {
+    if (['pos', 'transferencia', 'aplicacion'].includes(currentMethod)) {
       setCurrentAmount(remainingBalance.toString());
     }
     
     // Auto-llenar runas necesarias
-    if (currentMethod === 'Runas' && remainingBalance > 0) {
+    if (currentMethod === 'runas' && remainingBalance > 0) {
       const runasNeeded = Math.ceil(remainingBalance / runaRewardValue);
       
       // Usar la cantidad necesaria, sin importar si se pasa
@@ -108,22 +120,32 @@ export default function PaymentModal({
     }
     
     // Limpiar campos para Efectivo (mantener comportamiento actual)
-    if (currentMethod === 'Efectivo') {
+    if (currentMethod === 'efectivo') {
       setCurrentAmount('');
     }
   }, [currentMethod, total, payments, runaRewardValue, isOpen]);
 
   const fetchConfig = async () => {
     try {
-      const { data } = await supabase
+      // Cargar métodos de pago desde la nueva tabla payment_methods
+      const { data: methodsData } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (methodsData && methodsData.length > 0) {
+        setPaymentMethods(methodsData);
+      }
+
+      // Cargar configuración adicional
+      const { data: configData } = await supabase
         .from('config')
         .select('*')
-        .in('key', ['payment_methods', 'runa_reward_value', 'cash_denominations']);
+        .in('key', ['runa_reward_value', 'cash_denominations']);
 
-      data?.forEach((config) => {
-        if (config.key === 'payment_methods') {
-          setPaymentMethods(config.value as string[]);
-        } else if (config.key === 'runa_reward_value') {
+      configData?.forEach((config) => {
+        if (config.key === 'runa_reward_value') {
           setRunaRewardValue(config.value as number);
         } else if (config.key === 'cash_denominations') {
           setCashDenominations(config.value as number[]);
@@ -141,15 +163,25 @@ export default function PaymentModal({
     }).format(price);
   };
 
-  const getMethodIcon = (method: string) => {
-    switch (method) {
-      case 'Efectivo': return <Banknote className="w-5 h-5" />;
-      case 'POS': return <CreditCard className="w-5 h-5" />;
-      case 'Transferencia': return <Smartphone className="w-5 h-5" />;
-      case 'Aplicación': return <Bike className="w-5 h-5" />;
-      case 'Runas': return <Coins className="w-5 h-5" />;
+  const getMethodIcon = (methodName: string) => {
+    const method = paymentMethods.find(m => m.display_name === methodName || m.name === methodName);
+    if (!method) return <CreditCard className="w-5 h-5" />;
+
+    switch (method.icon) {
+      case 'Banknote': return <Banknote className="w-5 h-5" />;
+      case 'CreditCard': return <CreditCard className="w-5 h-5" />;
+      case 'Smartphone': return <Smartphone className="w-5 h-5" />;
+      case 'AppWindow': return <AppWindow className="w-5 h-5" />;
+      case 'Sparkles': return <Sparkles className="w-5 h-5" />;
+      case 'Coins': return <Coins className="w-5 h-5" />;
+      case 'DollarSign': return <DollarSign className="w-5 h-5" />;
+      case 'Wallet': return <Wallet className="w-5 h-5" />;
       default: return <CreditCard className="w-5 h-5" />;
     }
+  };
+
+  const getCurrentMethodConfig = () => {
+    return paymentMethods.find(m => m.name === currentMethod);
   };
 
   const getTotalPaid = () => {
@@ -166,7 +198,7 @@ export default function PaymentModal({
   };
 
   const getCurrentPaymentAmount = () => {
-    if (currentMethod === 'Runas') {
+    if (currentMethod === 'runas') {
       const runasNum = parseFloat(currentRunas) || 0;
       return runasNum * runaRewardValue;
     }
@@ -174,11 +206,17 @@ export default function PaymentModal({
   };
 
   const calculateChange = () => {
-    const efectivoPayments = payments.filter(p => p.method === 'Efectivo');
+    const efectivoPayments = payments.filter(p => {
+      const methodConfig = paymentMethods.find(m => m.name === p.method || m.display_name === p.method);
+      return methodConfig?.requires_change;
+    });
     const totalEfectivo = efectivoPayments.reduce((sum, p) => sum + p.amount, 0);
-    const otherPayments = payments.filter(p => p.method !== 'Efectivo');
+    const otherPayments = payments.filter(p => {
+      const methodConfig = paymentMethods.find(m => m.name === p.method || m.display_name === p.method);
+      return !methodConfig?.requires_change;
+    });
     const totalOther = otherPayments.reduce((sum, p) => {
-      if (p.method === 'Runas') {
+      if (p.method === 'runas' || p.method === 'Runas') {
         return sum + (p.runas || 0) * runaRewardValue;
       }
       return sum + p.amount;
@@ -187,7 +225,8 @@ export default function PaymentModal({
   };
 
   const getCurrentChange = () => {
-    if (currentMethod !== 'Efectivo') return 0;
+    const methodConfig = getCurrentMethodConfig();
+    if (!methodConfig?.requires_change) return 0;
     
     const amount = parseFloat(currentAmount) || 0;
     const remaining = getRemainingBalance();
@@ -197,8 +236,9 @@ export default function PaymentModal({
 
   const handleAddPayment = () => {
     const amount = parseFloat(currentAmount) || 0;
+    const methodConfig = getCurrentMethodConfig();
     
-    if (currentMethod !== 'Runas' && amount <= 0) {
+    if (currentMethod !== 'runas' && amount <= 0) {
       toast({
         title: "Error",
         description: "Ingrese un monto válido",
@@ -207,7 +247,7 @@ export default function PaymentModal({
       return;
     }
 
-    if (currentMethod === 'POS' && !currentReceiptNumber.trim()) {
+    if (methodConfig?.requires_receipt && !currentReceiptNumber.trim()) {
       toast({
         title: "Error",
         description: "Ingrese el número de boleta",
@@ -216,7 +256,7 @@ export default function PaymentModal({
       return;
     }
 
-    if ((currentMethod === 'Transferencia' || currentMethod === 'Aplicación') && !currentOperationNumber.trim()) {
+    if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
       toast({
         title: "Error",
         description: "Ingrese el número de operación",
@@ -225,7 +265,7 @@ export default function PaymentModal({
       return;
     }
 
-    if (currentMethod === 'Runas') {
+    if (currentMethod === 'runas') {
       const runasNum = parseFloat(currentRunas) || 0;
       if (runasNum <= 0) {
         toast({
@@ -260,15 +300,15 @@ export default function PaymentModal({
     }
 
     const newPayment: SinglePayment = {
-      method: currentMethod,
-      amount: currentMethod === 'Runas' 
+      method: methodConfig?.display_name || currentMethod,
+      amount: currentMethod === 'runas' 
         ? 0 
-        : (currentMethod === 'Efectivo' 
+        : (methodConfig?.requires_change 
             ? Math.min(amount, getRemainingBalance()) 
             : amount),
-      receiptNumber: currentMethod === 'POS' ? currentReceiptNumber : undefined,
-      operationNumber: (currentMethod === 'Transferencia' || currentMethod === 'Aplicación') ? currentOperationNumber : undefined,
-      runas: currentMethod === 'Runas' ? parseFloat(currentRunas) : undefined,
+      receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
+      operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
+      runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
     };
 
     setPayments([...payments, newPayment]);
@@ -278,7 +318,7 @@ export default function PaymentModal({
     setCurrentRunas('');
     toast({
       title: "Pago agregado",
-      description: `${currentMethod} agregado a la lista`
+      description: `${methodConfig?.display_name || currentMethod} agregado a la lista`
     });
   };
 
@@ -297,36 +337,40 @@ export default function PaymentModal({
     // Si no hay pagos en la lista, agregar el pago actual directamente
     if (payments.length === 0) {
       const amount = parseFloat(currentAmount) || 0;
+      const methodConfig = getCurrentMethodConfig();
       
       // Validar método actual
-      if (currentMethod !== 'Runas' && amount <= 0) {
+      if (currentMethod !== 'runas' && amount <= 0) {
         toast({
           title: "Error",
           description: "Ingrese un monto válido",
           variant: "destructive"
         });
+        setIsSubmitting(false);
         return;
       }
 
-      if (currentMethod === 'POS' && !currentReceiptNumber.trim()) {
+      if (methodConfig?.requires_receipt && !currentReceiptNumber.trim()) {
         toast({
           title: "Error",
           description: "Ingrese el número de boleta",
           variant: "destructive"
         });
+        setIsSubmitting(false);
         return;
       }
 
-      if ((currentMethod === 'Transferencia' || currentMethod === 'Aplicación') && !currentOperationNumber.trim()) {
+      if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
         toast({
           title: "Error",
           description: "Ingrese el número de operación",
           variant: "destructive"
         });
+        setIsSubmitting(false);
         return;
       }
 
-      if (currentMethod === 'Runas') {
+      if (currentMethod === 'runas') {
         const runasNum = parseFloat(currentRunas) || 0;
         if (runasNum <= 0) {
           toast({
@@ -334,6 +378,7 @@ export default function PaymentModal({
             description: "Ingrese cantidad de runas",
             variant: "destructive"
           });
+          setIsSubmitting(false);
           return;
         }
         
@@ -343,6 +388,7 @@ export default function PaymentModal({
             description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles`,
             variant: "destructive"
           });
+          setIsSubmitting(false);
           return;
         }
         
@@ -353,30 +399,22 @@ export default function PaymentModal({
             description: `Se necesitan al menos ${Math.ceil(total / runaRewardValue)} runas para cubrir el total`,
             variant: "destructive"
           });
+          setIsSubmitting(false);
           return;
         }
-      }
-
-      if (currentMethod === 'Efectivo' && amount <= 0) {
-        toast({
-          title: "Error",
-          description: "Ingrese un monto válido para efectivo",
-          variant: "destructive"
-        });
-        return;
       }
       
       // Crear el pago actual
       const currentPayment: SinglePayment = {
-        method: currentMethod,
-        amount: currentMethod === 'Runas' 
+        method: methodConfig?.display_name || currentMethod,
+        amount: currentMethod === 'runas' 
           ? 0 
-          : (currentMethod === 'Efectivo' 
+          : (methodConfig?.requires_change 
               ? Math.min(amount, total) 
               : amount),
-        receiptNumber: currentMethod === 'POS' ? currentReceiptNumber : undefined,
-        operationNumber: (currentMethod === 'Transferencia' || currentMethod === 'Aplicación') ? currentOperationNumber : undefined,
-        runas: currentMethod === 'Runas' ? parseFloat(currentRunas) : undefined,
+        receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
+        operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
+        runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
       };
       
       finalPayments = [currentPayment];
@@ -384,7 +422,7 @@ export default function PaymentModal({
     
     // Validar total pagado
     const totalPaid = finalPayments.reduce((sum, payment) => {
-      if (payment.method === 'Runas') {
+      if (payment.method === 'runas' || payment.method === 'Runas') {
         return sum + (payment.runas || 0) * runaRewardValue;
       }
       return sum + payment.amount;
@@ -396,6 +434,7 @@ export default function PaymentModal({
         description: "El total pagado es menor al total de la venta",
         variant: "destructive"
       });
+      setIsSubmitting(false);
       return;
     }
 
@@ -415,6 +454,8 @@ export default function PaymentModal({
       return getTotalPaid() >= total;
     }
     
+    const methodConfig = getCurrentMethodConfig();
+    
     // Si no hay pagos en la lista, validar el método actual
     const currentPaymentAmount = getCurrentPaymentAmount();
     
@@ -424,22 +465,22 @@ export default function PaymentModal({
     }
     
     // Validar campos requeridos según método
-    if (currentMethod === 'POS' && !currentReceiptNumber.trim()) {
+    if (methodConfig?.requires_receipt && !currentReceiptNumber.trim()) {
       return false;
     }
     
-    if ((currentMethod === 'Transferencia' || currentMethod === 'Aplicación') && !currentOperationNumber.trim()) {
+    if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
       return false;
     }
     
-    if (currentMethod === 'Runas') {
+    if (currentMethod === 'runas') {
       const runasNum = parseFloat(currentRunas) || 0;
       if (runasNum <= 0 || runasNum > (customer.cantidad_runas || 0)) {
         return false;
       }
     }
     
-    if (currentMethod === 'Efectivo') {
+    if (methodConfig?.requires_change) {
       const amount = parseFloat(currentAmount) || 0;
       if (amount <= 0) {
         return false;
@@ -644,20 +685,20 @@ export default function PaymentModal({
               <div className="grid grid-cols-2 gap-2">
                 {paymentMethods.map((method) => (
                   <Button
-                    key={method}
+                    key={method.id}
                     type="button"
-                    variant={currentMethod === method ? 'default' : 'outline'}
+                    variant={currentMethod === method.name ? 'default' : 'outline'}
                     className="h-16 flex flex-col gap-2"
-                    onClick={() => setCurrentMethod(method)}
+                    onClick={() => setCurrentMethod(method.name)}
                   >
-                    {getMethodIcon(method)}
-                    <span>{method}</span>
+                    {getMethodIcon(method.display_name)}
+                    <span>{method.display_name}</span>
                   </Button>
                 ))}
               </div>
 
               {/* Payment Details based on selected method */}
-              {currentMethod === 'Efectivo' && (
+              {currentMethod === 'efectivo' && (
                 <div className="space-y-3">
                   <Label>Billetes Rápidos</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -709,7 +750,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'POS' && (
+              {currentMethod === 'pos' && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="pos">Monto POS</Label>
@@ -733,7 +774,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'Transferencia' && (
+              {currentMethod === 'transferencia' && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="mp">Monto transferencia</Label>
@@ -757,7 +798,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'Aplicación' && (
+              {currentMethod === 'aplicacion' && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="aplicacion">Monto aplicación</Label>
@@ -781,7 +822,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'Runas' && (
+              {currentMethod === 'runas' && (
                 <div className="space-y-3">
                   <div className="p-3 bg-primary/5 rounded-lg space-y-2">
                     <div className="flex items-center gap-2">
