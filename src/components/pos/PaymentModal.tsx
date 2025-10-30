@@ -186,6 +186,15 @@ export default function PaymentModal({
     return Math.max(0, totalEfectivo - Math.max(0, total - totalOther));
   };
 
+  const getCurrentChange = () => {
+    if (currentMethod !== 'Efectivo') return 0;
+    
+    const amount = parseFloat(currentAmount) || 0;
+    const remaining = getRemainingBalance();
+    
+    return Math.max(0, amount - remaining);
+  };
+
   const handleAddPayment = () => {
     const amount = parseFloat(currentAmount) || 0;
     
@@ -252,7 +261,11 @@ export default function PaymentModal({
 
     const newPayment: SinglePayment = {
       method: currentMethod,
-      amount: currentMethod === 'Runas' ? 0 : amount,
+      amount: currentMethod === 'Runas' 
+        ? 0 
+        : (currentMethod === 'Efectivo' 
+            ? Math.min(amount, getRemainingBalance()) 
+            : amount),
       receiptNumber: currentMethod === 'POS' ? currentReceiptNumber : undefined,
       operationNumber: (currentMethod === 'Transferencia' || currentMethod === 'Aplicación') ? currentOperationNumber : undefined,
       runas: currentMethod === 'Runas' ? parseFloat(currentRunas) : undefined,
@@ -356,7 +369,11 @@ export default function PaymentModal({
       // Crear el pago actual
       const currentPayment: SinglePayment = {
         method: currentMethod,
-        amount: currentMethod === 'Runas' ? 0 : amount,
+        amount: currentMethod === 'Runas' 
+          ? 0 
+          : (currentMethod === 'Efectivo' 
+              ? Math.min(amount, total) 
+              : amount),
         receiptNumber: currentMethod === 'POS' ? currentReceiptNumber : undefined,
         operationNumber: (currentMethod === 'Transferencia' || currentMethod === 'Aplicación') ? currentOperationNumber : undefined,
         runas: currentMethod === 'Runas' ? parseFloat(currentRunas) : undefined,
@@ -666,6 +683,29 @@ export default function PaymentModal({
                       onChange={(e) => setCurrentAmount(e.target.value)}
                     />
                   </div>
+                  
+                  {/* Mostrar vuelto en tiempo real */}
+                  {parseFloat(currentAmount || '0') > getRemainingBalance() && (
+                    <div className="p-4 bg-green-50 dark:bg-green-950/20 border-2 border-green-500 rounded-lg space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                          Monto entregado:
+                        </span>
+                        <span className="text-lg font-bold text-green-700 dark:text-green-400">
+                          {formatPrice(parseFloat(currentAmount))}
+                        </span>
+                      </div>
+                      <Separator className="bg-green-300 dark:bg-green-700" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                          Vuelto a dar:
+                        </span>
+                        <span className="text-2xl font-bold text-green-600 dark:text-green-300">
+                          {formatPrice(getCurrentChange())}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
