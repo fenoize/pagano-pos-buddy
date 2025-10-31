@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.staff-list-customers]
 verify_jwt = false
+
+[functions.staff-list-users]
+verify_jwt = false
+
+[functions.staff-list-orders]
+verify_jwt = false

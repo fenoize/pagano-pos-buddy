@@ -82,13 +82,33 @@ export default function Sales() {
 
   const loadOrders = async () => {
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+      setLoading(true);
+      const token = localStorage.getItem('staff_token');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
 
-      if (error) throw error;
-      setOrders((data || []) as unknown as Order[]);
+      const response = await fetch(
+        'https://lxxfhayifyiioglfbsyj.supabase.co/functions/v1/staff-list-orders',
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.clear();
+          window.location.href = '/pos/login';
+          return;
+        }
+        throw new Error(`Error ${response.status}`);
+      }
+
+      const result = await response.json();
+      setOrders((result.data || []) as unknown as Order[]);
     } catch (error) {
       console.error('Error loading orders:', error);
       toast.error('Error cargando las ventas');
