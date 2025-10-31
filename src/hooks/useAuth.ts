@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { configuredSupabase } from '@/lib/supabaseClient';
 import { User, AppRole } from '@/types';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import { setStaffContext, clearDBContext } from '@/lib/dbContext';
@@ -42,7 +41,6 @@ export function useAuth() {
             .rpc('validate_staff_token', { _token: token });
           
           if (tokenError || !tokenData || tokenData.length === 0 || !tokenData[0].is_valid) {
-            console.log('Token expired or invalid, clearing session');
             clearStaffStorage();
             setAuthState({
               user: null,
@@ -61,7 +59,6 @@ export function useAuth() {
             .maybeSingle();
           
           if (error || !dbUser) {
-            console.log('Stored user no longer valid, clearing localStorage');
             clearStaffStorage();
             setAuthState({
               user: null,
@@ -73,7 +70,7 @@ export function useAuth() {
             try {
               await setStaffContext(user.id);
             } catch (contextError) {
-              console.error('Failed to restore staff context:', contextError);
+              // Silent fail - context will be re-established on operations that need it
             }
             
             setAuthState({
@@ -83,7 +80,6 @@ export function useAuth() {
             });
           }
         } catch (error) {
-          console.error('Error validating stored user:', error);
           clearStaffStorage();
           setAuthState({
             user: null,
@@ -107,8 +103,6 @@ export function useAuth() {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log('Attempting login for username:', username);
-      
       // 1. Autenticar usuario
       const { data: userData, error: userError } = await supabase
         .rpc('authenticate_user', {
@@ -116,20 +110,15 @@ export function useAuth() {
           _password: password
         });
 
-      console.log('Authentication result:', { userData, userError });
-
       if (userError) {
-        console.error('Authentication error:', userError);
         throw new Error('Error al consultar la base de datos');
       }
 
       if (!userData || userData.length === 0) {
-        console.log('Authentication failed - user not found or invalid credentials');
         throw new Error('Usuario o contraseña incorrectos');
       }
 
       const userRecord = userData[0];
-      console.log('Authentication successful for user:', userRecord.username);
 
       // 2. Crear sesión de staff
       const { data: sessionData, error: sessionError } = await supabase
@@ -138,7 +127,6 @@ export function useAuth() {
         });
 
       if (sessionError || !sessionData || sessionData.length === 0) {
-        console.error('Failed to create staff session:', sessionError);
         throw new Error('Error al crear sesión');
       }
 
@@ -161,7 +149,7 @@ export function useAuth() {
       try {
         await setStaffContext(mappedUser.id);
       } catch (contextError) {
-        console.error('Failed to set staff DB context:', contextError);
+        // Silent fail - context will be re-established on operations that need it
       }
 
       setAuthState({
@@ -170,11 +158,9 @@ export function useAuth() {
         error: null,
       });
 
-      console.log('Login successful, token expires at:', expires_at);
       return { success: true };
       
     } catch (error) {
-      console.error('Login error:', error);
       const message = error instanceof Error ? error.message : 'Error de autenticación';
       setAuthState(prev => ({
         ...prev,
@@ -203,7 +189,6 @@ export function useAuth() {
         error: null,
       });
     } catch (error) {
-      console.error('Logout failed:', error);
       // Forzar limpieza local incluso si falla backend
       clearStaffStorage();
       setAuthState({

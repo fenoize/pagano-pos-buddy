@@ -1,10 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const QueryParamsSchema = z.object({
+  q: z.string().max(100).regex(/^[a-zA-Z0-9\s\-@.áéíóúñÑüÜ]*$/).optional(),
+  estado: z.enum(['Activo', 'Inactivo', 'Bloqueado']).optional(),
+  hasRunas: z.enum(['true', 'false']).optional(),
+  limit: z.number().int().min(1).max(50).default(20),
+  offset: z.number().int().min(0).max(10000).default(0),
+});
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -20,7 +30,6 @@ serve(async (req) => {
       : "";
 
     if (!token) {
-      console.warn('[AUTH] Missing token');
       return new Response(JSON.stringify({ error: "Missing token" }), { 
         status: 401,
         headers: { ...corsHeaders, "content-type": "application/json" }
@@ -41,7 +50,6 @@ serve(async (req) => {
       .maybeSingle();
 
     if (sErr || !session || !session.is_active) {
-      console.warn('[AUTH] Invalid session:', { token: token.slice(0, 8), error: sErr });
       return new Response(JSON.stringify({ error: "Invalid session" }), { 
         status: 401,
         headers: { ...corsHeaders, "content-type": "application/json" }
@@ -49,7 +57,6 @@ serve(async (req) => {
     }
 
     if (new Date(session.expires_at) < new Date()) {
-      console.warn('[AUTH] Expired session:', { token: token.slice(0, 8) });
       return new Response(JSON.stringify({ error: "Expired session" }), { 
         status: 401,
         headers: { ...corsHeaders, "content-type": "application/json" }
@@ -79,20 +86,38 @@ serve(async (req) => {
     }
 
     if (!canView) {
-      console.warn('[AUTHZ] User lacks permission:', { userId, roles: roleList });
       return new Response(JSON.stringify({ error: "Forbidden" }), { 
         status: 403,
         headers: { ...corsHeaders, "content-type": "application/json" }
       });
     }
 
-    // 4. Parsear parámetros de consulta
+    // 4. Parsear y validar parámetros de consulta
     const url = new URL(req.url);
-    const q = (url.searchParams.get("q") || "").trim();
-    const estado = url.searchParams.get("estado") || undefined;
-    const hasRunas = url.searchParams.get("hasRunas") || undefined;
-    const limit = Math.min(Number(url.searchParams.get("limit") || 50), 100);
-    const offset = Math.max(Number(url.searchParams.get("offset") || 0), 0);
+    
+    let params;
+    try {
+      params = QueryParamsSchema.parse({
+        q: url.searchParams.get("q") || undefined,
+        estado: url.searchParams.get("estado") || undefined,
+        hasRunas: url.searchParams.get("hasRunas") || undefined,
+        limit: url.searchParams.get("limit") ? Number(url.searchParams.get("limit")) : 20,
+        offset: url.searchParams.get("offset") ? Number(url.searchParams.get("offset")) : 0,
+      });
+    } catch (validationError) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid query parameters",
+          details: validationError instanceof z.ZodError ? validationError.errors : undefined
+        }), 
+        { 
+          status: 400,
+          headers: { ...corsHeaders, "content-type": "application/json" }
+        }
+      );
+    }
+
+    const { q, estado, hasRunas, limit, offset } = params;
 
     // 5. Construir query
     let query = supabaseAdmin
@@ -149,15 +174,11 @@ serve(async (req) => {
     const { data, count, error } = await query;
 
     if (error) {
-      console.error('[DB] Query error:', error);
       return new Response(JSON.stringify({ error: "Database error" }), { 
         status: 500,
         headers: { ...corsHeaders, "content-type": "application/json" }
       });
     }
-
-    // 6. Log de auditoría
-    console.log(`[AUDIT] User ${userId} accessed customers list (count: ${count}, filters: ${JSON.stringify({ q, estado, hasRunas })})`);
 
     return new Response(JSON.stringify({ data, count, limit, offset }), {
       status: 200,
@@ -165,7 +186,6 @@ serve(async (req) => {
     });
 
   } catch (e) {
-    console.error('[ERROR]', e);
     return new Response(JSON.stringify({ error: "Internal error" }), { 
       status: 500,
       headers: { ...corsHeaders, "content-type": "application/json" }
