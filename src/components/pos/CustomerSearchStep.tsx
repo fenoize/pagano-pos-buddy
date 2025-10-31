@@ -50,7 +50,7 @@ export default function CustomerSearchStep({ customer, onCustomerChange, orderNa
         setRunaValue(data.value as number);
       }
     } catch (error) {
-      // Silent fail - use default value
+      console.error('Error fetching runa value:', error);
     }
   };
 
@@ -63,30 +63,40 @@ export default function CustomerSearchStep({ customer, onCustomerChange, orderNa
         throw new Error('No hay sesión activa');
       }
 
-      // Llamar Edge Function usando el cliente Supabase configurado
-      const { data, error } = await supabase.functions.invoke('staff-list-customers', {
-        body: {
-          q: searchTerm,
-          limit: 5,
-          offset: 0,
-        },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
+      // Construir URL de Edge Function
+      const supabaseUrl = 'https://lxxfhayifyiioglfbsyj.supabase.co';
+      
+      // Llamar Edge Function con búsqueda
+      const params = new URLSearchParams({
+        q: searchTerm,
+        limit: '5',
+        offset: '0',
       });
 
-      if (error) {
-        if (error.message.includes('401')) {
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/staff-list-customers?${params}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
           // Token inválido/expirado - forzar logout
           clearStaffStorage();
           window.location.href = '/pos/login';
           return;
         }
-        throw error;
+        throw new Error(`Error ${response.status}: ${await response.text()}`);
       }
 
-      setSearchResults(data?.data || []);
+      const result = await response.json();
+      setSearchResults(result.data || []);
     } catch (error) {
+      console.error('Error searching customers:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "No se pudieron buscar clientes",
