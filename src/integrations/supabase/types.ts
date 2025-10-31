@@ -3237,7 +3237,6 @@ export type Database = {
       }
       generate_simple_hash: { Args: { password: string }; Returns: string }
       get_current_customer_id: { Args: never; Returns: string }
-      get_current_staff_user_from_token: { Args: never; Returns: string }
       get_current_staff_user_id: { Args: never; Returns: string }
       get_material_base_uom: {
         Args: { p_raw_material_id: string }
@@ -3261,7 +3260,6 @@ export type Database = {
       invalidate_staff_session: { Args: { _token: string }; Returns: boolean }
       is_active_admin: { Args: never; Returns: boolean }
       is_active_staff: { Args: never; Returns: boolean }
-      is_active_staff_with_token: { Args: never; Returns: boolean }
       is_active_user: { Args: { _user_id: string }; Returns: boolean }
       is_cashier_or_admin: { Args: never; Returns: boolean }
       is_staff_admin: { Args: never; Returns: boolean }

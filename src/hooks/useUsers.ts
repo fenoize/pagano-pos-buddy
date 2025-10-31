@@ -37,37 +37,14 @@ export function useUsers() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // 1. Obtener token de sesión
-      const token = localStorage.getItem('staff_token');
-      if (!token) {
-        throw new Error('No hay sesión activa');
-      }
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      // 2. Llamar Edge Function
-      const response = await fetch(
-        'https://lxxfhayifyiioglfbsyj.supabase.co/functions/v1/staff-list-users',
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Token inválido/expirado
-          localStorage.clear();
-          window.location.href = '/pos/login';
-          return;
-        }
-        throw new Error(`Error ${response.status}: ${await response.text()}`);
-      }
-
-      const result = await response.json();
-      
+      if (error) throw error;
       // Map old role names to new ones
-      const mappedUsers = (result.data || []).map((user: any) => ({
+      const mappedUsers = (data || []).map(user => ({
         ...user,
         role: mapDatabaseRoleToApp(user.role)
       })) as User[];
