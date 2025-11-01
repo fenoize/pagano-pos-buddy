@@ -19,6 +19,7 @@ import { OrderStatusDropdown } from '@/components/sales/OrderStatusDropdown';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Order } from '@/types';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Customer {
   id: string;
@@ -44,6 +45,7 @@ interface SalesFilters {
 
 export default function Sales() {
   const [searchParams] = useSearchParams();
+  const { canViewAllOrders, loading: permissionsLoading } = usePermissions();
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -417,13 +419,30 @@ export default function Sales() {
     }
   };
 
-  if (loading) {
+  if (permissionsLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-muted-foreground">Cargando ventas...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!canViewAllOrders) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Acceso Denegado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              No tienes permisos para ver el historial de ventas.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
