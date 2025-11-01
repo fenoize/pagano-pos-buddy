@@ -3243,6 +3243,7 @@ export type Database = {
         Args: { p_raw_material_id: string }
         Returns: string
       }
+      has_active_staff_session: { Args: never; Returns: boolean }
       has_orders_in_last_4_weeks: {
         Args: { p_customer_id: string }
         Returns: boolean
