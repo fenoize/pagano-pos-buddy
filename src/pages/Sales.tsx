@@ -84,10 +84,13 @@ export default function Sales() {
 
   const loadOrders = async () => {
     try {
+      // Optimización: Solo cargar últimos 200 pedidos por defecto
+      // El usuario puede usar filtros si necesita datos más antiguos
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, order_number, customer_id, status, total, payment_method, fulfillment, created_at, updated_at, nombre_resumen, notes')
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (error) throw error;
       setOrders((data || []) as unknown as Order[]);
@@ -101,10 +104,13 @@ export default function Sales() {
 
   const loadCustomers = async () => {
     try {
+      // Optimización: Solo cargar clientes activos para el selector
       const { data, error } = await supabase
         .from('customers')
         .select('id, name, nombres, apellido, apellidos, phone, rut')
-        .order('name');
+        .eq('estado_cliente', 'Activo')
+        .order('name')
+        .limit(500);
 
       if (error) throw error;
       setCustomers(data || []);

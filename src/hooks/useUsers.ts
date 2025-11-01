@@ -37,9 +37,10 @@ export function useUsers() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
+      // Optimización: Solo select campos necesarios
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id, username, full_name, email, role, active, can_do_delivery, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
