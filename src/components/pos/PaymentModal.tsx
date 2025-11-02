@@ -96,6 +96,9 @@ export default function PaymentModal({
       setCurrentRunas('');
       setNotes('');
       setIsSubmitting(false);
+    } else if (!isOpen) {
+      // Resetear cuando el modal se cierra
+      setIsSubmitting(false);
     }
   }, [isOpen, paymentMethods]);
 
@@ -444,8 +447,18 @@ export default function PaymentModal({
       notes: notes.trim() || undefined,
     };
     
-    // Llamar onConfirm - el modal se cerrará y el estado se reseteará desde el padre
-    onConfirm(paymentData);
+    try {
+      // Llamar onConfirm - el modal se cerrará y el estado se reseteará desde el padre
+      onConfirm(paymentData);
+    } catch (error) {
+      console.error('Error in payment confirmation:', error);
+      setIsSubmitting(false);
+      toast({
+        title: "Error",
+        description: "No se pudo confirmar el pago",
+        variant: "destructive"
+      });
+    }
   };
 
   const isValidPayment = () => {

@@ -352,6 +352,11 @@ export default function NewSale() {
 
     // Procesar en segundo plano
     processOrderInBackground(orderSnapshot, paymentData);
+    
+    // Timeout de seguridad: resetear después de 30s por si algo falla
+    setTimeout(() => {
+      setIsProcessingOrder(false);
+    }, 30000);
   };
 
   const processOrderInBackground = async (
