@@ -90,6 +90,23 @@ export const OrderStatusDropdown: React.FC<OrderStatusDropdownProps> = ({
     try {
       console.log(`[OrderStatusDropdown] Updating order ${orderId} to status: ${newStatus}`);
       
+      // Obtener usuario actual del localStorage
+      const userId = localStorage.getItem('paganos_user_id');
+      if (!userId) {
+        throw new Error('No se encontró el usuario activo');
+      }
+
+      // Establecer contexto de usuario (necesario para RLS)
+      const { error: contextError } = await supabase.rpc('set_staff_context', {
+        p_user_id: userId
+      });
+
+      if (contextError) {
+        console.error('[OrderStatusDropdown] Error setting context:', contextError);
+        throw contextError;
+      }
+      
+      // Actualizar el estado de la orden
       const { data, error } = await supabase
         .from('orders')
         .update({ 
@@ -102,17 +119,23 @@ export const OrderStatusDropdown: React.FC<OrderStatusDropdownProps> = ({
 
       if (error) throw error;
 
-      // El realtime se encargará de actualizar el estado
+      if (!data) {
+        throw new Error('No se pudo actualizar el estado');
+      }
+
+      // Notificar cambio (el realtime también lo actualizará)
       onStatusChange(data.status, data.updated_at);
       toast.success('Estado actualizado');
       
     } catch (error: any) {
       console.error('[OrderStatusDropdown] Error updating order status:', error);
       
-      if (error.message?.includes('permission')) {
-        toast.error('No tienes permisos para cambiar este estado.');
+      if (error.message?.includes('permission') || error.message?.includes('usuario activo')) {
+        toast.error('No tienes permisos para cambiar este estado');
       } else if (error.message?.includes('transition')) {
-        toast.error('Transición no permitida para este pedido.');
+        toast.error('Transición no permitida para este pedido');
+      } else if (error.code === 'PGRST116') {
+        toast.error('No se pudo actualizar el estado. Verifica tus permisos');
       } else {
         toast.error('Error actualizando el estado');
       }
