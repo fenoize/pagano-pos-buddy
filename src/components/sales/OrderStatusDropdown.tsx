@@ -11,7 +11,6 @@ import { Loader2, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
-import { setStaffContext } from '@/lib/dbContext';
 import type { User } from '@/types';
 
 interface OrderStatusDropdownProps {
@@ -104,19 +103,12 @@ export const OrderStatusDropdown: React.FC<OrderStatusDropdownProps> = ({
         throw new Error('Usuario inválido');
       }
 
-      // Establecer contexto de usuario (necesario para RLS)
-      await setStaffContext(staffUser.id);
-      
-      // Actualizar el estado de la orden
-      const { data, error } = await supabase
-        .from('orders')
-        .update({ 
-          status: newStatus as any,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId)
-        .select('status, updated_at')
-        .single();
+      // Usar RPC que establece contexto dentro de la transacción
+      const { data, error } = await supabase.rpc('update_order_status', {
+        p_order_id: orderId,
+        p_new_status: newStatus as any,
+        p_user_id: staffUser.id
+      });
 
       if (error) throw error;
 
@@ -125,7 +117,8 @@ export const OrderStatusDropdown: React.FC<OrderStatusDropdownProps> = ({
       }
 
       // Notificar cambio (el realtime también lo actualizará)
-      onStatusChange(data.status, data.updated_at);
+      const result = data as { status: string; updated_at: string };
+      onStatusChange(result.status, result.updated_at);
       toast.success('Estado actualizado');
       
     } catch (error: any) {

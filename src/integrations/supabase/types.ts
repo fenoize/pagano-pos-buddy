@@ -3338,6 +3338,14 @@ export type Database = {
         Args: { new_password: string; user_uuid: string }
         Returns: boolean
       }
+      update_order_status: {
+        Args: {
+          p_new_status: Database["public"]["Enums"]["order_status"]
+          p_order_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       validate_staff_token: {
         Args: { _token: string }
         Returns: {

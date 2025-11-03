@@ -286,26 +286,13 @@ export function useKitchenOrders() {
         throw new Error('Usuario sin ID válido');
       }
       
-      // Establecer contexto de staff
-      console.log(`[KDS] Setting staff context for user: ${currentUser.id}`);
-      const { error: contextError } = await supabase.rpc('set_staff_context', {
+      // Usar RPC que establece contexto dentro de la transacción
+      console.log(`[KDS] Updating order in database (status: ${newStatus})`);
+      const { error } = await supabase.rpc('update_order_status', {
+        p_order_id: orderId,
+        p_new_status: newStatus as any,
         p_user_id: currentUser.id
       });
-      
-      if (contextError) {
-        console.error('[KDS] Error setting staff context:', contextError);
-        throw contextError;
-      }
-      
-      // Actualizar en BD
-      console.log(`[KDS] Updating order in database (status: ${newStatus})`);
-      const { error } = await supabase
-        .from('orders')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId);
 
       if (error) {
         console.error('[KDS] Database update error:', error);
