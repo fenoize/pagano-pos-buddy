@@ -10,6 +10,9 @@ import {
 import { Loader2, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { setStaffContext } from '@/lib/dbContext';
+import type { User } from '@/types';
 
 interface OrderStatusDropdownProps {
   orderId: string;
@@ -91,20 +94,18 @@ export const OrderStatusDropdown: React.FC<OrderStatusDropdownProps> = ({
       console.log(`[OrderStatusDropdown] Updating order ${orderId} to status: ${newStatus}`);
       
       // Obtener usuario actual del localStorage
-      const userId = localStorage.getItem('paganos_user_id');
-      if (!userId) {
+      const staffUserJson = localStorage.getItem(STORAGE_KEYS.STAFF_USER);
+      if (!staffUserJson) {
         throw new Error('No se encontró el usuario activo');
       }
 
-      // Establecer contexto de usuario (necesario para RLS)
-      const { error: contextError } = await supabase.rpc('set_staff_context', {
-        p_user_id: userId
-      });
-
-      if (contextError) {
-        console.error('[OrderStatusDropdown] Error setting context:', contextError);
-        throw contextError;
+      const staffUser: User = JSON.parse(staffUserJson);
+      if (!staffUser?.id) {
+        throw new Error('Usuario inválido');
       }
+
+      // Establecer contexto de usuario (necesario para RLS)
+      await setStaffContext(staffUser.id);
       
       // Actualizar el estado de la orden
       const { data, error } = await supabase
