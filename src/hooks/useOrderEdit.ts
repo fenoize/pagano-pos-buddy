@@ -44,13 +44,30 @@ export function useOrderEdit() {
   const { getSessionSummary, logSessionAudit } = useCashSession();
 
   const calculateTotals = useCallback((items: OrderItem[], deliveryFee: number, discount: number) => {
+    // Validar entradas
+    if (!Array.isArray(items)) {
+      console.error('[calculateTotals] Items is not an array:', items);
+      return { subtotal: 0, discount: 0, total: 0 };
+    }
+    
     const subtotal = items.reduce((sum, item) => {
-      const itemPrice = item.basePrice + (item.extras?.reduce((extSum, ext) => extSum + ext.price, 0) || 0);
-      return sum + (itemPrice * item.quantity);
+      const basePrice = Number(item.basePrice) || 0;
+      const quantity = Number(item.quantity) || 0;
+      const extrasPrice = item.extras?.reduce((extSum, ext) => extSum + (Number(ext.price) || 0), 0) || 0;
+      const itemPrice = basePrice + extrasPrice;
+      return sum + (itemPrice * quantity);
     }, 0);
     
-    const finalDiscount = Math.min(discount, subtotal);
-    const total = Math.max(0, subtotal - finalDiscount + deliveryFee);
+    const finalDiscount = Math.min(Number(discount) || 0, subtotal);
+    const total = Math.max(0, subtotal - finalDiscount + (Number(deliveryFee) || 0));
+    
+    console.log('[calculateTotals]', { 
+      items_count: items.length, 
+      subtotal, 
+      discount: finalDiscount, 
+      deliveryFee, 
+      total 
+    });
     
     return { subtotal, discount: finalDiscount, total };
   }, []);

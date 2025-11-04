@@ -727,9 +727,28 @@ export default function Sales() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowDetailModal(true);
+                          onClick={async () => {
+                            // Cargar orden completa con todos los campos
+                            try {
+                              const { data: fullOrder, error } = await supabase
+                                .from('orders')
+                                .select('*')
+                                .eq('id', order.id)
+                                .single();
+                              
+                              if (error) {
+                                console.error('Error loading full order:', error);
+                                toast.error('Error cargando el detalle del pedido');
+                                return;
+                              }
+                              
+                              console.log('[Sales] Full order loaded:', fullOrder);
+                              setSelectedOrder(fullOrder as unknown as Order);
+                              setShowDetailModal(true);
+                            } catch (error) {
+                              console.error('Error:', error);
+                              toast.error('Error al abrir el pedido');
+                            }
                           }}
                         >
                           <Eye className="w-4 h-4" />

@@ -118,6 +118,14 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
 
   useEffect(() => {
     if (order && isEditMode) {
+      console.log('[OrderEditModal] Initializing edit mode with order:', {
+        order_number: order.order_number,
+        has_items: !!order.items,
+        items_length: Array.isArray(order.items) ? order.items.length : 0,
+        subtotal: order.subtotal,
+        total: order.total
+      });
+      
       setEditData({
         items: [...(Array.isArray(order.items) ? order.items : [])],
         delivery_fee: order.delivery_fee || 0,
@@ -128,9 +136,9 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         payment_pos: order.payment_pos || 0,
         payment_aplicacion: order.payment_aplicacion || 0,
         payment_runas: order.payment_runas || 0,
-        subtotal: order.subtotal,
+        subtotal: order.subtotal || 0,
         discount: order.discount || 0,
-        total: order.total,
+        total: order.total || 0,
         delivery_address: order.delivery_address || '',
         delivery_number: order.delivery_number || '',
         delivery_comuna_id: order.delivery_comuna_id || '',
@@ -138,12 +146,18 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         delivery_person_id: order.delivery_person_id || null
       });
       setRunasEditadas(order.payment_runas || 0);
+      
+      console.log('[OrderEditModal] Edit data initialized:', {
+        items_count: Array.isArray(order.items) ? order.items.length : 0
+      });
     }
   }, [order, isEditMode]);
 
   useEffect(() => {
-    if (editData) {
+    if (editData && editData.items) {
+      console.log('[OrderEditModal] Recalculating totals for items:', editData.items.length);
       const totals = calculateTotals(editData.items, editData.delivery_fee, editData.discount);
+      console.log('[OrderEditModal] New totals:', totals);
       setEditData(prev => prev ? { ...prev, ...totals } : null);
     }
   }, [editData?.items, editData?.delivery_fee, editData?.discount, calculateTotals]);
