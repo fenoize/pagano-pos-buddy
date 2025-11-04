@@ -117,7 +117,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   };
 
   useEffect(() => {
-    if (order && isEditMode && !editData) {
+    if (order && isEditMode) {
       setEditData({
         items: [...(Array.isArray(order.items) ? order.items : [])],
         delivery_fee: order.delivery_fee || 0,
@@ -139,7 +139,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       });
       setRunasEditadas(order.payment_runas || 0);
     }
-  }, [order, isEditMode, editData]);
+  }, [order, isEditMode]);
 
   useEffect(() => {
     if (editData) {
