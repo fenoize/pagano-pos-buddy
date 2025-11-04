@@ -5,6 +5,7 @@ import { Order, OrderItem, PaymentMethod } from '@/types';
 import { useCustomerRunes } from '@/hooks/useCustomerRunes';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCashSession } from '@/hooks/useCashSession';
+import { setStaffContext } from '@/lib/dbContext';
 
 export interface OrderEditData {
   items: OrderItem[];
@@ -192,7 +193,10 @@ export function useOrderEdit() {
         }
       }
 
-      // 7. Update order - Convert empty strings to null for UUID/nullable fields
+      // 7. Set staff context before update (required for RLS)
+      await setStaffContext(user.id);
+
+      // 8. Update order - Convert empty strings to null for UUID/nullable fields
       const { data: updatedOrder, error: updateError } = await supabase
         .from('orders')
         .update({
@@ -226,7 +230,7 @@ export function useOrderEdit() {
         throw new Error(`Error actualizando el pedido: ${updateError.message || JSON.stringify(updateError)}`);
       }
 
-      // 8. If closed session, recalculate and audit
+      // 9. If closed session, recalculate and audit
       if (isClosed && cashSessionId) {
         const summaryAfter = await getSessionSummary(cashSessionId);
         
@@ -255,7 +259,7 @@ export function useOrderEdit() {
         });
       }
 
-      // 9. Create general audit log if reason provided
+      // 10. Create general audit log if reason provided
       if (reason) {
         await supabase
           .from('order_audits')
@@ -268,7 +272,7 @@ export function useOrderEdit() {
           });
       }
 
-      // 10. Auditoría específica para cambios en runas
+      // 11. Auditoría específica para cambios en runas
       if (deltaRunas !== 0) {
         await supabase
           .from('order_audits')
@@ -281,7 +285,7 @@ export function useOrderEdit() {
           });
       }
 
-      // 11. Create delivery audit logs for each changed field
+      // 12. Create delivery audit logs for each changed field
       if (deliveryChanges.length > 0) {
         const auditRecords = deliveryChanges.map(change => ({
           order_id: orderId,
