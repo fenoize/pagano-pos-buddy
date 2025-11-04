@@ -564,7 +564,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {(isEditMode ? editData?.items || [] : order.items).map((item: OrderItem, index: number) => (
+                  {(isEditMode ? editData?.items || [] : (Array.isArray(order.items) ? order.items : [])).map((item: OrderItem, index: number) => (
                     <OrderItemEditRow
                       key={index}
                       item={item}
