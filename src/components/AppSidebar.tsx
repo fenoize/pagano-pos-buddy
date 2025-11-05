@@ -41,6 +41,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { AppRole } from "@/types";
+import { APP_VERSION } from "@/config/version";
 import {
   Collapsible,
   CollapsibleContent,
@@ -272,6 +273,11 @@ export function AppSidebar() {
                  <LogOut className="h-4 w-4" />
                  {!isCollapsed && <span className="ml-2">Cerrar Sesión</span>}
                </Button>
+               {!isCollapsed && (
+                 <div className="text-xs text-muted-foreground text-center border-t pt-2">
+                   v{APP_VERSION}
+                 </div>
+               )}
             </div>
           </SidebarMenuItem>
         </SidebarMenu>

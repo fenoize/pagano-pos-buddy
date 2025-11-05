@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { formatRunas } from '@/lib/utils';
 import { Coins } from 'lucide-react';
+import { Footer } from '@/components/ui/footer';
 
 interface CustomerLayoutProps {
   children: ReactNode;
@@ -31,7 +32,7 @@ export function CustomerLayout({ children, title, showBackButton = true }: Custo
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
@@ -91,9 +92,11 @@ export function CustomerLayout({ children, title, showBackButton = true }: Custo
         </div>
       </header>
 
-      <main className="container py-6 px-4">
+      <main className="container py-6 px-4 flex-1">
         {children}
       </main>
+      
+      <Footer />
     </div>
   );
 }

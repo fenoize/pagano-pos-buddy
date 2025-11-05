@@ -20,6 +20,7 @@ import { Suspense, lazy } from "react";
 import { CustomerProtectedRoute } from "@/components/guards/CustomerProtectedRoute";
 import { StaffProtectedRoute } from "@/components/guards/StaffProtectedRoute";
 import { SmartRootRedirect } from "@/components/guards/SmartRootRedirect";
+import { Footer } from "@/components/ui/footer";
 
 // Customer Pages
 const CustomerLogin = lazy(() => import('@/pages/customer/CustomerLogin'));
@@ -106,6 +107,7 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
             {children}
           </main>
+          <Footer />
         </div>
       </div>
       {!(isKitchenRoute && isExpanded) && <MobileNav />}
