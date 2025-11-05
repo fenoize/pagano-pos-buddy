@@ -16,6 +16,7 @@ import { CalendarIcon, Search, Eye, Download, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { OrderEditModal } from '@/components/sales/OrderEditModal';
 import { OrderStatusDropdown } from '@/components/sales/OrderStatusDropdown';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Order } from '@/types';
@@ -61,6 +62,10 @@ export default function Sales() {
   // Date picker states
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
 
   useEffect(() => {
     loadOrders();
@@ -296,12 +301,21 @@ export default function Sales() {
     }
 
     setFilteredOrders(filtered);
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
   };
 
   const resetFilters = () => {
     setFilters({});
     setSearchQuery('');
+    setCurrentPage(1);
   };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
 
   const exportToCSV = () => {
     const csvData = filteredOrders.map(order => {
@@ -666,7 +680,7 @@ export default function Sales() {
       {/* Results Summary */}
       <div className="flex justify-between items-center text-sm text-muted-foreground">
         <span>
-          Mostrando {filteredOrders.length} de {orders.length} ventas
+          Mostrando {startIndex + 1}-{Math.min(endIndex, filteredOrders.length)} de {filteredOrders.length} ventas
         </span>
         <span>
           Total: {formatPrice(filteredOrders.reduce((sum, order) => sum + order.total, 0))}
@@ -691,14 +705,14 @@ export default function Sales() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOrders.length === 0 ? (
+                {paginatedOrders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No se encontraron ventas con los filtros aplicados
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredOrders.map((order) => (
+                  paginatedOrders.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">#{order.order_number}</TableCell>
                       <TableCell>
@@ -762,6 +776,62 @@ export default function Sales() {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                // Show first page, last page, current page, and pages around current
+                const showPage = 
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1);
+
+                const showEllipsisBefore = page === currentPage - 2 && currentPage > 3;
+                const showEllipsisAfter = page === currentPage + 2 && currentPage < totalPages - 2;
+
+                if (showEllipsisBefore || showEllipsisAfter) {
+                  return (
+                    <PaginationItem key={page}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  );
+                }
+
+                if (!showPage) return null;
+
+                return (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(page)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
         {selectedOrder && (
