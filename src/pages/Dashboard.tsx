@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, ShoppingCart, Clock, DollarSign, Calendar, Package, Star } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Clock, DollarSign, Calendar, Package, Star, CalendarIcon } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { CajeroDashboard } from '@/components/dashboard/CajeroDashboard';
 import { ActiveShiftWidget } from '@/components/dashboard/ActiveShiftWidget';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface DashboardStats {
   totalSales: number;
@@ -55,6 +61,11 @@ function DefaultDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const { user } = useAuthContext();
+  
+  // Filtros de período para productos más vendidos
+  const [periodFilter, setPeriodFilter] = useState<'this_week' | 'this_month' | 'this_year' | 'custom'>('this_week');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     loadDashboardStats();
@@ -65,7 +76,7 @@ function DefaultDashboard() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [periodFilter, customStartDate, customEndDate]);
 
   const loadDashboardStats = async () => {
     try {
@@ -83,7 +94,27 @@ function DefaultDashboard() {
 
       if (error) throw error;
 
-      // Get weekly orders
+      // Calculate date range for top products based on filter
+      let productsStartDate: string;
+      let productsEndDate: string = new Date().toISOString().split('T')[0];
+      
+      if (periodFilter === 'custom' && customStartDate && customEndDate) {
+        productsStartDate = customStartDate.toISOString().split('T')[0];
+        productsEndDate = customEndDate.toISOString().split('T')[0];
+      } else if (periodFilter === 'this_month') {
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        productsStartDate = monthStart.toISOString().split('T')[0];
+      } else if (periodFilter === 'this_year') {
+        const yearStart = new Date();
+        yearStart.setMonth(0, 1);
+        productsStartDate = yearStart.toISOString().split('T')[0];
+      } else {
+        // this_week (default)
+        productsStartDate = weekStart;
+      }
+
+      // Get weekly orders (for weekly stats)
       const { data: weeklyOrders, error: weekError } = await supabase
         .from('orders')
         .select('*')
@@ -91,6 +122,16 @@ function DefaultDashboard() {
         .neq('status', 'Cancelado');
 
       if (weekError) throw weekError;
+
+      // Get orders for top products based on selected period
+      const { data: productOrders, error: productError } = await supabase
+        .from('orders')
+        .select('*')
+        .gte('created_at', `${productsStartDate}T00:00:00`)
+        .lte('created_at', `${productsEndDate}T23:59:59`)
+        .neq('status', 'Cancelado');
+
+      if (productError) throw productError;
 
       const completedOrders = orders?.filter(order => 
         order.status !== 'Cancelado'
@@ -115,10 +156,10 @@ function DefaultDashboard() {
       const weeklySales = (weeklyOrders || []).reduce((sum, order) => sum + order.total, 0);
       const weeklySalesCount = (weeklyOrders || []).length;
 
-      // Calculate top products from WEEKLY data
+      // Calculate top products from selected period data
       const productCounts = new Map<string, { name: string; quantity: number }>();
       
-      (weeklyOrders || []).forEach(order => {
+      (productOrders || []).forEach(order => {
         const items = order.items as any[];
         items.forEach(item => {
           const key = item.productId || item.productName;
@@ -261,13 +302,88 @@ function DefaultDashboard() {
       {/* Top Products */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            Productos Más Vendidos
-          </CardTitle>
-          <CardDescription>
-            Últimos 7 días
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                Productos Más Vendidos
+              </CardTitle>
+              <CardDescription className="mt-1">
+                {periodFilter === 'this_week' && 'Últimos 7 días'}
+                {periodFilter === 'this_month' && 'Este mes'}
+                {periodFilter === 'this_year' && 'Este año'}
+                {periodFilter === 'custom' && customStartDate && customEndDate && 
+                  `${format(customStartDate, 'dd/MM/yyyy', { locale: es })} - ${format(customEndDate, 'dd/MM/yyyy', { locale: es })}`}
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Select value={periodFilter} onValueChange={(value: any) => setPeriodFilter(value)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Seleccionar período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="this_week">Última semana</SelectItem>
+                  <SelectItem value="this_month">Último mes</SelectItem>
+                  <SelectItem value="this_year">Último año</SelectItem>
+                  <SelectItem value="custom">Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {periodFilter === 'custom' && (
+                <>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "justify-start text-left font-normal",
+                          !customStartDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {customStartDate ? format(customStartDate, 'dd/MM/yyyy', { locale: es }) : 'Desde'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <div className="p-3">
+                        <input
+                          type="date"
+                          className="w-full px-3 py-2 border rounded-md"
+                          value={customStartDate ? customStartDate.toISOString().split('T')[0] : ''}
+                          onChange={(e) => setCustomStartDate(e.target.value ? new Date(e.target.value) : undefined)}
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "justify-start text-left font-normal",
+                          !customEndDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {customEndDate ? format(customEndDate, 'dd/MM/yyyy', { locale: es }) : 'Hasta'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <div className="p-3">
+                        <input
+                          type="date"
+                          className="w-full px-3 py-2 border rounded-md"
+                          value={customEndDate ? customEndDate.toISOString().split('T')[0] : ''}
+                          onChange={(e) => setCustomEndDate(e.target.value ? new Date(e.target.value) : undefined)}
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
