@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, MapPin, CreditCard, Download, X } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, MapPin, CreditCard, Download, X, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import CustomerAddresses from '@/components/clientes/CustomerAddresses';
 import CustomerRunes from '@/components/clientes/CustomerRunes';
 import CustomerOrders from '@/components/clientes/CustomerOrders';
 import DeleteCustomerModal from '@/components/clientes/DeleteCustomerModal';
+import { CustomerPasswordModal } from '@/components/clientes/CustomerPasswordModal';
 
 export default function Clientes() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -26,6 +27,9 @@ export default function Clientes() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteModalType, setDeleteModalType] = useState<'deactivate' | 'permanent' | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [selectedCustomerForPassword, setSelectedCustomerForPassword] = useState<Customer | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<CustomerFilters>({ estado: 'Activo' });
   const [currentPage, setCurrentPage] = useState(0);
@@ -38,6 +42,7 @@ export default function Clientes() {
     fetchCustomers,
     deleteCustomer,
     deleteCustomerPermanently,
+    updateCustomerPassword,
     exportCustomersCSV
   } = useCustomers();
 
@@ -116,6 +121,26 @@ export default function Clientes() {
   const handleCustomerUpdated = () => {
     setIsCustomerModalOpen(false);
     fetchCustomers(filters, currentPage);
+  };
+
+  const handleChangePassword = (customer: Customer) => {
+    setSelectedCustomerForPassword(customer);
+    setShowPasswordModal(true);
+  };
+
+  const handleConfirmPasswordChange = async (newPassword: string) => {
+    if (!selectedCustomerForPassword) return;
+    
+    setPasswordLoading(true);
+    try {
+      const success = await updateCustomerPassword(selectedCustomerForPassword.id, newPassword);
+      if (success) {
+        setShowPasswordModal(false);
+        setSelectedCustomerForPassword(null);
+      }
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
@@ -364,6 +389,11 @@ export default function Clientes() {
                                   <Edit className="w-4 h-4 mr-2" />
                                   Editar
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleChangePassword(customer)}>
+                                  <KeyRound className="w-4 h-4 mr-2" />
+                                  Cambiar contraseña
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteCustomer(customer)}
                                   className="text-red-600"
@@ -371,7 +401,6 @@ export default function Clientes() {
                                   <Trash2 className="w-4 h-4 mr-2" />
                                   Desactivar
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteCustomerPermanently(customer)}
                                   className="text-red-800 bg-red-50 focus:bg-red-100"
@@ -479,6 +508,15 @@ export default function Clientes() {
         onConfirmDeactivate={handleConfirmDeactivate}
         onConfirmDeletePermanently={handleConfirmDeletePermanently}
         type={deleteModalType}
+      />
+
+      {/* Change Password Modal */}
+      <CustomerPasswordModal
+        customer={selectedCustomerForPassword}
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onConfirm={handleConfirmPasswordChange}
+        loading={passwordLoading}
       />
     </div>
   );

@@ -492,6 +492,60 @@ export function useCustomers() {
     }
   };
 
+  const updateCustomerPassword = async (customerId: string, newPassword: string): Promise<boolean> => {
+    if (user?.role !== 'Administrador') {
+      toast({
+        title: "Error",
+        description: "Solo los administradores pueden cambiar contraseñas",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    try {
+      // Obtener el customer para verificar que tiene auth_user_id
+      const { data: customer, error: fetchError } = await supabase
+        .from('customers')
+        .select('auth_user_id')
+        .eq('id', customerId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (!customer?.auth_user_id) {
+        toast({
+          title: "Error",
+          description: "Este cliente no tiene una cuenta de autenticación vinculada",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Llamar al RPC para cambiar la contraseña
+      const { error } = await supabase.rpc('set_user_password', {
+        user_uuid: customer.auth_user_id,
+        new_password: newPassword
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Contraseña actualizada correctamente",
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error updating customer password:', error);
+      toast({
+        title: "Error",
+        description: "Error al actualizar la contraseña",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   return {
     customers,
     loading,
@@ -505,6 +559,7 @@ export function useCustomers() {
     deleteCustomer,
     deleteCustomerPermanently,
     searchCustomers,
-    exportCustomersCSV
+    exportCustomersCSV,
+    updateCustomerPassword
   };
 }
