@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CustomerForgotPasswordModal } from '@/components/customer/CustomerForgotPasswordModal';
 import { toast } from 'sonner';
 import { Flame, Loader2 } from 'lucide-react';
 import ReCAPTCHA from 'react-google-recaptcha';
@@ -14,6 +15,7 @@ export default function CustomerLogin() {
   const navigate = useNavigate();
   const { signIn, signUp } = useCustomerAuth();
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -150,7 +152,17 @@ export default function CustomerLogin() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Contraseña</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="login-password">Contraseña</Label>
+                    <Button
+                      type="button"
+                      variant="link"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-xs text-muted-foreground hover:text-primary px-0 h-auto"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </Button>
+                  </div>
                   <Input
                     id="login-password"
                     type="password"
@@ -299,6 +311,12 @@ export default function CustomerLogin() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Modal de recuperación de contraseña */}
+      <CustomerForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </div>
   );
 }
