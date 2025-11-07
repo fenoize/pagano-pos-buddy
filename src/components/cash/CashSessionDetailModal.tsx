@@ -12,9 +12,26 @@ import { useCashSession } from "@/hooks/useCashSession";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { FileDown, DollarSign, ShoppingCart, Truck, Coins, TrendingUp, TrendingDown, Edit, Save, X, User, Sparkles, Eye } from "lucide-react";
+import { FileDown, DollarSign, ShoppingCart, Truck, Coins, TrendingUp, TrendingDown, Edit, Save, X, User, Sparkles, Eye, Trash2, Plus } from "lucide-react";
 import jsPDF from 'jspdf';
 import { ClosedSessionOrdersModal } from './ClosedSessionOrdersModal';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CashSessionDetailModalProps {
   isOpen: boolean;
@@ -34,7 +51,26 @@ export function CashSessionDetailModal({
   const [isEditingClosure, setIsEditingClosure] = useState(false);
   const [editedClosingCash, setEditedClosingCash] = useState<number>(0);
   const [showOrdersModal, setShowOrdersModal] = useState(false);
-  const { getSessionSummary, updateSessionObservaciones, updateClosingCash } = useCashSession();
+  
+  // States for movement management
+  const [editingMovementId, setEditingMovementId] = useState<string | null>(null);
+  const [editingMovementType, setEditingMovementType] = useState<'ingreso' | 'egreso'>('ingreso');
+  const [editingMovementAmount, setEditingMovementAmount] = useState<number>(0);
+  const [editingMovementNote, setEditingMovementNote] = useState<string>('');
+  const [deletingMovementId, setDeletingMovementId] = useState<string | null>(null);
+  const [showAddMovement, setShowAddMovement] = useState(false);
+  const [newMovementType, setNewMovementType] = useState<'ingreso' | 'egreso'>('ingreso');
+  const [newMovementAmount, setNewMovementAmount] = useState<number>(0);
+  const [newMovementNote, setNewMovementNote] = useState<string>('');
+  
+  const { 
+    getSessionSummary, 
+    updateSessionObservaciones, 
+    updateClosingCash,
+    updateCashMovement,
+    deleteCashMovement,
+    addCashMovementToClosedSession
+  } = useCashSession();
   const { toast } = useToast();
   const { user } = useAuthContext();
 
@@ -176,6 +212,105 @@ export function CashSessionDetailModal({
       toast({
         title: "Error",
         description: "No se pudo actualizar el efectivo final",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditMovement = (movement: any) => {
+    setEditingMovementId(movement.id);
+    setEditingMovementType(movement.type);
+    setEditingMovementAmount(movement.amount);
+    setEditingMovementNote(movement.note || '');
+  };
+
+  const handleSaveMovement = async () => {
+    if (!editingMovementId) return;
+    
+    try {
+      await updateCashMovement(
+        editingMovementId,
+        editingMovementType,
+        editingMovementAmount,
+        editingMovementNote
+      );
+      
+      setEditingMovementId(null);
+      await loadDetailData();
+      
+      toast({
+        title: "Movimiento actualizado",
+        description: "El movimiento de caja se actualizó correctamente"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el movimiento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMovementId(null);
+    setEditingMovementType('ingreso');
+    setEditingMovementAmount(0);
+    setEditingMovementNote('');
+  };
+
+  const handleDeleteMovement = async () => {
+    if (!deletingMovementId) return;
+    
+    try {
+      await deleteCashMovement(deletingMovementId);
+      setDeletingMovementId(null);
+      await loadDetailData();
+      
+      toast({
+        title: "Movimiento eliminado",
+        description: "El movimiento de caja se eliminó correctamente"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el movimiento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAddMovement = async () => {
+    if (!newMovementAmount || newMovementAmount <= 0) {
+      toast({
+        title: "Error",
+        description: "El monto debe ser mayor a cero",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await addCashMovementToClosedSession(
+        sessionId,
+        newMovementType,
+        newMovementAmount,
+        newMovementNote
+      );
+      
+      setShowAddMovement(false);
+      setNewMovementType('ingreso');
+      setNewMovementAmount(0);
+      setNewMovementNote('');
+      await loadDetailData();
+      
+      toast({
+        title: "Movimiento agregado",
+        description: "El nuevo movimiento se agregó correctamente"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el movimiento",
         variant: "destructive"
       });
     }
@@ -634,47 +769,202 @@ export function CashSessionDetailModal({
           )}
 
           {/* Movimientos de Caja */}
-          {movements && movements.length > 0 && (
-            <Card>
-              <CardHeader>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Coins className="w-5 h-5" />
                   Movimientos de Caja
                 </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {movements.map((movement: any) => (
-                    <div key={movement.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        {movement.type === 'ingreso' ? (
-                          <TrendingUp className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 text-red-600" />
-                        )}
+                {user?.role === 'Administrador' && session?.closed_at && !showAddMovement && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddMovement(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar Movimiento
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {/* Form to add new movement */}
+                {showAddMovement && user?.role === 'Administrador' && (
+                  <div className="p-4 border-2 border-dashed rounded-lg bg-muted/50">
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <div className="font-medium">
-                            {movement.type === 'ingreso' ? 'Ingreso' : 'Egreso'}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {format(new Date(movement.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
-                          </div>
+                          <Label htmlFor="new-movement-type">Tipo</Label>
+                          <Select
+                            value={newMovementType}
+                            onValueChange={(value: 'ingreso' | 'egreso') => setNewMovementType(value)}
+                          >
+                            <SelectTrigger id="new-movement-type">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ingreso">Ingreso</SelectItem>
+                              <SelectItem value="egreso">Egreso</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="new-movement-amount">Monto</Label>
+                          <Input
+                            id="new-movement-amount"
+                            type="number"
+                            value={newMovementAmount || ''}
+                            onChange={(e) => setNewMovementAmount(Number(e.target.value))}
+                            placeholder="0"
+                          />
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className={`font-semibold ${movement.type === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}>
-                          {movement.type === 'ingreso' ? '+' : '-'}{formatCurrency(movement.amount)}
-                        </div>
-                        {movement.note && (
-                          <div className="text-xs text-muted-foreground">{movement.note}</div>
-                        )}
+                      <div>
+                        <Label htmlFor="new-movement-note">Nota</Label>
+                        <Input
+                          id="new-movement-note"
+                          value={newMovementNote}
+                          onChange={(e) => setNewMovementNote(e.target.value)}
+                          placeholder="Descripción del movimiento..."
+                        />
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowAddMovement(false);
+                            setNewMovementType('ingreso');
+                            setNewMovementAmount(0);
+                            setNewMovementNote('');
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button size="sm" onClick={handleAddMovement}>
+                          <Save className="w-4 h-4 mr-2" />
+                          Guardar
+                        </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  </div>
+                )}
+
+                {/* Existing movements */}
+                {movements && movements.length > 0 ? (
+                  movements.map((movement: any) => (
+                    <div key={movement.id}>
+                      {editingMovementId === movement.id ? (
+                        // Edit mode
+                        <div className="p-4 border-2 border-primary rounded-lg bg-primary/5">
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label htmlFor="edit-type">Tipo</Label>
+                                <Select
+                                  value={editingMovementType}
+                                  onValueChange={(value: 'ingreso' | 'egreso') => setEditingMovementType(value)}
+                                >
+                                  <SelectTrigger id="edit-type">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="ingreso">Ingreso</SelectItem>
+                                    <SelectItem value="egreso">Egreso</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label htmlFor="edit-amount">Monto</Label>
+                                <Input
+                                  id="edit-amount"
+                                  type="number"
+                                  value={editingMovementAmount}
+                                  onChange={(e) => setEditingMovementAmount(Number(e.target.value))}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <Label htmlFor="edit-note">Nota</Label>
+                              <Input
+                                id="edit-note"
+                                value={editingMovementNote}
+                                onChange={(e) => setEditingMovementNote(e.target.value)}
+                                placeholder="Descripción del movimiento..."
+                              />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                                <X className="w-4 h-4 mr-2" />
+                                Cancelar
+                              </Button>
+                              <Button size="sm" onClick={handleSaveMovement}>
+                                <Save className="w-4 h-4 mr-2" />
+                                Guardar
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        // View mode
+                        <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-3 flex-1">
+                            {movement.type === 'ingreso' ? (
+                              <TrendingUp className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <TrendingDown className="w-4 h-4 text-red-600" />
+                            )}
+                            <div className="flex-1">
+                              <div className="font-medium">
+                                {movement.type === 'ingreso' ? 'Ingreso' : 'Egreso'}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {format(new Date(movement.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className={`font-semibold ${movement.type === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}>
+                                {movement.type === 'ingreso' ? '+' : '-'}{formatCurrency(movement.amount)}
+                              </div>
+                              {movement.note && (
+                                <div className="text-xs text-muted-foreground">{movement.note}</div>
+                              )}
+                            </div>
+                            {user?.role === 'Administrador' && session?.closed_at && (
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditMovement(movement)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setDeletingMovementId(movement.id)}
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    No hay movimientos de caja registrados
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Observaciones */}
           <Card>
@@ -712,6 +1002,24 @@ export function CashSessionDetailModal({
           loadDetailData();
         }}
       />
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deletingMovementId} onOpenChange={() => setDeletingMovementId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar movimiento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El movimiento de caja será eliminado permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMovement} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

@@ -400,6 +400,81 @@ export function useCashSession() {
     }
   };
 
+  const updateCashMovement = async (
+    movementId: string,
+    type: 'ingreso' | 'egreso',
+    amount: number,
+    note?: string
+  ): Promise<void> => {
+    try {
+      if (user?.id) {
+        await setStaffContext(user.id);
+      }
+
+      const { error } = await supabase
+        .from('cash_movements')
+        .update({
+          type,
+          amount,
+          note
+        })
+        .eq('id', movementId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating cash movement:', error);
+      throw error;
+    }
+  };
+
+  const deleteCashMovement = async (movementId: string): Promise<void> => {
+    try {
+      if (user?.id) {
+        await setStaffContext(user.id);
+      }
+
+      const { error } = await supabase
+        .from('cash_movements')
+        .delete()
+        .eq('id', movementId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting cash movement:', error);
+      throw error;
+    }
+  };
+
+  const addCashMovementToClosedSession = async (
+    sessionId: string,
+    type: 'ingreso' | 'egreso',
+    amount: number,
+    note?: string
+  ): Promise<CashMovement> => {
+    try {
+      if (user?.id) {
+        await setStaffContext(user.id);
+      }
+
+      const { data, error } = await supabase
+        .from('cash_movements')
+        .insert({
+          session_id: sessionId,
+          type,
+          amount,
+          note
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error adding cash movement to closed session:', error);
+      throw error;
+    }
+  };
+
   return {
     currentSession,
     loading,
@@ -412,6 +487,9 @@ export function useCashSession() {
     updateSessionObservaciones,
     updateClosingCash,
     recalculateClosedSession,
-    logSessionAudit
+    logSessionAudit,
+    updateCashMovement,
+    deleteCashMovement,
+    addCashMovementToClosedSession
   };
 }
