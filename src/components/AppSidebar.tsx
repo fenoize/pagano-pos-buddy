@@ -22,7 +22,9 @@ import {
   ShoppingCart as ShoppingCartIcon,
   ChevronDown,
   ChevronRight,
-  Star
+  Star,
+  Wallet,
+  Receipt
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -77,6 +79,8 @@ const inventoryItems = [
 
 const financeItems = [
   { title: "Indicadores (KPIs)", url: "/pos/finanzas/kpis", icon: TrendingUpIcon, roles: ['Administrador', 'Cajero'] },
+  { title: "Cuentas", url: "/pos/finanzas/cuentas", icon: Wallet, roles: ['Administrador'] },
+  { title: "Egresos", url: "/pos/finanzas/egresos", icon: Receipt, roles: ['Administrador', 'Cajero'] },
   { title: "Cierres Financieros", url: "/pos/finanzas/cierres", icon: FileText, roles: ['Administrador'] },
   { title: "Delivery", url: "/pos/finanzas/exportaciones", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
 ];

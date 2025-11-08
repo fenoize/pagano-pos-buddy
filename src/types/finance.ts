@@ -53,3 +53,37 @@ export interface FinanceDailyData {
   orders_count: number;
   cogs: number;
 }
+
+export interface FinanceAccount {
+  id: string;
+  name: string;
+  code: string | null;
+  type: 'Efectivo' | 'Banco' | 'Digital' | 'Otro';
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
+export interface FinanceExpense {
+  id: string;
+  expense_date: string; // ISO date
+  account_id: string;
+  account?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  amount: number;
+  currency: string;
+  expense_type: 'Fijo' | 'Variable' | 'Inversión' | 'Otro';
+  category: string;
+  supplier: string | null;
+  payment_method: string | null;
+  notes: string | null;
+  attachment_url: string | null;
+  registered_by: string | null;
+  created_at: string;
+  updated_at: string;
+}

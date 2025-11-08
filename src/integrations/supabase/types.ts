@@ -1332,6 +1332,130 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_accounts: {
+        Row: {
+          code: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_expenses: {
+        Row: {
+          account_id: string
+          amount: number
+          attachment_url: string | null
+          category: string
+          created_at: string
+          currency: string
+          expense_date: string
+          expense_type: string
+          id: string
+          notes: string | null
+          payment_method: string | null
+          registered_by: string | null
+          supplier: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          attachment_url?: string | null
+          category: string
+          created_at?: string
+          currency?: string
+          expense_date?: string
+          expense_type: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          registered_by?: string | null
+          supplier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          attachment_url?: string | null
+          category?: string
+          created_at?: string
+          currency?: string
+          expense_date?: string
+          expense_type?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          registered_by?: string | null
+          supplier?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_expenses_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_expenses_registered_by_fkey"
+            columns: ["registered_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_expenses_registered_by_fkey"
+            columns: ["registered_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_closures: {
         Row: {
           created_at: string | null

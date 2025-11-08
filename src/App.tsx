@@ -59,6 +59,8 @@ const Kardex = lazy(() => import("@/pages/inventory/Kardex"));
 const FinanceKPIs = lazy(() => import("@/pages/finance/FinanceKPIs"));
 const FinanceCierres = lazy(() => import("@/pages/finance/FinanceCierres"));
 const FinanceExport = lazy(() => import("@/pages/finance/FinanceExport"));
+const FinanceAccounts = lazy(() => import("@/pages/finance/FinanceAccounts"));
+const FinanceExpenses = lazy(() => import("@/pages/finance/FinanceExpenses"));
 
 // Loading component para Suspense
 function LoadingFallback() {
@@ -318,6 +320,22 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <FinanceKPIs />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/finanzas/cuentas" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <FinanceAccounts />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/finanzas/egresos" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <FinanceExpenses />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />
