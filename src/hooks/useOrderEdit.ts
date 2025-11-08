@@ -255,7 +255,8 @@ export function useOrderEdit() {
       }
 
       // Validar que el update devolvió datos
-      if (!updatedOrder) {
+      let finalOrder = updatedOrder;
+      if (!finalOrder) {
         console.error('[updateOrder] No se pudo recuperar la orden actualizada. Verificando...');
         // Intenta leer la orden directamente
         const { data: verifyOrder, error: verifyError } = await supabase
@@ -269,14 +270,7 @@ export function useOrderEdit() {
         }
         
         console.log('[updateOrder] Orden verificada manualmente:', verifyOrder.id);
-        toast({
-          title: "Pedido actualizado",
-          description: "Los cambios se han guardado (verificación manual realizada)",
-        });
-        
-        // Continuar con el flujo usando la orden verificada
-        // Re-asignar para que el resto del código funcione
-        Object.assign(updatedOrder as any, verifyOrder);
+        finalOrder = verifyOrder;
       }
 
       // 9. If closed session, recalculate and audit
@@ -355,7 +349,7 @@ export function useOrderEdit() {
         description: "Los cambios se han guardado correctamente",
       });
 
-      return updatedOrder as any;
+      return finalOrder as any;
     } catch (error) {
       console.error('Error updating order:', error);
       toast({
