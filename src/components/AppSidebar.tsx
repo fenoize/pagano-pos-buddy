@@ -23,8 +23,8 @@ import {
   ChevronDown,
   ChevronRight,
   Star,
-  Wallet,
-  Receipt
+  DollarSign,
+  FileText as FileTextIcon
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -77,10 +77,11 @@ const inventoryItems = [
   { title: "Reportes", url: "/pos/inventario/reportes", icon: TrendingUpIcon, roles: ['Administrador'] },
 ];
 
+// Finance menu items with icons
 const financeItems = [
   { title: "Indicadores (KPIs)", url: "/pos/finanzas/kpis", icon: TrendingUpIcon, roles: ['Administrador', 'Cajero'] },
-  { title: "Cuentas", url: "/pos/finanzas/cuentas", icon: Wallet, roles: ['Administrador'] },
-  { title: "Egresos", url: "/pos/finanzas/egresos", icon: Receipt, roles: ['Administrador', 'Cajero'] },
+  { title: "Cuentas", url: "/pos/finanzas/cuentas", icon: DollarSign, roles: ['Administrador'] },
+  { title: "Egresos", url: "/pos/finanzas/egresos", icon: FileTextIcon, roles: ['Administrador', 'Cajero'] },
   { title: "Cierres Financieros", url: "/pos/finanzas/cierres", icon: FileText, roles: ['Administrador'] },
   { title: "Delivery", url: "/pos/finanzas/exportaciones", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
 ];
