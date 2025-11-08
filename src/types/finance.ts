@@ -10,6 +10,20 @@ export interface FinancialClosure {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  
+  // Nuevos campos PRO
+  total_cash: number;
+  total_pos: number;
+  total_transfer: number;
+  total_app: number;
+  total_expenses: number;
+  fixed_expenses: number;
+  variable_expenses: number;
+  margin_amount: number;
+  margin_percent: number;
+  total_tax: number;
+  total_balance: number;
+  filters?: Record<string, any>;
 }
 
 export interface FinancialKPIs {
@@ -86,4 +100,19 @@ export interface FinanceExpense {
   registered_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ClosureFilters {
+  fulfillment?: 'retiro' | 'delivery' | null;
+  payment_method?: string | null;
+  exclude_cancelled?: boolean;
+}
+
+export interface ClosureDetailExpense {
+  id: string;
+  expense_date: string;
+  category: string;
+  amount: number;
+  supplier: string | null;
+  expense_type: string;
 }

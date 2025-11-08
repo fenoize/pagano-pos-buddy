@@ -1462,39 +1462,75 @@ export type Database = {
           created_by: string | null
           date_end: string
           date_start: string
+          filters: Json | null
+          fixed_expenses: number | null
           id: string
           is_locked: boolean
+          margin_amount: number | null
+          margin_percent: number | null
           notes: string | null
           period_type: string
+          total_app: number | null
+          total_balance: number | null
+          total_cash: number | null
+          total_expenses: number | null
+          total_pos: number | null
+          total_tax: number | null
+          total_transfer: number | null
           totals: Json
           tz: string
           updated_at: string | null
+          variable_expenses: number | null
         }
         Insert: {
           created_at?: string | null
           created_by?: string | null
           date_end: string
           date_start: string
+          filters?: Json | null
+          fixed_expenses?: number | null
           id?: string
           is_locked?: boolean
+          margin_amount?: number | null
+          margin_percent?: number | null
           notes?: string | null
           period_type: string
+          total_app?: number | null
+          total_balance?: number | null
+          total_cash?: number | null
+          total_expenses?: number | null
+          total_pos?: number | null
+          total_tax?: number | null
+          total_transfer?: number | null
           totals?: Json
           tz?: string
           updated_at?: string | null
+          variable_expenses?: number | null
         }
         Update: {
           created_at?: string | null
           created_by?: string | null
           date_end?: string
           date_start?: string
+          filters?: Json | null
+          fixed_expenses?: number | null
           id?: string
           is_locked?: boolean
+          margin_amount?: number | null
+          margin_percent?: number | null
           notes?: string | null
           period_type?: string
+          total_app?: number | null
+          total_balance?: number | null
+          total_cash?: number | null
+          total_expenses?: number | null
+          total_pos?: number | null
+          total_tax?: number | null
+          total_transfer?: number | null
           totals?: Json
           tz?: string
           updated_at?: string | null
+          variable_expenses?: number | null
         }
         Relationships: [
           {
@@ -3331,6 +3367,18 @@ export type Database = {
           _created_by: string
           _end: string
           _notes: string
+          _period_type: string
+          _start: string
+          _tz?: string
+        }
+        Returns: string
+      }
+      finance_generate_closure_v2: {
+        Args: {
+          _created_by?: string
+          _end: string
+          _filters?: Json
+          _notes?: string
           _period_type: string
           _start: string
           _tz?: string
