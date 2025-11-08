@@ -80,32 +80,40 @@ export function useFinanceClosures() {
 
   const generateClosure = async (params: GenerateClosureParams): Promise<string | null> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Obtener el token del staff desde localStorage
+      const staffToken = localStorage.getItem('staffToken');
       
-      if (!user) {
-        toast.error('Usuario no autenticado');
+      if (!staffToken) {
+        toast.error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
         return null;
       }
 
-      // Obtener el user_id del staff
-      const { data: staffUser, error: staffError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', user.email)
-        .single();
+      // Validar el token y obtener el user_id
+      const { data: validationData, error: validationError } = await supabase
+        .rpc('validate_staff_token', {
+          _token: staffToken
+        });
 
-      if (staffError || !staffUser) {
-        console.error('Error obteniendo staff user:', staffError);
-        toast.error('Error: usuario no encontrado en el sistema');
+      if (validationError || !validationData || validationData.length === 0) {
+        console.error('Error validando token:', validationError);
+        toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
+        localStorage.removeItem('staffToken');
         return null;
       }
+
+      const userId = validationData[0].user_id;
+
+      // Establecer el contexto del staff
+      await supabase.rpc('set_staff_context', {
+        p_user_id: userId
+      });
 
       const { data, error } = await supabase.rpc('finance_generate_closure_v2', {
         _period_type: params.period_type,
         _start: params.start_date,
         _end: params.end_date,
         _notes: params.notes || null,
-        _created_by: staffUser.id,
+        _created_by: userId,
         _tz: 'America/Santiago',
         _filters: params.filters || {}
       });
