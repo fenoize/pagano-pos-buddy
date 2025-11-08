@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Download, TrendingUp, TrendingDown } from 'lucide-react';
+import { Download, FileText, TrendingUp, TrendingDown } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/table';
 import { FinancialClosure, ClosureDetailExpense } from '@/types/finance';
 import { useFinanceClosures } from '@/hooks/useFinanceClosures';
-import { exportClosureToCSV, formatCurrency } from '@/lib/financeExport';
+import { exportClosureToCSV, exportClosureToPDF, formatCurrency } from '@/lib/financeExport';
 
 interface ClosureDetailDrawerProps {
   closure: FinancialClosure | null;
@@ -279,15 +279,27 @@ export function ClosureDetailDrawer({
             </Card>
           )}
 
-          {/* 7. Botón de Exportar */}
-          <Button 
-            onClick={() => exportClosureToCSV(closure)} 
-            className="w-full"
-            size="lg"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Exportar a CSV
-          </Button>
+          {/* 7. Botones de Exportar */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button 
+              onClick={() => exportClosureToPDF(closure)} 
+              className="w-full"
+              size="lg"
+              variant="default"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Exportar PDF
+            </Button>
+            <Button 
+              onClick={() => exportClosureToCSV(closure)} 
+              className="w-full"
+              size="lg"
+              variant="outline"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Exportar CSV
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
