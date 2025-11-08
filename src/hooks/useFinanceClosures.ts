@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FinancialClosure, ClosureDetailExpense } from '@/types/finance';
 import { toast } from 'sonner';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 interface FetchClosuresFilters {
   dateFrom?: string;
@@ -81,7 +82,7 @@ export function useFinanceClosures() {
   const generateClosure = async (params: GenerateClosureParams): Promise<string | null> => {
     try {
       // Obtener el token del staff desde localStorage
-      const staffToken = localStorage.getItem('staffToken');
+      const staffToken = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
       
       if (!staffToken) {
         toast.error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
@@ -97,7 +98,7 @@ export function useFinanceClosures() {
       if (validationError || !validationData || validationData.length === 0) {
         console.error('Error validando token:', validationError);
         toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
-        localStorage.removeItem('staffToken');
+        localStorage.removeItem(STORAGE_KEYS.STAFF_TOKEN);
         return null;
       }
 
