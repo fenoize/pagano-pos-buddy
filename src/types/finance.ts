@@ -116,3 +116,36 @@ export interface ClosureDetailExpense {
   supplier: string | null;
   expense_type: string;
 }
+
+export interface FixedExpense {
+  id: string;
+  name: string;
+  department: string;
+  category: string;
+  amount: number;
+  frequency: 'monthly' | 'weekly' | 'yearly';
+  payment_day?: number | null;
+  account_id?: string | null;
+  account?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  document_type?: string | null;
+  notes?: string | null;
+  is_active: boolean;
+  start_date?: string | null;
+  end_date?: string | null;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FixedExpenseProrated {
+  id: string;
+  name: string;
+  department: string;
+  category: string;
+  amount: number;
+  prorated_amount: number;
+}

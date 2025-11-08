@@ -24,7 +24,8 @@ import {
   ChevronRight,
   Star,
   DollarSign,
-  FileText as FileTextIcon
+  FileText as FileTextIcon,
+  Building2
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {

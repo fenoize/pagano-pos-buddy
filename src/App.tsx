@@ -61,6 +61,7 @@ const FinanceCierres = lazy(() => import("@/pages/finance/FinanceCierres"));
 const FinanceExport = lazy(() => import("@/pages/finance/FinanceExport"));
 const FinanceAccounts = lazy(() => import("@/pages/finance/FinanceAccounts"));
 const FinanceExpenses = lazy(() => import("@/pages/finance/FinanceExpenses"));
+const FixedExpenses = lazy(() => import("@/pages/finance/FixedExpenses"));
 
 // Loading component para Suspense
 function LoadingFallback() {
@@ -324,29 +325,10 @@ const App = () => (
                 </StaffProtectedRoute>
               } />
               
-              <Route path="/pos/finanzas/cuentas" element={
-                <StaffProtectedRoute>
-                  <StaffLayout>
-                    <FinanceAccounts />
-                  </StaffLayout>
-                </StaffProtectedRoute>
-              } />
-              
-              <Route path="/pos/finanzas/egresos" element={
-                <StaffProtectedRoute>
-                  <StaffLayout>
-                    <FinanceExpenses />
-                  </StaffLayout>
-                </StaffProtectedRoute>
-              } />
-              
-              <Route path="/pos/finanzas/cierres" element={
-                <StaffProtectedRoute>
-                  <StaffLayout>
-                    <FinanceCierres />
-                  </StaffLayout>
-                </StaffProtectedRoute>
-              } />
+              <Route path="/pos/finanzas/cuentas" element={<StaffProtectedRoute><StaffLayout><FinanceAccounts /></StaffLayout></StaffProtectedRoute>} />
+              <Route path="/pos/finanzas/gastos-fijos" element={<StaffProtectedRoute><StaffLayout><FixedExpenses /></StaffLayout></StaffProtectedRoute>} />
+              <Route path="/pos/finanzas/egresos" element={<StaffProtectedRoute><StaffLayout><FinanceExpenses /></StaffLayout></StaffProtectedRoute>} />
+              <Route path="/pos/finanzas/cierres" element={<StaffProtectedRoute><StaffLayout><FinanceCierres /></StaffLayout></StaffProtectedRoute>} />
               
               <Route path="/pos/finanzas/exportaciones" element={
                 <StaffProtectedRoute>

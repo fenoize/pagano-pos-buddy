@@ -164,9 +164,20 @@ export default function FinanceExpenses() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Egresos</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Gastos Variables</h1>
+            <p className="text-muted-foreground mt-1">
+              Registra los gastos operativos diarios del restaurant (insumos, mantenciones, compras, etc.). 
+              Estos gastos se incluyen automáticamente en los cierres financieros.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpenDialog()}>
               <Plus className="h-4 w-4 mr-2" />

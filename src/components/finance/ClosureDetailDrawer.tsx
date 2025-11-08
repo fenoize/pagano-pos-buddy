@@ -36,14 +36,18 @@ export function ClosureDetailDrawer({
   open,
   onOpenChange,
 }: ClosureDetailDrawerProps) {
-  const { fetchTopExpenses, fetchPreviousClosure } = useFinanceClosures();
+  const { fetchTopExpenses, fetchTopFixedExpenses, fetchPreviousClosure } = useFinanceClosures();
   const [topExpenses, setTopExpenses] = useState<ClosureDetailExpense[]>([]);
+  const [topFixedExpenses, setTopFixedExpenses] = useState<any[]>([]);
   const [previousClosure, setPreviousClosure] = useState<FinancialClosure | null>(null);
 
   useEffect(() => {
     if (closure && open) {
-      // Cargar top gastos
+      // Cargar top gastos variables
       fetchTopExpenses(closure.date_start, closure.date_end).then(setTopExpenses);
+      
+      // Cargar top gastos fijos prorrateados
+      fetchTopFixedExpenses(closure.date_start, closure.date_end).then(setTopFixedExpenses);
       
       // Cargar cierre anterior para comparativa
       fetchPreviousClosure(closure.id, closure.date_start).then(setPreviousClosure);
@@ -151,16 +155,17 @@ export function ClosureDetailDrawer({
             </CardContent>
           </Card>
 
-          {/* 3. Egresos */}
+          {/* 3. Egresos - Separado en Fijos y Variables */}
           <Card>
             <CardHeader>
-              <CardTitle>Egresos</CardTitle>
+              <CardTitle>Egresos del Período</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+            <CardContent className="space-y-6">
+              {/* 3A. Resumen Total */}
+              <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
                 <div>
                   <div className="text-sm text-muted-foreground">Gastos Fijos</div>
-                  <div className="text-lg font-semibold text-destructive">
+                  <div className="text-lg font-semibold text-blue-600">
                     {formatCurrency(closure.fixed_expenses)}
                   </div>
                 </div>
@@ -178,11 +183,39 @@ export function ClosureDetailDrawer({
                 </div>
               </div>
 
-              {/* Lista de top gastos */}
-              {topExpenses.length > 0 && (
-                <div>
-                  <Separator className="my-4" />
-                  <div className="text-sm font-medium mb-2">Top 10 Gastos del Período</div>
+              {/* 3B. Gastos Fijos (top 5 del catálogo vigente en el período) */}
+              <div>
+                <Separator className="my-4" />
+                <div className="text-sm font-medium mb-2">Top 5 Gastos Fijos del Período (Prorrateados)</div>
+                {topFixedExpenses.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Departamento</TableHead>
+                        <TableHead className="text-right">Monto Prorrateado</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {topFixedExpenses.slice(0, 5).map((expense: any) => (
+                        <TableRow key={expense.id}>
+                          <TableCell className="font-medium">{expense.name}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{expense.department}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(expense.prorated_amount)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No hay gastos fijos configurados</p>
+                )}
+              </div>
+
+              {/* 3C. Gastos Variables (top 10 desde finance_expenses) */}
+              <div>
+                <Separator className="my-4" />
+                <div className="text-sm font-medium mb-2">Top 10 Gastos Variables del Período</div>
+                {topExpenses.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -203,8 +236,10 @@ export function ClosureDetailDrawer({
                       ))}
                     </TableBody>
                   </Table>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-muted-foreground">No hay gastos variables registrados</p>
+                )}
+              </div>
             </CardContent>
           </Card>
 
