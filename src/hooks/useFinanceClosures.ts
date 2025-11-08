@@ -161,7 +161,7 @@ export function useFinanceClosures() {
 
   const fetchTopFixedExpenses = async (startDate: string, endDate: string) => {
     try {
-      const { data, error } = await supabase.rpc('get_fixed_expenses_for_closure', {
+      const { data, error } = await supabase.rpc('get_fixed_expenses_for_closure' as any, {
         _start: startDate,
         _end: endDate
       });

@@ -315,7 +315,6 @@ export default function FinanceExpenses() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
 
       {/* Filters */}
       <Card>
