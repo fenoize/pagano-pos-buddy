@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FinanceExpense } from '@/types/finance';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export function useFinanceExpenses() {
+  const { user } = useAuth();
   const [expenses, setExpenses] = useState<FinanceExpense[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,9 +36,18 @@ export function useFinanceExpenses() {
 
   const createExpense = async (data: Omit<FinanceExpense, 'id' | 'created_at' | 'updated_at' | 'registered_by' | 'account'>) => {
     try {
+      if (!user?.id) {
+        toast({
+          title: 'Error',
+          description: 'Usuario no autenticado',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
       const { error } = await supabase
         .from('finance_expenses')
-        .insert([data]);
+        .insert([{ ...data, registered_by: user.id }]);
 
       if (error) throw error;
 
