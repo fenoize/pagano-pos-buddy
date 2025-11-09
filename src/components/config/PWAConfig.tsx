@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Loader2, Smartphone, ShoppingCart } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { setStaffContext } from '@/lib/dbContext';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 interface PWAConfig {
   id: string;
@@ -197,7 +198,7 @@ export function PWAConfig() {
 
     try {
       // Obtener token de staff desde localStorage
-      const staffToken = localStorage.getItem('staff_token');
+      const staffToken = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
       if (!staffToken) {
         toast.error('No se encontró token de autenticación');
         return;
