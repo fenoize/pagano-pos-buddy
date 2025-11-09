@@ -1657,6 +1657,8 @@ export type Database = {
           app_pickup_enabled: boolean
           created_at: string
           id: string
+          mp_client_id: string | null
+          mp_client_secret: string | null
           mp_enabled: boolean
           mp_mode: string
           mp_public_key: string | null
@@ -1668,6 +1670,8 @@ export type Database = {
           app_pickup_enabled?: boolean
           created_at?: string
           id?: string
+          mp_client_id?: string | null
+          mp_client_secret?: string | null
           mp_enabled?: boolean
           mp_mode?: string
           mp_public_key?: string | null
@@ -1679,6 +1683,8 @@ export type Database = {
           app_pickup_enabled?: boolean
           created_at?: string
           id?: string
+          mp_client_id?: string | null
+          mp_client_secret?: string | null
           mp_enabled?: boolean
           mp_mode?: string
           mp_public_key?: string | null
@@ -3626,6 +3632,7 @@ export type Database = {
       is_cashier_or_admin: { Args: never; Returns: boolean }
       is_current_user_admin: { Args: never; Returns: boolean }
       is_staff_admin: { Args: never; Returns: boolean }
+      is_user_admin: { Args: { p_user_id: string }; Returns: boolean }
       process_purchase_receipt: {
         Args: {
           p_expiry_date?: string
@@ -3699,10 +3706,9 @@ export type Database = {
         Returns: boolean
       }
       staff_has_permission: { Args: { perm: string }; Returns: boolean }
-      update_online_order_settings: {
-        Args: { p_settings: Json }
-        Returns: Json
-      }
+      update_online_order_settings:
+        | { Args: { p_settings: Json }; Returns: Json }
+        | { Args: { p_settings: Json; p_user_id?: string }; Returns: Json }
       update_order_status: {
         Args: {
           p_new_status: Database["public"]["Enums"]["order_status"]

@@ -22,7 +22,9 @@ export function OnlineOrdersConfig() {
     app_delivery_enabled: false,
     mp_enabled: false,
     mp_mode: 'sandbox' as 'sandbox' | 'production',
-    mp_public_key: ''
+    mp_public_key: '',
+    mp_client_id: '',
+    mp_client_secret: ''
   });
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -34,7 +36,9 @@ export function OnlineOrdersConfig() {
         app_delivery_enabled: settings.app_delivery_enabled,
         mp_enabled: settings.mp_enabled,
         mp_mode: settings.mp_mode,
-        mp_public_key: settings.mp_public_key || ''
+        mp_public_key: settings.mp_public_key || '',
+        mp_client_id: settings.mp_client_id || '',
+        mp_client_secret: settings.mp_client_secret || ''
       });
     }
   }, [settings]);
@@ -212,11 +216,41 @@ export function OnlineOrdersConfig() {
                 </p>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="mp_client_id">Client ID</Label>
+                <Input
+                  id="mp_client_id"
+                  type="text"
+                  placeholder="1234567890123456"
+                  value={localSettings.mp_client_id}
+                  onChange={(e) => handleChange('mp_client_id', e.target.value)}
+                  disabled={!isAdmin || loading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  El Client ID de tu aplicación de MercadoPago
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mp_client_secret">Client Secret</Label>
+                <Input
+                  id="mp_client_secret"
+                  type="password"
+                  placeholder="••••••••••••••••"
+                  value={localSettings.mp_client_secret}
+                  onChange={(e) => handleChange('mp_client_secret', e.target.value)}
+                  disabled={!isAdmin || loading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  El Client Secret de tu aplicación (se almacena de forma segura)
+                </p>
+              </div>
+
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  <strong>Access Token:</strong> Ya está configurado de forma segura en los secrets del servidor.
-                  Si necesitas cambiarlo, contacta al administrador del sistema.
+                  <strong>Access Token:</strong> Configúralo en los secrets del servidor con la clave <code className="px-1 py-0.5 bg-muted rounded">MERCADOPAGO_ACCESS_TOKEN</code>.
+                  Esto permite que las edge functions procesen pagos de forma segura.
                 </AlertDescription>
               </Alert>
             </div>

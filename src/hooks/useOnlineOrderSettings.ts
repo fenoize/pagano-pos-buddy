@@ -11,6 +11,8 @@ export interface OnlineOrderSettings {
   mp_enabled: boolean;
   mp_mode: 'sandbox' | 'production';
   mp_public_key: string | null;
+  mp_client_id: string | null;
+  mp_client_secret: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -93,9 +95,10 @@ export function useOnlineOrderSettings() {
       // 4. Establecer contexto
       await supabase.rpc('set_staff_context', { p_user_id: userId });
       
-      // 5. Actualizar configuración
+      // 5. Actualizar configuración (ahora pasamos el userId)
       const { data, error } = await supabase.rpc('update_online_order_settings', {
-        p_settings: updates
+        p_settings: updates,
+        p_user_id: userId
       });
 
       if (error) throw error;
