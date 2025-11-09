@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export interface OnlineOrderSettings {
   id: string;
@@ -19,13 +20,32 @@ export function useOnlineOrderSettings() {
   const [loading, setLoading] = useState(false);
 
   /**
-   * Cargar configuración actual usando RPC (sin headers custom)
+   * Cargar configuración actual usando RPC con contexto de staff
    */
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .rpc('get_online_order_settings');
+      // 1. Obtener y validar token
+      const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+      
+      // 2. Validar token y obtener user_id
+      const { data: validationData, error: validationError } = await supabase
+        .rpc('validate_staff_token_v2', { _token: token });
+      
+      if (validationError || !validationData || validationData.length === 0) {
+        throw new Error('Sesión inválida o expirada');
+      }
+      
+      const userId = validationData[0].user_id;
+      
+      // 3. Establecer contexto de staff
+      await supabase.rpc('set_staff_context', { p_user_id: userId });
+      
+      // 4. Ahora sí obtener configuración
+      const { data, error } = await supabase.rpc('get_online_order_settings');
 
       if (error) throw error;
 
@@ -42,15 +62,41 @@ export function useOnlineOrderSettings() {
 
 
   /**
-   * Actualizar configuración usando RPC (sin headers custom)
+   * Actualizar configuración usando RPC con contexto de staff
    */
   const updateSettings = async (updates: Partial<OnlineOrderSettings>) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .rpc('update_online_order_settings', {
-          p_settings: updates
-        });
+      // 1. Obtener y validar token
+      const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+      
+      // 2. Validar token y obtener user_id
+      const { data: validationData, error: validationError } = await supabase
+        .rpc('validate_staff_token_v2', { _token: token });
+      
+      if (validationError || !validationData || validationData.length === 0) {
+        throw new Error('Sesión inválida o expirada');
+      }
+      
+      const userId = validationData[0].user_id;
+      const isAdmin = validationData[0].is_admin;
+      
+      // 3. Verificar permisos de admin
+      if (!isAdmin) {
+        toast.error('Solo administradores pueden modificar esta configuración');
+        throw new Error('Permisos insuficientes');
+      }
+      
+      // 4. Establecer contexto
+      await supabase.rpc('set_staff_context', { p_user_id: userId });
+      
+      // 5. Actualizar configuración
+      const { data, error } = await supabase.rpc('update_online_order_settings', {
+        p_settings: updates
+      });
 
       if (error) throw error;
 
@@ -59,7 +105,7 @@ export function useOnlineOrderSettings() {
       return data as unknown as OnlineOrderSettings;
     } catch (error: any) {
       console.error('Error updating settings:', error);
-      toast.error('Error al actualizar configuración');
+      toast.error(error.message || 'Error al actualizar configuración');
       throw error;
     } finally {
       setLoading(false);

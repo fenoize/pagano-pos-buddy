@@ -8,11 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useOnlineOrderSettings } from '@/hooks/useOnlineOrderSettings';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Smartphone, CreditCard, ShoppingBag, Truck, Info, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function OnlineOrdersConfig() {
   const { settings, loading, updateSettings } = useOnlineOrderSettings();
+  const { user } = useAuthContext();
+  const isAdmin = user?.role === 'Administrador';
   const [localSettings, setLocalSettings] = useState({
     app_orders_enabled: false,
     app_pickup_enabled: true,
@@ -95,6 +98,7 @@ export function OnlineOrdersConfig() {
               id="app_orders_enabled"
               checked={localSettings.app_orders_enabled}
               onCheckedChange={(checked) => handleChange('app_orders_enabled', checked)}
+              disabled={!isAdmin || loading}
             />
           </div>
 
@@ -115,7 +119,7 @@ export function OnlineOrdersConfig() {
                 id="app_pickup_enabled"
                 checked={localSettings.app_pickup_enabled}
                 onCheckedChange={(checked) => handleChange('app_pickup_enabled', checked)}
-                disabled={!localSettings.app_orders_enabled}
+                disabled={!localSettings.app_orders_enabled || !isAdmin || loading}
               />
             </div>
 
@@ -163,7 +167,7 @@ export function OnlineOrdersConfig() {
               id="mp_enabled"
               checked={localSettings.mp_enabled}
               onCheckedChange={(checked) => handleChange('mp_enabled', checked)}
-              disabled={!localSettings.app_orders_enabled}
+              disabled={!localSettings.app_orders_enabled || !isAdmin || loading}
             />
           </div>
 
@@ -174,6 +178,7 @@ export function OnlineOrdersConfig() {
                 <Select
                   value={localSettings.mp_mode}
                   onValueChange={(value) => handleChange('mp_mode', value)}
+                  disabled={!isAdmin || loading}
                 >
                   <SelectTrigger id="mp_mode">
                     <SelectValue />
@@ -200,6 +205,7 @@ export function OnlineOrdersConfig() {
                   placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                   value={localSettings.mp_public_key}
                   onChange={(e) => handleChange('mp_public_key', e.target.value)}
+                  disabled={!isAdmin || loading}
                 />
                 <p className="text-xs text-muted-foreground">
                   La Public Key de MercadoPago (se puede exponer al frontend)
@@ -220,7 +226,12 @@ export function OnlineOrdersConfig() {
 
       {hasChanges && (
         <div className="sticky bottom-4 flex justify-end">
-          <Button onClick={handleSave} size="lg" className="gap-2 shadow-lg">
+          <Button 
+            onClick={handleSave} 
+            size="lg" 
+            className="gap-2 shadow-lg"
+            disabled={!isAdmin || loading}
+          >
             <Save className="h-4 w-4" />
             Guardar cambios
           </Button>
