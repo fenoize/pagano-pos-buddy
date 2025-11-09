@@ -205,6 +205,7 @@ export type Database = {
       }
       cash_sessions: {
         Row: {
+          accept_app_orders: boolean | null
           closed_at: string | null
           closing_cash: number | null
           id: string
@@ -214,6 +215,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accept_app_orders?: boolean | null
           closed_at?: string | null
           closing_cash?: number | null
           id?: string
@@ -223,6 +225,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accept_app_orders?: boolean | null
           closed_at?: string | null
           closing_cash?: number | null
           id?: string
@@ -1641,6 +1644,42 @@ export type Database = {
         }
         Relationships: []
       }
+      online_order_settings: {
+        Row: {
+          app_delivery_enabled: boolean
+          app_orders_enabled: boolean
+          app_pickup_enabled: boolean
+          created_at: string
+          id: string
+          mp_enabled: boolean
+          mp_mode: string
+          mp_public_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_delivery_enabled?: boolean
+          app_orders_enabled?: boolean
+          app_pickup_enabled?: boolean
+          created_at?: string
+          id?: string
+          mp_enabled?: boolean
+          mp_mode?: string
+          mp_public_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_delivery_enabled?: boolean
+          app_orders_enabled?: boolean
+          app_pickup_enabled?: boolean
+          created_at?: string
+          id?: string
+          mp_enabled?: boolean
+          mp_mode?: string
+          mp_public_key?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_audits: {
         Row: {
           created_at: string
@@ -1781,6 +1820,7 @@ export type Database = {
           payment_mp: number | null
           payment_pos: number | null
           payment_runas: number | null
+          source: string | null
           status: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
           total: number
@@ -1816,6 +1856,7 @@ export type Database = {
           payment_mp?: number | null
           payment_pos?: number | null
           payment_runas?: number | null
+          source?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
           total: number
@@ -1851,6 +1892,7 @@ export type Database = {
           payment_mp?: number | null
           payment_pos?: number | null
           payment_runas?: number | null
+          source?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal?: number
           total?: number
@@ -2190,6 +2232,7 @@ export type Database = {
           image_url: string | null
           name: string
           prices: Json
+          show_in_app: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -2200,6 +2243,7 @@ export type Database = {
           image_url?: string | null
           name: string
           prices: Json
+          show_in_app?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -2210,7 +2254,47 @@ export type Database = {
           image_url?: string | null
           name?: string
           prices?: Json
+          show_in_app?: boolean | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      promotions: {
+        Row: {
+          button_link: string | null
+          button_text: string | null
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          button_link?: string | null
+          button_text?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          button_link?: string | null
+          button_text?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3498,6 +3582,7 @@ export type Database = {
         Args: { p_raw_material_id: string }
         Returns: string
       }
+      get_store_status: { Args: never; Returns: Json }
       has_active_staff_session: { Args: never; Returns: boolean }
       has_orders_in_last_4_weeks: {
         Args: { p_customer_id: string }

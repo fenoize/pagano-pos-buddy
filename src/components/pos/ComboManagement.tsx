@@ -65,7 +65,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
           .order('display_order');
 
         if (itemsError) throw itemsError;
-        setComboItems((itemsData || []) as ComboItem[]);
+        setComboItems((itemsData || []) as unknown as ComboItem[]);
       } else {
         setIsCombo(false);
         setComboConfig(null);
@@ -116,7 +116,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
         categories: product.categories?.map((pc: any) => pc.category).filter(Boolean) || []
       }));
       
-      setProducts(transformedProducts as Product[]);
+      setProducts(transformedProducts as unknown as Product[]);
     } catch (error) {
       console.error('Error fetching products:', error);
     }
@@ -218,7 +218,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
         .single();
 
       if (error) throw error;
-      setComboItems([...comboItems, data as ComboItem]);
+      setComboItems([...comboItems, data as unknown as ComboItem]);
     } catch (error) {
       toast({
         title: "Error",
