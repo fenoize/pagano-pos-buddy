@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useFinanceExpenses } from '@/hooks/useFinanceExpenses';
 import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { useAuth } from '@/hooks/useAuth';
+import { SupplierSelect } from '@/components/finance/SupplierSelect';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -30,7 +31,7 @@ const EXPENSE_CATEGORIES = [
   'Otros'
 ];
 
-const EXPENSE_TYPES = ['Fijo', 'Variable', 'Inversión', 'Otro'];
+const EXPENSE_TYPES = ['Variable', 'Inversión', 'Otro'];
 
 export default function FinanceExpenses() {
   const { user } = useAuth();
@@ -51,12 +52,26 @@ export default function FinanceExpenses() {
     expense_date: format(new Date(), 'yyyy-MM-dd'),
     account_id: '',
     amount: '',
-    expense_type: 'Variable' as 'Fijo' | 'Variable' | 'Inversión' | 'Otro',
+    expense_type: 'Variable' as 'Variable' | 'Inversión' | 'Otro',
     category: '',
     supplier: '',
     payment_method: '',
     notes: '',
   });
+
+  // Función para auto-calcular método de pago según tipo de cuenta
+  const getPaymentMethodFromAccount = (accountId: string): string => {
+    const selectedAccount = accounts.find((a) => a.id === accountId);
+    if (!selectedAccount) return '';
+
+    const methodMap: Record<string, string> = {
+      'Banco': 'Transferencia',
+      'Efectivo': 'Efectivo',
+      'Digital': 'App / Link',
+    };
+
+    return methodMap[selectedAccount.type] || 'Efectivo';
+  };
 
   const isAdmin = user?.role === 'Administrador';
   const activeAccounts = accounts.filter(a => a.is_active);
@@ -92,6 +107,10 @@ export default function FinanceExpenses() {
   const handleOpenDialog = (expense?: FinanceExpense) => {
     if (expense) {
       setEditingExpense(expense);
+      const autoPaymentMethod = expense.account_id 
+        ? getPaymentMethodFromAccount(expense.account_id)
+        : '';
+      
       setFormData({
         expense_date: expense.expense_date,
         account_id: expense.account_id,
@@ -99,7 +118,7 @@ export default function FinanceExpenses() {
         expense_type: expense.expense_type,
         category: expense.category,
         supplier: expense.supplier || '',
-        payment_method: expense.payment_method || '',
+        payment_method: autoPaymentMethod,
         notes: expense.notes || '',
       });
     } else {
@@ -116,6 +135,15 @@ export default function FinanceExpenses() {
       });
     }
     setIsDialogOpen(true);
+  };
+
+  const handleAccountChange = (accountId: string) => {
+    const autoMethod = getPaymentMethodFromAccount(accountId);
+    setFormData({
+      ...formData,
+      account_id: accountId,
+      payment_method: autoMethod,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -207,7 +235,7 @@ export default function FinanceExpenses() {
                   <Label htmlFor="account_id">Cuenta *</Label>
                   <Select
                     value={formData.account_id}
-                    onValueChange={(value) => setFormData({ ...formData, account_id: value })}
+                    onValueChange={handleAccountChange}
                     required
                   >
                     <SelectTrigger>
@@ -277,10 +305,11 @@ export default function FinanceExpenses() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="supplier">Proveedor</Label>
-                  <Input
-                    id="supplier"
+                  <SupplierSelect
                     value={formData.supplier}
-                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                    onValueChange={(supplierId, supplierName) =>
+                      setFormData({ ...formData, supplier: supplierName })
+                    }
                   />
                 </div>
 
@@ -289,8 +318,13 @@ export default function FinanceExpenses() {
                   <Input
                     id="payment_method"
                     value={formData.payment_method}
-                    onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
+                    readOnly
+                    disabled
+                    className="bg-muted cursor-not-allowed"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Auto-asignado según la cuenta seleccionada
+                  </p>
                 </div>
               </div>
 

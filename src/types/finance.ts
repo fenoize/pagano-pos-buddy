@@ -91,7 +91,7 @@ export interface FinanceExpense {
   };
   amount: number;
   currency: string;
-  expense_type: 'Fijo' | 'Variable' | 'Inversión' | 'Otro';
+  expense_type: 'Variable' | 'Inversión' | 'Otro';
   category: string;
   supplier: string | null;
   payment_method: string | null;
@@ -148,4 +148,16 @@ export interface FixedExpenseProrated {
   category: string;
   amount: number;
   prorated_amount: number;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  rut?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
