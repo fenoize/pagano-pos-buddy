@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { configuredSupabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
+import { setStaffContext } from '@/lib/dbContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface MarketingPromotion {
   id: string;
@@ -25,6 +27,7 @@ export type MarketingPromotionInput = Omit<MarketingPromotion, 'id' | 'created_a
 
 export const useMarketingPromotions = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: promotions = [], isLoading, error } = useQuery({
     queryKey: ['marketing-promotions'],
@@ -42,6 +45,11 @@ export const useMarketingPromotions = () => {
 
   const createMutation = useMutation({
     mutationFn: async (promo: MarketingPromotionInput) => {
+      if (!user?.id) throw new Error('Usuario no autenticado');
+      
+      // Establecer contexto de staff antes de la operación
+      await setStaffContext(user.id);
+      
       const { data, error } = await configuredSupabase
         .from('marketing_app_promotions')
         .insert([promo])
@@ -62,6 +70,11 @@ export const useMarketingPromotions = () => {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...promo }: Partial<MarketingPromotion> & { id: string }) => {
+      if (!user?.id) throw new Error('Usuario no autenticado');
+      
+      // Establecer contexto de staff antes de la operación
+      await setStaffContext(user.id);
+      
       const { data, error } = await configuredSupabase
         .from('marketing_app_promotions')
         .update({ ...promo, updated_at: new Date().toISOString() })
@@ -83,6 +96,11 @@ export const useMarketingPromotions = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (!user?.id) throw new Error('Usuario no autenticado');
+      
+      // Establecer contexto de staff antes de la operación
+      await setStaffContext(user.id);
+      
       const { error } = await configuredSupabase
         .from('marketing_app_promotions')
         .delete()
@@ -101,6 +119,11 @@ export const useMarketingPromotions = () => {
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      if (!user?.id) throw new Error('Usuario no autenticado');
+      
+      // Establecer contexto de staff antes de la operación
+      await setStaffContext(user.id);
+      
       const { error } = await configuredSupabase
         .from('marketing_app_promotions')
         .update({ is_active, updated_at: new Date().toISOString() })
