@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, CalendarIcon, Paperclip, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, Paperclip, FileText, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -682,40 +682,110 @@ export default function FinanceExpenses() {
                       <TableCell>{expense.payment_method || '—'}</TableCell>
                       <TableCell>
                         {expense.attachment_url ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async () => {
-                              try {
-                                // Verificar si la URL sigue siendo válida
-                                const response = await fetch(expense.attachment_url!);
-                                if (response.ok) {
-                                  window.open(expense.attachment_url!, '_blank');
-                                } else {
-                                  // Re-generar signedURL si expiró
-                                  const pathMatch = expense.attachment_url!.match(/finance-documents\/(.+)\?/);
-                                  if (pathMatch) {
-                                    const { data } = await supabase.storage
-                                      .from('finance-documents')
-                                      .createSignedUrl(pathMatch[1], 3600);
-                                    
-                                    if (data?.signedUrl) {
-                                      window.open(data.signedUrl, '_blank');
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  // Verificar si la URL sigue siendo válida
+                                  const response = await fetch(expense.attachment_url!);
+                                  if (response.ok) {
+                                    window.open(expense.attachment_url!, '_blank');
+                                  } else {
+                                    // Re-generar signedURL si expiró
+                                    const pathMatch = expense.attachment_url!.match(/finance-documents\/(.+)\?/);
+                                    if (pathMatch) {
+                                      const { data } = await supabase.storage
+                                        .from('finance-documents')
+                                        .createSignedUrl(pathMatch[1], 3600);
+                                      
+                                      if (data?.signedUrl) {
+                                        window.open(data.signedUrl, '_blank');
+                                      }
                                     }
                                   }
+                                } catch (error) {
+                                  toast({
+                                    title: 'Error',
+                                    description: 'No se pudo abrir el documento',
+                                    variant: 'destructive',
+                                  });
                                 }
-                              } catch (error) {
-                                toast({
-                                  title: 'Error',
-                                  description: 'No se pudo abrir el documento',
-                                  variant: 'destructive',
-                                });
-                              }
-                            }}
-                          >
-                            <FileText className="h-4 w-4 mr-1" />
-                            Ver
-                          </Button>
+                              }}
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  // Extraer el path del archivo
+                                  const pathMatch = expense.attachment_url!.match(/finance-documents\/(.+)\?/);
+                                  if (!pathMatch) {
+                                    toast({
+                                      title: 'Error',
+                                      description: 'No se pudo obtener el archivo',
+                                      variant: 'destructive',
+                                    });
+                                    return;
+                                  }
+
+                                  const filePath = pathMatch[1];
+                                  
+                                  // Obtener nueva URL firmada
+                                  const { data: urlData } = await supabase.storage
+                                    .from('finance-documents')
+                                    .createSignedUrl(filePath, 60); // 1 minuto es suficiente para descarga
+
+                                  if (!urlData?.signedUrl) {
+                                    throw new Error('No se pudo generar URL de descarga');
+                                  }
+
+                                  // Descargar archivo
+                                  const response = await fetch(urlData.signedUrl);
+                                  if (!response.ok) throw new Error('Error al descargar');
+                                  
+                                  const blob = await response.blob();
+                                  
+                                  // Extraer extensión original
+                                  const fileExt = filePath.split('.').pop() || 'pdf';
+                                  
+                                  // Generar nombre descriptivo
+                                  const docType = expense.document_type ? 
+                                    expense.document_type.toLowerCase().replace(/\s+/g, '_') : 
+                                    'documento';
+                                  const expenseId = expense.id.slice(0, 8);
+                                  const fileName = `egreso_${expenseId}_${docType}.${fileExt}`;
+                                  
+                                  // Crear link temporal y descargar
+                                  const url = window.URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = fileName;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  window.URL.revokeObjectURL(url);
+                                  document.body.removeChild(a);
+                                  
+                                  toast({
+                                    title: 'Descarga iniciada',
+                                    description: fileName,
+                                  });
+                                } catch (error) {
+                                  console.error('Error downloading:', error);
+                                  toast({
+                                    title: 'Error',
+                                    description: 'No se pudo descargar el documento',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
                         ) : (
                           <span className="text-muted-foreground text-sm">—</span>
                         )}
