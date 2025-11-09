@@ -22,6 +22,11 @@ interface Product {
   active: boolean;
   show_in_app?: boolean;
   categories?: Array<{ id: string; name: string; }>;
+  prices?: any; // JSON de la DB con estructura { combo: {...}, only: {...} }
+  variants?: Array<{
+    price: number;
+    active: boolean;
+  }>;
 }
 
 interface Category {
@@ -86,6 +91,11 @@ export default function CustomerMenu() {
               show_in_app,
               active
             )
+          ),
+          product_variant_options(
+            id,
+            price,
+            active
           )
         `)
         .eq('active', true)
@@ -107,7 +117,8 @@ export default function CustomerMenu() {
               show_in_app: pc.categories?.show_in_app,
               active: pc.categories?.active
             }))
-            .filter((cat: any) => cat.active && cat.show_in_app) || []
+            .filter((cat: any) => cat.active && cat.show_in_app) || [],
+          variants: product.product_variant_options || []
         }))
         // Only include products that have at least one visible category
         .filter(product => product.categories && product.categories.length > 0) || [];
@@ -119,6 +130,47 @@ export default function CustomerMenu() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Calcular precio mínimo de un producto
+  const getMinPrice = (product: Product): number | null => {
+    const prices: number[] = [];
+    
+    // Revisar sistema nuevo de variantes
+    if (product.variants && product.variants.length > 0) {
+      const variantPrices = product.variants
+        .filter(v => v.active)
+        .map(v => v.price)
+        .filter(p => p > 0);
+      prices.push(...variantPrices);
+    }
+    
+    // Revisar sistema legacy
+    if (product.prices && typeof product.prices === 'object') {
+      const priceObj = product.prices as any;
+      if (priceObj.combo) {
+        Object.values(priceObj.combo).forEach((price: any) => {
+          if (typeof price === 'number' && price > 0) prices.push(price);
+        });
+      }
+      if (priceObj.only) {
+        Object.values(priceObj.only).forEach((price: any) => {
+          if (typeof price === 'number' && price > 0) prices.push(price);
+        });
+      }
+    }
+    
+    return prices.length > 0 ? Math.min(...prices) : null;
+  };
+
+  // Formatear precio en CLP
+  const formatPrice = (price: number | null): string => {
+    if (price === null) return 'Consultar';
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0
+    }).format(price);
   };
 
   const handleProductClick = (product: Product) => {
@@ -287,9 +339,12 @@ export default function CustomerMenu() {
                   )}
                 </div>
                 <CardContent className="p-3">
-                  <h3 className="font-semibold text-sm line-clamp-2 mb-2">
+                  <h3 className="font-semibold text-sm line-clamp-2 mb-1">
                     {product.name}
                   </h3>
+                  <p className="text-primary font-bold text-lg mb-2">
+                    Desde {formatPrice(getMinPrice(product))}
+                  </p>
                   <Button
                     size="sm"
                     className="w-full"

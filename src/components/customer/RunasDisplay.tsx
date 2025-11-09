@@ -19,11 +19,6 @@ export function RunasDisplay({ runas, showEquivalent = false, runaValue, classNa
         <div className="flex-1">
           <p className="text-3xl font-bold">{formatRunas(runas)}</p>
           <p className="text-sm text-muted-foreground">runas disponibles</p>
-          {showEquivalent && (
-            <p className="text-xs text-muted-foreground mt-1">
-              ≈ {formatCLP(Math.floor((runas * runaValue) / 3))} en descuentos
-            </p>
-          )}
         </div>
       </CardContent>
     </Card>

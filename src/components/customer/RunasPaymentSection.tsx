@@ -85,10 +85,6 @@ export function RunasPaymentSection({
           <span className="font-bold text-lg text-primary">{formatRunas(requiredRunas)}</span>
         </div>
 
-        {/* Equivalencia */}
-        <div className="text-xs text-center text-muted-foreground">
-          {formatRunas(requiredRunas)} = {formatCurrency(discountAmount)}
-        </div>
 
         {/* Estado de validación */}
         {hasSufficientRunas ? (

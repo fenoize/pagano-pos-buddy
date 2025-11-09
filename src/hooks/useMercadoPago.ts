@@ -63,8 +63,8 @@ export function useMercadoPago() {
         toast.success(`Pedido #${response.order_number} creado. Redirigiendo a MercadoPago...`);
         
         // Redirigir a MercadoPago
-        // Usar sandbox_init_point en desarrollo, init_point en producción
-        const paymentUrl = response.sandbox_init_point || response.init_point;
+        // Usar init_point (producción) por defecto, sandbox solo si no hay producción
+        const paymentUrl = response.init_point || response.sandbox_init_point;
         window.location.href = paymentUrl;
         
         return response;
