@@ -3606,7 +3606,9 @@ export type Database = {
         Args: { p_raw_material_id: string }
         Returns: string
       }
-      get_online_order_settings: { Args: never; Returns: Json }
+      get_online_order_settings:
+        | { Args: never; Returns: Json }
+        | { Args: { p_user_id?: string }; Returns: Json }
       get_store_status: { Args: never; Returns: Json }
       has_active_staff_session: { Args: never; Returns: boolean }
       has_orders_in_last_4_weeks: {

@@ -46,8 +46,10 @@ export function useOnlineOrderSettings() {
       // 3. Establecer contexto de staff
       await supabase.rpc('set_staff_context', { p_user_id: userId });
       
-      // 4. Ahora sí obtener configuración
-      const { data, error } = await supabase.rpc('get_online_order_settings');
+      // 4. Ahora sí obtener configuración (pasando userId)
+      const { data, error } = await supabase.rpc('get_online_order_settings', {
+        p_user_id: userId
+      });
 
       if (error) throw error;
 
