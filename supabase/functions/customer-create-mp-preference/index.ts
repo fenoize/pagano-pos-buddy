@@ -84,7 +84,7 @@ serve(async (req) => {
       total: subtotal,
       discount: 0,
       delivery_fee: 0,
-      status: 'Pendiente',
+      status: 'PendientePago',
       payment_method: 'mp',
       payment_mp: 0,
       notes: notes || 'Pedido desde app cliente',
@@ -123,9 +123,9 @@ serve(async (req) => {
       }],
       external_reference: order.id,
       back_urls: {
-        success: `${APP_URL}/track/${order.id}?status=success`,
-        failure: `${APP_URL}/track/${order.id}?status=failure`,
-        pending: `${APP_URL}/track/${order.id}?status=pending`
+        success: `${APP_URL}/payment-success?order=${order.id}`,
+        failure: `${APP_URL}/payment-failure?order=${order.id}`,
+        pending: `${APP_URL}/payment-pending?order=${order.id}`
       },
       auto_return: 'approved',
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,

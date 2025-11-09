@@ -121,6 +121,7 @@ export function useKitchenOrders() {
             updated_at
           )
         `)
+        .neq('status', 'PendientePago' as any)
         .neq('status', 'Entregado')
         .neq('status', 'Cancelado')
         .order('created_at', { ascending: true });

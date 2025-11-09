@@ -104,7 +104,7 @@ serve(async (req) => {
     let updateData: any = {};
     
     if (payment.status === 'approved') {
-      console.log('✅ Payment approved - updating order to Pendiente');
+      console.log('✅ Payment approved - updating order to Pendiente (visible en cocina)');
       newStatus = 'Pendiente';
       updateData = {
         status: newStatus,
@@ -113,19 +113,19 @@ serve(async (req) => {
         notes: `${currentOrder.notes || ''}\n\n✅ Pago confirmado\nMP ID: ${payment.id}\nMétodo: ${payment.payment_method_id || 'N/A'}\nMonto: $${payment.transaction_amount}`.trim()
       };
     } else if (payment.status === 'pending' || payment.status === 'in_process') {
-      console.log('⏳ Payment pending or in process');
+      console.log('⏳ Payment pending or in process - mantener en PendientePago');
+      // No cambiar status, mantener en PendientePago
       updateData = {
         notes: `${currentOrder.notes || ''}\n\n⏳ Pago pendiente\nMP ID: ${payment.id}\nDetalle: ${payment.status_detail || 'En proceso'}`.trim()
       };
     } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
-      console.log('❌ Payment rejected/cancelled - cancelling order');
-      newStatus = 'Cancelado';
+      console.log('❌ Payment rejected/cancelled - mantener en PendientePago para permitir reintento');
+      // Mantener en PendientePago para permitir reintento
       updateData = {
-        status: newStatus,
-        notes: `${currentOrder.notes || ''}\n\n❌ Pago ${payment.status === 'rejected' ? 'rechazado' : 'cancelado'}\nMP ID: ${payment.id}\nRazón: ${payment.status_detail || 'No especificada'}`.trim()
+        notes: `${currentOrder.notes || ''}\n\n❌ Pago ${payment.status === 'rejected' ? 'rechazado' : 'cancelado'}\nMP ID: ${payment.id}\nRazón: ${payment.status_detail || 'No especificada'}\n\n💡 El cliente puede reintentar el pago`.trim()
       };
     } else if (payment.status === 'refunded' || payment.status === 'charged_back') {
-      console.log('💸 Payment refunded or charged back');
+      console.log('💸 Payment refunded or charged back - cancelar orden');
       newStatus = 'Cancelado';
       updateData = {
         status: newStatus,
