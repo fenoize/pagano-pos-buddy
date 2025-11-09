@@ -16,6 +16,7 @@ import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
 import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
 import { Suspense, lazy } from "react";
 import { CartProvider } from "@/contexts/CartContext";
+import { CustomerAppWrapper } from "@/components/customer/CustomerAppWrapper";
 
 // Guards
 import { CustomerProtectedRoute } from "@/components/guards/CustomerProtectedRoute";
@@ -145,61 +146,81 @@ const App = () => (
               
               <Route path="/portal" element={
                 <CustomerProtectedRoute>
-                  <CustomerPortal />
+                  <CustomerAppWrapper>
+                    <CustomerPortal />
+                  </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />
               
               <Route path="/menu" element={
                 <CustomerProtectedRoute>
-                  <CustomerMenu />
+                  <CustomerAppWrapper>
+                    <CustomerMenu />
+                  </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />
               
               <Route path="/cart" element={
                 <CustomerProtectedRoute>
-                  <CustomerCart />
+                  <CustomerAppWrapper>
+                    <CustomerCart />
+                  </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />
               
               <Route path="/checkout" element={
                 <CustomerProtectedRoute>
-                  <CustomerCheckout />
+                  <CustomerAppWrapper>
+                    <CustomerCheckout />
+                  </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />
               
               <Route path="/benefits" element={
                 <CustomerProtectedRoute>
-                  <CustomerBenefits />
+                  <CustomerAppWrapper>
+                    <CustomerBenefits />
+                  </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />
               
               <Route path="/my-orders" element={
                 <CustomerProtectedRoute>
-                  <MyOrders />
+                  <CustomerAppWrapper>
+                    <MyOrders />
+                  </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />
               
               <Route path="/track/:orderId" element={
                 <CustomerProtectedRoute>
-                  <CustomerOrderTracking />
+                  <CustomerAppWrapper>
+                    <CustomerOrderTracking />
+                  </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />
               
               <Route path="/my-addresses" element={
                 <CustomerProtectedRoute>
-                  <MyAddresses />
+                  <CustomerAppWrapper>
+                    <MyAddresses />
+                  </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />
               
               <Route path="/my-runes" element={
                 <CustomerProtectedRoute>
-                  <MyRunes />
+                  <CustomerAppWrapper>
+                    <MyRunes />
+                  </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />
               
               <Route path="/my-badges" element={
                 <CustomerProtectedRoute>
-                  <MyBadges />
+                  <CustomerAppWrapper>
+                    <MyBadges />
+                  </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />
               

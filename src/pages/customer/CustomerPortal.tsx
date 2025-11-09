@@ -2,19 +2,20 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useCustomerLevel } from '@/hooks/useCustomerLevel';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Flame, LogOut, ShoppingBag, MapPin, Award, User, UtensilsCrossed, ArrowRight } from 'lucide-react';
+import { Flame, LogOut, ShoppingBag, MapPin, Award, User, UtensilsCrossed, ArrowRight, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PWAInstallPrompt } from '@/components/customer/PWAInstallPrompt';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { toast } from 'sonner';
 
 export default function CustomerPortal() {
   const navigate = useNavigate();
-  const { user, customer, loading, signOut } = useCustomerAuth();
-  const { data: customerLevel, isLoading: levelLoading } = useCustomerLevel(customer?.id);
+  const { user, customer, loading, signOut, refreshCustomerData } = useCustomerAuth();
+  const { data: customerLevel, isLoading: levelLoading, refetch: refetchLevel } = useCustomerLevel(customer?.id);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -27,15 +28,71 @@ export default function CustomerPortal() {
     navigate('/login');
   };
 
+  // Pull-to-refresh
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([
+        refreshCustomerData(),
+        refetchLevel(),
+      ]);
+      toast.success('Datos actualizados');
+    } catch (error) {
+      toast.error('No se pudo actualizar. Intenta de nuevo.');
+    }
+  };
+
+  const { containerRef, isRefreshing, pullDistance, indicatorStyle } = usePullToRefresh({
+    onRefresh: handleRefresh,
+  });
+
   if (loading || levelLoading) {
     return (
       <div className="min-h-screen pb-20 bg-background">
         <div className="max-w-screen-xl mx-auto p-4 space-y-6">
-          <Skeleton className="h-40 w-full rounded-lg" />
-          <Skeleton className="h-48 w-full rounded-lg" />
-          <div className="grid gap-4 md:grid-cols-2">
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
+          {/* Skeleton para header */}
+          <Card className="border-border/50 bg-card/50">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-16 h-16 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                </div>
+                <Skeleton className="w-10 h-10 rounded" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-16" />
+                <Skeleton className="h-16" />
+              </div>
+              <Skeleton className="h-16 w-full" />
+            </CardContent>
+          </Card>
+
+          {/* Skeleton para botón principal */}
+          <Skeleton className="h-16 w-full rounded-lg" />
+
+          {/* Skeleton para promoción */}
+          <Card>
+            <Skeleton className="aspect-video w-full" />
+            <CardContent className="p-6 space-y-3">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+          </Card>
+
+          {/* Skeleton para accesos rápidos */}
+          <div className="grid gap-3 grid-cols-2">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4 space-y-2">
+                  <Skeleton className="h-8 w-8 mx-auto" />
+                  <Skeleton className="h-4 w-20 mx-auto" />
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
         <CustomerBottomNav />
@@ -56,7 +113,27 @@ export default function CustomerPortal() {
     : 100;
 
   return (
-    <div className="min-h-screen pb-20 bg-gradient-to-b from-background to-muted/20">
+    <div
+      ref={containerRef}
+      className="min-h-screen pb-20 bg-gradient-to-b from-background to-muted/20 relative"
+    >
+      {/* Indicador de pull-to-refresh */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div
+          className="absolute top-0 left-0 right-0 flex items-center justify-center py-4 z-40"
+          style={indicatorStyle}
+        >
+          <div className="bg-card border border-border rounded-full p-2 shadow-lg">
+            <RefreshCw
+              className="h-5 w-5 text-primary"
+              style={{
+                animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="max-w-screen-xl mx-auto p-4 space-y-6">
         {/* Header con perfil */}
         <Card className="border-border/50 bg-card/50 backdrop-blur">
