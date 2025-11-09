@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { configuredSupabase } from '@/lib/supabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Flame } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Plus, Flame, Search, X } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { useCart } from '@/contexts/CartContext';
@@ -32,6 +33,7 @@ export default function CustomerMenu() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCustomization, setShowCustomization] = useState(false);
@@ -112,12 +114,39 @@ export default function CustomerMenu() {
     setShowCustomization(false);
   };
 
-  const filteredProducts = selectedCategory === 'all'
-    ? products
-    : products.filter(p => {
-        // Filtrar por categoría en el array de relaciones
-        return p.categories?.some(cat => cat.id === selectedCategory);
-      });
+  // Filtrado avanzado con búsqueda y categorías
+  const filteredProducts = useMemo(() => {
+    let filtered = products;
+
+    // Filtrar por búsqueda si hay término de búsqueda (mínimo 2 caracteres)
+    if (searchTerm.trim().length >= 2) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filtrar por categoría solo si no hay búsqueda activa
+    if (searchTerm.trim().length < 2 && selectedCategory !== 'all') {
+      filtered = filtered.filter(p => 
+        p.categories?.some(cat => cat.id === selectedCategory)
+      );
+    }
+
+    return filtered;
+  }, [products, searchTerm, selectedCategory]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    // Si hay búsqueda activa, cambiar a "all" para mostrar resultados de todas las categorías
+    if (e.target.value.trim().length >= 2) {
+      setSelectedCategory('all');
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+  };
 
   if (loading) {
     return (
@@ -157,8 +186,41 @@ export default function CustomerMenu() {
         {/* Store Status Banner */}
         <StoreStatusBanner />
 
-        {/* Category filters */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+          <Input
+            type="text"
+            placeholder="Buscar productos..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="pl-10 pr-10 py-6 text-base rounded-xl border-2 focus-visible:ring-2 focus-visible:ring-primary"
+          />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearSearch}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
+
+        {/* Search Results Info */}
+        {searchTerm.trim().length >= 2 && (
+          <div className="text-sm text-muted-foreground px-1">
+            {filteredProducts.length > 0 
+              ? `${filteredProducts.length} producto${filteredProducts.length !== 1 ? 's' : ''} encontrado${filteredProducts.length !== 1 ? 's' : ''} para "${searchTerm}"`
+              : `No se encontraron productos para "${searchTerm}"`
+            }
+          </div>
+        )}
+
+        {/* Category filters - Solo mostrar si no hay búsqueda activa */}
+        {searchTerm.trim().length < 2 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           <Badge
             variant={selectedCategory === 'all' ? 'default' : 'outline'}
             className="cursor-pointer whitespace-nowrap px-4 py-2"
@@ -176,7 +238,8 @@ export default function CustomerMenu() {
               {category.name}
             </Badge>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Products grid */}
         {filteredProducts.length === 0 ? (
