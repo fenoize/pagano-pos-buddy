@@ -15,6 +15,7 @@ import { SessionExpiryModal } from "@/components/auth/SessionExpiryModal";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
 import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
 import { Suspense, lazy } from "react";
+import { CartProvider } from "@/contexts/CartContext";
 
 // Guards
 import { CustomerProtectedRoute } from "@/components/guards/CustomerProtectedRoute";
@@ -26,6 +27,10 @@ import { Footer } from "@/components/ui/footer";
 const CustomerLogin = lazy(() => import('@/pages/customer/CustomerLogin'));
 const CustomerResetPassword = lazy(() => import('@/pages/customer/CustomerResetPassword'));
 const CustomerPortal = lazy(() => import('@/pages/customer/CustomerPortal'));
+const CustomerMenu = lazy(() => import('@/pages/customer/CustomerMenu'));
+const CustomerCart = lazy(() => import('@/pages/customer/CustomerCart'));
+const CustomerCheckout = lazy(() => import('@/pages/customer/CustomerCheckout'));
+const CustomerBenefits = lazy(() => import('@/pages/customer/CustomerBenefits'));
 const MyOrders = lazy(() => import('@/pages/customer/MyOrders'));
 const MyAddresses = lazy(() => import('@/pages/customer/MyAddresses'));
 const MyRunes = lazy(() => import('@/pages/customer/MyRunes'));
@@ -124,37 +129,67 @@ const App = () => (
     <HelmetProvider>
       <AuthProvider>
         <CustomerAuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <SEOHead />
-              <Suspense fallback={<LoadingFallback />}>
-                <Routes>
+          <CartProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <SEOHead />
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
               {/* ==================== CUSTOMER ROUTES (ROOT) ==================== */}
               <Route path="/" element={<SmartRootRedirect />} />
               <Route path="/login" element={<CustomerLogin />} />
               <Route path="/reset-password" element={<CustomerResetPassword />} />
+              
               <Route path="/portal" element={
                 <CustomerProtectedRoute>
                   <CustomerPortal />
                 </CustomerProtectedRoute>
               } />
+              
+              <Route path="/menu" element={
+                <CustomerProtectedRoute>
+                  <CustomerMenu />
+                </CustomerProtectedRoute>
+              } />
+              
+              <Route path="/cart" element={
+                <CustomerProtectedRoute>
+                  <CustomerCart />
+                </CustomerProtectedRoute>
+              } />
+              
+              <Route path="/checkout" element={
+                <CustomerProtectedRoute>
+                  <CustomerCheckout />
+                </CustomerProtectedRoute>
+              } />
+              
+              <Route path="/benefits" element={
+                <CustomerProtectedRoute>
+                  <CustomerBenefits />
+                </CustomerProtectedRoute>
+              } />
+              
               <Route path="/my-orders" element={
                 <CustomerProtectedRoute>
                   <MyOrders />
                 </CustomerProtectedRoute>
               } />
+              
               <Route path="/my-addresses" element={
                 <CustomerProtectedRoute>
                   <MyAddresses />
                 </CustomerProtectedRoute>
               } />
+              
               <Route path="/my-runes" element={
                 <CustomerProtectedRoute>
                   <MyRunes />
                 </CustomerProtectedRoute>
               } />
+              
               <Route path="/my-badges" element={
                 <CustomerProtectedRoute>
                   <MyBadges />
@@ -397,6 +432,7 @@ const App = () => (
               </Suspense>
             </BrowserRouter>
           </TooltipProvider>
+          </CartProvider>
         </CustomerAuthProvider>
       </AuthProvider>
     </HelmetProvider>
