@@ -1456,6 +1456,71 @@ export type Database = {
           },
         ]
       }
+      finance_fixed_expenses: {
+        Row: {
+          account_id: string | null
+          amount: number
+          category: string
+          created_at: string | null
+          created_by: string | null
+          department: string
+          document_type: string | null
+          end_date: string | null
+          frequency: string
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          payment_day: number | null
+          start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          department: string
+          document_type?: string | null
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          payment_day?: number | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          department?: string
+          document_type?: string | null
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          payment_day?: number | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_fixed_expenses_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_closures: {
         Row: {
           created_at: string | null
@@ -3412,6 +3477,17 @@ export type Database = {
       get_current_customer_id: { Args: never; Returns: string }
       get_current_staff_user_from_token: { Args: never; Returns: string }
       get_current_staff_user_id: { Args: never; Returns: string }
+      get_fixed_expenses_for_closure: {
+        Args: { _end: string; _start: string }
+        Returns: {
+          amount: number
+          category: string
+          department: string
+          id: string
+          name: string
+          prorated_amount: number
+        }[]
+      }
       get_material_base_uom: {
         Args: { p_raw_material_id: string }
         Returns: string
