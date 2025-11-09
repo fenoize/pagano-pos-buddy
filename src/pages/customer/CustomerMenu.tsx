@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { configuredSupabase } from '@/lib/supabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,10 +39,26 @@ export default function CustomerMenu() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCustomization, setShowCustomization] = useState(false);
   const { addItem } = useCart();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Deep linking: abrir producto automáticamente si viene desde una promoción
+  useEffect(() => {
+    const productId = searchParams.get('product');
+    if (productId && products.length > 0 && !loading) {
+      const product = products.find(p => p.id === productId);
+      if (product) {
+        setSelectedProduct(product);
+        setShowCustomization(true);
+        // Limpiar query param después de abrir
+        searchParams.delete('product');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, products, loading]);
 
   const fetchData = async () => {
     setLoading(true);
