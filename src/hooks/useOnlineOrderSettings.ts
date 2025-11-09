@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getConfiguredSupabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface OnlineOrderSettings {
@@ -19,12 +19,11 @@ export function useOnlineOrderSettings() {
   const [loading, setLoading] = useState(false);
 
   /**
-   * Cargar configuración actual usando RPC
+   * Cargar configuración actual usando RPC (sin headers custom)
    */
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const supabase = getConfiguredSupabase();
       const { data, error } = await supabase
         .rpc('get_online_order_settings');
 
@@ -43,12 +42,11 @@ export function useOnlineOrderSettings() {
 
 
   /**
-   * Actualizar configuración usando RPC
+   * Actualizar configuración usando RPC (sin headers custom)
    */
   const updateSettings = async (updates: Partial<OnlineOrderSettings>) => {
     setLoading(true);
     try {
-      const supabase = getConfiguredSupabase();
       const { data, error } = await supabase
         .rpc('update_online_order_settings', {
           p_settings: updates
