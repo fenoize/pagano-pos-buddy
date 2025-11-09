@@ -40,6 +40,7 @@ const CTA_TYPE_LABELS: Record<string, string> = {
   open_cart: 'Ir al Carrito',
   open_orders: 'Ir a Mis Pedidos',
   open_benefits: 'Ir a Beneficios',
+  open_product: 'Ir al Producto',
   open_custom_url: 'Abrir URL',
   none: 'Sin acción',
 };

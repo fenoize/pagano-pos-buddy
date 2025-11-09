@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MarketingPromotion } from '@/hooks/useMarketingPromotions';
+import { useAppProducts } from '@/hooks/useAppProducts';
 import { format } from 'date-fns';
 
 interface PromoFormModalProps {
@@ -22,11 +23,13 @@ const CTA_TYPE_OPTIONS = [
   { value: 'open_cart', label: 'Abrir Carrito' },
   { value: 'open_orders', label: 'Abrir Mis Pedidos' },
   { value: 'open_benefits', label: 'Abrir Beneficios' },
+  { value: 'open_product', label: 'Ir a Producto' },
   { value: 'open_custom_url', label: 'Abrir URL personalizada' },
   { value: 'none', label: 'Sin acción' },
 ];
 
 export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalProps) {
+  const { data: products, isLoading: productsLoading } = useAppProducts();
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
@@ -34,6 +37,7 @@ export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalP
     cta_label: '',
     cta_type: 'open_menu' as MarketingPromotion['cta_type'],
     cta_url: '',
+    product_id: '',
     image_url: '',
     is_active: true,
     priority: 1,
@@ -52,6 +56,7 @@ export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalP
         cta_label: promo.cta_label || '',
         cta_type: promo.cta_type,
         cta_url: promo.cta_url || '',
+        product_id: (promo as any).product_id || '',
         image_url: promo.image_url || '',
         is_active: promo.is_active,
         priority: promo.priority,
@@ -67,6 +72,7 @@ export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalP
         cta_label: '',
         cta_type: 'open_menu',
         cta_url: '',
+        product_id: '',
         image_url: '',
         is_active: true,
         priority: 1,
@@ -88,6 +94,10 @@ export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalP
       return;
     }
 
+    if (formData.cta_type === 'open_product' && !formData.product_id) {
+      return;
+    }
+
     setSaving(true);
     try {
       const dataToSave = {
@@ -96,6 +106,7 @@ export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalP
         description: formData.description.trim() || null,
         cta_label: formData.cta_label.trim() || null,
         cta_url: formData.cta_url.trim() || null,
+        product_id: formData.product_id || null,
         image_url: formData.image_url.trim() || null,
         start_date: formData.start_date || null,
         end_date: noEndDate ? null : (formData.end_date || null),
@@ -194,6 +205,30 @@ export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalP
                 placeholder="https://ejemplo.com o /ruta-interna"
                 required
               />
+            </div>
+          )}
+
+          {formData.cta_type === 'open_product' && (
+            <div className="space-y-2">
+              <Label htmlFor="product_id">Producto *</Label>
+              <Select
+                value={formData.product_id}
+                onValueChange={(value) => setFormData({ ...formData, product_id: value })}
+              >
+                <SelectTrigger id="product_id">
+                  <SelectValue placeholder={productsLoading ? 'Cargando productos...' : 'Selecciona un producto'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {products?.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                El cliente será redirigido a la página del producto seleccionado
+              </p>
             </div>
           )}
 

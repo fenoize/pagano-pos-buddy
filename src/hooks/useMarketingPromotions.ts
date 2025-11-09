@@ -8,8 +8,9 @@ export interface MarketingPromotion {
   subtitle: string | null;
   description: string | null;
   cta_label: string | null;
-  cta_type: 'open_menu' | 'open_cart' | 'open_orders' | 'open_benefits' | 'open_custom_url' | 'none';
+  cta_type: 'open_menu' | 'open_cart' | 'open_orders' | 'open_benefits' | 'open_product' | 'open_custom_url' | 'none';
   cta_url: string | null;
+  product_id?: string | null;
   image_url: string | null;
   is_active: boolean;
   priority: number;

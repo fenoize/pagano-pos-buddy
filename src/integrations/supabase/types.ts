@@ -1663,6 +1663,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           priority: number
+          product_id: string | null
           start_date: string | null
           subtitle: string | null
           title: string
@@ -1680,6 +1681,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           priority?: number
+          product_id?: string | null
           start_date?: string | null
           subtitle?: string | null
           title: string
@@ -1697,6 +1699,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           priority?: number
+          product_id?: string | null
           start_date?: string | null
           subtitle?: string | null
           title?: string
@@ -1716,6 +1719,103 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_app_promotions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_promo_analytics: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          promo_id: string
+          session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          promo_id: string
+          session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          promo_id?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_promo_analytics_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "marketing_promo_analytics_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_promo_analytics_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_promo_analytics_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_promo_analytics_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "marketing_promo_analytics_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_promo_analytics_promo_id_fkey"
+            columns: ["promo_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_app_promotions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_promo_analytics_promo_id_fkey"
+            columns: ["promo_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_promo_metrics"
+            referencedColumns: ["promo_id"]
           },
         ]
       }
@@ -3518,6 +3618,24 @@ export type Database = {
           monto_delivery?: never
           order_id?: string | null
           order_number?: never
+        }
+        Relationships: []
+      }
+      marketing_promo_metrics: {
+        Row: {
+          conversion_rate: number | null
+          ctr: number | null
+          first_event: string | null
+          is_active: boolean | null
+          last_event: string | null
+          promo_id: string | null
+          promo_title: string | null
+          total_clicks: number | null
+          total_conversions: number | null
+          total_revenue: number | null
+          total_views: number | null
+          unique_clickers: number | null
+          unique_converters: number | null
         }
         Relationships: []
       }

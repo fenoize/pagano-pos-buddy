@@ -141,6 +141,11 @@ export default function CustomerPortal() {
       case 'open_benefits':
         navigate('/benefits');
         break;
+      case 'open_product':
+        if ((activePromo as any).product_id) {
+          navigate(`/menu?product=${(activePromo as any).product_id}`);
+        }
+        break;
       case 'open_custom_url':
         if (activePromo.cta_url) {
           if (activePromo.cta_url.startsWith('http')) {
