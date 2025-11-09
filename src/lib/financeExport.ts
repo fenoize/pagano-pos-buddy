@@ -95,11 +95,11 @@ export function exportClosureToPDF(closure: FinancialClosure): void {
   const contentWidth = pageWidth - (margin * 2);
   let yPos = margin;
 
-  // Colores del tema
-  const primaryColor: [number, number, number] = [59, 130, 246]; // blue-500
-  const mutedColor: [number, number, number] = [148, 163, 184]; // slate-400
-  const successColor: [number, number, number] = [34, 197, 94]; // green-500
-  const errorColor: [number, number, number] = [239, 68, 68]; // red-500
+  // Colores oficiales de Paganos
+  const primaryColor: [number, number, number] = [167, 17, 17]; // Rojo Paganos #a71111
+  const mutedColor: [number, number, number] = [100, 100, 100]; // Gris medio
+  const successColor: [number, number, number] = [34, 139, 34]; // Verde oscuro
+  const errorColor: [number, number, number] = [167, 17, 17]; // Rojo Paganos #a71111
 
   // Helper para agregar línea divisoria
   const addDivider = () => {
@@ -113,7 +113,7 @@ export function exportClosureToPDF(closure: FinancialClosure): void {
   const addSectionTitle = (title: string) => {
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(15, 23, 42); // slate-900
+    doc.setTextColor(30, 30, 30); // Negro Paganos #1e1e1e
     doc.text(title, margin, yPos);
     yPos += 8;
   };
@@ -157,8 +157,8 @@ export function exportClosureToPDF(closure: FinancialClosure): void {
     theme: 'plain',
     margin: { left: margin, right: margin },
     columnStyles: {
-      0: { cellWidth: contentWidth * 0.5, fontStyle: 'bold', textColor: [71, 85, 105] },
-      1: { cellWidth: contentWidth * 0.5, halign: 'right', textColor: [15, 23, 42] }
+      0: { cellWidth: contentWidth * 0.5, fontStyle: 'bold', textColor: [60, 60, 60] },
+      1: { cellWidth: contentWidth * 0.5, halign: 'right', textColor: [30, 30, 30] }
     },
     styles: {
       fontSize: 11,
@@ -234,7 +234,7 @@ export function exportClosureToPDF(closure: FinancialClosure): void {
     theme: 'plain',
     margin: { left: margin, right: margin },
     columnStyles: {
-      0: { cellWidth: contentWidth * 0.5, fontStyle: 'bold', textColor: [71, 85, 105] },
+      0: { cellWidth: contentWidth * 0.5, fontStyle: 'bold', textColor: [60, 60, 60] },
       1: { cellWidth: contentWidth * 0.5, halign: 'right', textColor: errorColor }
     },
     styles: {
@@ -271,7 +271,7 @@ export function exportClosureToPDF(closure: FinancialClosure): void {
     theme: 'plain',
     margin: { left: margin, right: margin },
     columnStyles: {
-      0: { cellWidth: contentWidth * 0.5, fontStyle: 'bold', textColor: [71, 85, 105] },
+      0: { cellWidth: contentWidth * 0.5, fontStyle: 'bold', textColor: [60, 60, 60] },
       1: { cellWidth: contentWidth * 0.5, halign: 'right' }
     },
     styles: {
@@ -307,7 +307,7 @@ export function exportClosureToPDF(closure: FinancialClosure): void {
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 116, 139); // slate-500
+    doc.setTextColor(80, 80, 80); // Gris oscuro
     const splitNotes = doc.splitTextToSize(closure.notes, contentWidth);
     doc.text(splitNotes, margin, yPos);
     yPos += splitNotes.length * 5;
@@ -318,7 +318,7 @@ export function exportClosureToPDF(closure: FinancialClosure): void {
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184); // slate-400
+    doc.setTextColor(120, 120, 120); // Gris claro
     doc.text(
       `Generado el ${format(new Date(), "dd/MM/yyyy 'a las' HH:mm", { locale: es })}`,
       margin,
