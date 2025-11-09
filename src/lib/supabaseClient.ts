@@ -10,17 +10,14 @@ export const getStaffToken = () => {
   return localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
 };
 
-// Create a function that returns a fresh client with current headers
+// Create a function that returns a fresh client (without custom auth headers)
+// The staff context is set via set_staff_context RPC, not via Authorization headers
 export const getConfiguredSupabase = () => {
-  const token = getStaffToken();
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: localStorage,
       persistSession: true,
       autoRefreshToken: true,
-    },
-    global: {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
     }
   });
 };
