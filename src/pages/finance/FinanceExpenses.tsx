@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, CalendarIcon, Paperclip, FileText, Download, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, Paperclip, FileText, Download, CheckCircle2, XCircle, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateShort } from '@/lib/dateUtils';
 import { Badge } from '@/components/ui/badge';
+import * as XLSX from 'xlsx';
 
 const EXPENSE_TYPES = ['Variable', 'Inversión', 'Otro'];
 
@@ -257,6 +258,67 @@ export default function FinanceExpenses() {
     return isAdmin || expense.registered_by === user?.id;
   };
 
+  const handleExportToExcel = () => {
+    if (filteredExpenses.length === 0) {
+      toast({
+        title: 'No hay datos',
+        description: 'No hay egresos para exportar en este mes',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Preparar datos para Excel
+    const excelData = filteredExpenses.map(expense => ({
+      'Fecha': formatDateShort(expense.expense_date),
+      'Cuenta': expense.account?.name || '—',
+      'Monto': Number(expense.amount),
+      'Tipo': expense.expense_type,
+      'Categoría': expense.category,
+      'Proveedor': expense.supplier || '—',
+      'Método de Pago': expense.payment_method || '—',
+      'Notas': expense.notes || '—',
+      'Tipo Documento': expense.document_type || 'Sin documento',
+      'Nº Documento': expense.document_number || '—',
+      'Documento Adjunto': expense.attachment_url ? 'Sí' : 'No',
+    }));
+
+    // Crear workbook y worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Ajustar anchos de columnas
+    const colWidths = [
+      { wch: 12 }, // Fecha
+      { wch: 20 }, // Cuenta
+      { wch: 15 }, // Monto
+      { wch: 12 }, // Tipo
+      { wch: 15 }, // Categoría
+      { wch: 25 }, // Proveedor
+      { wch: 18 }, // Método de Pago
+      { wch: 40 }, // Notas
+      { wch: 15 }, // Tipo Documento
+      { wch: 15 }, // Nº Documento
+      { wch: 15 }, // Documento Adjunto
+    ];
+    ws['!cols'] = colWidths;
+
+    // Agregar hoja al workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Egresos');
+
+    // Generar nombre del archivo
+    const monthName = format(currentMonth, 'MMMM_yyyy', { locale: es });
+    const fileName = `egresos_${monthName}.xlsx`;
+
+    // Descargar archivo
+    XLSX.writeFile(wb, fileName);
+
+    toast({
+      title: 'Exportación exitosa',
+      description: `Se descargó ${fileName} con ${filteredExpenses.length} registros`,
+    });
+  };
+
   if (loadingExpenses) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -303,7 +365,7 @@ export default function FinanceExpenses() {
               Mes anterior
             </Button>
             
-            <div className="text-center">
+            <div className="text-center flex-1">
               <p className="text-lg font-semibold capitalize">
                 {format(currentMonth, 'MMMM yyyy', { locale: es })}
               </p>
@@ -312,19 +374,31 @@ export default function FinanceExpenses() {
               </p>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const newMonth = new Date(currentMonth);
-                newMonth.setMonth(newMonth.getMonth() + 1);
-                setCurrentMonth(newMonth);
-              }}
-              disabled={currentMonth >= startOfMonth(new Date())}
-            >
-              Mes siguiente
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportToExcel}
+                disabled={filteredExpenses.length === 0}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-1" />
+                Exportar Excel
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newMonth = new Date(currentMonth);
+                  newMonth.setMonth(newMonth.getMonth() + 1);
+                  setCurrentMonth(newMonth);
+                }}
+                disabled={currentMonth >= startOfMonth(new Date())}
+              >
+                Mes siguiente
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
