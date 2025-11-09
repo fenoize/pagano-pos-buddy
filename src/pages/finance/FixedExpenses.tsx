@@ -511,12 +511,12 @@ export default function FixedExpenses() {
 
               <div className="space-y-2">
                 <Label htmlFor="account_id">Cuenta</Label>
-                <Select value={formData.account_id} onValueChange={(v) => setFormData({ ...formData, account_id: v })}>
+                <Select value={formData.account_id || 'none'} onValueChange={(v) => setFormData({ ...formData, account_id: v === 'none' ? '' : v })}>
                   <SelectTrigger id="account_id">
                     <SelectValue placeholder="Opcional" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin cuenta</SelectItem>
+                    <SelectItem value="none">Sin cuenta</SelectItem>
                     {accounts.map((acc) => (
                       <SelectItem key={acc.id} value={acc.id}>
                         {acc.name}
@@ -528,12 +528,12 @@ export default function FixedExpenses() {
 
               <div className="space-y-2">
                 <Label htmlFor="document_type">Tipo Doc</Label>
-                <Select value={formData.document_type} onValueChange={(v) => setFormData({ ...formData, document_type: v })}>
+                <Select value={formData.document_type || 'none'} onValueChange={(v) => setFormData({ ...formData, document_type: v === 'none' ? '' : v })}>
                   <SelectTrigger id="document_type">
                     <SelectValue placeholder="Opcional" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin tipo</SelectItem>
+                    <SelectItem value="none">Sin tipo</SelectItem>
                     {DOCUMENT_TYPES.map((doc) => (
                       <SelectItem key={doc} value={doc}>
                         {doc}
