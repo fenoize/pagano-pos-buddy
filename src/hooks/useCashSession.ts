@@ -49,7 +49,7 @@ export function useCashSession() {
     }
   };
 
-  const openSession = async (openingCash: number): Promise<CashSession> => {
+  const openSession = async (openingCash: number, acceptAppOrders: boolean = false): Promise<CashSession> => {
     if (!user?.id) throw new Error('User not authenticated');
 
     try {
@@ -72,7 +72,8 @@ export function useCashSession() {
         .from('cash_sessions')
         .insert({
           user_id: user.id,
-          opening_cash: openingCash
+          opening_cash: openingCash,
+          accept_app_orders: acceptAppOrders
         })
         .select()
         .single();

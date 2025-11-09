@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Lock, Unlock, Plus, Minus, DollarSign } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Lock, Unlock, Plus, Minus, DollarSign, Smartphone } from 'lucide-react';
 import { useCashSession } from '@/hooks/useCashSession';
 import { CashSessionModal } from './CashSessionModal';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { configuredSupabase } from '@/lib/supabaseClient';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,8 +23,16 @@ export function CashSessionTopBar() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'open' | 'close' | 'movement'>('open');
   const [sessionSummary, setSessionSummary] = useState<any>(null);
+  const [acceptAppOrders, setAcceptAppOrders] = useState(false);
   const { user } = useAuthContext();
   const { toast } = useToast();
+
+  // Sync accept_app_orders with current session
+  React.useEffect(() => {
+    if (currentSession) {
+      setAcceptAppOrders(currentSession.accept_app_orders || false);
+    }
+  }, [currentSession]);
 
   // Only show for Cajero and Administrador roles
   if (!user || !['Cajero', 'Administrador'].includes(user.role)) {
@@ -62,6 +72,36 @@ export function CashSessionTopBar() {
     checkActiveSession();
   };
 
+  const handleToggleAppOrders = async (checked: boolean) => {
+    if (!currentSession) return;
+
+    try {
+      const { error } = await configuredSupabase
+        .from('cash_sessions')
+        .update({ accept_app_orders: checked })
+        .eq('id', currentSession.id);
+
+      if (error) throw error;
+
+      setAcceptAppOrders(checked);
+      await checkActiveSession();
+      
+      toast({
+        title: checked ? "✅ Recibiendo pedidos desde app" : "⏸️ App pausada",
+        description: checked 
+          ? "Los clientes pueden hacer pedidos desde la app"
+          : "Los pedidos desde la app están pausados temporalmente"
+      });
+    } catch (error: any) {
+      console.error('Error toggling app orders:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de pedidos desde app",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!hasActiveSession()) {
     return (
       <>
@@ -81,44 +121,59 @@ export function CashSessionTopBar() {
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Unlock className="h-4 w-4 text-green-600" />
-            <Badge variant="outline" className="hidden md:flex text-xs">
-              Turno Abierto
-            </Badge>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Gestión de Turno</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <div className="px-2 py-1.5 text-sm">
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <DollarSign className="h-3 w-3" />
-              <span className="text-xs">
-                Efectivo inicial: {formatCurrency(currentSession?.opening_cash || 0)}
-              </span>
+      <div className="flex items-center gap-3">
+        {/* Switch de pedidos desde app */}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md">
+          <Smartphone className={`h-4 w-4 ${acceptAppOrders ? 'text-green-600' : 'text-muted-foreground'}`} />
+          <span className="text-xs text-muted-foreground hidden md:inline">
+            {acceptAppOrders ? 'App activa' : 'App pausada'}
+          </span>
+          <Switch
+            checked={acceptAppOrders}
+            onCheckedChange={handleToggleAppOrders}
+            disabled={!currentSession}
+          />
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Unlock className="h-4 w-4 text-green-600" />
+              <Badge variant="outline" className="hidden md:flex text-xs">
+                Turno Abierto
+              </Badge>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Gestión de Turno</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5 text-sm">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <DollarSign className="h-3 w-3" />
+                <span className="text-xs">
+                  Efectivo inicial: {formatCurrency(currentSession?.opening_cash || 0)}
+                </span>
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Inicio: {new Date(currentSession?.opened_at || '').toLocaleTimeString('es-CL', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Inicio: {new Date(currentSession?.opened_at || '').toLocaleTimeString('es-CL', {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </div>
-          </div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleMovement}>
-            <Plus className="h-4 w-4 mr-2" />
-            <Minus className="h-4 w-4 mr-2" />
-            Registrar Movimiento
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleCloseSession} className="text-destructive focus:text-destructive">
-            <Lock className="h-4 w-4 mr-2" />
-            Cerrar Turno
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleMovement}>
+              <Plus className="h-4 w-4 mr-2" />
+              <Minus className="h-4 w-4 mr-2" />
+              Registrar Movimiento
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleCloseSession} className="text-destructive focus:text-destructive">
+              <Lock className="h-4 w-4 mr-2" />
+              Cerrar Turno
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <CashSessionModal
         isOpen={showModal}

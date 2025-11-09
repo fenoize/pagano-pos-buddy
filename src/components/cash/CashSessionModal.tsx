@@ -11,10 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { useCashSession } from '@/hooks/useCashSession';
 import { useToast } from '@/hooks/use-toast';
+import { Smartphone } from 'lucide-react';
 
 interface CashSessionModalProps {
   isOpen: boolean;
@@ -27,6 +29,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [movementType, setMovementType] = useState<'ingreso' | 'egreso'>('ingreso');
+  const [acceptAppOrders, setAcceptAppOrders] = useState(false);
   const [loading, setLoading] = useState(false);
   const { openSession, closeSession, addCashMovement } = useCashSession();
   const { toast } = useToast();
@@ -49,10 +52,10 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
     try {
       switch (type) {
         case 'open':
-          await openSession(amountValue);
+          await openSession(amountValue, acceptAppOrders);
           toast({
             title: "Turno abierto",
-            description: `Turno iniciado con ${formatCurrency(amountValue)} en caja.`
+            description: `Turno iniciado con ${formatCurrency(amountValue)} en caja.${acceptAppOrders ? ' Recibiendo pedidos desde app.' : ''}`
           });
           break;
         
@@ -210,6 +213,25 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
               required
             />
           </div>
+
+          {type === 'open' && (
+            <div className="flex items-center space-x-2 p-4 border rounded-md bg-muted/30">
+              <Checkbox
+                id="accept_app_orders"
+                checked={acceptAppOrders}
+                onCheckedChange={(checked) => setAcceptAppOrders(checked as boolean)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="accept_app_orders" className="flex items-center gap-2 cursor-pointer">
+                  <Smartphone className="h-4 w-4" />
+                  Recibir pedidos desde la App Cliente
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Permite que los clientes hagan pedidos desde sus dispositivos durante este turno
+                </p>
+              </div>
+            </div>
+          )}
 
           {(type === 'movement' || type === 'close') && (
             <div className="space-y-2">

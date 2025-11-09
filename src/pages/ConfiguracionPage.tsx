@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign, MapPin, CreditCard, Tag, Smartphone, Shield } from 'lucide-react';
+import { Settings, DollarSign, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
 import { PaymentMethodsConfig } from '@/components/config/PaymentMethodsConfig';
 import { PWAConfig } from '@/components/config/PWAConfig';
 import { CategoryConfig } from '@/components/config/CategoryConfig';
 import CouponsManagement from './CouponsManagement';
+import { OnlineOrdersConfig } from '@/components/config/OnlineOrdersConfig';
 
 export default function ConfiguracionPage() {
   const { user } = useAuthContext();
@@ -38,8 +39,12 @@ export default function ConfiguracionPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="zones" className="flex gap-6" orientation="vertical">
+      <Tabs defaultValue="online-orders" className="flex gap-6" orientation="vertical">
         <TabsList className="flex flex-col h-fit w-56 bg-muted/50 p-2 gap-1">
+          <TabsTrigger value="online-orders" className="w-full justify-start gap-3 px-4 py-2.5">
+            <ShoppingCart className="w-4 h-4" />
+            <span>Pedidos Online</span>
+          </TabsTrigger>
           <TabsTrigger value="zones" className="w-full justify-start gap-3 px-4 py-2.5">
             <MapPin className="w-4 h-4" />
             <span>Zonas de Delivery</span>
@@ -71,6 +76,10 @@ export default function ConfiguracionPage() {
         </TabsList>
 
         <div className="flex-1 min-w-0">
+          <TabsContent value="online-orders" className="mt-0 space-y-6">
+            <OnlineOrdersConfig />
+          </TabsContent>
+
           <TabsContent value="zones" className="mt-0 space-y-6">
             <DeliveryZoneManagement />
           </TabsContent>

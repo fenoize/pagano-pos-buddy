@@ -354,6 +354,7 @@ export interface CashSession {
   closing_cash?: number;
   user_id: string;
   observaciones?: string;
+  accept_app_orders?: boolean;
 }
 
 export interface CashSessionAudit {
