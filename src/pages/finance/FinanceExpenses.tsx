@@ -16,9 +16,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, CalendarIcon, Paperclip, FileText, Download, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, Paperclip, FileText, Download, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FinanceExpense } from '@/types/finance';
 import { cn } from '@/lib/utils';
@@ -53,6 +53,7 @@ export default function FinanceExpenses() {
   const [filterAccount, setFilterAccount] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const [formData, setFormData] = useState({
     expense_date: format(new Date(), 'yyyy-MM-dd'),
@@ -128,6 +129,12 @@ export default function FinanceExpenses() {
     return expenses.filter(expense => {
       const expenseDate = new Date(expense.expense_date);
       
+      // Filtro por mes actual (siempre aplicado)
+      const monthStart = startOfMonth(currentMonth);
+      const monthEnd = endOfMonth(currentMonth);
+      if (expenseDate < monthStart || expenseDate > monthEnd) return false;
+      
+      // Filtros adicionales
       if (filterStartDate && expenseDate < filterStartDate) return false;
       if (filterEndDate && expenseDate > filterEndDate) return false;
       if (filterAccount !== 'all' && expense.account_id !== filterAccount) return false;
@@ -136,7 +143,7 @@ export default function FinanceExpenses() {
       
       return true;
     });
-  }, [expenses, filterStartDate, filterEndDate, filterAccount, filterType, filterCategory]);
+  }, [expenses, currentMonth, filterStartDate, filterEndDate, filterAccount, filterType, filterCategory]);
 
   const kpis = useMemo(() => {
     const total = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -278,6 +285,49 @@ export default function FinanceExpenses() {
           />
         </div>
       </div>
+
+      {/* Paginador Mensual */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newMonth = new Date(currentMonth);
+                newMonth.setMonth(newMonth.getMonth() - 1);
+                setCurrentMonth(newMonth);
+              }}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Mes anterior
+            </Button>
+            
+            <div className="text-center">
+              <p className="text-lg font-semibold capitalize">
+                {format(currentMonth, 'MMMM yyyy', { locale: es })}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {filteredExpenses.length} egreso{filteredExpenses.length !== 1 ? 's' : ''} • Total: {formatCurrency(kpis.total)}
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newMonth = new Date(currentMonth);
+                newMonth.setMonth(newMonth.getMonth() + 1);
+                setCurrentMonth(newMonth);
+              }}
+              disabled={currentMonth >= startOfMonth(new Date())}
+            >
+              Mes siguiente
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
