@@ -70,19 +70,26 @@ export function useSessionKeepAlive() {
         const tokenData = validation[0];
 
         if (!tokenData.is_valid) {
-          // Token inválido - mostrar modal
-          console.log('Token inválido detectado, mostrando modal de expiración');
-          setShowExpiryModal(true);
+          // Token inválido - cerrar sesión directamente (no se puede renovar)
+          console.log('Token inválido detectado, cerrando sesión');
+          handleForceLogout();
           return;
         }
 
         const expiresAt = new Date(tokenData.expires_at);
         const timeUntilExpiry = expiresAt.getTime() - Date.now();
 
-        // Mostrar modal si expira en menos de 5 minutos
+        // Mostrar modal solo si el token es válido pero expira en menos de 5 minutos
         if (timeUntilExpiry < EXPIRY_WARNING && timeUntilExpiry > 0) {
           console.log('Sesión próxima a expirar, mostrando modal');
           setShowExpiryModal(true);
+          return;
+        }
+
+        // Si el token expiró, cerrar sesión directamente
+        if (timeUntilExpiry <= 0) {
+          console.log('Token expirado, cerrando sesión');
+          handleForceLogout();
           return;
         }
       } catch (error) {
