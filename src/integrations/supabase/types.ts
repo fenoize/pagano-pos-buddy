@@ -3520,6 +3520,7 @@ export type Database = {
       is_active_staff_with_token: { Args: never; Returns: boolean }
       is_active_user: { Args: { _user_id: string }; Returns: boolean }
       is_cashier_or_admin: { Args: never; Returns: boolean }
+      is_current_user_admin: { Args: never; Returns: boolean }
       is_staff_admin: { Args: never; Returns: boolean }
       process_purchase_receipt: {
         Args: {
