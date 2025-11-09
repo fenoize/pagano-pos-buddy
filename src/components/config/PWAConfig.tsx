@@ -196,29 +196,32 @@ export function PWAConfig() {
     setUploading(iconType);
 
     try {
-      // Establecer contexto de staff antes de subir
-      await setStaffContext(user.id);
+      // Obtener token de staff desde localStorage
+      const staffToken = localStorage.getItem('staff_token');
+      if (!staffToken) {
+        toast.error('No se encontró token de autenticación');
+        return;
+      }
       
-      const fileExt = file.name.split('.').pop();
-      const fileName = `icon-${iconType}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('pwa-icons')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('pwa-icons')
-        .getPublicUrl(filePath);
-
-      const publicUrl = urlData.publicUrl;
+      // Crear FormData con el archivo
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('iconType', iconType);
+      
+      // Llamar a edge function para subir el archivo
+      const { data, error } = await supabase.functions.invoke('upload-pwa-icon', {
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${staffToken}`
+        }
+      });
+      
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      
+      const publicUrl = data.url;
+      
+      console.log('✅ File uploaded successfully:', publicUrl);
 
       // Update config with new icon URL
       const currentConfig = activeTab === 'customer' ? customerConfig : posConfig;
