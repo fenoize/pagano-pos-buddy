@@ -110,6 +110,8 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             name: formData.name,
             active: formData.active,
             image_url: formData.image_url || null,
+            show_in_pos: formData.show_in_pos,
+            show_in_app: formData.show_in_app,
             prices: { combo: {}, only: {} } // Default empty prices for backward compatibility
           })
           .eq('id', product.id);
@@ -123,6 +125,8 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             name: formData.name,
             active: formData.active,
             image_url: formData.image_url || null,
+            show_in_pos: formData.show_in_pos,
+            show_in_app: formData.show_in_app,
             prices: { combo: {}, only: {} } // Default empty prices for backward compatibility
           })
           .select()
