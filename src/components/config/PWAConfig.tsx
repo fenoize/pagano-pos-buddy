@@ -22,6 +22,9 @@ interface PWAConfig {
   icon_192_url: string | null;
   icon_512_url: string | null;
   icon_maskable_url: string | null;
+  splash_logo_url: string | null;
+  splash_text: string | null;
+  splash_background_color: string | null;
 }
 
 export function PWAConfig() {
@@ -39,6 +42,8 @@ export function PWAConfig() {
   const [appDescription, setAppDescription] = useState('');
   const [themeColor, setThemeColor] = useState('');
   const [backgroundColor, setBackgroundColor] = useState('');
+  const [splashText, setSplashText] = useState('');
+  const [splashBackgroundColor, setSplashBackgroundColor] = useState('');
 
   useEffect(() => {
     loadConfigs();
@@ -53,6 +58,8 @@ export function PWAConfig() {
       setAppDescription(config.app_description);
       setThemeColor(config.theme_color);
       setBackgroundColor(config.background_color);
+      setSplashText(config.splash_text || '');
+      setSplashBackgroundColor(config.splash_background_color || '#1c1e21');
     }
   }, [activeTab, customerConfig, posConfig]);
 
@@ -84,6 +91,8 @@ export function PWAConfig() {
           setAppDescription(activeConfig.app_description);
           setThemeColor(activeConfig.theme_color);
           setBackgroundColor(activeConfig.background_color);
+          setSplashText(activeConfig.splash_text || '');
+          setSplashBackgroundColor(activeConfig.splash_background_color || '#1c1e21');
         }
       }
     } catch (error) {
@@ -118,6 +127,8 @@ export function PWAConfig() {
         app_description: appDescription,
         theme_color: themeColor,
         background_color: backgroundColor,
+        splash_text: splashText,
+        splash_background_color: splashBackgroundColor,
         updated_at: new Date().toISOString(),
       };
 
@@ -160,7 +171,7 @@ export function PWAConfig() {
 
   const handleIconUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
-    iconType: '192' | '512' | 'maskable'
+    iconType: '192' | '512' | 'maskable' | 'splash-logo'
   ) => {
     if (!user?.id) {
       toast.error('Usuario no autenticado');
@@ -221,6 +232,7 @@ export function PWAConfig() {
       if (iconType === '192') updateData.icon_192_url = publicUrl;
       if (iconType === '512') updateData.icon_512_url = publicUrl;
       if (iconType === 'maskable') updateData.icon_maskable_url = publicUrl;
+      if (iconType === 'splash-logo') updateData.splash_logo_url = publicUrl;
 
       const { error: updateError } = await supabase
         .from('pwa_config')
@@ -229,7 +241,10 @@ export function PWAConfig() {
 
       if (updateError) throw updateError;
 
-      toast.success(`Ícono ${iconType}x${iconType} subido exitosamente`);
+      const successMessage = iconType === 'splash-logo' 
+        ? 'Logo de splash screen subido exitosamente'
+        : `Ícono ${iconType}x${iconType} subido exitosamente`;
+      toast.success(successMessage);
       await loadConfigs();
     } catch (error) {
       console.error('Error uploading icon:', error);
@@ -377,6 +392,53 @@ export function PWAConfig() {
             </div>
           </div>
 
+          {/* Splash Screen Configuration */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="font-semibold">Pantalla de Carga (Splash Screen)</h3>
+            <p className="text-sm text-muted-foreground">
+              Personaliza la pantalla que se muestra mientras carga la aplicación
+            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="splash-text">Texto de carga</Label>
+              <Input
+                id="splash-text"
+                value={splashText}
+                onChange={(e) => setSplashText(e.target.value)}
+                placeholder={activeTab === 'customer' ? 'Cargando tu experiencia pagana…' : 'Cargando sistema POS…'}
+                disabled={saving}
+              />
+              <p className="text-xs text-muted-foreground">
+                Mensaje que se muestra durante la carga de la aplicación
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="splash-bg-color">Color de fondo del splash</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="splash-bg-color"
+                  type="color"
+                  value={splashBackgroundColor}
+                  onChange={(e) => setSplashBackgroundColor(e.target.value)}
+                  disabled={saving}
+                  className="w-20 h-10"
+                />
+                <Input
+                  type="text"
+                  value={splashBackgroundColor}
+                  onChange={(e) => setSplashBackgroundColor(e.target.value)}
+                  disabled={saving}
+                  className="flex-1"
+                  placeholder="#1c1e21"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Color de fondo de la pantalla de carga
+              </p>
+            </div>
+          </div>
+
           <Button onClick={handleSave} disabled={saving} className="w-full">
             {saving ? (
               <>
@@ -392,10 +454,39 @@ export function PWAConfig() {
         {/* Icon Uploads */}
         {currentConfig && (
           <div className="space-y-4 pt-4 border-t">
-            <h3 className="font-semibold">Íconos de la aplicación</h3>
+            <h3 className="font-semibold">Imágenes de la aplicación</h3>
             <p className="text-sm text-muted-foreground">
               Se recomiendan imágenes PNG cuadradas con fondo sólido
             </p>
+
+            {/* Splash Logo */}
+            <div className="space-y-2">
+              <Label htmlFor={`splash-logo-${activeTab}`}>Logo Splash Screen</Label>
+              <div className="flex items-center gap-4">
+                {currentConfig.splash_logo_url && (
+                  <img
+                    src={currentConfig.splash_logo_url}
+                    alt="Splash Logo"
+                    className="w-16 h-16 rounded border object-contain bg-muted"
+                  />
+                )}
+                <div className="flex-1">
+                  <Input
+                    id={`splash-logo-${activeTab}`}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleIconUpload(e, 'splash-logo')}
+                    disabled={!!uploading}
+                  />
+                </div>
+                {uploading === 'splash-logo' && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Logo que se muestra en la pantalla de carga. Puede ser diferente al ícono de la app.
+              </p>
+            </div>
 
             {/* Icon 192x192 */}
             <div className="space-y-2">

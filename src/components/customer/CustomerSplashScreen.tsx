@@ -7,40 +7,57 @@ interface CustomerSplashScreenProps {
 
 export function CustomerSplashScreen({ isLoading }: CustomerSplashScreenProps) {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [splashText, setSplashText] = useState<string>('Cargando tu experiencia pagana…');
+  const [backgroundColor, setBackgroundColor] = useState<string>('#1c1e21');
   const [logoError, setLogoError] = useState(false);
   const [show, setShow] = useState(true);
 
   useEffect(() => {
-    // Cargar logo desde configuración PWA (sin bloquear)
-    const loadLogo = async () => {
+    // Cargar configuración splash desde PWA config
+    const loadSplashConfig = async () => {
       try {
         // Intentar obtener desde cache primero
-        const cachedLogo = localStorage.getItem('paganos_customer_logo');
-        if (cachedLogo) {
-          setLogoUrl(cachedLogo);
+        const cachedConfig = localStorage.getItem('paganos_splash_config');
+        if (cachedConfig) {
+          const config = JSON.parse(cachedConfig);
+          setLogoUrl(config.logo);
+          setSplashText(config.text || 'Cargando tu experiencia pagana…');
+          setBackgroundColor(config.bgColor || '#1c1e21');
         }
 
         // Cargar desde DB en background
         const { data, error } = await supabase
           .from('pwa_config')
-          .select('icon_512_url, icon_192_url')
+          .select('splash_logo_url, icon_512_url, icon_192_url, splash_text, splash_background_color')
           .eq('app_type', 'customer')
           .maybeSingle();
 
         if (!error && data) {
-          const url = data.icon_512_url || data.icon_192_url;
-          if (url) {
-            setLogoUrl(url);
-            localStorage.setItem('paganos_customer_logo', url);
+          // Prioridad: splash_logo_url > icon_512_url > icon_192_url
+          const logo = data.splash_logo_url || data.icon_512_url || data.icon_192_url;
+          const text = data.splash_text || 'Cargando tu experiencia pagana…';
+          const bgColor = data.splash_background_color || '#1c1e21';
+          
+          if (logo) {
+            setLogoUrl(logo);
           }
+          setSplashText(text);
+          setBackgroundColor(bgColor);
+          
+          // Guardar en cache
+          localStorage.setItem('paganos_splash_config', JSON.stringify({
+            logo,
+            text,
+            bgColor
+          }));
         }
       } catch (err) {
-        console.error('Error loading logo:', err);
+        console.error('Error loading splash config:', err);
         // No bloquear si falla
       }
     };
 
-    loadLogo();
+    loadSplashConfig();
   }, []);
 
   useEffect(() => {
@@ -61,7 +78,7 @@ export function CustomerSplashScreen({ isLoading }: CustomerSplashScreenProps) {
     <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center transition-opacity duration-300"
       style={{
-        backgroundColor: '#1c1e21',
+        backgroundColor: backgroundColor,
         opacity: isLoading ? 1 : 0,
         pointerEvents: isLoading ? 'auto' : 'none',
       }}
@@ -83,9 +100,9 @@ export function CustomerSplashScreen({ isLoading }: CustomerSplashScreenProps) {
           </div>
         )}
 
-        {/* Texto de carga */}
+        {/* Texto de carga personalizable */}
         <p className="text-white/70 text-sm animate-pulse">
-          Cargando tu experiencia pagana…
+          {splashText}
         </p>
 
         {/* Loader animado con CSS puro */}

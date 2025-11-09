@@ -2500,6 +2500,9 @@ export type Database = {
           icon_512_url: string | null
           icon_maskable_url: string | null
           id: string
+          splash_background_color: string | null
+          splash_logo_url: string | null
+          splash_text: string | null
           theme_color: string
           updated_at: string
         }
@@ -2514,6 +2517,9 @@ export type Database = {
           icon_512_url?: string | null
           icon_maskable_url?: string | null
           id?: string
+          splash_background_color?: string | null
+          splash_logo_url?: string | null
+          splash_text?: string | null
           theme_color?: string
           updated_at?: string
         }
@@ -2528,6 +2534,9 @@ export type Database = {
           icon_512_url?: string | null
           icon_maskable_url?: string | null
           id?: string
+          splash_background_color?: string | null
+          splash_logo_url?: string | null
+          splash_text?: string | null
           theme_color?: string
           updated_at?: string
         }
