@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2 } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
+import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { useCart } from '@/contexts/CartContext';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
@@ -18,19 +19,19 @@ export default function CustomerCheckout() {
   const navigate = useNavigate();
   const { items, subtotal } = useCart();
   const { customer } = useCustomerAuth();
-  const { loading, storeStatus, loadingStatus, fetchStoreStatus, createPaymentAndRedirect } = useMercadoPago();
+  const { loading, createPaymentAndRedirect } = useMercadoPago();
   const [notes, setNotes] = useState('');
+  const [canOrder, setCanOrder] = useState(true);
 
   useEffect(() => {
     if (items.length === 0) {
       navigate('/cart');
       return;
     }
-    fetchStoreStatus();
   }, []);
 
   const handlePayment = async () => {
-    if (!storeStatus?.app_orders_enabled || !storeStatus?.accept_app_orders) {
+    if (!canOrder) {
       return;
     }
 
@@ -53,8 +54,6 @@ export default function CustomerCheckout() {
     }
   };
 
-  const canPlaceOrder = storeStatus?.app_orders_enabled && storeStatus?.accept_app_orders && !loadingStatus;
-
   return (
     <div className="min-h-screen pb-20 bg-background">
       <div className="max-w-screen-xl mx-auto p-4 space-y-4">
@@ -63,24 +62,8 @@ export default function CustomerCheckout() {
           Finalizar Pedido
         </h1>
 
-        {/* Store Status Alert */}
-        {loadingStatus ? (
-          <Alert>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <AlertDescription>
-              Verificando disponibilidad del local...
-            </AlertDescription>
-          </Alert>
-        ) : !canPlaceOrder ? (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {!storeStatus?.app_orders_enabled
-                ? 'Los pedidos desde la app están desactivados temporalmente.'
-                : 'El local no está recibiendo pedidos en este momento. Por favor intenta más tarde.'}
-            </AlertDescription>
-          </Alert>
-        ) : null}
+        {/* Store Status Banner */}
+        <StoreStatusBanner onStatusChange={setCanOrder} />
 
         {/* Fulfillment Type */}
         <Card>
@@ -169,7 +152,7 @@ export default function CustomerCheckout() {
           size="lg"
           className="w-full"
           onClick={handlePayment}
-          disabled={loading || !canPlaceOrder}
+          disabled={loading || !canOrder}
         >
           {loading ? (
             <>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,12 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ShoppingCart, Trash2, Plus, Minus, Flame, ArrowRight } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
+import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { useCart } from '@/contexts/CartContext';
 import { formatCurrency } from '@/lib/utils';
 
 export default function CustomerCart() {
   const navigate = useNavigate();
   const { items, itemCount, subtotal, removeItem, updateQuantity, getItemTotal } = useCart();
+  const [canOrder, setCanOrder] = useState(true);
 
   if (items.length === 0) {
     return (
@@ -48,6 +51,9 @@ export default function CustomerCart() {
           Carrito
           <Badge variant="secondary">{itemCount} {itemCount === 1 ? 'item' : 'items'}</Badge>
         </h1>
+
+        {/* Store Status Banner */}
+        <StoreStatusBanner onStatusChange={setCanOrder} />
 
         {/* Cart Items */}
         <div className="space-y-3">
@@ -160,6 +166,7 @@ export default function CustomerCart() {
               size="lg"
               className="w-full"
               onClick={() => navigate('/checkout')}
+              disabled={!canOrder}
             >
               Continuar
               <ArrowRight className="h-4 w-4 ml-2" />

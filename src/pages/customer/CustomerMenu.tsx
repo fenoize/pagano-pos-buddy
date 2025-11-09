@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Flame } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
+import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { useCart } from '@/contexts/CartContext';
 import { ProductCustomizationModal } from '@/components/pos/ProductCustomizationModal';
 import { toast } from 'sonner';
@@ -123,6 +124,9 @@ export default function CustomerMenu() {
             Elige tu hamburguesa favorita
           </p>
         </div>
+
+        {/* Store Status Banner */}
+        <StoreStatusBanner />
 
         {/* Category filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
