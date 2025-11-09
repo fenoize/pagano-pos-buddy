@@ -1,118 +1,184 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Download, X } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Download, Share, Plus, Smartphone } from 'lucide-react';
+import { usePwaInstallPrompt } from '@/hooks/usePwaInstallPrompt';
+import { usePWAConfig } from '@/hooks/usePWAConfig';
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
+/**
+ * Popup de instalación PWA para la app de clientes.
+ * 
+ * Características:
+ * - Solo aparece en la app de clientes (nunca en /pos)
+ * - Respeta preferencias del usuario (rechazos por 7 días)
+ * - Soporte para Android/Chrome (beforeinstallprompt) e iOS (instrucciones)
+ * - Diseño con colores de Paganos Burger
+ * - Usa logo desde configuración PWA
+ */
 export function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showPrompt, setShowPrompt] = useState(false);
-  const location = useLocation();
+  const {
+    canInstallPwa,
+    shouldShowPopup,
+    platform,
+    triggerNativeInstall,
+    dismissPopup,
+  } = usePwaInstallPrompt();
 
+  const { logoUrl, loading: configLoading } = usePWAConfig();
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+
+  // Mostrar popup después de 3 segundos si cumple condiciones
   useEffect(() => {
-    // Solo mostrar en el portal de clientes, nunca en /pos
-    const isPOSRoute = location.pathname.startsWith('/pos');
-    if (isPOSRoute) {
-      setShowPrompt(false);
-      return;
-    }
-
-    // Verificar si ya fue instalado
-    const isInstalled = localStorage.getItem('pwa-installed') === 'true';
-    const wasDismissed = localStorage.getItem('pwa-prompt-dismissed') === 'true';
-
-    if (isInstalled || wasDismissed) {
-      return;
-    }
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      const event = e as BeforeInstallPromptEvent;
-      setDeferredPrompt(event);
-      
-      // Mostrar prompt después de 3 segundos
-      setTimeout(() => {
-        setShowPrompt(true);
+    if (shouldShowPopup && !configLoading) {
+      const timer = setTimeout(() => {
+        setIsOpen(true);
       }, 3000);
-    };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Detectar si ya está instalado
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      localStorage.setItem('pwa-installed', 'true');
+      return () => clearTimeout(timer);
     }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, [location.pathname]);
+  }, [shouldShowPopup, configLoading]);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      localStorage.setItem('pwa-installed', 'true');
+    if (platform === 'ios') {
+      // En iOS mostrar instrucciones
+      setShowIOSInstructions(true);
+    } else if (canInstallPwa) {
+      // En Android/Chrome usar prompt nativo
+      const outcome = await triggerNativeInstall();
+      if (outcome === 'accepted' || outcome === 'dismissed') {
+        setIsOpen(false);
+      }
+    } else {
+      // Fallback: mostrar instrucciones genéricas
+      setShowIOSInstructions(true);
     }
-    
-    setDeferredPrompt(null);
-    setShowPrompt(false);
   };
 
   const handleDismiss = () => {
-    localStorage.setItem('pwa-prompt-dismissed', 'true');
-    setShowPrompt(false);
+    dismissPopup(7);
+    setIsOpen(false);
   };
 
-  // No mostrar si estamos en /pos
-  if (location.pathname.startsWith('/pos') || !showPrompt) {
-    return null;
-  }
+  const handleIOSUnderstood = () => {
+    dismissPopup(7);
+    setIsOpen(false);
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm">
-      <Card className="p-4 shadow-lg border-primary/20 bg-card">
-        <div className="flex items-start gap-3">
-          <div className="bg-primary/10 p-2 rounded-lg">
-            <Download className="h-5 w-5 text-primary" />
-          </div>
-          
-          <div className="flex-1">
-            <h3 className="font-semibold text-sm mb-1">
-              Instalar Paganos App
-            </h3>
-            <p className="text-xs text-muted-foreground mb-3">
-              Instala nuestra app para acceso rápido y pedidos más fáciles
-            </p>
-            
-            <div className="flex gap-2">
-              <Button 
-                size="sm" 
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent 
+        className="sm:max-w-md bg-[#1c1e21] border-[#cc2525]/20 text-white"
+        onInteractOutside={(e) => e.preventDefault()} // No cerrar con click fuera
+      >
+        {!showIOSInstructions ? (
+          <>
+            <DialogHeader className="items-center text-center space-y-4">
+              {/* Logo */}
+              <div className="mx-auto bg-white/10 p-4 rounded-full w-20 h-20 flex items-center justify-center">
+                {logoUrl ? (
+                  <img 
+                    src={logoUrl} 
+                    alt="Paganos Burger" 
+                    className="w-full h-full object-contain rounded-full"
+                  />
+                ) : (
+                  <Smartphone className="w-10 h-10 text-[#cc2525]" />
+                )}
+              </div>
+
+              {/* Título */}
+              <DialogTitle className="text-2xl font-bold text-white">
+                Instala la App de Paganos Burger
+              </DialogTitle>
+
+              {/* Descripción */}
+              <DialogDescription className="text-[#b0b3b8] text-base">
+                Ten acceso rápido a tu cuenta, runas y pedidos directamente desde la pantalla de inicio de tu celular.
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Botones */}
+            <div className="space-y-3 mt-4">
+              <Button
                 onClick={handleInstall}
-                className="flex-1"
+                className="w-full bg-[#cc2525] hover:bg-[#cc2525]/90 text-white font-semibold py-6 text-base"
               >
-                Instalar
+                <Download className="mr-2 h-5 w-5" />
+                Instalar App
               </Button>
-              <Button 
-                size="sm" 
-                variant="ghost" 
+
+              <Button
                 onClick={handleDismiss}
+                variant="ghost"
+                className="w-full text-white/70 hover:text-white hover:bg-white/5"
               >
-                <X className="h-4 w-4" />
+                Ahora no
+              </Button>
+
+              <p className="text-xs text-[#b0b3b8] text-center mt-2">
+                Podrás instalar la app más tarde desde el menú de tu navegador
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            <DialogHeader className="items-center text-center space-y-4">
+              {/* Icono de compartir */}
+              <div className="mx-auto bg-[#cc2525]/10 p-4 rounded-full w-20 h-20 flex items-center justify-center">
+                <Share className="w-10 h-10 text-[#cc2525]" />
+              </div>
+
+              {/* Título */}
+              <DialogTitle className="text-2xl font-bold text-white">
+                Cómo instalar en tu dispositivo
+              </DialogTitle>
+            </DialogHeader>
+
+            {/* Instrucciones para iOS */}
+            <div className="space-y-4 mt-4">
+              <div className="bg-[#24262a] rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="bg-[#cc2525] text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                    1
+                  </div>
+                  <p className="text-white text-sm flex-1">
+                    Toca el botón de <span className="font-semibold">Compartir</span> <Share className="inline h-4 w-4" /> en la barra de navegación
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="bg-[#cc2525] text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                    2
+                  </div>
+                  <p className="text-white text-sm flex-1">
+                    Desplázate y selecciona <span className="font-semibold">"Añadir a pantalla de inicio"</span> <Plus className="inline h-4 w-4" />
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="bg-[#cc2525] text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                    3
+                  </div>
+                  <p className="text-white text-sm flex-1">
+                    Confirma para instalar la app
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleIOSUnderstood}
+                className="w-full bg-[#cc2525] hover:bg-[#cc2525]/90 text-white font-semibold py-6"
+              >
+                Entendido
               </Button>
             </div>
-          </div>
-        </div>
-      </Card>
-    </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
