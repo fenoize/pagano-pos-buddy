@@ -8,7 +8,8 @@ import { CashSessionModal } from './CashSessionModal';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { configuredSupabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
+import { setStaffContext } from '@/lib/dbContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,10 +74,13 @@ export function CashSessionTopBar() {
   };
 
   const handleToggleAppOrders = async (checked: boolean) => {
-    if (!currentSession) return;
+    if (!currentSession || !user) return;
 
     try {
-      const { error } = await configuredSupabase
+      // Establecer contexto de staff antes de actualizar
+      await setStaffContext(user.id);
+
+      const { error } = await supabase
         .from('cash_sessions')
         .update({ accept_app_orders: checked })
         .eq('id', currentSession.id);
