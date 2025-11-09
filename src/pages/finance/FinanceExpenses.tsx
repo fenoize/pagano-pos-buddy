@@ -16,13 +16,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, CalendarIcon, Paperclip, FileText, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, Paperclip, FileText, Download, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FinanceExpense } from '@/types/finance';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { formatDateShort } from '@/lib/dateUtils';
+import { Badge } from '@/components/ui/badge';
 
 const EXPENSE_TYPES = ['Variable', 'Inversión', 'Otro'];
 
@@ -666,23 +668,41 @@ export default function FinanceExpenses() {
                     <TableHead>Categoría</TableHead>
                     <TableHead>Proveedor</TableHead>
                     <TableHead>Método Pago</TableHead>
-                    <TableHead>Documento</TableHead>
+                    <TableHead>Notas</TableHead>
+                    <TableHead className="text-center">Doc</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredExpenses.map((expense) => (
                     <TableRow key={expense.id}>
-                      <TableCell>{format(new Date(expense.expense_date), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell className="font-medium">{formatDateShort(expense.expense_date)}</TableCell>
                       <TableCell>{expense.account?.name || '—'}</TableCell>
                       <TableCell className="text-right font-medium">{formatCurrency(Number(expense.amount))}</TableCell>
-                      <TableCell>{expense.expense_type}</TableCell>
-                      <TableCell>{expense.category}</TableCell>
-                      <TableCell>{expense.supplier || '—'}</TableCell>
-                      <TableCell>{expense.payment_method || '—'}</TableCell>
                       <TableCell>
+                        <Badge variant="secondary" className="text-xs">
+                          {expense.expense_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {expense.category}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{expense.supplier || '—'}</TableCell>
+                      <TableCell className="text-sm">{expense.payment_method || '—'}</TableCell>
+                      <TableCell className="max-w-[200px]">
+                        {expense.notes ? (
+                          <p className="text-sm text-muted-foreground truncate" title={expense.notes}>
+                            {expense.notes}
+                          </p>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
                         {expense.attachment_url ? (
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 justify-center">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -787,7 +807,7 @@ export default function FinanceExpenses() {
                             </Button>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
+                          <XCircle className="h-4 w-4 text-muted-foreground mx-auto" />
                         )}
                       </TableCell>
                       <TableCell className="text-right">
