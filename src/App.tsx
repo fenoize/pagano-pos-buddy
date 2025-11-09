@@ -34,6 +34,7 @@ const CustomerCheckout = lazy(() => import('@/pages/customer/CustomerCheckout'))
 const CustomerBenefits = lazy(() => import('@/pages/customer/CustomerBenefits'));
 const CustomerOrderTracking = lazy(() => import('@/pages/customer/CustomerOrderTracking'));
 const CustomerPaymentSuccess = lazy(() => import('@/pages/customer/CustomerPaymentSuccess'));
+const CustomerOrderSuccess = lazy(() => import('@/pages/customer/CustomerOrderSuccess'));
 const CustomerPaymentFailure = lazy(() => import('@/pages/customer/CustomerPaymentFailure'));
 const CustomerPaymentPending = lazy(() => import('@/pages/customer/CustomerPaymentPending'));
 const MyOrders = lazy(() => import('@/pages/customer/MyOrders'));
@@ -207,6 +208,12 @@ const App = () => (
               <Route path="/payment-success" element={
                 <CustomerProtectedRoute>
                   <CustomerPaymentSuccess />
+                </CustomerProtectedRoute>
+              } />
+              
+              <Route path="/order-success" element={
+                <CustomerProtectedRoute>
+                  <CustomerOrderSuccess />
                 </CustomerProtectedRoute>
               } />
               

@@ -7,52 +7,109 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2, Coins } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
+import { RunasPaymentSection } from '@/components/customer/RunasPaymentSection';
 import { useCart } from '@/contexts/CartContext';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
+import { useOnlineOrderSettings } from '@/hooks/useOnlineOrderSettings';
+import { createRunasOrder } from '@/lib/integrations/runasPayment';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function CustomerCheckout() {
   const navigate = useNavigate();
-  const { items, subtotal } = useCart();
+  const { items, subtotal, clearCart } = useCart();
   const { customer } = useCustomerAuth();
-  const { loading, createPaymentAndRedirect } = useMercadoPago();
+  const { loading: mpLoading, createPaymentAndRedirect } = useMercadoPago();
+  const { settings: paymentSettings } = useOnlineOrderSettings();
   const [notes, setNotes] = useState('');
   const [canOrder, setCanOrder] = useState(true);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mercadopago' | 'runas'>('mercadopago');
+  const [runasToUse, setRunasToUse] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [processingRunas, setProcessingRunas] = useState(false);
+
+  const mpEnabled = paymentSettings?.mp_payment_enabled ?? true;
+  const runasEnabled = paymentSettings?.runas_payment_enabled ?? true;
 
   useEffect(() => {
     if (items.length === 0) {
       navigate('/cart');
       return;
     }
-  }, []);
+
+    // Si solo hay un método habilitado, seleccionarlo automáticamente
+    if (mpEnabled && !runasEnabled) {
+      setSelectedPaymentMethod('mercadopago');
+    } else if (!mpEnabled && runasEnabled) {
+      setSelectedPaymentMethod('runas');
+    }
+  }, [items.length, mpEnabled, runasEnabled, navigate]);
 
   const handlePayment = async () => {
     if (!canOrder) {
+      toast.error('No se pueden procesar pedidos en este momento');
+      return;
+    }
+
+    if (!customer) {
+      toast.error('Debes iniciar sesión para continuar');
       return;
     }
 
     try {
-      await createPaymentAndRedirect({
-        items: items.map(item => ({
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          basePrice: item.basePrice,
-          selectedExtras: item.selectedExtras,
-          selectedModifiers: item.selectedModifiers,
-          selectedVariant: item.selectedVariant
-        })),
-        customer_id: customer?.id,
-        notes: notes || 'Pedido desde app cliente'
-      });
+      if (selectedPaymentMethod === 'mercadopago') {
+        // Flujo de MercadoPago (redirección)
+        await createPaymentAndRedirect({
+          items: items.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            basePrice: item.basePrice,
+            selectedExtras: item.selectedExtras,
+            selectedModifiers: item.selectedModifiers,
+            selectedVariant: item.selectedVariant
+          })),
+          customer_id: customer.id,
+          notes: notes || 'Pedido desde app cliente'
+        });
+      } else if (selectedPaymentMethod === 'runas') {
+        // Flujo de Runas (sin redirección)
+        setProcessingRunas(true);
+        
+        const result = await createRunasOrder({
+          items,
+          customer_id: customer.id,
+          notes: notes || 'Pedido pagado con runas',
+          runas_to_use: runasToUse,
+          discount_amount: discountAmount
+        });
+
+        if (result.success) {
+          clearCart();
+          toast.success('¡Pedido confirmado exitosamente!');
+          navigate(`/order-success?order=${result.order_number}`);
+        }
+      }
     } catch (error: any) {
-      console.error('Error creating payment:', error);
+      console.error('Error processing payment:', error);
+      toast.error(error.message || 'Error al procesar el pago');
+    } finally {
+      setProcessingRunas(false);
     }
   };
+
+  const handleRunasCalculated = (runas: number, discount: number) => {
+    setRunasToUse(runas);
+    setDiscountAmount(discount);
+  };
+
+  const canPayWithRunas = customer && (customer.cantidad_runas || 0) >= runasToUse;
+  const loading = mpLoading || processingRunas;
 
   return (
     <div className="customer-app min-h-screen pb-20 bg-background">
@@ -125,6 +182,78 @@ export default function CustomerCheckout() {
           </CardContent>
         </Card>
 
+        {/* Payment Method Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Método de Pago</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!mpEnabled && !runasEnabled ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No hay métodos de pago disponibles en este momento
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                {(mpEnabled && runasEnabled) ? (
+                  <Tabs value={selectedPaymentMethod} onValueChange={(v) => setSelectedPaymentMethod(v as 'mercadopago' | 'runas')}>
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="mercadopago" className="gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        MercadoPago
+                      </TabsTrigger>
+                      <TabsTrigger value="runas" className="gap-2">
+                        <Coins className="h-4 w-4" />
+                        Runas
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="mercadopago" className="mt-4">
+                      <div className="space-y-3 text-sm text-muted-foreground">
+                        <p>• Paga con tarjetas de crédito/débito</p>
+                        <p>• Proceso seguro a través de MercadoPago</p>
+                        <p>• Serás redirigido para completar el pago</p>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="runas" className="mt-4">
+                      {customer && (
+                        <RunasPaymentSection
+                          customerRunas={customer.cantidad_runas || 0}
+                          subtotal={subtotal}
+                          onRunasCalculated={handleRunasCalculated}
+                        />
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                ) : (
+                  <>
+                    {mpEnabled && (
+                      <div className="space-y-3 text-sm text-muted-foreground">
+                        <p className="font-semibold flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" />
+                          MercadoPago
+                        </p>
+                        <p>• Paga con tarjetas de crédito/débito</p>
+                        <p>• Proceso seguro a través de MercadoPago</p>
+                      </div>
+                    )}
+                    {runasEnabled && customer && (
+                      <RunasPaymentSection
+                        customerRunas={customer.cantidad_runas || 0}
+                        subtotal={subtotal}
+                        onRunasCalculated={handleRunasCalculated}
+                      />
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Order Summary */}
         <Card>
           <CardHeader>
@@ -152,7 +281,7 @@ export default function CustomerCheckout() {
           size="lg"
           className="w-full"
           onClick={handlePayment}
-          disabled={loading || !canOrder}
+          disabled={loading || !canOrder || (selectedPaymentMethod === 'runas' && !canPayWithRunas)}
         >
           {loading ? (
             <>
@@ -161,14 +290,25 @@ export default function CustomerCheckout() {
             </>
           ) : (
             <>
-              <CreditCard className="h-4 w-4 mr-2" />
-              Pagar con MercadoPago
+              {selectedPaymentMethod === 'mercadopago' ? (
+                <>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Pagar con MercadoPago
+                </>
+              ) : (
+                <>
+                  <Coins className="h-4 w-4 mr-2" />
+                  Confirmar Pedido con Runas
+                </>
+              )}
             </>
           )}
         </Button>
 
         <p className="text-xs text-center text-muted-foreground">
-          Al confirmar serás redirigido a MercadoPago para completar el pago de forma segura
+          {selectedPaymentMethod === 'mercadopago' 
+            ? 'Al confirmar serás redirigido a MercadoPago para completar el pago de forma segura'
+            : 'Al confirmar, las runas se descontarán de tu saldo y tu pedido será procesado inmediatamente'}
         </p>
       </div>
       <CustomerBottomNav />

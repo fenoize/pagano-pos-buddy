@@ -1830,7 +1830,9 @@ export type Database = {
           mp_client_secret: string | null
           mp_enabled: boolean
           mp_mode: string
+          mp_payment_enabled: boolean | null
           mp_public_key: string | null
+          runas_payment_enabled: boolean | null
           updated_at: string
         }
         Insert: {
@@ -1843,7 +1845,9 @@ export type Database = {
           mp_client_secret?: string | null
           mp_enabled?: boolean
           mp_mode?: string
+          mp_payment_enabled?: boolean | null
           mp_public_key?: string | null
+          runas_payment_enabled?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -1856,7 +1860,9 @@ export type Database = {
           mp_client_secret?: string | null
           mp_enabled?: boolean
           mp_mode?: string
+          mp_payment_enabled?: boolean | null
           mp_public_key?: string | null
+          runas_payment_enabled?: boolean | null
           updated_at?: string
         }
         Relationships: []

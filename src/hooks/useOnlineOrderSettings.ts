@@ -13,6 +13,8 @@ export interface OnlineOrderSettings {
   mp_public_key: string | null;
   mp_client_id: string | null;
   mp_client_secret: string | null;
+  runas_payment_enabled: boolean;
+  mp_payment_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -145,6 +147,20 @@ export function useOnlineOrderSettings() {
     return updateSettings({ mp_public_key: publicKey });
   };
 
+  /**
+   * Toggle para activar/desactivar pagos con Runas en app cliente
+   */
+  const toggleRunasPayment = async (enabled: boolean) => {
+    return updateSettings({ runas_payment_enabled: enabled });
+  };
+
+  /**
+   * Toggle para activar/desactivar pagos con MercadoPago en app cliente
+   */
+  const toggleMPPaymentMethod = async (enabled: boolean) => {
+    return updateSettings({ mp_payment_enabled: enabled });
+  };
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -157,6 +173,8 @@ export function useOnlineOrderSettings() {
     toggleAppOrders,
     toggleMercadoPago,
     setMPMode,
-    setMPPublicKey
+    setMPPublicKey,
+    toggleRunasPayment,
+    toggleMPPaymentMethod
   };
 }

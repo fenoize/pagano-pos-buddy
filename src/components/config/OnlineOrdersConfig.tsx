@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useOnlineOrderSettings } from '@/hooks/useOnlineOrderSettings';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { MPDiagnostics } from '@/components/config/MPDiagnostics';
-import { Smartphone, CreditCard, ShoppingBag, Truck, Info, Save } from 'lucide-react';
+import { Smartphone, CreditCard, ShoppingBag, Truck, Info, Save, Coins } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function OnlineOrdersConfig() {
@@ -25,7 +25,9 @@ export function OnlineOrdersConfig() {
     mp_mode: 'sandbox' as 'sandbox' | 'production',
     mp_public_key: '',
     mp_client_id: '',
-    mp_client_secret: ''
+    mp_client_secret: '',
+    runas_payment_enabled: true,
+    mp_payment_enabled: true
   });
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -39,7 +41,9 @@ export function OnlineOrdersConfig() {
         mp_mode: settings.mp_mode,
         mp_public_key: settings.mp_public_key || '',
         mp_client_id: settings.mp_client_id || '',
-        mp_client_secret: settings.mp_client_secret || ''
+        mp_client_secret: settings.mp_client_secret || '',
+        runas_payment_enabled: settings.runas_payment_enabled ?? true,
+        mp_payment_enabled: settings.mp_payment_enabled ?? true
       });
     }
   }, [settings]);
@@ -274,6 +278,86 @@ export function OnlineOrdersConfig() {
       {localSettings.mp_enabled && (
         <MPDiagnostics />
       )}
+
+      {/* Payment Methods for Customer App */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-primary" />
+            <CardTitle>Métodos de Pago para Clientes</CardTitle>
+          </div>
+          <CardDescription>
+            Configura qué métodos de pago pueden usar los clientes en la app
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Al menos un método de pago debe estar habilitado para que los clientes puedan realizar pedidos.
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="mp_payment_enabled" className="text-base font-medium flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Pago con MercadoPago
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Permite pagos con tarjetas y otros métodos de MercadoPago
+              </p>
+            </div>
+            <Switch
+              id="mp_payment_enabled"
+              checked={localSettings.mp_payment_enabled}
+              onCheckedChange={(checked) => {
+                if (!checked && !localSettings.runas_payment_enabled) {
+                  toast.error('Debe haber al menos un método de pago habilitado');
+                  return;
+                }
+                handleChange('mp_payment_enabled', checked);
+              }}
+              disabled={!localSettings.app_orders_enabled || !localSettings.mp_enabled || !isAdmin || loading}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="runas_payment_enabled" className="text-base font-medium flex items-center gap-2">
+                <Coins className="h-4 w-4" />
+                Pago con Runas
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Los clientes pueden usar sus runas acumuladas para pagar
+              </p>
+            </div>
+            <Switch
+              id="runas_payment_enabled"
+              checked={localSettings.runas_payment_enabled}
+              onCheckedChange={(checked) => {
+                if (!checked && !localSettings.mp_payment_enabled) {
+                  toast.error('Debe haber al menos un método de pago habilitado');
+                  return;
+                }
+                handleChange('runas_payment_enabled', checked);
+              }}
+              disabled={!localSettings.app_orders_enabled || !isAdmin || loading}
+            />
+          </div>
+
+          {localSettings.runas_payment_enabled && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-2 text-sm">
+              <p className="font-medium">Información sobre el pago con Runas:</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
+                <li>3 runas = valor de 1 runa en pesos para descuentos</li>
+                <li>Los pedidos pagados con runas se confirman inmediatamente</li>
+                <li>Las runas se descuentan del saldo al momento del pago</li>
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {hasChanges && (
         <div className="sticky bottom-4 flex justify-end">
