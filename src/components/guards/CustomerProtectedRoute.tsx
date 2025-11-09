@@ -15,6 +15,11 @@ export function CustomerProtectedRoute({ children }: { children: React.ReactNode
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  // Verificar si el email está confirmado
+  if (user && !user.email_confirmed_at) {
+    return <Navigate to="/verify-email" state={{ email: user.email }} replace />;
+  }
   
   return <>{children}</>;
 }

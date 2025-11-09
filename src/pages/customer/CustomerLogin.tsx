@@ -96,10 +96,10 @@ export default function CustomerLogin() {
       setSignupCaptchaToken(null);
     } else {
       toast.success('¡Cuenta creada exitosamente!', {
-        description: 'Ya puedes iniciar sesión',
+        description: 'Revisa tu correo para verificar tu cuenta',
       });
-      // Cambiar a tab de login
-      document.querySelector<HTMLButtonElement>('[value="login"]')?.click();
+      // Redirigir a la pantalla de verificación
+      navigate('/verify-email', { state: { email: signupEmail } });
     }
 
     setLoading(false);

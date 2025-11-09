@@ -27,6 +27,7 @@ import { Footer } from "@/components/ui/footer";
 // Customer Pages
 const CustomerLogin = lazy(() => import('@/pages/customer/CustomerLogin'));
 const CustomerResetPassword = lazy(() => import('@/pages/customer/CustomerResetPassword'));
+const VerifyEmail = lazy(() => import('@/pages/customer/VerifyEmail'));
 const CustomerPortal = lazy(() => import('@/pages/customer/CustomerPortal'));
 const CustomerMenu = lazy(() => import('@/pages/customer/CustomerMenu'));
 const CustomerCart = lazy(() => import('@/pages/customer/CustomerCart'));
@@ -147,6 +148,7 @@ const App = () => (
               {/* ==================== CUSTOMER ROUTES (ROOT) ==================== */}
               <Route path="/" element={<SmartRootRedirect />} />
               <Route path="/login" element={<CustomerLogin />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<CustomerResetPassword />} />
               
               <Route path="/portal" element={
