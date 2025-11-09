@@ -52,6 +52,16 @@ export async function getStoreStatus(): Promise<StoreStatus> {
 export async function createMPPreference(
   params: CreateMPPreferenceParams
 ): Promise<CreateMPPreferenceResponse> {
+  // Calcular el total del pedido
+  const total = params.items.reduce((sum, item) => {
+    return sum + (item.basePrice * item.quantity);
+  }, 0);
+  
+  // Validar que el total no sea cero
+  if (total <= 0) {
+    throw new Error('No se puede procesar un pago de $0 con MercadoPago. Por favor verifica tu pedido.');
+  }
+  
   const { data, error } = await configuredSupabase.functions.invoke(
     'customer-create-mp-preference',
     {

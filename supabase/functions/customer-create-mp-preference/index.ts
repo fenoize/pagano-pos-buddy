@@ -74,6 +74,17 @@ serve(async (req) => {
     
     console.log('💰 Subtotal calculated:', subtotal);
     
+    // Validar que el total no sea cero (MercadoPago no acepta pagos de $0)
+    if (subtotal <= 0) {
+      console.warn('⚠️ Cannot process $0 payment with MercadoPago');
+      return new Response(
+        JSON.stringify({ 
+          error: 'No se puede procesar un pago de $0 con MercadoPago. Por favor verifica tu pedido.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // 3. CREAR ORDEN EN DB con status='Pendiente'
     const orderData = {
       customer_id: customer_id || null,
