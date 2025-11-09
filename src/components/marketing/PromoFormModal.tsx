@@ -8,7 +8,8 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MarketingPromotion } from '@/hooks/useMarketingPromotions';
-import { useAppProducts } from '@/hooks/useAppProducts';
+import { useAllProducts } from '@/hooks/useAllProducts';
+import { ImageUpload } from '@/components/pos/ImageUpload';
 import { format } from 'date-fns';
 
 interface PromoFormModalProps {
@@ -29,7 +30,7 @@ const CTA_TYPE_OPTIONS = [
 ];
 
 export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalProps) {
-  const { data: products, isLoading: productsLoading } = useAppProducts();
+  const { data: products, isLoading: productsLoading } = useAllProducts();
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
@@ -233,12 +234,10 @@ export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalP
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="image_url">URL de imagen (opcional)</Label>
-            <Input
-              id="image_url"
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://..."
+            <ImageUpload
+              imageUrl={formData.image_url}
+              onImageChange={(url) => setFormData({ ...formData, image_url: url || '' })}
+              productName="promoción"
             />
           </div>
 
