@@ -3,6 +3,7 @@ import { useFinanceExpenses } from '@/hooks/useFinanceExpenses';
 import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { useAuth } from '@/hooks/useAuth';
 import { SupplierSelect } from '@/components/finance/SupplierSelect';
+import { ExpenseSettingsModal } from '@/components/finance/ExpenseSettingsModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -10,18 +11,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, CalendarIcon, Paperclip, FileText, Settings } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, Paperclip } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FinanceExpense } from '@/types/finance';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const EXPENSE_TYPES = ['Variable', 'Inversión', 'Otro'];
@@ -36,12 +35,13 @@ export default function FinanceExpenses() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<FinanceExpense | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('form');
   
-  // Categorías dinámicas
+  // Categorías y métodos de pago dinámicos
   const [expenseCategories, setExpenseCategories] = useState<string[]>([]);
-  const [newCategory, setNewCategory] = useState('');
-  const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
+  
+  // Documentación opcional
+  const [includeDocumentation, setIncludeDocumentation] = useState(false);
   
   // Filters
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
@@ -60,22 +60,9 @@ export default function FinanceExpenses() {
     payment_method: '',
     document_type: '',
     document_number: '',
+    attachment_url: '',
     notes: '',
   });
-
-  // Función para auto-calcular método de pago según tipo de cuenta
-  const getPaymentMethodFromAccount = (accountId: string): string => {
-    const selectedAccount = accounts.find((a) => a.id === accountId);
-    if (!selectedAccount) return '';
-
-    const methodMap: Record<string, string> = {
-      'Banco': 'Transferencia',
-      'Efectivo': 'Efectivo',
-      'Digital': 'App / Link',
-    };
-
-    return methodMap[selectedAccount.type] || 'Efectivo';
-  };
 
   const isAdmin = user?.role === 'Administrador';
   const activeAccounts = accounts.filter(a => a.is_active);
@@ -99,55 +86,27 @@ export default function FinanceExpenses() {
       setExpenseCategories(defaultCategories);
       localStorage.setItem('expense_categories', JSON.stringify(defaultCategories));
     }
+
+    const savedMethods = localStorage.getItem('expense_payment_methods');
+    if (savedMethods) {
+      setPaymentMethods(JSON.parse(savedMethods));
+    } else {
+      const defaultMethods = ['Efectivo', 'Transferencia', 'App / Link', 'Tarjeta Débito', 'Tarjeta Crédito'];
+      setPaymentMethods(defaultMethods);
+      localStorage.setItem('expense_payment_methods', JSON.stringify(defaultMethods));
+    }
   }, []);
 
   // Guardar categorías en localStorage cuando cambien
-  const saveCategories = (categories: string[]) => {
+  const handleCategoriesChange = (categories: string[]) => {
     setExpenseCategories(categories);
     localStorage.setItem('expense_categories', JSON.stringify(categories));
   };
 
-  const addCategory = () => {
-    if (!newCategory.trim()) return;
-    if (expenseCategories.includes(newCategory.trim())) {
-      toast({
-        title: 'Error',
-        description: 'Esta categoría ya existe',
-        variant: 'destructive',
-      });
-      return;
-    }
-    const updated = [...expenseCategories, newCategory.trim()];
-    saveCategories(updated);
-    setNewCategory('');
-    toast({
-      title: 'Categoría agregada',
-      description: `La categoría "${newCategory.trim()}" se agregó correctamente`,
-    });
-  };
-
-  const deleteCategory = (index: number) => {
-    const categoryToDelete = expenseCategories[index];
-    if (!confirm(`¿Eliminar la categoría "${categoryToDelete}"?`)) return;
-    
-    const updated = expenseCategories.filter((_, i) => i !== index);
-    saveCategories(updated);
-    toast({
-      title: 'Categoría eliminada',
-      description: `La categoría "${categoryToDelete}" se eliminó correctamente`,
-    });
-  };
-
-  const updateCategory = (index: number, newName: string) => {
-    if (!newName.trim()) return;
-    const updated = [...expenseCategories];
-    updated[index] = newName.trim();
-    saveCategories(updated);
-    setEditingCategoryIndex(null);
-    toast({
-      title: 'Categoría actualizada',
-      description: 'La categoría se actualizó correctamente',
-    });
+  // Guardar métodos de pago en localStorage cuando cambien
+  const handlePaymentMethodsChange = (methods: string[]) => {
+    setPaymentMethods(methods);
+    localStorage.setItem('expense_payment_methods', JSON.stringify(methods));
   };
 
   // Formatear monto con separador de miles
@@ -190,13 +149,9 @@ export default function FinanceExpenses() {
   };
 
   const handleOpenDialog = (expense?: FinanceExpense) => {
-    setActiveTab('form');
+    setIncludeDocumentation(false);
     if (expense) {
       setEditingExpense(expense);
-      const autoPaymentMethod = expense.account_id 
-        ? getPaymentMethodFromAccount(expense.account_id)
-        : '';
-      
       setFormData({
         expense_date: expense.expense_date,
         account_id: expense.account_id,
@@ -204,9 +159,10 @@ export default function FinanceExpenses() {
         expense_type: expense.expense_type,
         category: expense.category,
         supplier: expense.supplier || '',
-        payment_method: autoPaymentMethod,
+        payment_method: expense.payment_method || paymentMethods[0] || '',
         document_type: '',
         document_number: '',
+        attachment_url: '',
         notes: expense.notes || '',
       });
     } else {
@@ -218,23 +174,16 @@ export default function FinanceExpenses() {
         expense_type: 'Variable',
         category: '',
         supplier: '',
-        payment_method: '',
+        payment_method: paymentMethods[0] || '',
         document_type: '',
         document_number: '',
+        attachment_url: '',
         notes: '',
       });
     }
     setIsDialogOpen(true);
   };
 
-  const handleAccountChange = (accountId: string) => {
-    const autoMethod = getPaymentMethodFromAccount(accountId);
-    setFormData({
-      ...formData,
-      account_id: accountId,
-      payment_method: autoMethod,
-    });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,6 +241,12 @@ export default function FinanceExpenses() {
               Estos gastos se incluyen automáticamente en los cierres financieros.
             </p>
           </div>
+          <ExpenseSettingsModal
+            categories={expenseCategories}
+            paymentMethods={paymentMethods}
+            onCategoriesChange={handleCategoriesChange}
+            onPaymentMethodsChange={handlePaymentMethodsChange}
+          />
         </div>
       </div>
 
@@ -302,159 +257,164 @@ export default function FinanceExpenses() {
               Nuevo Egreso
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingExpense ? 'Editar Egreso' : 'Nuevo Egreso'}
               </DialogTitle>
             </DialogHeader>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="form">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Formulario
-                </TabsTrigger>
-                <TabsTrigger value="categories">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Gestionar Categorías
-                </TabsTrigger>
-              </TabsList>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="expense_date">Fecha *</Label>
+                  <Input
+                    id="expense_date"
+                    type="date"
+                    value={formData.expense_date}
+                    onChange={(e) => setFormData({ ...formData, expense_date: e.target.value })}
+                    required
+                  />
+                </div>
 
-              <TabsContent value="form" className="space-y-4 mt-4">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="expense_date">Fecha *</Label>
-                      <Input
-                        id="expense_date"
-                        type="date"
-                        value={formData.expense_date}
-                        onChange={(e) => setFormData({ ...formData, expense_date: e.target.value })}
-                        required
-                      />
-                    </div>
+                <div>
+                  <Label htmlFor="account_id">Cuenta *</Label>
+                  <Select
+                    value={formData.account_id}
+                    onValueChange={(accountId) => setFormData({ ...formData, account_id: accountId })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar cuenta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeAccounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name} ({account.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-                    <div>
-                      <Label htmlFor="account_id">Cuenta *</Label>
-                      <Select
-                        value={formData.account_id}
-                        onValueChange={handleAccountChange}
-                        required
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar cuenta" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {activeAccounts.map((account) => (
-                            <SelectItem key={account.id} value={account.id}>
-                              {account.name} ({account.type})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="amount">Monto (CLP) *</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                        <Input
-                          id="amount"
-                          type="text"
-                          value={formatAmount(formData.amount)}
-                          onChange={handleAmountChange}
-                          placeholder="0"
-                          className="pl-8"
-                          required
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Formato automático con separador de miles
-                      </p>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="expense_type">Tipo de Gasto *</Label>
-                      <Select
-                        value={formData.expense_type}
-                        onValueChange={(value: any) => setFormData({ ...formData, expense_type: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {EXPENSE_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="category">Categoría *</Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="amount">Monto (CLP) *</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="amount"
+                      type="text"
+                      value={formatAmount(formData.amount)}
+                      onChange={handleAmountChange}
+                      placeholder="0"
+                      className="pl-8"
                       required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar categoría" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {expenseCategories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      ¿No encuentras tu categoría? Agrégala en la pestaña "Gestionar Categorías"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Formato automático con separador de miles
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="expense_type">Tipo de Gasto *</Label>
+                  <Select
+                    value={formData.expense_type}
+                    onValueChange={(value: any) => setFormData({ ...formData, expense_type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPENSE_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="category">Categoría *</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {expenseCategories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="payment_method">Método de Pago *</Label>
+                  <Select
+                    value={formData.payment_method}
+                    onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar método" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentMethods.map((method) => (
+                        <SelectItem key={method} value={method}>{method}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="supplier">Proveedor</Label>
+                <SupplierSelect
+                  value={formData.supplier}
+                  onValueChange={(supplierId, supplierName) =>
+                    setFormData({ ...formData, supplier: supplierName })
+                  }
+                />
+              </div>
+
+              {/* Switch de Documentación */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="documentation-switch" className="text-base font-medium flex items-center">
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Incluir Documentación
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Agrega información sobre boleta, factura o documento de respaldo
                     </p>
                   </div>
+                  <Switch
+                    id="documentation-switch"
+                    checked={includeDocumentation}
+                    onCheckedChange={setIncludeDocumentation}
+                  />
+                </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="supplier">Proveedor</Label>
-                      <SupplierSelect
-                        value={formData.supplier}
-                        onValueChange={(supplierId, supplierName) =>
-                          setFormData({ ...formData, supplier: supplierName })
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="payment_method">Método de Pago</Label>
-                      <Input
-                        id="payment_method"
-                        value={formData.payment_method}
-                        readOnly
-                        disabled
-                        className="bg-muted cursor-not-allowed"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Auto-asignado según la cuenta seleccionada
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <h4 className="font-medium mb-3 flex items-center">
-                      <Paperclip className="h-4 w-4 mr-2" />
-                      Documentación
-                    </h4>
+                {includeDocumentation && (
+                  <div className="space-y-4 pt-4 border-t">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="document_type">Tipo de Documento</Label>
+                        <Label htmlFor="document_type">Tipo de Documento *</Label>
                         <Select
                           value={formData.document_type}
                           onValueChange={(value) => setFormData({ ...formData, document_type: value })}
+                          required={includeDocumentation}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Opcional" />
+                            <SelectValue placeholder="Seleccionar tipo" />
                           </SelectTrigger>
                           <SelectContent>
                             {DOCUMENT_TYPES.map((type) => (
@@ -465,134 +425,65 @@ export default function FinanceExpenses() {
                       </div>
 
                       <div>
-                        <Label htmlFor="document_number">Nº de Boleta / Factura</Label>
+                        <Label htmlFor="document_number">Nº de Boleta / Factura *</Label>
                         <Input
                           id="document_number"
                           value={formData.document_number}
                           onChange={(e) => setFormData({ ...formData, document_number: e.target.value })}
                           placeholder="ej: 12345678"
+                          required={includeDocumentation}
                         />
                       </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <Label htmlFor="notes">Notas</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      rows={3}
-                      placeholder="Detalles adicionales del gasto..."
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit">
-                      {editingExpense ? 'Guardar Cambios' : 'Registrar Egreso'}
-                    </Button>
-                  </div>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="categories" className="space-y-4 mt-4">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Agregar Nueva Categoría</h4>
-                    <div className="flex gap-2">
-                      <Input
-                        value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value)}
-                        placeholder="Nombre de la categoría"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addCategory();
-                          }
-                        }}
-                      />
-                      <Button type="button" onClick={addCategory}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Agregar
-                      </Button>
+                    <div>
+                      <Label htmlFor="attachment">Adjuntar Documento (Opcional)</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          id="attachment"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="flex-1"
+                          onChange={(e) => {
+                            // TODO: Implement file upload to Supabase Storage
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              toast({
+                                title: 'Pendiente',
+                                description: 'La subida de archivos estará disponible próximamente',
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Formatos: PDF, JPG, PNG (máx 5MB)
+                      </p>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  <div>
-                    <h4 className="font-medium mb-2">Categorías Existentes</h4>
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                      {expenseCategories.map((category, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                          {editingCategoryIndex === index ? (
-                            <Input
-                              value={category}
-                              onChange={(e) => {
-                                const updated = [...expenseCategories];
-                                updated[index] = e.target.value;
-                                setExpenseCategories(updated);
-                              }}
-                              onBlur={() => updateCategory(index, category)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  updateCategory(index, category);
-                                }
-                                if (e.key === 'Escape') {
-                                  setEditingCategoryIndex(null);
-                                }
-                              }}
-                              autoFocus
-                              className="flex-1 mr-2"
-                            />
-                          ) : (
-                            <span className="flex-1">{category}</span>
-                          )}
-                          <div className="flex gap-1">
-                            {editingCategoryIndex === index ? (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => updateCategory(index, category)}
-                              >
-                                Guardar
-                              </Button>
-                            ) : (
-                              <>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEditingCategoryIndex(index)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteCategory(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+              <div>
+                <Label htmlFor="notes">Notas</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows={3}
+                  placeholder="Detalles adicionales del gasto..."
+                />
+              </div>
 
-                  <div className="flex justify-end pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={() => setActiveTab('form')}>
-                      Volver al Formulario
-                    </Button>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  {editingExpense ? 'Guardar Cambios' : 'Registrar Egreso'}
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
 
