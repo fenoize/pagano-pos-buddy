@@ -127,7 +127,7 @@ serve(async (req) => {
         failure: `${APP_URL}/payment-failure?order=${order.id}`,
         pending: `${APP_URL}/payment-pending?order=${order.id}`
       },
-      auto_return: 'approved',
+      auto_return: 'all',
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
       statement_descriptor: 'PAGANOS BURGER',
       payer: customer_id ? {
