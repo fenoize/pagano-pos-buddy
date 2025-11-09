@@ -84,7 +84,7 @@ serve(async (req) => {
       total: subtotal,
       discount: 0,
       delivery_fee: 0,
-      status: 'PendientePago',
+      status: 'Pendiente',
       payment_method: 'mp',
       payment_mp: 0,
       notes: notes || 'Pedido desde app cliente',

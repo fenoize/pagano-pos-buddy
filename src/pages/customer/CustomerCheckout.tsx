@@ -199,12 +199,12 @@ export default function CustomerCheckout() {
               <>
                 {(mpEnabled && runasEnabled) ? (
                   <Tabs value={selectedPaymentMethod} onValueChange={(v) => setSelectedPaymentMethod(v as 'mercadopago' | 'runas')}>
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="mercadopago" className="gap-2">
+                    <TabsList className="w-full flex flex-row">
+                      <TabsTrigger value="mercadopago" className="flex-1 gap-2">
                         <CreditCard className="h-4 w-4" />
                         MercadoPago
                       </TabsTrigger>
-                      <TabsTrigger value="runas" className="gap-2">
+                      <TabsTrigger value="runas" className="flex-1 gap-2">
                         <Coins className="h-4 w-4" />
                         Runas
                       </TabsTrigger>
