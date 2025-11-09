@@ -19,25 +19,16 @@ export function useOnlineOrderSettings() {
   const [loading, setLoading] = useState(false);
 
   /**
-   * Cargar configuración actual
+   * Cargar configuración actual usando RPC
    */
   const fetchSettings = async () => {
     setLoading(true);
     try {
       const supabase = getConfiguredSupabase();
       const { data, error } = await supabase
-        .from('online_order_settings')
-        .select('*')
-        .limit(1)
-        .single();
+        .rpc('get_online_order_settings');
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No existe registro, crear uno por defecto
-          return await createDefaultSettings();
-        }
-        throw error;
-      }
+      if (error) throw error;
 
       setSettings(data as unknown as OnlineOrderSettings);
       return data as unknown as OnlineOrderSettings;
@@ -50,53 +41,18 @@ export function useOnlineOrderSettings() {
     }
   };
 
-  /**
-   * Crear configuración por defecto
-   */
-  const createDefaultSettings = async () => {
-    try {
-      const supabase = getConfiguredSupabase();
-      const { data, error } = await supabase
-        .from('online_order_settings')
-        .insert({
-          app_orders_enabled: false,
-          app_pickup_enabled: true,
-          app_delivery_enabled: false,
-          mp_enabled: false,
-          mp_mode: 'sandbox',
-          mp_public_key: null
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setSettings(data as unknown as OnlineOrderSettings);
-      return data as unknown as OnlineOrderSettings;
-    } catch (error: any) {
-      console.error('Error creating default settings:', error);
-      throw error;
-    }
-  };
 
   /**
-   * Actualizar configuración
+   * Actualizar configuración usando RPC
    */
   const updateSettings = async (updates: Partial<OnlineOrderSettings>) => {
-    if (!settings) return;
-
     setLoading(true);
     try {
       const supabase = getConfiguredSupabase();
       const { data, error } = await supabase
-        .from('online_order_settings')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', settings.id)
-        .select()
-        .single();
+        .rpc('update_online_order_settings', {
+          p_settings: updates
+        });
 
       if (error) throw error;
 

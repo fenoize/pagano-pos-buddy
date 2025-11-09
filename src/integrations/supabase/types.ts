@@ -3582,6 +3582,7 @@ export type Database = {
         Args: { p_raw_material_id: string }
         Returns: string
       }
+      get_online_order_settings: { Args: never; Returns: Json }
       get_store_status: { Args: never; Returns: Json }
       has_active_staff_session: { Args: never; Returns: boolean }
       has_orders_in_last_4_weeks: {
@@ -3680,6 +3681,10 @@ export type Database = {
         Returns: boolean
       }
       staff_has_permission: { Args: { perm: string }; Returns: boolean }
+      update_online_order_settings: {
+        Args: { p_settings: Json }
+        Returns: Json
+      }
       update_order_status: {
         Args: {
           p_new_status: Database["public"]["Enums"]["order_status"]
