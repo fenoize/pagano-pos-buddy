@@ -68,7 +68,7 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-lg">#{order.order_number}</h4>
+            <h4 className="font-semibold text-lg text-foreground">#{order.order_number}</h4>
             <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
           </div>
           <Badge variant="outline">
@@ -90,7 +90,7 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
       <CardContent>
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">{formatDateTime(order.created_at)}</p>
-          <p className="text-2xl font-bold">{formatCLP(order.total)}</p>
+          <p className="text-2xl font-bold text-foreground">{formatCLP(order.total)}</p>
         </div>
 
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -107,11 +107,11 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
             <div className="mt-4 space-y-4">
               {/* Items del pedido */}
               <div className="space-y-2">
-                <h5 className="font-medium text-sm">Productos:</h5>
+                <h5 className="font-medium text-sm text-foreground">Productos:</h5>
                 {order.items.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm border-b pb-2">
                     <div className="flex-1">
-                      <p className="font-medium">
+                      <p className="font-medium text-foreground">
                         {item.quantity}x {item.name}
                       </p>
                       {item.variant && (
@@ -133,7 +133,7 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
                         </p>
                       )}
                     </div>
-                    <span className="font-medium">{formatCLP(item.total)}</span>
+                    <span className="font-medium text-foreground">{formatCLP(item.total)}</span>
                   </div>
                 ))}
               </div>
@@ -144,7 +144,7 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
                   <div className="flex items-start gap-2">
                     <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium">Dirección de entrega:</p>
+                      <p className="text-sm font-medium text-foreground">Dirección de entrega:</p>
                       <p className="text-sm text-muted-foreground">
                         {order.delivery_address} {order.delivery_number}
                         <br />
