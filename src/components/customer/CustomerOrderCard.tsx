@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Store, Truck, RefreshCw, MapPin } from 'lucide-react';
+import { ChevronDown, Store, Truck, RefreshCw, MapPin, Eye } from 'lucide-react';
 import { formatCLP } from '@/lib/utils';
 import { formatDateTime } from '@/lib/dateUtils';
 
@@ -58,6 +59,9 @@ const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructiv
 
 export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const isOrderActive = !['Entregado', 'Cancelado'].includes(order.status);
 
   return (
     <Card>
@@ -166,15 +170,26 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
                 </div>
               )}
 
-              {/* Botón reorden */}
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => onReorder(order.id)}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Volver a pedir
-              </Button>
+              {/* Botones de acción */}
+              <div className="flex gap-2">
+                {isOrderActive && (
+                  <Button
+                    className="flex-1"
+                    onClick={() => navigate(`/track/${order.id}`)}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Ver seguimiento
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  className={isOrderActive ? 'flex-1' : 'w-full'}
+                  onClick={() => onReorder(order.id)}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Volver a pedir
+                </Button>
+              </div>
             </div>
           </CollapsibleContent>
         </Collapsible>

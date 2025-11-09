@@ -123,9 +123,9 @@ serve(async (req) => {
       }],
       external_reference: order.id,
       back_urls: {
-        success: `${APP_URL}/my-orders?status=success&order_id=${order.id}`,
-        failure: `${APP_URL}/my-orders?status=failure&order_id=${order.id}`,
-        pending: `${APP_URL}/my-orders?status=pending&order_id=${order.id}`
+        success: `${APP_URL}/track/${order.id}?status=success`,
+        failure: `${APP_URL}/track/${order.id}?status=failure`,
+        pending: `${APP_URL}/track/${order.id}?status=pending`
       },
       auto_return: 'approved',
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,

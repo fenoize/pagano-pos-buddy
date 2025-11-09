@@ -31,6 +31,7 @@ const CustomerMenu = lazy(() => import('@/pages/customer/CustomerMenu'));
 const CustomerCart = lazy(() => import('@/pages/customer/CustomerCart'));
 const CustomerCheckout = lazy(() => import('@/pages/customer/CustomerCheckout'));
 const CustomerBenefits = lazy(() => import('@/pages/customer/CustomerBenefits'));
+const CustomerOrderTracking = lazy(() => import('@/pages/customer/CustomerOrderTracking'));
 const MyOrders = lazy(() => import('@/pages/customer/MyOrders'));
 const MyAddresses = lazy(() => import('@/pages/customer/MyAddresses'));
 const MyRunes = lazy(() => import('@/pages/customer/MyRunes'));
@@ -175,6 +176,12 @@ const App = () => (
               <Route path="/my-orders" element={
                 <CustomerProtectedRoute>
                   <MyOrders />
+                </CustomerProtectedRoute>
+              } />
+              
+              <Route path="/track/:orderId" element={
+                <CustomerProtectedRoute>
+                  <CustomerOrderTracking />
                 </CustomerProtectedRoute>
               } />
               
