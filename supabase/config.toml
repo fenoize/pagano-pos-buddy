@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.staff-list-customers]
 verify_jwt = false
+
+[functions.customer-create-mp-preference]
+verify_jwt = false
+
+[functions.mp-webhook]
+verify_jwt = false
