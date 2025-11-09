@@ -47,10 +47,10 @@ export default function CustomerPortal() {
 
   if (loading || levelLoading) {
     return (
-      <div className="min-h-screen pb-20 bg-background">
+      <div className="customer-app min-h-screen pb-20 bg-background">
         <div className="max-w-screen-xl mx-auto p-4 space-y-6">
           {/* Skeleton para header */}
-          <Card className="border-border/50 bg-card/50">
+          <Card className="border-border bg-card">
             <CardContent className="p-6 space-y-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
@@ -115,7 +115,7 @@ export default function CustomerPortal() {
   return (
     <div
       ref={containerRef}
-      className="min-h-screen pb-20 bg-gradient-to-b from-background to-muted/20 relative"
+      className="customer-app min-h-screen pb-20 bg-background relative"
     >
       {/* Indicador de pull-to-refresh */}
       {(pullDistance > 0 || isRefreshing) && (
@@ -136,42 +136,42 @@ export default function CustomerPortal() {
 
       <div className="max-w-screen-xl mx-auto p-4 space-y-6">
         {/* Header con perfil */}
-        <Card className="border-border/50 bg-card/50 backdrop-blur">
+        <Card className="border-border bg-card">
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                  <User className="h-8 w-8 text-primary-foreground" />
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center ring-2 ring-primary/30">
+                  <User className="h-8 w-8 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">{customer.name || customer.nombres}</h2>
+                  <h2 className="text-2xl font-bold text-foreground">{customer.name || customer.nombres}</h2>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={handleSignOut}>
+              <Button variant="ghost" size="icon" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground">
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
 
             {/* Runas y Nivel */}
             <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <div className="flex items-center gap-3 bg-background/50 rounded-lg p-3">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                   <Flame className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Runas</p>
-                  <p className="text-2xl font-bold">{runas}</p>
+                  <p className="text-2xl font-bold text-foreground">{runas}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <div className="flex items-center gap-3 bg-background/50 rounded-lg p-3">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                   <Award className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Nivel</p>
-                  <p className="text-lg font-bold">{levelName}</p>
+                  <p className="text-lg font-bold text-foreground">{levelName}</p>
                 </div>
               </div>
             </div>
@@ -181,21 +181,21 @@ export default function CustomerPortal() {
               <div className="mt-4 space-y-2">
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Progreso al siguiente nivel</span>
-                  <span>{Math.round(progressPercent)}%</span>
+                  <span className="text-primary font-semibold">{Math.round(progressPercent)}%</span>
                 </div>
-                <Progress value={progressPercent} className="h-2" />
+                <Progress value={progressPercent} className="h-2 bg-muted" />
                 <p className="text-xs text-muted-foreground">
-                  {nextLevelPoints - runas} runas para {customerLevel?.next_level_name}
+                  <span className="text-primary font-semibold">{nextLevelPoints - runas}</span> runas para {customerLevel?.next_level_name}
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Botón principal de acción */}
+        {/* Botón principal de acción - CTA destacado */}
         <Button
           size="lg"
-          className="w-full h-16 text-lg shadow-lg hover:shadow-xl transition-shadow"
+          className="w-full h-16 text-lg shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
           onClick={() => navigate('/menu')}
         >
           <UtensilsCrossed className="h-6 w-6 mr-3" />
@@ -203,18 +203,22 @@ export default function CustomerPortal() {
           <ArrowRight className="h-5 w-5 ml-auto" />
         </Button>
 
-        {/* Promoción destacada - TODO: hacer configurable */}
-        <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+        {/* Promoción destacada */}
+        <Card className="overflow-hidden border-border bg-card">
           <CardContent className="p-0">
-            <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/30 flex items-center justify-center">
+            <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border">
               <Flame className="h-24 w-24 text-primary" />
             </div>
             <div className="p-6">
-              <h3 className="text-xl font-bold mb-2">¡Promoción Especial!</h3>
+              <h3 className="text-xl font-bold text-foreground mb-2">¡Promoción Especial!</h3>
               <p className="text-muted-foreground mb-4">
                 Descubre nuestras ofertas exclusivas del día
               </p>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/menu')}>
+              <Button 
+                variant="outline" 
+                className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
+                onClick={() => navigate('/menu')}
+              >
                 Ver Menú
               </Button>
             </div>
@@ -224,42 +228,42 @@ export default function CustomerPortal() {
         {/* Accesos rápidos */}
         <div className="grid gap-3 grid-cols-2">
           <Card 
-            className="hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
             onClick={() => navigate('/my-orders')}
           >
             <CardContent className="p-4 text-center">
               <ShoppingBag className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold text-sm">Mis Pedidos</h3>
+              <h3 className="font-semibold text-sm text-foreground">Mis Pedidos</h3>
             </CardContent>
           </Card>
 
           <Card 
-            className="hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
             onClick={() => navigate('/my-addresses')}
           >
             <CardContent className="p-4 text-center">
               <MapPin className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold text-sm">Direcciones</h3>
+              <h3 className="font-semibold text-sm text-foreground">Direcciones</h3>
             </CardContent>
           </Card>
 
           <Card 
-            className="hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
             onClick={() => navigate('/my-runes')}
           >
             <CardContent className="p-4 text-center">
               <Flame className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold text-sm">Mis Runas</h3>
+              <h3 className="font-semibold text-sm text-foreground">Mis Runas</h3>
             </CardContent>
           </Card>
 
           <Card 
-            className="hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
             onClick={() => navigate('/my-badges')}
           >
             <CardContent className="p-4 text-center">
               <Award className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold text-sm">Insignias</h3>
+              <h3 className="font-semibold text-sm text-foreground">Insignias</h3>
             </CardContent>
           </Card>
         </div>

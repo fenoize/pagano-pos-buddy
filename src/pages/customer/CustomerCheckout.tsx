@@ -55,7 +55,7 @@ export default function CustomerCheckout() {
   };
 
   return (
-    <div className="min-h-screen pb-20 bg-background">
+    <div className="customer-app min-h-screen pb-20 bg-background">
       <div className="max-w-screen-xl mx-auto p-4 space-y-4">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <CreditCard className="h-8 w-8" />

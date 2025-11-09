@@ -106,8 +106,8 @@ export default function CustomerLogin() {
   };
 
   return (
-    <div className="dark-pagano min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-card">
-      <Card className="w-full max-w-md border-border/50 shadow-2xl">
+    <div className="customer-app min-h-screen flex items-center justify-center p-4 bg-background">
+      <Card className="w-full max-w-md border-border shadow-2xl bg-card">
         <CardHeader className="space-y-3 text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
             <Flame className="h-8 w-8 text-primary" />

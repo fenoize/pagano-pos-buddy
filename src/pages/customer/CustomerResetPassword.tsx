@@ -29,7 +29,7 @@ export default function CustomerResetPassword() {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-card">
+      <div className="customer-app min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
           <p className="text-muted-foreground">Verificando enlace...</p>
@@ -39,7 +39,7 @@ export default function CustomerResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-card">
+    <div className="customer-app min-h-screen flex items-center justify-center bg-background">
       <CustomerResetPasswordModal isOpen={isValidToken} />
     </div>
   );

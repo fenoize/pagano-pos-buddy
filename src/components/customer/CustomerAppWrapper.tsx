@@ -16,7 +16,7 @@ export function CustomerAppWrapper({ children }: CustomerAppWrapperProps) {
   return (
     <>
       <CustomerSplashScreen isLoading={isLoading} />
-      <div style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s' }}>
+      <div className="customer-app" style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s' }}>
         {children}
       </div>
     </>

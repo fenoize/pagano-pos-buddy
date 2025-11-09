@@ -56,18 +56,18 @@ export default function CustomerPaymentPending() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="customer-app min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="max-w-md w-full">
+    <div className="customer-app min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="max-w-md w-full bg-card border-border">
         <CardContent className="pt-6 space-y-6 text-center">
           <div className="flex justify-center">
-            <Clock className="h-20 w-20 text-orange-500 animate-pulse" />
+            <Clock className="h-20 w-20 text-warning animate-pulse" />
           </div>
 
           <div className="space-y-2">
@@ -93,7 +93,7 @@ export default function CustomerPaymentPending() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Estado:</span>
-                <span className="font-semibold text-orange-600">
+                <span className="font-semibold text-warning">
                   Verificando pago...
                 </span>
               </div>

@@ -33,8 +33,8 @@ export function CustomerLayout({ children, title, showBackButton = true }: Custo
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20">
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="customer-app min-h-screen bg-background flex flex-col pb-20">
+      <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
             {showBackButton && (
@@ -64,7 +64,7 @@ export function CustomerLayout({ children, title, showBackButton = true }: Custo
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-card border-border z-50">
                 <div className="flex items-center gap-2 p-2">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={customer?.avatar_url || undefined} />

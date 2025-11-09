@@ -112,21 +112,21 @@ export default function CustomerOrderTracking() {
   const getStatusIcon = (status: OrderStatus) => {
     switch (status) {
       case 'Pendiente':
-        return <Clock className="h-8 w-8 text-orange-500" />;
+        return <Clock className="h-8 w-8 text-warning" />;
       case 'En preparación':
-        return <ChefHat className="h-8 w-8 text-blue-500 animate-pulse" />;
+        return <ChefHat className="h-8 w-8 text-primary animate-pulse" />;
       case 'En pausa':
-        return <AlertCircle className="h-8 w-8 text-yellow-500" />;
+        return <AlertCircle className="h-8 w-8 text-warning" />;
       case 'Listo':
-        return <Package className="h-8 w-8 text-green-500" />;
+        return <Package className="h-8 w-8 text-success" />;
       case 'En camino':
-        return <Truck className="h-8 w-8 text-purple-500" />;
+        return <Truck className="h-8 w-8 text-primary" />;
       case 'Entregado':
-        return <CheckCircle2 className="h-8 w-8 text-green-600" />;
+        return <CheckCircle2 className="h-8 w-8 text-success" />;
       case 'Cancelado':
-        return <XCircle className="h-8 w-8 text-red-500" />;
+        return <XCircle className="h-8 w-8 text-destructive" />;
       default:
-        return <Clock className="h-8 w-8" />;
+        return <Clock className="h-8 w-8 text-muted-foreground" />;
     }
   };
 
@@ -176,7 +176,7 @@ export default function CustomerOrderTracking() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pb-20 bg-background flex items-center justify-center">
+      <div className="customer-app min-h-screen pb-20 bg-background flex items-center justify-center">
         <div className="text-center">
           <ChefHat className="h-16 w-16 animate-pulse text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Cargando pedido...</p>
@@ -188,7 +188,7 @@ export default function CustomerOrderTracking() {
 
   if (error || !order) {
     return (
-      <div className="min-h-screen pb-20 bg-background">
+      <div className="customer-app min-h-screen pb-20 bg-background">
         <div className="max-w-screen-xl mx-auto p-4">
           <Alert variant="destructive" className="mb-4">
             <XCircle className="h-4 w-4" />
@@ -205,7 +205,7 @@ export default function CustomerOrderTracking() {
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-background">
+    <div className="customer-app min-h-screen pb-20 bg-background">
       <div className="max-w-screen-xl mx-auto p-4 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -218,18 +218,18 @@ export default function CustomerOrderTracking() {
 
         {/* Payment Status Alert */}
         {paymentStatus === 'success' && (
-          <Alert className="border-green-500/50 bg-green-500/10">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800 dark:text-green-200">
+          <Alert className="border-success/50 bg-success/10">
+            <CheckCircle2 className="h-4 w-4 text-success" />
+            <AlertDescription className="text-foreground">
               ¡Pago confirmado! Tu pedido ha sido recibido y se está preparando.
             </AlertDescription>
           </Alert>
         )}
         
         {paymentStatus === 'pending' && (
-          <Alert className="border-yellow-500/50 bg-yellow-500/10">
-            <Clock className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+          <Alert className="border-warning/50 bg-warning/10">
+            <Clock className="h-4 w-4 text-warning" />
+            <AlertDescription className="text-foreground">
               Tu pago está pendiente de confirmación. Te notificaremos cuando se confirme.
             </AlertDescription>
           </Alert>

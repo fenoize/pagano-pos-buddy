@@ -58,30 +58,43 @@ All colors MUST be HSL and themed for light/dark modes.
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  /* Dark Pagano Theme - Portal de Clientes */
-  .dark-pagano {
-    --background: 0 0% 8%;
-    --foreground: 0 0% 95%;
+  /* Customer App Theme - Paleta oficial Paganos Burger
+     Rojo primario: #cc2525
+     Fondo: #1c1e21
+     Card/Surface: #24262a
+     Blanco: #ffffff
+     Texto secundario: #b0b3b8
+  */
+  .customer-app {
+    /* Fondo principal: Negro Paganos #1c1e21 */
+    --background: 210 8% 13%;
+    --foreground: 0 0% 100%; /* Blanco puro para texto principal */
 
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 95%;
+    /* Cards y contenedores: #24262a - ligeramente más claro */
+    --card: 210 8% 15%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 95%;
+    /* Popovers y dropdowns */
+    --popover: 210 8% 15%;
+    --popover-foreground: 0 0% 100%;
 
-    /* Primary red con glow effect */
-    --primary: 14 86% 55%;
+    /* Rojo primario Paganos #cc2525 */
+    --primary: 0 80% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 16%;
-    --secondary-foreground: 0 0% 90%;
+    /* Secondary: card color para botones secundarios */
+    --secondary: 210 8% 18%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 16%;
-    --muted-foreground: 0 0% 60%;
+    /* Muted: para elementos deshabilitados/secundarios */
+    --muted: 210 8% 18%;
+    --muted-foreground: 210 6% 69%; /* #b0b3b8 - gris secundario */
 
-    --accent: 14 86% 55%;
+    /* Accent: mismo rojo para consistencia */
+    --accent: 0 80% 48%;
     --accent-foreground: 0 0% 100%;
 
+    /* Estados */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
@@ -91,9 +104,10 @@ All colors MUST be HSL and themed for light/dark modes.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 14 86% 55%;
+    /* Bordes e inputs: sutiles sobre fondo oscuro */
+    --border: 210 8% 22%;
+    --input: 210 8% 22%;
+    --ring: 0 80% 48%; /* Rojo Paganos para focus */
 
     --radius: 0.75rem;
   }

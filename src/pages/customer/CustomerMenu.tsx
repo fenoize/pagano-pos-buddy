@@ -150,7 +150,7 @@ export default function CustomerMenu() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pb-20 bg-background">
+      <div className="customer-app min-h-screen pb-20 bg-background">
         <div className="max-w-screen-xl mx-auto p-4 space-y-6">
           <Skeleton className="h-10 w-48" />
           <div className="flex gap-2 overflow-x-auto pb-2">
@@ -170,7 +170,7 @@ export default function CustomerMenu() {
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-background">
+    <div className="customer-app min-h-screen pb-20 bg-background">
       <div className="max-w-screen-xl mx-auto p-4 space-y-6">
         {/* Header */}
         <div>
