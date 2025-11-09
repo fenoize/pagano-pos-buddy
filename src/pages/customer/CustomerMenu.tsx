@@ -315,6 +315,7 @@ export default function CustomerMenu() {
           onClose={() => setShowCustomization(false)}
           product={selectedProduct as any}
           onAddToCart={handleAddToCart}
+          hideComboToggle={true}
         />
       )}
 

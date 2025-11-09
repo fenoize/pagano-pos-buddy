@@ -35,9 +35,10 @@ interface ProductCustomizationModalProps {
   product: Product;
   editingItem?: any;
   editingIndex?: number;
+  hideComboToggle?: boolean; // Ocultar selector Individual/Combo (para app de cliente)
 }
 
-export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, product, editingItem, editingIndex }: ProductCustomizationModalProps) {
+export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, product, editingItem, editingIndex, hideComboToggle = false }: ProductCustomizationModalProps) {
   // New variant system state
   const [availableVariants, setAvailableVariants] = useState<ProductVariantOption[]>([]);
   const [selectedVariantOption, setSelectedVariantOption] = useState<ProductVariantOption | null>(null);
@@ -177,6 +178,10 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       if (comboData) {
         setHasCombo(true);
         setComboConfig(comboData as ComboProduct);
+        // Si estamos en app de cliente y hay combo, usarlo automáticamente
+        if (hideComboToggle) {
+          setUseCombo(true);
+        }
       }
     } catch (error) {
       console.error('Error fetching combo configuration:', error);
@@ -378,8 +383,8 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
 
         {/* Scrollable customization area */}
         <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-          {/* Combo Selection */}
-          {hasCombo && (
+          {/* Combo Selection - Solo visible en POS, no en app de cliente */}
+          {hasCombo && !hideComboToggle && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Tipo de Pedido</CardTitle>
