@@ -110,19 +110,26 @@ serve(async (req) => {
         status: newStatus,
         payment_mp: payment.transaction_amount,
         payment_method: 'mp',
-        notes: `${currentOrder.notes || ''}\n\nPago MercadoPago ID: ${payment.id}\nEstado: ${payment.status}\nMétodo: ${payment.payment_method_id}`.trim()
+        notes: `${currentOrder.notes || ''}\n\n✅ Pago confirmado\nMP ID: ${payment.id}\nMétodo: ${payment.payment_method_id || 'N/A'}\nMonto: $${payment.transaction_amount}`.trim()
       };
-    } else if (payment.status === 'pending') {
-      console.log('⏳ Payment pending');
+    } else if (payment.status === 'pending' || payment.status === 'in_process') {
+      console.log('⏳ Payment pending or in process');
       updateData = {
-        notes: `${currentOrder.notes || ''}\n\nPago MercadoPago ID: ${payment.id}\nEstado pendiente: ${payment.status_detail}`.trim()
+        notes: `${currentOrder.notes || ''}\n\n⏳ Pago pendiente\nMP ID: ${payment.id}\nDetalle: ${payment.status_detail || 'En proceso'}`.trim()
       };
     } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
       console.log('❌ Payment rejected/cancelled - cancelling order');
       newStatus = 'Cancelado';
       updateData = {
         status: newStatus,
-        notes: `${currentOrder.notes || ''}\n\nPago MercadoPago ID: ${payment.id}\nEstado: ${payment.status}\nRazón: ${payment.status_detail}`.trim()
+        notes: `${currentOrder.notes || ''}\n\n❌ Pago ${payment.status === 'rejected' ? 'rechazado' : 'cancelado'}\nMP ID: ${payment.id}\nRazón: ${payment.status_detail || 'No especificada'}`.trim()
+      };
+    } else if (payment.status === 'refunded' || payment.status === 'charged_back') {
+      console.log('💸 Payment refunded or charged back');
+      newStatus = 'Cancelado';
+      updateData = {
+        status: newStatus,
+        notes: `${currentOrder.notes || ''}\n\n💸 Pago ${payment.status === 'refunded' ? 'reembolsado' : 'contracargado'}\nMP ID: ${payment.id}`.trim()
       };
     }
     
