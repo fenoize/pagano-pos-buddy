@@ -57,15 +57,36 @@ export default function CustomerMenu() {
       // Fetch products that are active and visible in app
       const { data: productsData, error: productsError } = await configuredSupabase
         .from('products')
-        .select('*, categories(*)')
+        .select(`
+          *,
+          product_categories!inner(
+            category_id,
+            categories!inner(
+              id,
+              name,
+              show_in_app
+            )
+          )
+        `)
         .eq('active', true)
         .eq('show_in_app', true)
+        .eq('product_categories.categories.show_in_app', true)
         .order('name', { ascending: true });
 
       if (productsError) throw productsError;
 
       setCategories(categoriesData || []);
-      setProducts(productsData || []);
+      
+      // Transform products data to flatten categories
+      const transformedProducts = productsData?.map(product => ({
+        ...product,
+        categories: product.product_categories?.map((pc: any) => ({
+          id: pc.categories.id,
+          name: pc.categories.name
+        })) || []
+      })) || [];
+      
+      setProducts(transformedProducts);
     } catch (error: any) {
       console.error('Error fetching menu data:', error);
       toast.error('Error al cargar el menú');
