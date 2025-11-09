@@ -3408,6 +3408,7 @@ export type Database = {
         }[]
       }
       generate_simple_hash: { Args: { password: string }; Returns: string }
+      get_active_staff_user_id: { Args: never; Returns: string }
       get_current_customer_id: { Args: never; Returns: string }
       get_current_staff_user_from_token: { Args: never; Returns: string }
       get_current_staff_user_id: { Args: never; Returns: string }
@@ -3510,6 +3511,7 @@ export type Database = {
         Args: { new_password: string; user_uuid: string }
         Returns: boolean
       }
+      staff_has_permission: { Args: { perm: string }; Returns: boolean }
       update_order_status: {
         Args: {
           p_new_status: Database["public"]["Enums"]["order_status"]
