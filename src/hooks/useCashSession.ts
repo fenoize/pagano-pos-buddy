@@ -476,6 +476,12 @@ export function useCashSession() {
     }
   };
 
+  const updateCurrentSessionLocally = (updates: Partial<CashSession>) => {
+    if (currentSession) {
+      setCurrentSession({ ...currentSession, ...updates });
+    }
+  };
+
   return {
     currentSession,
     loading,
@@ -491,6 +497,7 @@ export function useCashSession() {
     logSessionAudit,
     updateCashMovement,
     deleteCashMovement,
-    addCashMovementToClosedSession
+    addCashMovementToClosedSession,
+    updateCurrentSessionLocally
   };
 }

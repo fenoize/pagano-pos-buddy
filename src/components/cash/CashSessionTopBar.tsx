@@ -20,7 +20,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function CashSessionTopBar() {
-  const { currentSession, hasActiveSession, checkActiveSession, getSessionSummary } = useCashSession();
+  const { 
+    currentSession, 
+    hasActiveSession, 
+    checkActiveSession, 
+    getSessionSummary,
+    updateCurrentSessionLocally 
+  } = useCashSession();
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'open' | 'close' | 'movement'>('open');
   const [sessionSummary, setSessionSummary] = useState<any>(null);
@@ -87,8 +93,10 @@ export function CashSessionTopBar() {
 
       if (error) throw error;
 
+      // Actualizar ambos estados locales inmediatamente
+      // para evitar loop de sincronización
       setAcceptAppOrders(checked);
-      await checkActiveSession();
+      updateCurrentSessionLocally({ accept_app_orders: checked });
       
       toast({
         title: checked ? "✅ Recibiendo pedidos desde app" : "⏸️ App pausada",
