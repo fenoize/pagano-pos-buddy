@@ -403,13 +403,8 @@ export default function FinanceExpenses() {
         </CardContent>
       </Card>
 
+      {/* Dialog Modal */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Egreso
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -768,6 +763,14 @@ export default function FinanceExpenses() {
             <div className="text-2xl font-bold">{formatCurrency(kpis.average)}</div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Nuevo Egreso Button */}
+      <div className="flex justify-end">
+        <Button onClick={() => handleOpenDialog()}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nuevo Egreso
+        </Button>
       </div>
 
       {/* Table */}
