@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { configuredSupabase } from '@/lib/supabaseClient';
+import { getConfiguredSupabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 
 export interface OnlineOrderSettings {
@@ -24,7 +24,8 @@ export function useOnlineOrderSettings() {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const { data, error } = await configuredSupabase
+      const supabase = getConfiguredSupabase();
+      const { data, error } = await supabase
         .from('online_order_settings')
         .select('*')
         .limit(1)
@@ -54,7 +55,8 @@ export function useOnlineOrderSettings() {
    */
   const createDefaultSettings = async () => {
     try {
-      const { data, error } = await configuredSupabase
+      const supabase = getConfiguredSupabase();
+      const { data, error } = await supabase
         .from('online_order_settings')
         .insert({
           app_orders_enabled: false,
@@ -85,7 +87,8 @@ export function useOnlineOrderSettings() {
 
     setLoading(true);
     try {
-      const { data, error } = await configuredSupabase
+      const supabase = getConfiguredSupabase();
+      const { data, error } = await supabase
         .from('online_order_settings')
         .update({
           ...updates,
