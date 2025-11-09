@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useCustomerLevel } from '@/hooks/useCustomerLevel';
+import { useActivePromotion } from '@/hooks/useMarketingPromotions';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -16,6 +17,7 @@ export default function CustomerPortal() {
   const navigate = useNavigate();
   const { user, customer, loading, signOut, refreshCustomerData } = useCustomerAuth();
   const { data: customerLevel, isLoading: levelLoading, refetch: refetchLevel } = useCustomerLevel(customer?.id);
+  const { data: activePromo, isLoading: promoLoading } = useActivePromotion();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -112,6 +114,37 @@ export default function CustomerPortal() {
     ? Math.min(100, ((runas - minPoints) / (nextLevelPoints - minPoints)) * 100)
     : 100;
 
+  const handlePromoAction = () => {
+    if (!activePromo) return;
+
+    switch (activePromo.cta_type) {
+      case 'open_menu':
+        navigate('/menu');
+        break;
+      case 'open_cart':
+        navigate('/cart');
+        break;
+      case 'open_orders':
+        navigate('/my-orders');
+        break;
+      case 'open_benefits':
+        navigate('/benefits');
+        break;
+      case 'open_custom_url':
+        if (activePromo.cta_url) {
+          if (activePromo.cta_url.startsWith('http')) {
+            window.open(activePromo.cta_url, '_blank');
+          } else {
+            navigate(activePromo.cta_url);
+          }
+        }
+        break;
+      case 'none':
+      default:
+        break;
+    }
+  };
+
   return (
     <div
       ref={containerRef}
@@ -203,27 +236,48 @@ export default function CustomerPortal() {
           <ArrowRight className="h-5 w-5 ml-auto" />
         </Button>
 
-        {/* Promoción destacada */}
-        <Card className="overflow-hidden border-border bg-card">
-          <CardContent className="p-0">
-            <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border">
-              <Flame className="h-24 w-24 text-primary" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-foreground mb-2">¡Promoción Especial!</h3>
-              <p className="text-muted-foreground mb-4">
-                Descubre nuestras ofertas exclusivas del día
-              </p>
-              <Button 
-                variant="outline" 
-                className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
-                onClick={() => navigate('/menu')}
-              >
-                Ver Menú
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Promoción destacada - dinámica desde BD */}
+        {!promoLoading && activePromo && (
+          <Card className="overflow-hidden border-border bg-card">
+            <CardContent className="p-0">
+              {activePromo.image_url ? (
+                <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border">
+                  <img 
+                    src={activePromo.image_url} 
+                    alt={activePromo.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border">
+                  <Flame className="h-24 w-24 text-primary" />
+                </div>
+              )}
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-foreground mb-2">{activePromo.title}</h3>
+                {activePromo.subtitle && (
+                  <p className="text-muted-foreground mb-4">
+                    {activePromo.subtitle}
+                  </p>
+                )}
+                {activePromo.description && (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {activePromo.description}
+                  </p>
+                )}
+                {activePromo.cta_type !== 'none' && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
+                    onClick={handlePromoAction}
+                  >
+                    {activePromo.cta_label || 'Ver más'}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Accesos rápidos */}
         <div className="grid gap-3 grid-cols-2">

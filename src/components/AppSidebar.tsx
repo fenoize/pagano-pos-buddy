@@ -25,7 +25,8 @@ import {
   Star,
   DollarSign,
   FileText as FileTextIcon,
-  Building2
+  Building2,
+  Megaphone
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -88,6 +89,11 @@ const financeItems = [
   { title: "Delivery", url: "/pos/finanzas/exportaciones", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
 ];
 
+// Marketing menu items
+const marketingItems = [
+  { title: "Promos App", url: "/pos/marketing/promos-app", icon: Megaphone, roles: ['Administrador'] },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
@@ -98,6 +104,9 @@ export function AppSidebar() {
   );
   const [financeOpen, setFinanceOpen] = useState(
     currentPath.startsWith("/pos/finanzas")
+  );
+  const [marketingOpen, setMarketingOpen] = useState(
+    currentPath.startsWith("/pos/marketing")
   );
 
   const isCollapsed = state === "collapsed";
@@ -234,6 +243,61 @@ export function AppSidebar() {
                     {!isCollapsed && (
                       <CollapsibleContent className="mt-1 space-y-1">
                         {financeItems
+                          .filter(item => canAccessRoute(item.roles as AppRole[]))
+                          .map((item) => (
+                          <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton asChild>
+                              <NavLink
+                                to={item.url}
+                                end
+                                className={({ isActive }) =>
+                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
+                                }
+                              >
+                                <item.icon className="h-3 w-3 shrink-0" />
+                                <span className="text-xs">{item.title}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </CollapsibleContent>
+                    )}
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
+              
+              {/* Marketing Collapsible Group */}
+              {canAccessRoute(['Administrador'] as AppRole[]) && (
+                <Collapsible
+                  open={marketingOpen}
+                  onOpenChange={setMarketingOpen}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                          currentPath.startsWith("/pos/marketing")
+                            ? "bg-primary text-primary-foreground font-semibold"
+                            : "text-primary hover:bg-primary hover:text-primary-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Megaphone className="h-4 w-4 shrink-0" />
+                          {!isCollapsed && <span>Marketing</span>}
+                        </div>
+                        {!isCollapsed && (
+                          marketingOpen ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    {!isCollapsed && (
+                      <CollapsibleContent className="mt-1 space-y-1">
+                        {marketingItems
                           .filter(item => canAccessRoute(item.roles as AppRole[]))
                           .map((item) => (
                           <SidebarMenuItem key={item.title}>

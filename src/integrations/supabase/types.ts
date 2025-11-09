@@ -1650,6 +1650,75 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_app_promotions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          cta_label: string | null
+          cta_type: string
+          cta_url: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          priority: number
+          start_date: string | null
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_type?: string
+          cta_url?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          priority?: number
+          start_date?: string | null
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_type?: string
+          cta_url?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          priority?: number
+          start_date?: string | null
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_app_promotions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_app_promotions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       online_order_settings: {
         Row: {
           app_delivery_enabled: boolean

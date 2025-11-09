@@ -56,6 +56,7 @@ const FidelizacionHub = lazy(() => import("@/pages/FidelizacionHub"));
 const ConfiguracionPage = lazy(() => import("@/pages/ConfiguracionPage"));
 const PermisosManagement = lazy(() => import("@/pages/PermisosManagement"));
 const CierresDiarios = lazy(() => import("@/pages/CierresDiarios"));
+const MarketingPromosApp = lazy(() => import("@/pages/MarketingPromosApp"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 // Inventory Pages
@@ -458,6 +459,14 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <PermisosManagement />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/marketing/promos-app" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <MarketingPromosApp />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />
