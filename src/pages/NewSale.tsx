@@ -94,7 +94,8 @@ export default function NewSale() {
               )
             )
           `)
-          .eq('active', true),
+          .eq('active', true)
+          .eq('show_in_pos', true),
         supabase.from('config').select('key, value').in('key', ['runa_value', 'runa_reward_value'])
       ]);
 

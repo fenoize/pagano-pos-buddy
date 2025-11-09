@@ -28,7 +28,9 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
   const [formData, setFormData] = useState({
     name: '',
     active: true,
-    image_url: ''
+    image_url: '',
+    show_in_pos: true,
+    show_in_app: true
   });
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('general');
@@ -40,7 +42,9 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
       setFormData({
         name: product.name,
         active: product.active,
-        image_url: product.image_url || ''
+        image_url: product.image_url || '',
+        show_in_pos: (product as any).show_in_pos ?? true,
+        show_in_app: (product as any).show_in_app ?? true
       });
       
       // Cargar categorías del producto
@@ -171,7 +175,9 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
     setFormData({
       name: '',
       active: true,
-      image_url: ''
+      image_url: '',
+      show_in_pos: true,
+      show_in_app: true
     });
     setSelectedCategories([]);
     setActiveTab('general');
@@ -243,6 +249,28 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
                   onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
                 />
                 <Label htmlFor="active">Producto activo</Label>
+              </div>
+
+              <div className="space-y-3 border-t pt-4">
+                <h4 className="text-sm font-medium">Visibilidad</h4>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show_in_pos"
+                    checked={formData.show_in_pos}
+                    onCheckedChange={(checked) => setFormData({ ...formData, show_in_pos: checked })}
+                  />
+                  <Label htmlFor="show_in_pos">Mostrar en POS</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show_in_app"
+                    checked={formData.show_in_app}
+                    onCheckedChange={(checked) => setFormData({ ...formData, show_in_app: checked })}
+                  />
+                  <Label htmlFor="show_in_app">Mostrar en App Cliente</Label>
+                </div>
               </div>
             </TabsContent>
 

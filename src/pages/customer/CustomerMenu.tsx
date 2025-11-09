@@ -44,11 +44,12 @@ export default function CustomerMenu() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch categories
+      // Fetch categories visible in app
       const { data: categoriesData, error: categoriesError } = await configuredSupabase
         .from('categories')
         .select('*')
         .eq('active', true)
+        .eq('show_in_app', true)
         .order('display_order', { ascending: true });
 
       if (categoriesError) throw categoriesError;

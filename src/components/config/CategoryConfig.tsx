@@ -149,7 +149,9 @@ export function CategoryConfig() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    active: true
+    active: true,
+    show_in_pos: true,
+    show_in_app: true
   });
   const { toast } = useToast();
   const { config, updateGridColumns } = usePOSConfig();
@@ -357,7 +359,9 @@ export function CategoryConfig() {
     setFormData({
       name: category.name,
       description: category.description || '',
-      active: category.active
+      active: category.active,
+      show_in_pos: (category as any).show_in_pos ?? true,
+      show_in_app: (category as any).show_in_app ?? true
     });
     setIsDialogOpen(true);
   };
@@ -372,7 +376,9 @@ export function CategoryConfig() {
     setFormData({
       name: '',
       description: '',
-      active: true
+      active: true,
+      show_in_pos: true,
+      show_in_app: true
     });
   };
 
@@ -460,7 +466,29 @@ export function CategoryConfig() {
                     checked={formData.active}
                     onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
                   />
-                  <Label htmlFor="active">Categoría activa (visible en el POS)</Label>
+                  <Label htmlFor="active">Categoría activa</Label>
+                </div>
+
+                <div className="space-y-3 border-t pt-4">
+                  <h4 className="text-sm font-medium">Visibilidad</h4>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="show_in_pos"
+                      checked={formData.show_in_pos}
+                      onCheckedChange={(checked) => setFormData({ ...formData, show_in_pos: checked })}
+                    />
+                    <Label htmlFor="show_in_pos">Mostrar en POS</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="show_in_app"
+                      checked={formData.show_in_app}
+                      onCheckedChange={(checked) => setFormData({ ...formData, show_in_app: checked })}
+                    />
+                    <Label htmlFor="show_in_app">Mostrar en App Cliente</Label>
+                  </div>
                 </div>
 
                 <div className="flex gap-2">

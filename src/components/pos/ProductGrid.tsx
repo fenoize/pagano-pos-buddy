@@ -70,6 +70,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         .from('categories')
         .select('id, name, is_default')
         .eq('active', true)
+        .eq('show_in_pos', true)
         .order('display_order', { ascending: true });
 
       if (error) throw error;
@@ -139,7 +140,8 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
             product_categories!inner(category_id)
           `)
           .in('product_categories.category_id', categoryIds)
-          .eq('active', true),
+          .eq('active', true)
+          .eq('show_in_pos', true),
         
         supabase
           .from('product_variant_options')

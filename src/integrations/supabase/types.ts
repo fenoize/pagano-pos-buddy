@@ -245,6 +245,8 @@ export type Database = {
           id: string
           is_default: boolean
           name: string
+          show_in_app: boolean | null
+          show_in_pos: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -255,6 +257,8 @@ export type Database = {
           id?: string
           is_default?: boolean
           name: string
+          show_in_app?: boolean | null
+          show_in_pos?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -265,6 +269,8 @@ export type Database = {
           id?: string
           is_default?: boolean
           name?: string
+          show_in_app?: boolean | null
+          show_in_pos?: boolean | null
           updated_at?: string | null
         }
         Relationships: []
@@ -2233,6 +2239,7 @@ export type Database = {
           name: string
           prices: Json
           show_in_app: boolean | null
+          show_in_pos: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -2244,6 +2251,7 @@ export type Database = {
           name: string
           prices: Json
           show_in_app?: boolean | null
+          show_in_pos?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -2255,6 +2263,7 @@ export type Database = {
           name?: string
           prices?: Json
           show_in_app?: boolean | null
+          show_in_pos?: boolean | null
           updated_at?: string | null
         }
         Relationships: []
