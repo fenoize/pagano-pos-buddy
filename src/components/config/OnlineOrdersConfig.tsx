@@ -247,13 +247,25 @@ export function OnlineOrdersConfig() {
                 </p>
               </div>
 
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  <strong>Access Token:</strong> Configúralo en los secrets del servidor con la clave <code className="px-1 py-0.5 bg-muted rounded">MERCADOPAGO_ACCESS_TOKEN</code>.
-                  Esto permite que las edge functions procesen pagos de forma segura.
-                </AlertDescription>
-              </Alert>
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-start gap-3">
+                  <Info className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <div>
+                      <p className="text-sm font-medium">Access Token (Secreto)</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Por seguridad, el Access Token debe configurarse como secreto en el servidor. 
+                        Este token permite procesar pagos desde las edge functions.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs px-2 py-1 bg-background rounded border">
+                        MERCADOPAGO_ACCESS_TOKEN
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
