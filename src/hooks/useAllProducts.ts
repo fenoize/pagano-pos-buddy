@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { configuredSupabase } from '@/lib/supabaseClient';
+import { getConfiguredSupabase } from '@/lib/supabaseClient';
 
 export interface Product {
   id: string;
@@ -19,13 +19,21 @@ export function useAllProducts() {
   return useQuery({
     queryKey: ['all-products'],
     queryFn: async () => {
-      const { data, error } = await configuredSupabase
+      console.log('[useAllProducts] Fetching products...');
+      const supabase = getConfiguredSupabase();
+      
+      const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('active', true)
         .order('name', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useAllProducts] Error fetching products:', error);
+        throw error;
+      }
+      
+      console.log('[useAllProducts] Products fetched:', data?.length || 0);
       return data as Product[];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes

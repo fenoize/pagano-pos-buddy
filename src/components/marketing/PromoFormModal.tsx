@@ -30,7 +30,8 @@ const CTA_TYPE_OPTIONS = [
 ];
 
 export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalProps) {
-  const { data: products, isLoading: productsLoading } = useAllProducts();
+  const { data: products, isLoading: productsLoading, error: productsError } = useAllProducts();
+  
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
@@ -47,6 +48,16 @@ export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalP
   });
   const [noEndDate, setNoEndDate] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[PromoFormModal] Products state:', { 
+      count: products?.length || 0, 
+      loading: productsLoading,
+      error: productsError,
+      formCtaType: formData.cta_type 
+    });
+  }, [products, productsLoading, productsError, formData.cta_type]);
 
   useEffect(() => {
     if (promo) {
@@ -217,19 +228,34 @@ export function PromoFormModal({ open, onClose, onSave, promo }: PromoFormModalP
                 onValueChange={(value) => setFormData({ ...formData, product_id: value })}
               >
                 <SelectTrigger id="product_id">
-                  <SelectValue placeholder={productsLoading ? 'Cargando productos...' : 'Selecciona un producto'} />
+                  <SelectValue placeholder="Seleccionar producto" />
                 </SelectTrigger>
                 <SelectContent>
-                  {products?.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name}
-                    </SelectItem>
-                  ))}
+                  {productsLoading ? (
+                    <SelectItem value="loading" disabled>Cargando productos...</SelectItem>
+                  ) : productsError ? (
+                    <SelectItem value="error" disabled>Error al cargar productos</SelectItem>
+                  ) : !products || products.length === 0 ? (
+                    <SelectItem value="empty" disabled>No hay productos disponibles</SelectItem>
+                  ) : (
+                    products.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                El cliente será redirigido a la página del producto seleccionado
-              </p>
+              {productsError && (
+                <p className="text-xs text-destructive">
+                  Error: {productsError.message}
+                </p>
+              )}
+              {!productsError && products && products.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  El cliente será redirigido a la página del producto seleccionado
+                </p>
+              )}
             </div>
           )}
 
