@@ -74,7 +74,7 @@ serve(async (req) => {
     
     console.log('💰 Subtotal calculated:', subtotal);
     
-    // 3. CREAR ORDEN EN DB con status='pending_payment'
+    // 3. CREAR ORDEN EN DB con status='Pendiente'
     const orderData = {
       customer_id: customer_id || null,
       source: 'customer_app',
@@ -84,7 +84,7 @@ serve(async (req) => {
       total: subtotal,
       discount: 0,
       delivery_fee: 0,
-      status: 'pending_payment',
+      status: 'Pendiente',
       payment_method: 'mp',
       payment_mp: 0,
       notes: notes || 'Pedido desde app cliente',
