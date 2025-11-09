@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -16,9 +17,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreVertical, Pencil, Copy, Trash2 } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Copy, Trash2, BarChart3 } from 'lucide-react';
 import { useMarketingPromotions, MarketingPromotion } from '@/hooks/useMarketingPromotions';
 import { PromoFormModal } from '@/components/marketing/PromoFormModal';
+import { PromoAnalyticsDashboard } from '@/components/marketing/PromoAnalyticsDashboard';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -103,23 +105,38 @@ export default function MarketingPromosApp() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">Promociones App Cliente</CardTitle>
-              <CardDescription className="mt-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Marketing</h1>
+          <p className="text-muted-foreground mt-1">
+            Gestiona promociones y analiza su rendimiento en la app de clientes
+          </p>
+        </div>
+        <Button onClick={handleCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          Crear Promoción
+        </Button>
+      </div>
+
+      <Tabs defaultValue="promotions" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="promotions">Promociones</TabsTrigger>
+          <TabsTrigger value="analytics">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="promotions" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Promociones Activas</CardTitle>
+              <CardDescription>
                 Configura las promociones que se mostrarán en la pantalla de inicio de la app de clientes.
               </CardDescription>
-            </div>
-            <Button onClick={handleCreate}>
-              <Plus className="mr-2 h-4 w-4" />
-              Crear Promoción
-            </Button>
-          </div>
-        </CardHeader>
+            </CardHeader>
 
-        <CardContent>
+            <CardContent>
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -214,6 +231,12 @@ export default function MarketingPromosApp() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <PromoAnalyticsDashboard />
+        </TabsContent>
+      </Tabs>
 
       <PromoFormModal
         open={modalOpen}

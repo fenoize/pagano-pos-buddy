@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Order } from '@/types';
+import { trackPromoConversion } from '@/hooks/usePromoAnalytics';
+import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 
 export default function CustomerPaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { customer } = useCustomerAuth();
   const orderId = searchParams.get('order');
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +35,11 @@ export default function CustomerPaymentSuccess() {
         ...data,
         items: data.items as any
       } as Order);
+
+      // Track conversion if order was completed
+      if (data && orderId) {
+        await trackPromoConversion(orderId, customer?.id);
+      }
     } catch (error) {
       console.error('Error fetching order:', error);
     } finally {

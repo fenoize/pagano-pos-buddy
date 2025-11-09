@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useCustomerLevel } from '@/hooks/useCustomerLevel';
 import { useActivePromotion } from '@/hooks/useMarketingPromotions';
+import { trackPromoView, trackPromoClick } from '@/hooks/usePromoAnalytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -24,6 +25,13 @@ export default function CustomerPortal() {
       navigate('/login');
     }
   }, [loading, user, navigate]);
+
+  // Track promo view when it appears
+  useEffect(() => {
+    if (activePromo && customer?.id) {
+      trackPromoView(activePromo.id, customer.id);
+    }
+  }, [activePromo?.id, customer?.id]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -114,8 +122,11 @@ export default function CustomerPortal() {
     ? Math.min(100, ((runas - minPoints) / (nextLevelPoints - minPoints)) * 100)
     : 100;
 
-  const handlePromoAction = () => {
+  const handlePromoAction = async () => {
     if (!activePromo) return;
+
+    // Track the click
+    await trackPromoClick(activePromo.id, activePromo.cta_type, customer?.id);
 
     switch (activePromo.cta_type) {
       case 'open_menu':
