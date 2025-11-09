@@ -59,32 +59,39 @@ export default function CustomerMenu() {
         .from('products')
         .select(`
           *,
-          product_categories!inner(
+          product_categories(
             category_id,
-            categories!inner(
+            categories(
               id,
               name,
-              show_in_app
+              show_in_app,
+              active
             )
           )
         `)
         .eq('active', true)
         .eq('show_in_app', true)
-        .eq('product_categories.categories.show_in_app', true)
         .order('name', { ascending: true });
 
       if (productsError) throw productsError;
 
       setCategories(categoriesData || []);
       
-      // Transform products data to flatten categories
-      const transformedProducts = productsData?.map(product => ({
-        ...product,
-        categories: product.product_categories?.map((pc: any) => ({
-          id: pc.categories.id,
-          name: pc.categories.name
-        })) || []
-      })) || [];
+      // Transform products data and filter by category visibility
+      const transformedProducts = productsData
+        ?.map(product => ({
+          ...product,
+          categories: product.product_categories
+            ?.map((pc: any) => ({
+              id: pc.categories?.id,
+              name: pc.categories?.name,
+              show_in_app: pc.categories?.show_in_app,
+              active: pc.categories?.active
+            }))
+            .filter((cat: any) => cat.active && cat.show_in_app) || []
+        }))
+        // Only include products that have at least one visible category
+        .filter(product => product.categories && product.categories.length > 0) || [];
       
       setProducts(transformedProducts);
     } catch (error: any) {
