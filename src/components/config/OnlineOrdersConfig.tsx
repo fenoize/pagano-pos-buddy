@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useOnlineOrderSettings } from '@/hooks/useOnlineOrderSettings';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { MPDiagnostics } from '@/components/config/MPDiagnostics';
 import { Smartphone, CreditCard, ShoppingBag, Truck, Info, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -257,6 +258,10 @@ export function OnlineOrdersConfig() {
           )}
         </CardContent>
       </Card>
+
+      {localSettings.mp_enabled && (
+        <MPDiagnostics />
+      )}
 
       {hasChanges && (
         <div className="sticky bottom-4 flex justify-end">
