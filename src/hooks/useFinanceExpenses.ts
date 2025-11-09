@@ -4,6 +4,8 @@ import { FinanceExpense } from '@/types/finance';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
+const BUCKET_NAME = 'finance-documents';
+
 export function useFinanceExpenses() {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<FinanceExpense[]>([]);
@@ -34,7 +36,42 @@ export function useFinanceExpenses() {
     }
   };
 
-  const createExpense = async (data: Omit<FinanceExpense, 'id' | 'created_at' | 'updated_at' | 'registered_by' | 'account'>) => {
+  const uploadDocument = async (file: File, expenseId: string): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const timestamp = Date.now();
+      const fileName = `expenses/${expenseId}_${timestamp}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      // Obtener URL firmada (el bucket es privado)
+      const { data: urlData } = await supabase.storage
+        .from(BUCKET_NAME)
+        .createSignedUrl(data.path, 31536000); // 1 año
+
+      return urlData?.signedUrl || null;
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo subir el documento',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  };
+
+  const createExpense = async (
+    data: Omit<FinanceExpense, 'id' | 'created_at' | 'updated_at' | 'registered_by' | 'account'>,
+    file?: File
+  ) => {
     try {
       if (!user?.id) {
         toast({
@@ -45,11 +82,30 @@ export function useFinanceExpenses() {
         return false;
       }
 
-      const { error } = await supabase
+      // 1. Crear el egreso SIN attachment_url
+      const { data: newExpense, error: insertError } = await supabase
         .from('finance_expenses')
-        .insert([{ ...data, registered_by: user.id }]);
+        .insert([{ ...data, attachment_url: null, registered_by: user.id }])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
+
+      // 2. Si hay archivo, subirlo y actualizar el registro
+      if (file && newExpense) {
+        const attachmentUrl = await uploadDocument(file, newExpense.id);
+        
+        if (attachmentUrl) {
+          const { error: updateError } = await supabase
+            .from('finance_expenses')
+            .update({ attachment_url: attachmentUrl })
+            .eq('id', newExpense.id);
+
+          if (updateError) {
+            console.error('Error updating attachment_url:', updateError);
+          }
+        }
+      }
 
       toast({
         title: 'Egreso registrado',
@@ -69,8 +125,20 @@ export function useFinanceExpenses() {
     }
   };
 
-  const updateExpense = async (id: string, data: Partial<FinanceExpense>) => {
+  const updateExpense = async (
+    id: string,
+    data: Partial<FinanceExpense>,
+    file?: File
+  ) => {
     try {
+      // Si hay nuevo archivo, subirlo primero
+      if (file) {
+        const attachmentUrl = await uploadDocument(file, id);
+        if (attachmentUrl) {
+          data.attachment_url = attachmentUrl;
+        }
+      }
+
       const { error } = await supabase
         .from('finance_expenses')
         .update(data)

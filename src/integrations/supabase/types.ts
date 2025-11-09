@@ -1391,6 +1391,8 @@ export type Database = {
           category: string
           created_at: string
           currency: string
+          document_number: string | null
+          document_type: string | null
           expense_date: string
           expense_type: string
           id: string
@@ -1407,6 +1409,8 @@ export type Database = {
           category: string
           created_at?: string
           currency?: string
+          document_number?: string | null
+          document_type?: string | null
           expense_date?: string
           expense_type: string
           id?: string
@@ -1423,6 +1427,8 @@ export type Database = {
           category?: string
           created_at?: string
           currency?: string
+          document_number?: string | null
+          document_type?: string | null
           expense_date?: string
           expense_type?: string
           id?: string

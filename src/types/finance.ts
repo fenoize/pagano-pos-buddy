@@ -95,6 +95,8 @@ export interface FinanceExpense {
   category: string;
   supplier: string | null;
   payment_method: string | null;
+  document_type: string | null;
+  document_number: string | null;
   notes: string | null;
   attachment_url: string | null;
   registered_by: string | null;

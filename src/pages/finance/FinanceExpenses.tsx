@@ -16,7 +16,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, CalendarIcon, Paperclip } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, Paperclip, FileText } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FinanceExpense } from '@/types/finance';
@@ -35,6 +36,7 @@ export default function FinanceExpenses() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<FinanceExpense | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   // Categorías y métodos de pago dinámicos
   const [expenseCategories, setExpenseCategories] = useState<string[]>([]);
@@ -149,7 +151,6 @@ export default function FinanceExpenses() {
   };
 
   const handleOpenDialog = (expense?: FinanceExpense) => {
-    setIncludeDocumentation(false);
     if (expense) {
       setEditingExpense(expense);
       setFormData({
@@ -160,11 +161,12 @@ export default function FinanceExpenses() {
         category: expense.category,
         supplier: expense.supplier || '',
         payment_method: expense.payment_method || paymentMethods[0] || '',
-        document_type: '',
-        document_number: '',
-        attachment_url: '',
+        document_type: expense.document_type || '',
+        document_number: expense.document_number || '',
+        attachment_url: expense.attachment_url || '',
         notes: expense.notes || '',
       });
+      setIncludeDocumentation(!!expense.document_type);
     } else {
       setEditingExpense(null);
       setFormData({
@@ -180,13 +182,35 @@ export default function FinanceExpenses() {
         attachment_url: '',
         notes: '',
       });
+      setIncludeDocumentation(false);
     }
+    setSelectedFile(null);
     setIsDialogOpen(true);
   };
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validaciones de documentación
+    if (includeDocumentation) {
+      if (!formData.document_type) {
+        toast({
+          title: 'Error',
+          description: 'Selecciona un tipo de documento',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (!formData.document_number) {
+        toast({
+          title: 'Error',
+          description: 'Ingresa el número de documento',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
     
     const data = {
       expense_date: formData.expense_date,
@@ -197,16 +221,19 @@ export default function FinanceExpenses() {
       category: formData.category,
       supplier: formData.supplier || null,
       payment_method: formData.payment_method || null,
+      document_type: includeDocumentation ? formData.document_type : null,
+      document_number: includeDocumentation ? formData.document_number : null,
       notes: formData.notes || null,
-      attachment_url: null,
+      attachment_url: formData.attachment_url || null,
     };
 
     const success = editingExpense
-      ? await updateExpense(editingExpense.id, data)
-      : await createExpense(data);
+      ? await updateExpense(editingExpense.id, data, selectedFile || undefined)
+      : await createExpense(data, selectedFile || undefined);
 
     if (success) {
       setIsDialogOpen(false);
+      setSelectedFile(null);
     }
   };
 
@@ -438,24 +465,41 @@ export default function FinanceExpenses() {
 
                     <div>
                       <Label htmlFor="attachment">Adjuntar Documento (Opcional)</Label>
-                      <div className="flex gap-2 mt-1">
-                        <Input
-                          id="attachment"
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          className="flex-1"
-                          onChange={(e) => {
-                            // TODO: Implement file upload to Supabase Storage
-                            const file = e.target.files?.[0];
-                            if (file) {
+                      <Input
+                        id="attachment"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Validar tamaño (5MB)
+                            if (file.size > 5 * 1024 * 1024) {
                               toast({
-                                title: 'Pendiente',
-                                description: 'La subida de archivos estará disponible próximamente',
+                                title: 'Error',
+                                description: 'El archivo no puede superar 5MB',
+                                variant: 'destructive',
                               });
+                              e.target.value = '';
+                              return;
                             }
-                          }}
-                        />
-                      </div>
+                            setSelectedFile(file);
+                            toast({
+                              title: 'Archivo seleccionado',
+                              description: file.name,
+                            });
+                          }
+                        }}
+                      />
+                      {selectedFile && (
+                        <p className="text-sm text-green-600 mt-1">
+                          📎 {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                        </p>
+                      )}
+                      {formData.attachment_url && !selectedFile && (
+                        <p className="text-sm text-blue-600 mt-1">
+                          📎 Documento actual adjunto
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         Formatos: PDF, JPG, PNG (máx 5MB)
                       </p>
@@ -622,6 +666,7 @@ export default function FinanceExpenses() {
                     <TableHead>Categoría</TableHead>
                     <TableHead>Proveedor</TableHead>
                     <TableHead>Método Pago</TableHead>
+                    <TableHead>Documento</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -635,6 +680,46 @@ export default function FinanceExpenses() {
                       <TableCell>{expense.category}</TableCell>
                       <TableCell>{expense.supplier || '—'}</TableCell>
                       <TableCell>{expense.payment_method || '—'}</TableCell>
+                      <TableCell>
+                        {expense.attachment_url ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                // Verificar si la URL sigue siendo válida
+                                const response = await fetch(expense.attachment_url!);
+                                if (response.ok) {
+                                  window.open(expense.attachment_url!, '_blank');
+                                } else {
+                                  // Re-generar signedURL si expiró
+                                  const pathMatch = expense.attachment_url!.match(/finance-documents\/(.+)\?/);
+                                  if (pathMatch) {
+                                    const { data } = await supabase.storage
+                                      .from('finance-documents')
+                                      .createSignedUrl(pathMatch[1], 3600);
+                                    
+                                    if (data?.signedUrl) {
+                                      window.open(data.signedUrl, '_blank');
+                                    }
+                                  }
+                                }
+                              } catch (error) {
+                                toast({
+                                  title: 'Error',
+                                  description: 'No se pudo abrir el documento',
+                                  variant: 'destructive',
+                                });
+                              }
+                            }}
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            Ver
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           {canEdit(expense) && (
