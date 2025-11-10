@@ -85,7 +85,7 @@ serve(async (req) => {
       );
     }
     
-    // 3. CREAR ORDEN EN DB con status='Pendiente'
+    // 3. CREAR ORDEN EN DB con status='PendientePago' (pago no completado aún)
     const orderData = {
       customer_id: customer_id || null,
       source: 'customer_app',
@@ -95,10 +95,10 @@ serve(async (req) => {
       total: subtotal,
       discount: 0,
       delivery_fee: 0,
-      status: 'Pendiente',
+      status: 'PendientePago',  // ⚠️ CRÍTICO: No enviar a cocina hasta que se confirme el pago
       payment_method: 'mp',
       payment_mp: 0,
-      notes: notes || 'Pedido desde app cliente',
+      notes: notes || 'Pedido desde app cliente - Pago pendiente',
       nombre_resumen: items.map((i: any) => i.productName).join(', ').substring(0, 100)
     };
     
