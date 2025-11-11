@@ -18,25 +18,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
     
-    // Authenticate user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !user) {
-      console.error('❌ Authentication error:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    console.log('✅ User authenticated:', user.email);
-    
     const body = await req.json();
     const { items, customer_id, notes } = body;
     
@@ -44,6 +25,28 @@ serve(async (req) => {
       throw new Error('Items are required');
     }
     
+    if (!customer_id) {
+      throw new Error('Customer ID is required');
+    }
+    
+    // Validar que el customer existe y está activo
+    const { data: customer, error: customerError } = await supabase
+      .from('customers')
+      .select('id, name, email, estado_cliente')
+      .eq('id', customer_id)
+      .single();
+    
+    if (customerError || !customer) {
+      console.error('❌ Customer not found:', customerError);
+      throw new Error('Cliente no encontrado');
+    }
+    
+    if (customer.estado_cliente !== 'Activo') {
+      console.error('❌ Customer not active:', customer.estado_cliente);
+      throw new Error('Cliente no está activo');
+    }
+    
+    console.log('✅ Customer validated:', customer.name);
     console.log('📦 Creating order for customer:', customer_id);
     
     // 1. VALIDAR ESTADO DEL LOCAL
@@ -141,8 +144,8 @@ serve(async (req) => {
       auto_return: 'all',
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
       statement_descriptor: 'PAGANOS BURGER',
-      payer: customer_id ? {
-        email: user.email
+      payer: customer.email ? {
+        email: customer.email
       } : undefined
     };
     
