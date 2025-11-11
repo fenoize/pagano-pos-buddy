@@ -15,7 +15,7 @@ import { RunasPaymentSection } from '@/components/customer/RunasPaymentSection';
 import { useCart } from '@/contexts/CartContext';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
-import { useOnlineOrderSettings } from '@/hooks/useOnlineOrderSettings';
+import { useCustomerOrderSettings } from '@/hooks/useCustomerOrderSettings';
 import { createRunasOrder } from '@/lib/integrations/runasPayment';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -25,7 +25,7 @@ export default function CustomerCheckout() {
   const { items, subtotal, clearCart } = useCart();
   const { customer } = useCustomerAuth();
   const { loading: mpLoading, createPaymentAndRedirect } = useMercadoPago();
-  const { settings: paymentSettings } = useOnlineOrderSettings();
+  const { settings: paymentSettings, loading: settingsLoading } = useCustomerOrderSettings();
   const [notes, setNotes] = useState('');
   const [canOrder, setCanOrder] = useState(true);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mercadopago' | 'runas'>('mercadopago');
@@ -109,7 +109,7 @@ export default function CustomerCheckout() {
   };
 
   const canPayWithRunas = customer && (customer.cantidad_runas || 0) >= runasToUse;
-  const loading = mpLoading || processingRunas;
+  const loading = mpLoading || processingRunas || settingsLoading;
 
   return (
     <div className="customer-app min-h-screen pb-20 bg-background">
