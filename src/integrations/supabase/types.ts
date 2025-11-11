@@ -3946,6 +3946,7 @@ export type Database = {
       estado_cliente: "Activo" | "Inactivo" | "Bloqueado"
       fulfillment_type: "retiro" | "delivery"
       order_status:
+        | "PendientePago"
         | "Pendiente"
         | "En preparación"
         | "En pausa"
@@ -4109,6 +4110,7 @@ export const Constants = {
       estado_cliente: ["Activo", "Inactivo", "Bloqueado"],
       fulfillment_type: ["retiro", "delivery"],
       order_status: [
+        "PendientePago",
         "Pendiente",
         "En preparación",
         "En pausa",
