@@ -2681,7 +2681,7 @@ export type Database = {
           icon_512_url: string | null
           icon_maskable_url: string | null
           id: string
-          portal_icon: string | null
+          portal_icon_url: string | null
           portal_subtitle: string | null
           splash_background_color: string | null
           splash_logo_url: string | null
@@ -2700,7 +2700,7 @@ export type Database = {
           icon_512_url?: string | null
           icon_maskable_url?: string | null
           id?: string
-          portal_icon?: string | null
+          portal_icon_url?: string | null
           portal_subtitle?: string | null
           splash_background_color?: string | null
           splash_logo_url?: string | null
@@ -2719,7 +2719,7 @@ export type Database = {
           icon_512_url?: string | null
           icon_maskable_url?: string | null
           id?: string
-          portal_icon?: string | null
+          portal_icon_url?: string | null
           portal_subtitle?: string | null
           splash_background_color?: string | null
           splash_logo_url?: string | null

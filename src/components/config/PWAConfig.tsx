@@ -11,6 +11,7 @@ import { Loader2, Smartphone, ShoppingCart } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { setStaffContext } from '@/lib/dbContext';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { ImageUpload } from '@/components/pos/ImageUpload';
 
 interface PWAConfig {
   id: string;
@@ -45,7 +46,7 @@ export function PWAConfig() {
   const [backgroundColor, setBackgroundColor] = useState('');
   const [splashText, setSplashText] = useState('');
   const [splashBackgroundColor, setSplashBackgroundColor] = useState('');
-  const [portalIcon, setPortalIcon] = useState('');
+  const [portalIconUrl, setPortalIconUrl] = useState('');
   const [portalSubtitle, setPortalSubtitle] = useState('');
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export function PWAConfig() {
       setBackgroundColor(config.background_color);
       setSplashText(config.splash_text || '');
       setSplashBackgroundColor(config.splash_background_color || '#1c1e21');
-      setPortalIcon((config as any).portal_icon || 'Flame');
+      setPortalIconUrl((config as any).portal_icon_url || '');
       setPortalSubtitle((config as any).portal_subtitle || 'Gestiona tus pedidos y runas');
     }
   }, [activeTab, customerConfig, posConfig]);
@@ -98,7 +99,7 @@ export function PWAConfig() {
           setBackgroundColor(activeConfig.background_color);
           setSplashText(activeConfig.splash_text || '');
           setSplashBackgroundColor(activeConfig.splash_background_color || '#1c1e21');
-          setPortalIcon((activeConfig as any).portal_icon || 'Flame');
+          setPortalIconUrl((activeConfig as any).portal_icon_url || '');
           setPortalSubtitle((activeConfig as any).portal_subtitle || 'Gestiona tus pedidos y runas');
         }
       }
@@ -141,7 +142,7 @@ export function PWAConfig() {
 
       // Add portal config only for customer
       if (activeTab === 'customer') {
-        configData.portal_icon = portalIcon;
+        configData.portal_icon_url = portalIconUrl || null;
         configData.portal_subtitle = portalSubtitle;
       }
 
@@ -417,16 +418,14 @@ export function PWAConfig() {
               </p>
 
               <div className="space-y-2">
-                <Label htmlFor="portal-icon">Ícono del portal</Label>
-                <Input
-                  id="portal-icon"
-                  value={portalIcon}
-                  onChange={(e) => setPortalIcon(e.target.value)}
-                  placeholder="Flame"
-                  disabled={saving}
+                <Label htmlFor="portal-icon-url">Logo del Portal</Label>
+                <ImageUpload
+                  imageUrl={portalIconUrl}
+                  onImageChange={(url) => setPortalIconUrl(url || '')}
+                  productName="Logo del Portal"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Nombre del ícono de Lucide React (ej: Flame, Sparkles, Crown, Shield, Zap, Star, Heart)
+                  Imagen que se mostrará en el portal de login del cliente
                 </p>
               </div>
 

@@ -8,8 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CustomerForgotPasswordModal } from '@/components/customer/CustomerForgotPasswordModal';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { Loader2, Flame } from 'lucide-react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useCustomerPortalConfig } from '@/hooks/useCustomerPortalConfig';
 
@@ -109,16 +108,17 @@ export default function CustomerLogin() {
     setLoading(false);
   };
 
-  // Obtener el ícono dinámicamente
-  const IconComponent = (LucideIcons as any)[portalConfig.icon] || LucideIcons.Flame;
-
   return (
     <div className="customer-app min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md border-border shadow-2xl bg-card">
         <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <IconComponent className="h-8 w-8 text-primary" />
-          </div>
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                {portalConfig.iconUrl ? (
+                  <img src={portalConfig.iconUrl} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <Flame className="h-8 w-8 text-primary" />
+                )}
+              </div>
           <CardTitle className="text-3xl font-bold">Portal Paganos</CardTitle>
           <CardDescription className="text-muted-foreground">
             {portalConfig.subtitle}

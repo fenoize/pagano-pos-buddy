@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PortalConfig {
-  icon: string;
+  iconUrl: string | null;
   subtitle: string;
 }
 
 export function useCustomerPortalConfig() {
   const [config, setConfig] = useState<PortalConfig>({
-    icon: 'Flame',
+    iconUrl: null,
     subtitle: 'Gestiona tus pedidos y runas'
   });
   const [loading, setLoading] = useState(true);
@@ -18,13 +18,13 @@ export function useCustomerPortalConfig() {
       try {
         const { data, error } = await supabase
           .from('pwa_config')
-          .select('portal_icon, portal_subtitle')
+          .select('portal_icon_url, portal_subtitle')
           .eq('app_type', 'customer')
           .maybeSingle();
 
         if (!error && data) {
           setConfig({
-            icon: data.portal_icon || 'Flame',
+            iconUrl: data.portal_icon_url || null,
             subtitle: data.portal_subtitle || 'Gestiona tus pedidos y runas'
           });
         }
