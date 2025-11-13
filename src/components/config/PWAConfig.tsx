@@ -45,6 +45,8 @@ export function PWAConfig() {
   const [backgroundColor, setBackgroundColor] = useState('');
   const [splashText, setSplashText] = useState('');
   const [splashBackgroundColor, setSplashBackgroundColor] = useState('');
+  const [portalIcon, setPortalIcon] = useState('');
+  const [portalSubtitle, setPortalSubtitle] = useState('');
 
   useEffect(() => {
     loadConfigs();
@@ -61,6 +63,8 @@ export function PWAConfig() {
       setBackgroundColor(config.background_color);
       setSplashText(config.splash_text || '');
       setSplashBackgroundColor(config.splash_background_color || '#1c1e21');
+      setPortalIcon((config as any).portal_icon || 'Flame');
+      setPortalSubtitle((config as any).portal_subtitle || 'Gestiona tus pedidos y runas');
     }
   }, [activeTab, customerConfig, posConfig]);
 
@@ -94,6 +98,8 @@ export function PWAConfig() {
           setBackgroundColor(activeConfig.background_color);
           setSplashText(activeConfig.splash_text || '');
           setSplashBackgroundColor(activeConfig.splash_background_color || '#1c1e21');
+          setPortalIcon((activeConfig as any).portal_icon || 'Flame');
+          setPortalSubtitle((activeConfig as any).portal_subtitle || 'Gestiona tus pedidos y runas');
         }
       }
     } catch (error) {
@@ -121,7 +127,7 @@ export function PWAConfig() {
       // Establecer contexto de staff antes de guardar
       await setStaffContext(user.id);
       
-      const configData = {
+      const configData: any = {
         app_type: activeTab,
         app_name: appName,
         app_short_name: appShortName,
@@ -132,6 +138,12 @@ export function PWAConfig() {
         splash_background_color: splashBackgroundColor,
         updated_at: new Date().toISOString(),
       };
+
+      // Add portal config only for customer
+      if (activeTab === 'customer') {
+        configData.portal_icon = portalIcon;
+        configData.portal_subtitle = portalSubtitle;
+      }
 
       const currentConfig = activeTab === 'customer' ? customerConfig : posConfig;
 
@@ -395,6 +407,44 @@ export function PWAConfig() {
               </div>
             </div>
           </div>
+
+          {/* Portal Configuration - Only for customer */}
+          {activeTab === 'customer' && (
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="font-semibold">Configuración del Portal de Login</h3>
+              <p className="text-sm text-muted-foreground">
+                Personaliza el ícono y texto que se muestran en la pantalla de login
+              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="portal-icon">Ícono del portal</Label>
+                <Input
+                  id="portal-icon"
+                  value={portalIcon}
+                  onChange={(e) => setPortalIcon(e.target.value)}
+                  placeholder="Flame"
+                  disabled={saving}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Nombre del ícono de Lucide React (ej: Flame, Sparkles, Crown, Shield, Zap, Star, Heart)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="portal-subtitle">Texto del portal</Label>
+                <Input
+                  id="portal-subtitle"
+                  value={portalSubtitle}
+                  onChange={(e) => setPortalSubtitle(e.target.value)}
+                  placeholder="Gestiona tus pedidos y runas"
+                  disabled={saving}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Texto descriptivo que aparece bajo el título "Portal Paganos"
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Splash Screen Configuration */}
           <div className="space-y-4 pt-4 border-t">

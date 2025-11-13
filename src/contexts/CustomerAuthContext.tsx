@@ -12,7 +12,7 @@ interface CustomerAuthContextType {
   session: Session | null;
   customer: Customer | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string, phone?: string, birthDate?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ error: Error | null }>;
@@ -92,7 +92,7 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, name: string, phone?: string) => {
+  const signUp = async (email: string, password: string, name: string, phone?: string, birthDate?: string) => {
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -101,6 +101,7 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
           data: {
             name,
             phone,
+            birthDate,
           },
           emailRedirectTo: `${window.location.origin}/`,
         },

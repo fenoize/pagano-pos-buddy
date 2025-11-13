@@ -8,12 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CustomerForgotPasswordModal } from '@/components/customer/CustomerForgotPasswordModal';
 import { toast } from 'sonner';
-import { Flame, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { useCustomerPortalConfig } from '@/hooks/useCustomerPortalConfig';
 
 export default function CustomerLogin() {
   const navigate = useNavigate();
   const { signIn, signUp } = useCustomerAuth();
+  const { config: portalConfig } = useCustomerPortalConfig();
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
@@ -27,6 +30,7 @@ export default function CustomerLogin() {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
   const [signupPhone, setSignupPhone] = useState('');
+  const [signupBirthDate, setSignupBirthDate] = useState('');
   const [signupCaptchaToken, setSignupCaptchaToken] = useState<string | null>(null);
 
   // ReCAPTCHA refs
@@ -85,7 +89,7 @@ export default function CustomerLogin() {
 
     setLoading(true);
 
-    const { error } = await signUp(signupEmail, signupPassword, signupName, signupPhone);
+    const { error } = await signUp(signupEmail, signupPassword, signupName, signupPhone, signupBirthDate);
 
     if (error) {
       toast.error('Error al registrarse', {
@@ -105,16 +109,19 @@ export default function CustomerLogin() {
     setLoading(false);
   };
 
+  // Obtener el ícono dinámicamente
+  const IconComponent = (LucideIcons as any)[portalConfig.icon] || LucideIcons.Flame;
+
   return (
     <div className="customer-app min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md border-border shadow-2xl bg-card">
         <CardHeader className="space-y-3 text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Flame className="h-8 w-8 text-primary" />
+            <IconComponent className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-3xl font-bold">Portal Paganos</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Gestiona tus pedidos y runas
+            {portalConfig.subtitle}
           </CardDescription>
         </CardHeader>
 
@@ -253,6 +260,19 @@ export default function CustomerLogin() {
                     onChange={(e) => setSignupPhone(e.target.value)}
                     disabled={loading}
                     className="bg-muted/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-birthdate">Fecha de nacimiento (opcional)</Label>
+                  <Input
+                    id="signup-birthdate"
+                    type="date"
+                    value={signupBirthDate}
+                    onChange={(e) => setSignupBirthDate(e.target.value)}
+                    disabled={loading}
+                    className="bg-muted/50"
+                    max={new Date().toISOString().split('T')[0]}
                   />
                 </div>
 
