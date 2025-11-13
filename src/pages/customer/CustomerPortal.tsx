@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useCustomerLevel } from '@/hooks/useCustomerLevel';
-import { useActivePromotion } from '@/hooks/useMarketingPromotions';
+import { useActivePromotions } from '@/hooks/useMarketingPromotions';
 import { trackPromoView, trackPromoClick } from '@/hooks/usePromoAnalytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,13 @@ import { PWAInstallPrompt } from '@/components/customer/PWAInstallPrompt';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { toast } from 'sonner';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 export default function CustomerPortal() {
   const navigate = useNavigate();
   const { user, customer, loading, signOut, refreshCustomerData } = useCustomerAuth();
   const { data: customerLevel, isLoading: levelLoading, refetch: refetchLevel } = useCustomerLevel(customer?.id);
-  const { data: activePromo, isLoading: promoLoading } = useActivePromotion();
+  const { data: activePromos = [], isLoading: promoLoading } = useActivePromotions();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -26,12 +27,14 @@ export default function CustomerPortal() {
     }
   }, [loading, user, navigate]);
 
-  // Track promo view when it appears
+  // Track promo views when they appear
   useEffect(() => {
-    if (activePromo && customer?.id) {
-      trackPromoView(activePromo.id, customer.id);
+    if (activePromos.length > 0 && customer?.id) {
+      activePromos.forEach(promo => {
+        trackPromoView(promo.id, customer.id);
+      });
     }
-  }, [activePromo?.id, customer?.id]);
+  }, [activePromos, customer?.id]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -122,13 +125,13 @@ export default function CustomerPortal() {
     ? Math.min(100, ((runas - minPoints) / (nextLevelPoints - minPoints)) * 100)
     : 100;
 
-  const handlePromoAction = async () => {
-    if (!activePromo) return;
+  const handlePromoAction = async (promo: any) => {
+    if (!promo) return;
 
     // Track the click
-    await trackPromoClick(activePromo.id, activePromo.cta_type, customer?.id);
+    await trackPromoClick(promo.id, promo.cta_type, customer?.id);
 
-    switch (activePromo.cta_type) {
+    switch (promo.cta_type) {
       case 'open_menu':
         navigate('/menu');
         break;
@@ -142,16 +145,16 @@ export default function CustomerPortal() {
         navigate('/benefits');
         break;
       case 'open_product':
-        if ((activePromo as any).product_id) {
-          navigate(`/menu?product=${(activePromo as any).product_id}`);
+        if (promo.product_id) {
+          navigate(`/menu?product=${promo.product_id}`);
         }
         break;
       case 'open_custom_url':
-        if (activePromo.cta_url) {
-          if (activePromo.cta_url.startsWith('http')) {
-            window.open(activePromo.cta_url, '_blank');
+        if (promo.cta_url) {
+          if (promo.cta_url.startsWith('http')) {
+            window.open(promo.cta_url, '_blank');
           } else {
-            navigate(activePromo.cta_url);
+            navigate(promo.cta_url);
           }
         }
         break;
@@ -252,47 +255,61 @@ export default function CustomerPortal() {
           <ArrowRight className="h-5 w-5 ml-auto" />
         </Button>
 
-        {/* Promoción destacada - dinámica desde BD */}
-        {!promoLoading && activePromo && (
-          <Card className="overflow-hidden border-border bg-card">
-            <CardContent className="p-0">
-              {activePromo.image_url ? (
-                <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border">
-                  <img 
-                    src={activePromo.image_url} 
-                    alt={activePromo.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border">
-                  <Flame className="h-24 w-24 text-primary" />
-                </div>
-              )}
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-foreground mb-2">{activePromo.title}</h3>
-                {activePromo.subtitle && (
-                  <p className="text-muted-foreground mb-4">
-                    {activePromo.subtitle}
-                  </p>
-                )}
-                {activePromo.description && (
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {activePromo.description}
-                  </p>
-                )}
-                {activePromo.cta_type !== 'none' && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
-                    onClick={handlePromoAction}
-                  >
-                    {activePromo.cta_label || 'Ver más'}
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Promociones destacadas - Slider */}
+        {!promoLoading && activePromos.length > 0 && (
+          <Carousel className="w-full">
+            <CarouselContent>
+              {activePromos.map((promo) => (
+                <CarouselItem key={promo.id}>
+                  <Card className="overflow-hidden border-border bg-card">
+                    <CardContent className="p-0">
+                      {promo.image_url ? (
+                        <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border">
+                          <img 
+                            src={promo.image_url} 
+                            alt={promo.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border">
+                          <Flame className="h-24 w-24 text-primary" />
+                        </div>
+                      )}
+                      <div className="p-6">
+                        <h3 className="text-xl font-bold text-foreground mb-2">{promo.title}</h3>
+                        {promo.subtitle && (
+                          <p className="text-muted-foreground mb-4">
+                            {promo.subtitle}
+                          </p>
+                        )}
+                        {promo.description && (
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {promo.description}
+                          </p>
+                        )}
+                        {promo.cta_type !== 'none' && (
+                          <Button 
+                            variant="outline" 
+                            className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
+                            onClick={() => handlePromoAction(promo)}
+                          >
+                            {promo.cta_label || 'Ver más'}
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {activePromos.length > 1 && (
+              <>
+                <CarouselPrevious className="left-2" />
+                <CarouselNext className="right-2" />
+              </>
+            )}
+          </Carousel>
         )}
 
         {/* Accesos rápidos */}

@@ -151,10 +151,10 @@ export const useMarketingPromotions = () => {
   };
 };
 
-// Hook para obtener la promoción principal activa (para app cliente)
-export const useActivePromotion = () => {
+// Hook para obtener todas las promociones activas (para app cliente - slider)
+export const useActivePromotions = () => {
   return useQuery({
-    queryKey: ['active-promotion'],
+    queryKey: ['active-promotions'],
     queryFn: async () => {
       const { data, error } = await configuredSupabase
         .from('marketing_app_promotions')
@@ -163,12 +163,10 @@ export const useActivePromotion = () => {
         .or(`start_date.is.null,start_date.lte.${new Date().toISOString().split('T')[0]}`)
         .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split('T')[0]}`)
         .order('priority', { ascending: true })
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as MarketingPromotion | null;
+      return (data as MarketingPromotion[]) || [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
