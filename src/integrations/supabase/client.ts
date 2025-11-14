@@ -6,32 +6,8 @@ import { STORAGE_KEYS } from '@/lib/storageKeys';
 const SUPABASE_URL = "https://lxxfhayifyiioglfbsyj.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4eGZoYXlpZnlpaW9nbGZic3lqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzMzNTgsImV4cCI6MjA3MTA0OTM1OH0.vpIwYxp9AXBXvp3OPY-GGXl0J1yeAwTeH3OZW2Bs0Ss";
 
-// Helper function to get auth headers
-const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
-  if (token) {
-    return {
-      Authorization: `Bearer ${token}`
-    };
-  }
-  return {};
-};
-
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
-
-// Create a client with custom fetch that includes auth headers
-const customFetch: typeof fetch = async (input, init?) => {
-  const headers = {
-    ...init?.headers,
-    ...getAuthHeaders()
-  };
-  
-  return fetch(input, {
-    ...init,
-    headers
-  });
-};
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
@@ -40,6 +16,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   },
   global: {
-    fetch: customFetch
+    headers: () => {
+      const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    }
   }
 });
