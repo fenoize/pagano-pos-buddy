@@ -431,6 +431,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
                         setSelectedVariantOption(variant);
                       }}
                       disabled={false}
+                      hideOutOfStockBadge={hideComboToggle}
                     />
                   </CardContent>
                 </Card>

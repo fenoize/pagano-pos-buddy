@@ -11,6 +11,7 @@ interface VariantSelectorProps {
   disabled?: boolean;
   defaultVariantId?: string;
   showExtraCost?: boolean;
+  hideOutOfStockBadge?: boolean; // Ocultar badge "Agotado" (para app cliente)
 }
 
 const VariantSelector: React.FC<VariantSelectorProps> = ({
@@ -19,7 +20,8 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
   onVariantSelect,
   disabled = false,
   defaultVariantId,
-  showExtraCost = false
+  showExtraCost = false,
+  hideOutOfStockBadge = false
 }) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -89,7 +91,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                   <div className="text-primary font-semibold">
                     {showExtraCost && isDefault ? "Incluido" : formatPrice(variant.price)}
                   </div>
-                  {variant.stock !== undefined && variant.stock <= 0 && (
+                  {!hideOutOfStockBadge && variant.stock !== undefined && variant.stock <= 0 && (
                     <Badge variant="destructive" className="text-xs">
                       Agotado
                     </Badge>

@@ -125,8 +125,13 @@ export default function CustomerPortal() {
     ? Math.min(100, ((runas - minPoints) / (nextLevelPoints - minPoints)) * 100)
     : 100;
 
-  const handlePromoAction = async (promo: any) => {
+  const handlePromoAction = async (promo: any, event?: React.MouseEvent) => {
     if (!promo) return;
+    
+    // Prevenir propagación del evento
+    if (event) {
+      event.stopPropagation();
+    }
 
     // Track the click
     await trackPromoClick(promo.id, promo.cta_type, customer?.id);
@@ -152,7 +157,8 @@ export default function CustomerPortal() {
       case 'open_custom_url':
         if (promo.cta_url) {
           if (promo.cta_url.startsWith('http')) {
-            window.open(promo.cta_url, '_blank');
+            // Usar window.location.href para evitar bloqueo de popups
+            window.location.href = promo.cta_url;
           } else {
             navigate(promo.cta_url);
           }
@@ -292,7 +298,7 @@ export default function CustomerPortal() {
                           <Button 
                             variant="outline" 
                             className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground" 
-                            onClick={() => handlePromoAction(promo)}
+                            onClick={(e) => handlePromoAction(promo, e)}
                           >
                             {promo.cta_label || 'Ver más'}
                           </Button>
