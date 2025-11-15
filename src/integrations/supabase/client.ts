@@ -14,11 +14,5 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  },
-  global: {
-    headers: () => {
-      const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
-      return token ? { Authorization: `Bearer ${token}` } : {};
-    }
   }
 });
