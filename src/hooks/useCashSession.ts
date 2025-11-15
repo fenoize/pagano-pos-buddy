@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CashSession, CashMovement } from '@/types';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { usePermissions } from './usePermissions';
-import { setStaffContext } from '@/lib/dbContext';
+import { setStaffContext, withStaffContext } from '@/lib/dbContext';
 
 export function useCashSession() {
   const [currentSession, setCurrentSession] = useState<CashSession | null>(null);
@@ -52,83 +52,80 @@ export function useCashSession() {
   const openSession = async (openingCash: number, acceptAppOrders: boolean = false): Promise<CashSession> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    try {
-      // Establecer contexto antes de las queries
-      await setStaffContext(user.id);
-      
-      // Check if there's already an active session
-      const { data: existingSession } = await supabase
-        .from('cash_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .is('closed_at', null)
-        .single();
+    return withStaffContext(user.id, async () => {
+      try {
+        // Check if there's already an active session
+        const { data: existingSession } = await supabase
+          .from('cash_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .is('closed_at', null)
+          .single();
 
-      if (existingSession) {
-        throw new Error('Ya existe una sesión de caja abierta');
+        if (existingSession) {
+          throw new Error('Ya existe una sesión de caja abierta');
+        }
+
+        const { data, error } = await supabase
+          .from('cash_sessions')
+          .insert({
+            user_id: user.id,
+            opening_cash: openingCash,
+            accept_app_orders: acceptAppOrders
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setCurrentSession(data);
+        return data;
+      } catch (error) {
+        console.error('Error opening session:', error);
+        throw error;
       }
-
-      const { data, error } = await supabase
-        .from('cash_sessions')
-        .insert({
-          user_id: user.id,
-          opening_cash: openingCash,
-          accept_app_orders: acceptAppOrders
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setCurrentSession(data);
-      return data;
-    } catch (error) {
-      console.error('Error opening session:', error);
-      throw error;
-    }
+    });
   };
 
   const closeSession = async (closingCash: number): Promise<void> => {
     if (!currentSession) throw new Error('No active session to close');
+    if (!user?.id) throw new Error('User not authenticated');
 
-    try {
-      console.log('🔒 Cerrando sesión:', {
-        sessionId: currentSession.id,
-        closingCash,
-        userId: user?.id
-      });
+    return withStaffContext(user.id, async () => {
+      try {
+        console.log('🔒 Cerrando sesión:', {
+          sessionId: currentSession.id,
+          closingCash,
+          userId: user.id
+        });
+        
+        const { data, error } = await supabase
+          .from('cash_sessions')
+          .update({
+            closed_at: new Date().toISOString(),
+            closing_cash: closingCash
+          })
+          .eq('id', currentSession.id)
+          .select();
 
-      // Establecer contexto antes de la query
-      if (user?.id) {
-        await setStaffContext(user.id);
+        if (error) {
+          console.error('❌ Error de Supabase al cerrar sesión:', error);
+          throw new Error(`Error al cerrar sesión: ${error.message}`);
+        }
+
+        // Verificar que se actualizó la sesión
+        if (!data || data.length === 0) {
+          console.error('❌ No se encontró la sesión para actualizar');
+          throw new Error('No se pudo actualizar la sesión. Verifica que exista y tengas permisos.');
+        }
+
+        console.log('✅ Sesión cerrada exitosamente:', data[0]);
+        setCurrentSession(null);
+      } catch (error) {
+        console.error('❌ Error closing session:', error);
+        throw error;
       }
-      
-      const { data, error } = await supabase
-        .from('cash_sessions')
-        .update({
-          closed_at: new Date().toISOString(),
-          closing_cash: closingCash
-        })
-        .eq('id', currentSession.id)
-        .select();
-
-      if (error) {
-        console.error('❌ Error de Supabase al cerrar sesión:', error);
-        throw new Error(`Error al cerrar sesión: ${error.message}`);
-      }
-
-      // Verificar que se actualizó la sesión
-      if (!data || data.length === 0) {
-        console.error('❌ No se encontró la sesión para actualizar');
-        throw new Error('No se pudo actualizar la sesión. Verifica que exista y tengas permisos.');
-      }
-
-      console.log('✅ Sesión cerrada exitosamente:', data[0]);
-      setCurrentSession(null);
-    } catch (error) {
-      console.error('❌ Error closing session:', error);
-      throw error;
-    }
+    });
   };
 
   const addCashMovement = async (
@@ -137,30 +134,28 @@ export function useCashSession() {
     note?: string
   ): Promise<CashMovement> => {
     if (!currentSession) throw new Error('No active session');
+    if (!user?.id) throw new Error('User not authenticated');
 
-    try {
-      // Establecer contexto antes de la query
-      if (user?.id) {
-        await setStaffContext(user.id);
+    return withStaffContext(user.id, async () => {
+      try {
+        const { data, error } = await supabase
+          .from('cash_movements')
+          .insert({
+            session_id: currentSession.id,
+            type,
+            amount,
+            note
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        console.error('Error adding cash movement:', error);
+        throw error;
       }
-      
-      const { data, error } = await supabase
-        .from('cash_movements')
-        .insert({
-          session_id: currentSession.id,
-          type,
-          amount,
-          note
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error adding cash movement:', error);
-      throw error;
-    }
+    });
   };
 
   const getSessionSummary = async (sessionId?: string) => {
@@ -317,41 +312,49 @@ export function useCashSession() {
   };
 
   const updateSessionObservaciones = async (sessionId: string, observaciones: string): Promise<void> => {
-    try {
-      const { error } = await supabase
-        .from('cash_sessions')
-        .update({ observaciones })
-        .eq('id', sessionId);
+    if (!user?.id) throw new Error('User not authenticated');
 
-      if (error) throw error;
+    return withStaffContext(user.id, async () => {
+      try {
+        const { error } = await supabase
+          .from('cash_sessions')
+          .update({ observaciones })
+          .eq('id', sessionId);
 
-      // Update current session if it's the same
-      if (currentSession?.id === sessionId) {
-        setCurrentSession({ ...currentSession, observaciones });
+        if (error) throw error;
+
+        // Update current session if it's the same
+        if (currentSession?.id === sessionId) {
+          setCurrentSession({ ...currentSession, observaciones });
+        }
+      } catch (error) {
+        console.error('Error updating session observaciones:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Error updating session observaciones:', error);
-      throw error;
-    }
+    });
   };
 
   const updateClosingCash = async (sessionId: string, closingCash: number): Promise<void> => {
-    try {
-      const { error } = await supabase
-        .from('cash_sessions')
-        .update({ closing_cash: closingCash })
-        .eq('id', sessionId);
+    if (!user?.id) throw new Error('User not authenticated');
 
-      if (error) throw error;
+    return withStaffContext(user.id, async () => {
+      try {
+        const { error } = await supabase
+          .from('cash_sessions')
+          .update({ closing_cash: closingCash })
+          .eq('id', sessionId);
 
-      // Update current session if it's the same
-      if (currentSession?.id === sessionId) {
-        setCurrentSession({ ...currentSession, closing_cash: closingCash });
+        if (error) throw error;
+
+        // Update current session if it's the same
+        if (currentSession?.id === sessionId) {
+          setCurrentSession({ ...currentSession, closing_cash: closingCash });
+        }
+      } catch (error) {
+        console.error('Error updating closing cash:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Error updating closing cash:', error);
-      throw error;
-    }
+    });
   };
 
   const hasActiveSession = (): boolean => {
@@ -407,43 +410,43 @@ export function useCashSession() {
     amount: number,
     note?: string
   ): Promise<void> => {
-    try {
-      if (user?.id) {
-        await setStaffContext(user.id);
+    if (!user?.id) throw new Error('User not authenticated');
+
+    return withStaffContext(user.id, async () => {
+      try {
+        const { error } = await supabase
+          .from('cash_movements')
+          .update({
+            type,
+            amount,
+            note
+          })
+          .eq('id', movementId);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error updating cash movement:', error);
+        throw error;
       }
-
-      const { error } = await supabase
-        .from('cash_movements')
-        .update({
-          type,
-          amount,
-          note
-        })
-        .eq('id', movementId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error updating cash movement:', error);
-      throw error;
-    }
+    });
   };
 
   const deleteCashMovement = async (movementId: string): Promise<void> => {
-    try {
-      if (user?.id) {
-        await setStaffContext(user.id);
+    if (!user?.id) throw new Error('User not authenticated');
+
+    return withStaffContext(user.id, async () => {
+      try {
+        const { error } = await supabase
+          .from('cash_movements')
+          .delete()
+          .eq('id', movementId);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error deleting cash movement:', error);
+        throw error;
       }
-
-      const { error } = await supabase
-        .from('cash_movements')
-        .delete()
-        .eq('id', movementId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error deleting cash movement:', error);
-      throw error;
-    }
+    });
   };
 
   const addCashMovementToClosedSession = async (
@@ -452,28 +455,28 @@ export function useCashSession() {
     amount: number,
     note?: string
   ): Promise<CashMovement> => {
-    try {
-      if (user?.id) {
-        await setStaffContext(user.id);
+    if (!user?.id) throw new Error('User not authenticated');
+
+    return withStaffContext(user.id, async () => {
+      try {
+        const { data, error } = await supabase
+          .from('cash_movements')
+          .insert({
+            session_id: sessionId,
+            type,
+            amount,
+            note
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        console.error('Error adding cash movement to closed session:', error);
+        throw error;
       }
-
-      const { data, error } = await supabase
-        .from('cash_movements')
-        .insert({
-          session_id: sessionId,
-          type,
-          amount,
-          note
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error adding cash movement to closed session:', error);
-      throw error;
-    }
+    });
   };
 
   const updateCurrentSessionLocally = (updates: Partial<CashSession>) => {
