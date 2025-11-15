@@ -3809,6 +3809,7 @@ export type Database = {
         | { Args: never; Returns: Json }
         | { Args: { p_user_id?: string }; Returns: Json }
       get_store_status: { Args: never; Returns: Json }
+      get_user_id_from_current_session: { Args: never; Returns: string }
       has_active_staff_session: { Args: never; Returns: boolean }
       has_orders_in_last_4_weeks: {
         Args: { p_customer_id: string }
