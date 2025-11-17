@@ -22,7 +22,7 @@ export default function CustomerSearchWidget({
   customer, 
   onCustomerChange, 
   totalAmount, 
-  runaValue,
+  runaValue = 10000, // Valor para ACUMULAR runas (cuánto hay que gastar)
   onRunasChange,
   usedRunas = 0
 }: CustomerSearchWidgetProps) {
@@ -30,6 +30,7 @@ export default function CustomerSearchWidget({
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [runaRewardValue, setRunaRewardValue] = useState(600); // Valor de CANJE de 1 runa
   const { toast } = useToast();
 
   useEffect(() => {
@@ -39,6 +40,19 @@ export default function CustomerSearchWidget({
       setSearchResults([]);
     }
   }, [searchTerm]);
+
+  useEffect(() => {
+    // Cargar el valor de canje de runas
+    const loadRunaRewardValue = async () => {
+      const { data } = await supabase
+        .from('config')
+        .select('value')
+        .eq('key', 'runa_reward_value')
+        .single();
+      if (data?.value) setRunaRewardValue(Number(data.value));
+    };
+    loadRunaRewardValue();
+  }, []);
 
   const searchCustomers = async () => {
     setIsSearching(true);
@@ -224,7 +238,7 @@ export default function CustomerSearchWidget({
             <div className="space-y-4">
               <RunasCalculator
                 totalAmount={totalAmount}
-                runaValue={runaValue}
+                runaValue={runaRewardValue} // Usar valor de CANJE para mostrar correctamente
                 customerRunas={customer.cantidad_runas}
               />
               
@@ -252,7 +266,7 @@ export default function CustomerSearchWidget({
                     <div className="text-right">
                       <div className="text-sm text-muted-foreground">Descuento</div>
                       <div className="font-medium text-primary">
-                        {formatPrice(usedRunas * runaValue)}
+                        {formatPrice(usedRunas * runaRewardValue)}
                       </div>
                     </div>
                   </div>

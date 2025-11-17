@@ -261,11 +261,29 @@ export function useCashSession() {
       const totalPOS = orders?.reduce((sum, order) => sum + (order.payment_pos || 0), 0) || 0;
       const totalAplicacion = orders?.reduce((sum, order) => sum + (order.payment_aplicacion || 0), 0) || 0;
 
-      // Calculate runas from orders
-      const totalRunasQuantity = orders?.reduce((sum, order) => sum + (order.payment_runas || 0), 0) || 0;
-      const runaValueNumber = Number(runaConfig?.value || 1000);
-      const totalRunasAmount = totalRunasQuantity * runaValueNumber;
-      const ventasConRunas = orders?.filter(order => (order.payment_runas || 0) > 0).length || 0;
+      // Calculate runas amount using redemption value
+      let totalRunasAmount = 0;
+      let ventasConRunas = 0;
+
+      if (runasTransactions && runasTransactions.length > 0) {
+        // Get runa reward value (valor de canje) from config
+        const { data: rewardConfig } = await supabase
+          .from('config')
+          .select('value')
+          .eq('key', 'runa_reward_value')
+          .maybeSingle();
+        
+        const runaRewardValue = rewardConfig?.value ? Number(rewardConfig.value) : 600;
+
+        // Sum redemptions (negative impact on revenue)
+        // Usar el valor de CANJE para calcular el monto monetario
+        const runasRedeemed = runasTransactions
+          .filter(t => t.type === 'canje')
+          .reduce((sum, t) => sum + Math.abs(t.runas), 0);
+
+        totalRunasAmount = runasRedeemed * runaRewardValue;
+        ventasConRunas = orders?.filter(order => (order.payment_runas || 0) > 0).length || 0;
+      }
 
       // Adjust total sales to exclude runas value (real money sales only)
       const totalSalesReal = totalSales - totalRunasAmount;
@@ -291,7 +309,6 @@ export function useCashSession() {
           totalMP,
           totalPOS,
           totalAplicacion,
-          totalRunasQuantity,
           totalRunasAmount,
           ventasConRunas,
           ingresos,

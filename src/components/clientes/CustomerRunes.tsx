@@ -31,13 +31,12 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
 
   const {
     runaValue,
+    runaRewardValue, // Valor de canje
     canAdjustRunes,
     fetchRunaValue,
     calculateRunasSaldo,
     getRunasHistory,
-    createManualAdjustment,
-    calculateRedeemableAmount,
-    calculateEarnableRunes
+    createManualAdjustment
   } = useCustomerRunes();
 
   const loadData = async () => {
@@ -110,8 +109,6 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
       setLoading(false);
     }
   };
-
-  const redeemableAmount = calculateRedeemableAmount(currentSaldo);
 
   return (
     <div className="space-y-6">
