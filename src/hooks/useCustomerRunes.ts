@@ -19,30 +19,43 @@ export interface RunasTransactionFilters {
 
 export function useCustomerRunes() {
   const [loading, setLoading] = useState(false);
-  const [runaValue, setRunaValue] = useState(2000); // Valor por defecto
+  const [runaValue, setRunaValue] = useState(10000); // Monto para GANAR 1 runa
+  const [runaRewardValue, setRunaRewardValue] = useState(600); // Valor de CANJE de 1 runa
   const { toast } = useToast();
   const { user } = useAuth();
 
   // Usar hook de permisos centralizado
   const { canAdjustRunes, canViewRunes } = usePermissions();
 
-  // Obtener valor actual de las runas desde config
+  // Obtener ambos valores de configuración
   const fetchRunaValue = async (): Promise<number> => {
     try {
-      const { data, error } = await supabase
+      // Valor para acumular runas
+      const { data: accumulationData, error: accError } = await supabase
         .from('config')
         .select('value')
         .eq('key', 'runa_value')
         .single();
 
-      if (error) throw error;
+      if (accError) throw accError;
+      const accValue = accumulationData.value as number;
+      setRunaValue(accValue);
 
-      const value = data.value as number;
-      setRunaValue(value);
-      return value;
+      // Valor de canje de runas
+      const { data: rewardData, error: rewError } = await supabase
+        .from('config')
+        .select('value')
+        .eq('key', 'runa_reward_value')
+        .single();
+
+      if (rewError) throw rewError;
+      const rewValue = rewardData.value as number;
+      setRunaRewardValue(rewValue);
+
+      return accValue;
     } catch (error) {
-      console.error('Error fetching runa value:', error);
-      return 2000; // Valor por defecto
+      console.error('Error fetching runa values:', error);
+      return 10000; // Valor por defecto
     }
   };
 
@@ -334,12 +347,12 @@ export function useCustomerRunes() {
     }
   };
 
-  // Calcular runas canjeables según tabla de conversión
+  /**
+   * Calcular el monto canjeable de runas
+   * Multiplica las runas por el valor de canje (runa_reward_value)
+   */
   const calculateRedeemableAmount = (runas: number): number => {
-    // Por ahora usamos la regla inversa del valor de runas
-    // 1 runa = runa_value en pesos chilenos para acumulación
-    // Para canje, podríamos usar la misma regla o una diferente
-    return Math.floor(runas * (runaValue / 3)); // Ejemplo: 3 runas = valor de 1 runa en acumulación
+    return Math.floor(runas * runaRewardValue);
   };
 
   // Calcular runas que se ganarían por una compra
@@ -349,7 +362,8 @@ export function useCustomerRunes() {
 
   return {
     loading,
-    runaValue,
+    runaValue, // Para calcular runas ganadas
+    runaRewardValue, // Para calcular descuentos y mostrar valor
     canAdjustRunes,
     canViewRunes,
     fetchRunaValue,

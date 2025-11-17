@@ -24,7 +24,7 @@ export default function MyRunes() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [runaValue, setRunaValue] = useState(10000);
+  const [runaValue, setRunaValue] = useState(600); // Valor de CANJE de 1 runa
 
   useEffect(() => {
     fetchRunaValue();
@@ -32,7 +32,8 @@ export default function MyRunes() {
   }, [customer?.id, page]);
 
   const fetchRunaValue = async () => {
-    const { data } = await supabase.from('config').select('value').eq('key', 'runa_value').single();
+    // Obtener el valor de CANJE (runa_reward_value), no el de acumulación
+    const { data } = await supabase.from('config').select('value').eq('key', 'runa_reward_value').single();
     if (data?.value) setRunaValue(Number(data.value));
   };
 
