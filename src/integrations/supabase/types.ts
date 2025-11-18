@@ -198,6 +198,13 @@ export type Database = {
             foreignKeyName: "cash_session_audits_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_session_audits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -699,6 +706,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "delivery_export_v"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "coupon_applications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "coupon_applications_order_id_fkey"
@@ -1311,6 +1325,30 @@ export type Database = {
           },
         ]
       }
+      delivery_settings: {
+        Row: {
+          assignment_mode: string
+          created_at: string
+          id: string
+          map_provider: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_mode?: string
+          created_at?: string
+          id?: string
+          map_provider?: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_mode?: string
+          created_at?: string
+          id?: string
+          map_provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       delivery_zones: {
         Row: {
           active: boolean
@@ -1800,6 +1838,13 @@ export type Database = {
             foreignKeyName: "marketing_promo_analytics_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_promo_analytics_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -1971,6 +2016,13 @@ export type Database = {
             foreignKeyName: "order_delivery_audit_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_delivery_audit_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -1984,8 +2036,10 @@ export type Database = {
           created_by_user_id: string | null
           customer_id: string | null
           delivery_address: string | null
+          delivery_assigned_at: string | null
           delivery_comuna: string | null
           delivery_comuna_id: string | null
+          delivery_delivered_at: string | null
           delivery_distance: number | null
           delivery_fee: number | null
           delivery_number: string | null
@@ -2020,8 +2074,10 @@ export type Database = {
           created_by_user_id?: string | null
           customer_id?: string | null
           delivery_address?: string | null
+          delivery_assigned_at?: string | null
           delivery_comuna?: string | null
           delivery_comuna_id?: string | null
+          delivery_delivered_at?: string | null
           delivery_distance?: number | null
           delivery_fee?: number | null
           delivery_number?: string | null
@@ -2056,8 +2112,10 @@ export type Database = {
           created_by_user_id?: string | null
           customer_id?: string | null
           delivery_address?: string | null
+          delivery_assigned_at?: string | null
           delivery_comuna?: string | null
           delivery_comuna_id?: string | null
+          delivery_delivered_at?: string | null
           delivery_distance?: number | null
           delivery_fee?: number | null
           delivery_number?: string | null
@@ -3021,6 +3079,13 @@ export type Database = {
             foreignKeyName: "runas_transactions_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "runas_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -3237,6 +3302,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "delivery_export_v"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "stock_moves_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "stock_moves_related_order_id_fkey"
@@ -3633,6 +3705,84 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_orders: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_address: string | null
+          delivery_assigned_at: string | null
+          delivery_comuna: string | null
+          delivery_comuna_id: string | null
+          delivery_delivered_at: string | null
+          delivery_distance: number | null
+          delivery_fee: number | null
+          delivery_number: string | null
+          delivery_person_id: string | null
+          delivery_person_name: string | null
+          delivery_reference: string | null
+          delivery_zone_id: string | null
+          delivery_zone_name: string | null
+          discount: number | null
+          fulfillment: Database["public"]["Enums"]["fulfillment_type"] | null
+          id: string | null
+          items: Json | null
+          minutes_since_created: number | null
+          nombre_resumen: string | null
+          notes: string | null
+          order_number: number | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          status: Database["public"]["Enums"]["order_status"] | null
+          subtotal: number | null
+          total: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_comuna_id_fkey"
+            columns: ["delivery_comuna_id"]
+            isOneToOne: false
+            referencedRelation: "comunas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_person_id_fkey"
+            columns: ["delivery_person_id"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_person_id_fkey"
+            columns: ["delivery_person_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_zone_id_fkey"
+            columns: ["delivery_zone_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_promo_metrics: {
         Row: {
           conversion_rate: number | null
@@ -3833,6 +3983,7 @@ export type Database = {
       is_active_user: { Args: { _user_id: string }; Returns: boolean }
       is_cashier_or_admin: { Args: never; Returns: boolean }
       is_current_user_admin: { Args: never; Returns: boolean }
+      is_delivery_courier: { Args: never; Returns: boolean }
       is_staff_admin: { Args: never; Returns: boolean }
       is_user_admin: { Args: { p_user_id: string }; Returns: boolean }
       process_purchase_receipt: {
@@ -3960,6 +4111,7 @@ export type Database = {
         | "Listo"
         | "Entregado"
         | "Cancelado"
+        | "En camino"
       origen_movimiento: "POS" | "Web" | "Manual" | "Edición"
       payment_method:
         | "efectivo"
@@ -4124,6 +4276,7 @@ export const Constants = {
         "Listo",
         "Entregado",
         "Cancelado",
+        "En camino",
       ],
       origen_movimiento: ["POS", "Web", "Manual", "Edición"],
       payment_method: ["efectivo", "mp", "pos", "mixto", "aplicacion", "runas"],

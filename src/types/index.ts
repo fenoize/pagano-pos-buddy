@@ -1,6 +1,6 @@
 export type AppRole = 'Administrador' | 'Cajero' | 'Cocinero' | 'Preparador' | 'Reparto' | 'Viewer';
 
-export type OrderStatus = 'PendientePago' | 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'Entregado' | 'Cancelado';
+export type OrderStatus = 'PendientePago' | 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'En camino' | 'Entregado' | 'Cancelado';
 
 export type FulfillmentType = 'retiro' | 'delivery';
 
@@ -312,6 +312,8 @@ export interface Order {
   delivery_person_id?: string;
   delivery_person_name?: string;
   delivery_distance?: number;
+  delivery_assigned_at?: string;
+  delivery_delivered_at?: string;
   items: OrderItem[];
   subtotal: number;
   delivery_fee: number;
