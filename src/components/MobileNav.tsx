@@ -8,7 +8,8 @@ import {
   Archive,
   Users,
   User,
-  Settings
+  Settings,
+  TruckIcon
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -20,6 +21,7 @@ const menuItems = [
   { title: "Venta", url: "/pos/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
   { title: "Ventas", url: "/pos/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
   { title: "Cocina", url: "/pos/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
+  { title: "Delivery", url: "/pos/delivery", icon: TruckIcon, roles: ['Administrador', 'Reparto'] },
   { title: "Inventario", url: "/pos/inventario", icon: Archive, roles: ['Administrador'] },
 ];
 
