@@ -138,7 +138,7 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
           </CardHeader>
           <CardContent>
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{formatPrice(redeemableAmount)}</p>
+              <p className="text-2xl font-bold text-green-600">{formatPrice(currentSaldo * runaRewardValue)}</p>
               <p className="text-sm text-muted-foreground">equivalente en descuento</p>
             </div>
           </CardContent>
