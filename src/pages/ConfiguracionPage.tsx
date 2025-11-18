@@ -3,9 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart } from 'lucide-react';
+import { Settings, DollarSign, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart, TruckIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
+import { DeliveryConfig } from '@/components/config/DeliveryConfig';
 import { PaymentMethodsConfig } from '@/components/config/PaymentMethodsConfig';
 import { PWAConfig } from '@/components/config/PWAConfig';
 import { CategoryConfig } from '@/components/config/CategoryConfig';
@@ -50,8 +51,8 @@ export default function ConfiguracionPage() {
             <span>Zonas de Delivery</span>
           </TabsTrigger>
           <TabsTrigger value="delivery" className="w-full justify-start gap-3 px-4 py-2.5">
-            <DollarSign className="w-4 h-4" />
-            <span>Tarifas Delivery</span>
+            <TruckIcon className="w-4 h-4" />
+            <span>Delivery</span>
           </TabsTrigger>
           <TabsTrigger value="payments" className="w-full justify-start gap-3 px-4 py-2.5">
             <CreditCard className="w-4 h-4" />
@@ -85,17 +86,7 @@ export default function ConfiguracionPage() {
           </TabsContent>
 
           <TabsContent value="delivery" className="mt-0 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuración de Delivery</CardTitle>
-                <CardDescription>
-                  Ajusta las tarifas y zonas de reparto
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">En desarrollo...</p>
-              </CardContent>
-            </Card>
+            <DeliveryConfig />
           </TabsContent>
 
           <TabsContent value="payments" className="mt-0 space-y-6">

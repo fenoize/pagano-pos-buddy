@@ -22,7 +22,7 @@ import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-type OrderStatus = 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'En camino' | 'Entregado' | 'Cancelado';
+type OrderStatus = 'PendientePago' | 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'En camino' | 'Entregado' | 'Cancelado';
 type FulfillmentType = 'retiro' | 'delivery';
 
 interface OrderData {

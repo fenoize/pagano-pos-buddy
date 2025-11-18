@@ -61,6 +61,10 @@ const CierresDiarios = lazy(() => import("@/pages/CierresDiarios"));
 const MarketingPromosApp = lazy(() => import("@/pages/MarketingPromosApp"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
+// Delivery Pages
+const DeliveryDashboard = lazy(() => import("@/pages/delivery/DeliveryDashboard"));
+const DeliveryHistory = lazy(() => import("@/pages/delivery/DeliveryHistory"));
+
 // Inventory Pages
 const InventoryHub = lazy(() => import("@/pages/inventory/InventoryHub"));
 const Warehouses = lazy(() => import("@/pages/inventory/Warehouses"));
@@ -476,6 +480,23 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <MarketingPromosApp />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              {/* Delivery Routes */}
+              <Route path="/pos/delivery" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <DeliveryDashboard />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/delivery/historial" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <DeliveryHistory />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />

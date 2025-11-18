@@ -26,7 +26,8 @@ import {
   DollarSign,
   FileText as FileTextIcon,
   Building2,
-  Megaphone
+  Megaphone,
+  TruckIcon
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -67,6 +68,12 @@ const menuItems = [
   { title: "Configuración", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
 ];
 
+// Delivery menu items
+const deliveryItems = [
+  { title: "Pedidos en Curso", url: "/pos/delivery", icon: TruckIcon, roles: ['Administrador', 'Reparto'] },
+  { title: "Mis Deliverys", url: "/pos/delivery/historial", icon: History, roles: ['Administrador', 'Reparto'] },
+];
+
 const inventoryItems = [
   { title: "Hub Inventario", url: "/pos/inventario", icon: Archive, roles: ['Administrador'] },
   { title: "Almacenes", url: "/pos/inventario/almacenes", icon: Warehouse, roles: ['Administrador'] },
@@ -86,7 +93,7 @@ const financeItems = [
   { title: "Gastos Fijos", url: "/pos/finanzas/gastos-fijos", icon: Building2, roles: ['Administrador'] },
   { title: "Egresos", url: "/pos/finanzas/egresos", icon: FileTextIcon, roles: ['Administrador', 'Cajero'] },
   { title: "Cierres Financieros", url: "/pos/finanzas/cierres", icon: FileText, roles: ['Administrador'] },
-  { title: "Delivery", url: "/pos/finanzas/exportaciones", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
+  { title: "Exportaciones", url: "/pos/finanzas/exportaciones", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
 ];
 
 // Marketing menu items
@@ -155,6 +162,61 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {/* Delivery Collapsible Group */}
+              {canAccessRoute(['Administrador', 'Reparto'] as AppRole[]) && (
+                <Collapsible
+                  open={currentPath.startsWith("/pos/delivery")}
+                  onOpenChange={() => {}}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                          currentPath.startsWith("/pos/delivery")
+                            ? "bg-primary text-primary-foreground font-semibold"
+                            : "text-primary hover:bg-primary hover:text-primary-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <TruckIcon className="h-4 w-4 shrink-0" />
+                          {!isCollapsed && <span>Delivery</span>}
+                        </div>
+                        {!isCollapsed && (
+                          currentPath.startsWith("/pos/delivery") ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    {!isCollapsed && (
+                      <CollapsibleContent className="mt-1 space-y-1">
+                        {deliveryItems
+                          .filter(item => canAccessRoute(item.roles as AppRole[]))
+                          .map((item) => (
+                          <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton asChild>
+                              <NavLink
+                                to={item.url}
+                                end
+                                className={({ isActive }) =>
+                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
+                                }
+                              >
+                                <item.icon className="h-3 w-3 shrink-0" />
+                                <span className="text-xs">{item.title}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </CollapsibleContent>
+                    )}
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
               
               {/* Inventario Collapsible Group */}
               {canAccessRoute(['Administrador'] as AppRole[]) && (

@@ -5,6 +5,7 @@ import { TrendingUp, ShoppingCart, Clock, DollarSign, Calendar, Package, Star, C
 import { useAuthContext } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { CajeroDashboard } from '@/components/dashboard/CajeroDashboard';
+import { RepartoDashboard } from '@/components/dashboard/RepartoDashboard';
 import { ActiveShiftWidget } from '@/components/dashboard/ActiveShiftWidget';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -38,6 +39,10 @@ export default function Dashboard() {
   // Show role-specific dashboard
   if (user?.role === 'Cajero') {
     return <CajeroDashboard />;
+  }
+
+  if (user?.role === 'Reparto') {
+    return <RepartoDashboard />;
   }
 
   // Default dashboard for other roles

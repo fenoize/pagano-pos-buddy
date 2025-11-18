@@ -69,7 +69,11 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
       case 'Pendiente': return 'En preparación';
       case 'En preparación': return 'Listo';
       case 'En pausa': return 'En preparación';
-      case 'Listo': return 'Entregado';
+      case 'Listo': 
+        // Para pedidos delivery, NO permitir marcar como Entregado desde cocina
+        // Eso lo hace el repartidor
+        if (order.fulfillment === 'delivery') return null;
+        return 'Entregado';
       default: return null;
     }
   };
