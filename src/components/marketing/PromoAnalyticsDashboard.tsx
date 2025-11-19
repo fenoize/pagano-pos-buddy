@@ -15,14 +15,17 @@ import { Eye, MousePointerClick, ShoppingCart, TrendingUp } from 'lucide-react';
 export function PromoAnalyticsDashboard() {
   const { data: metrics, isLoading } = usePromoMetrics();
 
-  const totalViews = metrics?.reduce((sum, m) => sum + m.total_views, 0) || 0;
-  const totalClicks = metrics?.reduce((sum, m) => sum + m.total_clicks, 0) || 0;
-  const totalConversions = metrics?.reduce((sum, m) => sum + m.total_conversions, 0) || 0;
+  const totalViews = metrics?.reduce((sum, m) => sum + (m.total_views || 0), 0) || 0;
+  const totalClicks = metrics?.reduce((sum, m) => sum + (m.total_clicks || 0), 0) || 0;
+  const totalConversions = metrics?.reduce((sum, m) => sum + (m.total_conversions || 0), 0) || 0;
   const avgClickRate = metrics?.length 
-    ? metrics.reduce((sum, m) => sum + m.click_rate, 0) / metrics.length 
+    ? metrics.reduce((sum, m) => sum + (m.click_rate || 0), 0) / metrics.length 
     : 0;
 
-  const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+  const formatPercent = (value: number | null | undefined) => {
+    if (value === null || value === undefined || isNaN(value)) return '0.0%';
+    return `${value.toFixed(1)}%`;
+  };
 
   return (
     <div className="space-y-6">
