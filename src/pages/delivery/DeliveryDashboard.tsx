@@ -12,6 +12,8 @@ export default function DeliveryDashboard() {
   const { orders, loading, updatingOrders, markAsOnTheWay, markAsDelivered, refetch } = useDeliveryOrders();
   const { settings } = useDeliverySettings();
 
+  // Separar pedidos por estado
+  const inPreparationOrders = orders.filter(o => o.status === 'En preparación');
   const readyOrders = orders.filter(o => o.status === 'Listo');
   const onTheWayOrders = orders.filter(o => o.status === 'En camino');
 
@@ -60,10 +62,14 @@ export default function DeliveryDashboard() {
 
       {/* Tabs para estado de pedidos */}
       <Tabs defaultValue="ready" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="preparation" className="flex items-center gap-2">
+            <Package className="w-4 h-4" />
+            En cocina ({inPreparationOrders.length})
+          </TabsTrigger>
           <TabsTrigger value="ready" className="flex items-center gap-2">
             <Package className="w-4 h-4" />
-            Listos ({readyOrders.length})
+            Por retirar ({readyOrders.length})
           </TabsTrigger>
           <TabsTrigger value="onTheWay" className="flex items-center gap-2">
             <TruckIcon className="w-4 h-4" />
@@ -71,7 +77,42 @@ export default function DeliveryDashboard() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Pedidos Listos */}
+        {/* Pedidos En Preparación */}
+        <TabsContent value="preparation" className="space-y-4 mt-4">
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2].map(i => (
+                <Skeleton key={i} className="h-64 w-full" />
+              ))}
+            </div>
+          ) : inPreparationOrders.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Package className="w-16 h-16 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No hay pedidos en preparación</h3>
+                <p className="text-muted-foreground text-center">
+                  Los pedidos que están siendo preparados en cocina aparecerán aquí
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {inPreparationOrders.map(order => (
+                <DeliveryOrderCard
+                  key={order.id}
+                  order={order}
+                  isUpdating={updatingOrders.has(order.id)}
+                  mapProvider={settings?.map_provider || 'google_maps'}
+                  onMarkAsOnTheWay={markAsOnTheWay}
+                  onMarkAsDelivered={markAsDelivered}
+                  showInPreparation
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Pedidos Listos para Retirar */}
         <TabsContent value="ready" className="space-y-4 mt-4">
           {loading ? (
             <div className="space-y-4">
@@ -83,9 +124,9 @@ export default function DeliveryDashboard() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Package className="w-16 h-16 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No hay pedidos listos</h3>
+                <h3 className="text-lg font-semibold mb-2">No hay pedidos listos para retirar</h3>
                 <p className="text-muted-foreground text-center">
-                  Cuando haya pedidos listos para entregar, aparecerán aquí
+                  Cuando cocina marque un pedido como "Listo", aparecerá aquí para que lo retires
                 </p>
               </CardContent>
             </Card>

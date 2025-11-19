@@ -32,7 +32,7 @@ export const useDeliveryOrders = () => {
           customer:customers(name, phone)
         `)
         .eq('fulfillment', 'delivery')
-        .in('status', ['Listo', 'En camino'])
+        .in('status', ['En preparación', 'Listo', 'En camino'])
         .order('created_at', { ascending: true });
 
       // Filtrar según modo de asignación

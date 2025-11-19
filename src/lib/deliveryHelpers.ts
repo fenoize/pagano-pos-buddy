@@ -62,3 +62,82 @@ export const getAddressFromSnapshot = (
     is_default: false
   };
 };
+
+/**
+ * Información de pago para repartidor
+ */
+export interface DeliveryPaymentInfo {
+  isPaidInFull: boolean;
+  methods: string[];
+  amountToCollect: number;
+  estimatedChange?: number;
+  paidAmount: number;
+  hasPartialPayment: boolean;
+}
+
+/**
+ * Calcula la información de pago relevante para el repartidor
+ * Usa la misma lógica que PaymentModal para calcular vuelto
+ */
+export const calculateDeliveryPaymentInfo = (
+  order: any,
+  runaRewardValue: number = 1300
+): DeliveryPaymentInfo => {
+  const {
+    total,
+    payment_efectivo = 0,
+    payment_mp = 0,
+    payment_pos = 0,
+    payment_aplicacion = 0,
+    payment_runas = 0,
+    payment_method
+  } = order;
+
+  // Calcular total pagado (excluyendo efectivo por ahora)
+  const nonCashPayments = payment_mp + payment_pos + payment_aplicacion + (payment_runas * runaRewardValue);
+  const totalPaid = nonCashPayments + payment_efectivo;
+
+  // Determinar métodos de pago usados
+  const methods: string[] = [];
+  if (payment_efectivo > 0) methods.push('Efectivo');
+  if (payment_mp > 0) methods.push('MercadoPago');
+  if (payment_pos > 0) methods.push('POS');
+  if (payment_aplicacion > 0) methods.push('App');
+  if (payment_runas > 0) methods.push('Runas');
+
+  // Si no hay métodos registrados pero hay payment_method, usar ese
+  if (methods.length === 0 && payment_method) {
+    const methodLabels: Record<string, string> = {
+      efectivo: 'Efectivo',
+      mp: 'MercadoPago',
+      pos: 'POS',
+      aplicacion: 'App',
+      runas: 'Runas',
+      mixto: 'Mixto'
+    };
+    methods.push(methodLabels[payment_method] || payment_method);
+  }
+
+  // Determinar si está pagado completamente
+  const isPaidInFull = totalPaid >= total;
+
+  // Calcular monto a cobrar (solo lo que falta)
+  const amountToCollect = Math.max(0, total - nonCashPayments);
+
+  // Calcular vuelto estimado si hay efectivo registrado
+  // Usa la misma lógica que PaymentModal.getChange()
+  let estimatedChange: number | undefined;
+  if (payment_efectivo > 0) {
+    const amountToCoverWithCash = Math.max(0, total - nonCashPayments);
+    estimatedChange = Math.max(0, payment_efectivo - amountToCoverWithCash);
+  }
+
+  return {
+    isPaidInFull,
+    methods,
+    amountToCollect,
+    estimatedChange,
+    paidAmount: nonCashPayments,
+    hasPartialPayment: nonCashPayments > 0 && !isPaidInFull
+  };
+};
