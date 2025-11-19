@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Map, TruckIcon, CheckCircle2, Clock } from 'lucide-react';
+import { 
+  Phone, Map, TruckIcon, CheckCircle2, Clock, User, MapPin, 
+  MessageSquare, DollarSign, Wallet, CreditCard, Loader2, Package 
+} from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DeliveryOrder } from '@/hooks/useDeliveryOrders';
 import { MapProvider } from '@/hooks/useDeliverySettings';
+import { calculateDeliveryPaymentInfo } from '@/lib/deliveryHelpers';
 
 interface DeliveryOrderCardProps {
   order: DeliveryOrder;
@@ -22,6 +26,7 @@ interface DeliveryOrderCardProps {
   mapProvider: MapProvider;
   onMarkAsOnTheWay: (orderId: string) => void;
   onMarkAsDelivered: (orderId: string) => void;
+  showInPreparation?: boolean;
 }
 
 export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
@@ -29,7 +34,8 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
   isUpdating,
   mapProvider,
   onMarkAsOnTheWay,
-  onMarkAsDelivered
+  onMarkAsDelivered,
+  showInPreparation = false
 }) => {
   const [showDeliveredConfirm, setShowDeliveredConfirm] = useState(false);
 
@@ -43,10 +49,14 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'Listo': return 'default';
-      case 'En camino': return 'secondary';
-      case 'Entregado': return 'outline';
-      default: return 'outline';
+      case 'En preparación':
+        return 'secondary';
+      case 'Listo': 
+        return 'default';
+      case 'En camino': 
+        return 'destructive';
+      default: 
+        return 'outline';
     }
   };
 
@@ -56,7 +66,14 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
       order.delivery_number ? `#${order.delivery_number}` : '',
       order.delivery_comuna
     ].filter(Boolean);
-    return parts.join(', ');
+    
+    let address = parts.join(', ');
+    
+    if (order.delivery_reference) {
+      address += ` (${order.delivery_reference})`;
+    }
+    
+    return address;
   };
 
   const handleMapClick = () => {
@@ -81,123 +98,237 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
     }
   };
 
-  const isAssigned = !!order.delivery_person_id;
+  const handleDeliveredConfirm = () => {
+    onMarkAsDelivered(order.id);
+    setShowDeliveredConfirm(false);
+  };
+
+  // Calcular información de pago
+  const paymentInfo = calculateDeliveryPaymentInfo(order);
+
+  const getPaymentMethodIcon = (method: string) => {
+    switch (method.toLowerCase()) {
+      case 'efectivo':
+        return <DollarSign className="w-4 h-4" />;
+      case 'mercadopago':
+      case 'app':
+        return <Wallet className="w-4 h-4" />;
+      case 'pos':
+      case 'runas':
+        return <CreditCard className="w-4 h-4" />;
+      default:
+        return <DollarSign className="w-4 h-4" />;
+    }
+  };
 
   return (
     <>
       <Card className="overflow-hidden hover:shadow-md transition-shadow">
-        <CardContent className="p-4 space-y-3">
-          {/* Header: Número de pedido y estado */}
-          <div className="flex items-start justify-between">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-primary">#{order.order_number}</span>
-              {!isAssigned && (
-                <Badge variant="outline" className="text-xs">Disponible</Badge>
+              <Badge variant={getStatusBadgeVariant(order.status)}>
+                {order.status}
+              </Badge>
+              {showInPreparation && (
+                <Badge variant="outline" className="bg-yellow-50">
+                  <Package className="w-3 h-3 mr-1" />
+                  En cocina
+                </Badge>
               )}
             </div>
-            <Badge variant={getStatusBadgeVariant(order.status)}>
-              {order.status}
-            </Badge>
-          </div>
-
-          {/* Cliente y dirección */}
-          <div className="space-y-1">
-            <p className="font-semibold text-base">{order.customer_name || 'Cliente'}</p>
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {getFullAddress() || 'Sin dirección'}
-            </p>
-          </div>
-
-          {/* Información adicional */}
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-1 text-muted-foreground">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Clock className="w-4 h-4" />
-              <span>Hace {order.minutes_since_created} min</span>
+              <span>Hace {order.minutes_since_created}min</span>
             </div>
-            <div className="font-semibold text-green-600">
-              {formatPrice(order.delivery_fee || 0)}
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Cliente */}
+          <div className="flex items-start gap-2">
+            <User className="w-4 h-4 mt-1 text-muted-foreground flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium">{order.customer_name || 'Cliente sin nombre'}</p>
+              {order.customer_phone && (
+                <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
+              )}
             </div>
           </div>
 
-          {/* Nota del pedido */}
+          {/* Dirección */}
+          <div className="flex items-start gap-2">
+            <MapPin className="w-4 h-4 mt-1 text-muted-foreground flex-shrink-0" />
+            <p className="text-sm flex-1">{getFullAddress() || 'Sin dirección'}</p>
+          </div>
+
+          {/* Fee de delivery */}
+          <div className="flex items-center justify-between py-2 px-3 bg-muted rounded-md">
+            <span className="text-sm font-medium">Fee de delivery</span>
+            <span className="font-bold text-green-600">{formatPrice(order.delivery_fee || 0)}</span>
+          </div>
+
+          {/* Información de pago */}
+          <div className="border-t pt-3 space-y-2">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <Wallet className="w-4 h-4" />
+              Información de pago
+            </h4>
+            
+            {/* Métodos de pago */}
+            {paymentInfo.methods.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {paymentInfo.methods.map((method, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {getPaymentMethodIcon(method)}
+                    <span className="ml-1">{method}</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Caso A: Pagado completamente */}
+            {paymentInfo.isPaidInFull && (
+              <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                <div className="flex items-center gap-2 text-green-700">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span className="font-semibold">Pedido pagado. No cobrar al cliente.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Caso B/C: Pago pendiente (total o parcial) */}
+            {!paymentInfo.isPaidInFull && (
+              <div className="space-y-2">
+                {/* Si hay pago parcial, mostrar cuánto está pagado */}
+                {paymentInfo.hasPartialPayment && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Ya pagado:</span>
+                    <span className="font-medium">{formatPrice(paymentInfo.paidAmount)}</span>
+                  </div>
+                )}
+
+                {/* Monto a cobrar */}
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-amber-900">
+                      <DollarSign className="w-5 h-5" />
+                      <span className="font-semibold">
+                        {paymentInfo.hasPartialPayment ? 'Pendiente en efectivo:' : 'Cobrar:'}
+                      </span>
+                    </div>
+                    <span className="text-lg font-bold text-amber-900">
+                      {formatPrice(paymentInfo.amountToCollect)}
+                    </span>
+                  </div>
+
+                  {/* Vuelto estimado si existe */}
+                  {paymentInfo.estimatedChange !== undefined && paymentInfo.estimatedChange > 0 && (
+                    <div className="mt-2 pt-2 border-t border-amber-200">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-amber-700">Vuelto estimado:</span>
+                        <span className="font-semibold text-amber-900">
+                          {formatPrice(paymentInfo.estimatedChange)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Notas del pedido */}
           {order.notes && (
-            <div className="text-sm p-2 bg-muted rounded-md">
-              <p className="text-muted-foreground line-clamp-2">{order.notes}</p>
+            <div className="flex items-start gap-2 p-2 bg-muted rounded-md">
+              <MessageSquare className="w-4 h-4 mt-1 text-muted-foreground flex-shrink-0" />
+              <p className="text-sm">{order.notes}</p>
             </div>
           )}
 
           {/* Botones de acción */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleMapClick}
-              disabled={!order.delivery_address}
-              className="w-full"
-            >
-              <Map className="w-4 h-4 mr-1" />
-              Mapa
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCallClick}
-              disabled={!order.customer_phone}
-              className="w-full"
-            >
-              <Phone className="w-4 h-4 mr-1" />
-              {order.customer_phone ? 'Llamar' : 'Sin teléfono'}
-            </Button>
-
-            {order.status === 'Listo' && (
+          {!showInPreparation && (
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              {/* Botón Mapa */}
               <Button
-                variant="default"
-                size="sm"
-                onClick={() => onMarkAsOnTheWay(order.id)}
-                disabled={isUpdating}
-                className="col-span-2"
+                variant="outline"
+                onClick={handleMapClick}
+                disabled={!order.delivery_address}
               >
-                <TruckIcon className="w-4 h-4 mr-2" />
-                En camino
+                <Map className="w-4 h-4 mr-2" />
+                Mapa
               </Button>
-            )}
 
-            {(order.status === 'En camino' || order.status === 'Listo') && (
+              {/* Botón Llamar */}
               <Button
-                variant="default"
-                size="sm"
-                onClick={() => setShowDeliveredConfirm(true)}
-                disabled={isUpdating}
-                className="col-span-2 bg-green-600 hover:bg-green-700"
+                variant="outline"
+                onClick={handleCallClick}
+                disabled={!order.customer_phone}
               >
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Entregado
+                <Phone className="w-4 h-4 mr-2" />
+                {order.customer_phone ? 'Llamar' : 'Sin teléfono'}
               </Button>
-            )}
-          </div>
+
+              {/* Botón "He retirado este pedido" - solo si está Listo */}
+              {order.status === 'Listo' && (
+                <Button
+                  className="col-span-2"
+                  onClick={() => onMarkAsOnTheWay(order.id)}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <TruckIcon className="w-4 h-4 mr-2" />
+                      He retirado este pedido
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {/* Botón "Marcar como entregado" - solo si está En camino */}
+              {order.status === 'En camino' && (
+                <Button
+                  className="col-span-2"
+                  variant="default"
+                  onClick={() => setShowDeliveredConfirm(true)}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Marcar como entregado
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Modal de confirmación de entrega */}
+      {/* Dialog de confirmación para entregado */}
       <AlertDialog open={showDeliveredConfirm} onOpenChange={setShowDeliveredConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Marcar como entregado?</AlertDialogTitle>
+            <AlertDialogTitle>¿Entregado el pedido #{order.order_number}?</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Confirmas que el pedido #{order.order_number} ha sido entregado al cliente?
-              Esta acción no se puede deshacer.
+              ¿Confirmas que has entregado este pedido al cliente?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                onMarkAsDelivered(order.id);
-                setShowDeliveredConfirm(false);
-              }}
-              className="bg-green-600 hover:bg-green-700"
-            >
+            <AlertDialogAction onClick={handleDeliveredConfirm}>
               Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>

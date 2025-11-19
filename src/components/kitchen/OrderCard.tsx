@@ -36,10 +36,15 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
     };
 
     updateElapsedTime();
-    const interval = setInterval(updateElapsedTime, 30000); // Update every 30 seconds
+    const interval = setInterval(updateElapsedTime, 30000);
 
     return () => clearInterval(interval);
   }, [order.created_at]);
+
+  // Ocultar pedidos delivery que ya están Listos (el repartidor los ve)
+  if (order.fulfillment === 'delivery' && order.status === 'Listo') {
+    return null;
+  }
 
   const getCardColor = () => {
     if (order.status === 'Listo') return 'bg-green-100 border-green-300';
