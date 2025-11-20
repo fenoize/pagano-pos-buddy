@@ -90,12 +90,12 @@ export const calculateDeliveryPaymentInfo = (
     payment_pos = 0,
     payment_aplicacion = 0,
     payment_runas = 0,
-    payment_method
+    payment_method,
+    status
   } = order;
 
-  // Calcular total pagado (excluyendo efectivo por ahora)
+  // Calcular pagos no efectivo
   const nonCashPayments = payment_mp + payment_pos + payment_aplicacion + (payment_runas * runaRewardValue);
-  const totalPaid = nonCashPayments + payment_efectivo;
 
   // Determinar métodos de pago usados
   const methods: string[] = [];
@@ -121,20 +121,27 @@ export const calculateDeliveryPaymentInfo = (
   if (payment_aplicacion > 0 && !methods.includes('App')) methods.push('App');
   if (payment_runas > 0 && !methods.includes('Runas')) methods.push('Runas');
 
-  // Determinar si está pagado completamente
-  // Si el método es efectivo y payment_efectivo es 0, NO está pagado
+  // LÓGICA PARA DELIVERY:
+  // Si payment_method es 'efectivo' y el pedido NO está entregado, significa que debe cobrar
+  // El campo payment_efectivo en estos casos representa el dinero dado en el local (con vuelto),
+  // NO indica que el delivery está pagado
   const isEffectivoMethod = payment_method?.toLowerCase() === 'efectivo';
   const isPaidInFull = isEffectivoMethod 
-    ? payment_efectivo >= total 
-    : totalPaid >= total;
+    ? status === 'Entregado' && payment_efectivo >= total  // Solo pagado si ya fue entregado
+    : nonCashPayments >= total;  // Otros métodos: verificar pagos no efectivo
 
-  // Calcular monto a cobrar (solo lo que falta)
-  const amountToCollect = Math.max(0, total - nonCashPayments);
+  // Calcular monto a cobrar
+  // Para efectivo: cobrar el total completo (si no está entregado)
+  // Para otros métodos: cobrar lo que falta después de pagos no efectivo
+  const amountToCollect = isEffectivoMethod 
+    ? (status === 'Entregado' ? 0 : total)  // Si es efectivo y no entregado, cobrar todo
+    : Math.max(0, total - nonCashPayments);  // Otros métodos: cobrar lo que falta
 
-  // Calcular vuelto estimado si hay efectivo registrado
-  // Usa la misma lógica que PaymentModal.getChange()
+  // Calcular vuelto estimado SOLO si:
+  // 1. Ya está entregado (para efectivo) o hay payment_efectivo > 0
+  // 2. Hay efectivo registrado
   let estimatedChange: number | undefined;
-  if (payment_efectivo > 0) {
+  if (status === 'Entregado' && payment_efectivo > 0) {
     const amountToCoverWithCash = Math.max(0, total - nonCashPayments);
     estimatedChange = Math.max(0, payment_efectivo - amountToCoverWithCash);
   }
