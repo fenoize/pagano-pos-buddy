@@ -51,11 +51,24 @@ export const useDeliveryOrders = () => {
       // Transformar datos agregando campos calculados
       const ordersWithExtras: DeliveryOrder[] = (data || []).map(order => {
         const minutesSince = (Date.now() - new Date(order.created_at).getTime()) / 1000 / 60;
+        
+        // Extraer nombre del cliente de diferentes fuentes posibles
+        let customerName = 'Cliente sin nombre';
+        if (order.customer && typeof order.customer === 'object') {
+          customerName = (order.customer as any).name || customerName;
+        }
+        
+        // Extraer teléfono del cliente
+        let customerPhone = undefined;
+        if (order.customer && typeof order.customer === 'object') {
+          customerPhone = (order.customer as any).phone;
+        }
+        
         return {
           ...order,
           items: order.items as any,
-          customer_name: order.customer?.name,
-          customer_phone: order.customer?.phone,
+          customer_name: customerName,
+          customer_phone: customerPhone,
           minutes_since_created: Math.floor(minutesSince),
           payment_runas: order.payment_runas || 0
         };

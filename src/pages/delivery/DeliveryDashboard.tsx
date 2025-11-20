@@ -62,18 +62,24 @@ export default function DeliveryDashboard() {
 
       {/* Tabs para estado de pedidos */}
       <Tabs defaultValue="ready" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="preparation" className="flex items-center gap-2">
-            <Package className="w-4 h-4" />
-            En cocina ({inPreparationOrders.length})
+        <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsTrigger value="preparation" className="flex items-center gap-2 py-4 text-base">
+            <Package className="w-5 h-5" />
+            <span className="hidden sm:inline">En cocina</span>
+            <span className="sm:hidden">Cocina</span>
+            <span className="font-semibold">({inPreparationOrders.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="ready" className="flex items-center gap-2">
-            <Package className="w-4 h-4" />
-            Por retirar ({readyOrders.length})
+          <TabsTrigger value="ready" className="flex items-center gap-2 py-4 text-base">
+            <Package className="w-5 h-5" />
+            <span className="hidden sm:inline">Por retirar</span>
+            <span className="sm:hidden">Retirar</span>
+            <span className="font-semibold">({readyOrders.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="onTheWay" className="flex items-center gap-2">
-            <TruckIcon className="w-4 h-4" />
-            En camino ({onTheWayOrders.length})
+          <TabsTrigger value="onTheWay" className="flex items-center gap-2 py-4 text-base">
+            <TruckIcon className="w-5 h-5" />
+            <span className="hidden sm:inline">En camino</span>
+            <span className="sm:hidden">Camino</span>
+            <span className="font-semibold">({onTheWayOrders.length})</span>
           </TabsTrigger>
         </TabsList>
 
