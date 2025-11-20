@@ -52,10 +52,13 @@ export const useDeliveryOrders = () => {
       const ordersWithExtras: DeliveryOrder[] = (data || []).map(order => {
         const minutesSince = (Date.now() - new Date(order.created_at).getTime()) / 1000 / 60;
         
-        // Extraer nombre del cliente de diferentes fuentes posibles
+        // Extraer nombre del cliente
+        // Prioridad: 1) customer.name del join, 2) nombre_resumen de la orden
         let customerName = 'Cliente sin nombre';
-        if (order.customer && typeof order.customer === 'object') {
-          customerName = (order.customer as any).name || customerName;
+        if (order.customer && typeof order.customer === 'object' && (order.customer as any).name) {
+          customerName = (order.customer as any).name;
+        } else if (order.nombre_resumen) {
+          customerName = order.nombre_resumen;
         }
         
         // Extraer teléfono del cliente
