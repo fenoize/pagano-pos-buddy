@@ -99,27 +99,34 @@ export const calculateDeliveryPaymentInfo = (
 
   // Determinar métodos de pago usados
   const methods: string[] = [];
-  if (payment_efectivo > 0) methods.push('Efectivo');
-  if (payment_mp > 0) methods.push('MercadoPago');
-  if (payment_pos > 0) methods.push('POS');
-  if (payment_aplicacion > 0) methods.push('App');
-  if (payment_runas > 0) methods.push('Runas');
-
-  // Si no hay métodos registrados pero hay payment_method, usar ese
-  if (methods.length === 0 && payment_method) {
-    const methodLabels: Record<string, string> = {
-      efectivo: 'Efectivo',
-      mp: 'MercadoPago',
-      pos: 'POS',
-      aplicacion: 'App',
-      runas: 'Runas',
-      mixto: 'Mixto'
-    };
-    methods.push(methodLabels[payment_method] || payment_method);
+  
+  // Primero revisar payment_method para determinar el método principal
+  const methodLabels: Record<string, string> = {
+    efectivo: 'Efectivo',
+    mp: 'MercadoPago',
+    pos: 'POS',
+    aplicacion: 'App',
+    runas: 'Runas',
+    mixto: 'Mixto'
+  };
+  
+  if (payment_method) {
+    const normalizedMethod = payment_method.toLowerCase();
+    methods.push(methodLabels[normalizedMethod] || payment_method);
   }
+  
+  // Agregar métodos adicionales si hay pagos mixtos
+  if (payment_mp > 0 && !methods.includes('MercadoPago')) methods.push('MercadoPago');
+  if (payment_pos > 0 && !methods.includes('POS')) methods.push('POS');
+  if (payment_aplicacion > 0 && !methods.includes('App')) methods.push('App');
+  if (payment_runas > 0 && !methods.includes('Runas')) methods.push('Runas');
 
   // Determinar si está pagado completamente
-  const isPaidInFull = totalPaid >= total;
+  // Si el método es efectivo y payment_efectivo es 0, NO está pagado
+  const isEffectivoMethod = payment_method?.toLowerCase() === 'efectivo';
+  const isPaidInFull = isEffectivoMethod 
+    ? payment_efectivo >= total 
+    : totalPaid >= total;
 
   // Calcular monto a cobrar (solo lo que falta)
   const amountToCollect = Math.max(0, total - nonCashPayments);
