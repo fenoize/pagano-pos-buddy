@@ -65,6 +65,25 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   
   const { toast } = useToast();
 
+  // Memoizar variantes disponibles para evitar recalcular en cada render
+  const availableVariantsLegacy = useMemo(() => {
+    const prices: any = product.prices || {};
+    const priceType = prices[selectedPriceType] || {};
+    
+    const variantMappings = [
+      { key: 'simple', variants: ['simple'] },
+      { key: 'doble', variants: ['doble'] },
+      { key: 'triple', variants: ['triple'] },
+      { key: 'cuádruple', variants: ['cuádruple', 'cuadruple'] }
+    ];
+    
+    return variantMappings
+      .filter(({ variants }) => 
+        variants.some(v => priceType[v] !== undefined && priceType[v] !== null)
+      )
+      .map(({ key }) => key);
+  }, [product.prices, selectedPriceType]);
+
   useEffect(() => {
     if (isOpen && product.id) {
       fetchProductVariantsAndCustomizations();
@@ -101,12 +120,16 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   }, [isOpen, product.id, editingItem]);
 
   // Reset to valid variant when price type changes
+  // Solo resetear si la variante actual NO está disponible en el nuevo tipo
   useEffect(() => {
-    const availableVariants = getVariants();
-    if (!availableVariants.includes(selectedVariant)) {
-      setSelectedVariant(availableVariants[0] as Variant);
+    // No resetear durante inicialización de edición
+    if (editingItem) return;
+    
+    if (!availableVariantsLegacy.includes(selectedVariant)) {
+      console.log(`[Customization] Variant ${selectedVariant} not available in ${selectedPriceType}, resetting to ${availableVariantsLegacy[0]}`);
+      setSelectedVariant((availableVariantsLegacy[0] || 'simple') as Variant);
     }
-  }, [selectedPriceType]);
+  }, [selectedPriceType, availableVariantsLegacy, selectedVariant, editingItem]);
 
   const fetchProductVariantsAndCustomizations = async () => {
     try {
@@ -238,24 +261,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   };
 
   const getVariants = (): string[] => {
-    const prices: any = product.prices || {};
-    const priceType = prices[selectedPriceType] || {};
-    
-    // Check all possible variants and their spellings
-    const variantMappings = [
-      { key: 'simple', variants: ['simple'] },
-      { key: 'doble', variants: ['doble'] },
-      { key: 'triple', variants: ['triple'] },
-      { key: 'cuádruple', variants: ['cuádruple', 'cuadruple'] }
-    ];
-    
-    const available = variantMappings
-      .filter(({ variants }) => 
-        variants.some(v => priceType[v] !== undefined && priceType[v] !== null)
-      )
-      .map(({ key }) => key);
-    
-    return available.length > 0 ? available : ['simple'];
+    return availableVariantsLegacy.length > 0 ? availableVariantsLegacy : ['simple'];
   };
 
   const getBasePrice = () => {

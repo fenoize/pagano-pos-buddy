@@ -9,7 +9,7 @@ export function useKitchenOrders() {
   const [loading, setLoading] = useState(true);
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
   const { toast } = useToast();
-  const { addToHistory, isInHistory } = useKDSHistory();
+  const { addToHistory, isInHistory, removeFromHistory } = useKDSHistory();
 
   useEffect(() => {
     fetchOrders();
@@ -156,12 +156,6 @@ export function useKitchenOrders() {
     const RETRY_DELAY = 1000; // 1 segundo
     
     try {
-      // Si la orden está en history, no la procesamos
-      if (isInHistory(orderId)) {
-        console.log(`[KDS] Order ${orderId} is in history, skipping`);
-        setOrders(prev => prev.filter(order => order.id !== orderId));
-        return;
-      }
       
       const { data, error } = await supabase
         .from('orders')
@@ -208,6 +202,22 @@ export function useKitchenOrders() {
         ...data,
         items: data.items as any
       } as Order;
+
+      // Revisar si el pedido cambió de estado final a activo (debe volver al KDS)
+      const wasInHistory = isInHistory(orderId);
+      const isNowActive = !['Entregado', 'Cancelado', 'PendientePago'].includes(orderWithItems.status);
+
+      if (wasInHistory && isNowActive) {
+        console.log(`[KDS] Order #${orderWithItems.order_number} changed from final to active status (${orderWithItems.status}), removing from history`);
+        removeFromHistory(orderId);
+      }
+
+      // Si después de esto el pedido está en history Y en estado final, filtrarlo
+      if (isInHistory(orderId) && ['Entregado', 'Cancelado'].includes(orderWithItems.status)) {
+        console.log(`[KDS] Order ${orderId} is in history and in final state, filtering out`);
+        setOrders(prev => prev.filter(order => order.id !== orderId));
+        return;
+      }
 
       setOrders(prev => {
         // Si el pedido está Entregado o Cancelado, agregarlo a history y removerlo del KDS
