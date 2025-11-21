@@ -186,6 +186,19 @@ export function useKDSHistory() {
   };
 
   /**
+   * Remueve una orden específica del historial
+   */
+  const removeFromHistory = (orderId: string) => {
+    const history = getHistory();
+    const updated = history.filter(entry => entry.orderId !== orderId);
+    
+    if (updated.length !== history.length) {
+      saveHistory(updated);
+      console.log(`[KDS History] Removed order ${orderId} from history`);
+    }
+  };
+
+  /**
    * Limpia el historial completo
    */
   const clearHistory = () => {
@@ -202,6 +215,7 @@ export function useKDSHistory() {
   return {
     addToHistory,
     isInHistory,
+    removeFromHistory,
     fetchHistoryOrders,
     reopenOrder,
     clearHistory,

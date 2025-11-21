@@ -20,10 +20,11 @@ import PaymentModal from '@/components/pos/PaymentModal';
 import RunasCalculator from '@/components/pos/RunasCalculator';
 import { CouponManager } from '@/components/pos/CouponManager';
 import { CouponModal } from '@/components/pos/CouponModal';
-import { ArrowLeft, ArrowRight, User, Ticket } from 'lucide-react';
+import { ArrowLeft, ArrowRight, User, Ticket, History } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { checkAndAwardBadges } from '@/lib/badgeAwarder';
+import { RecentOrdersModal } from '@/components/sales/RecentOrdersModal';
 
 export default function NewSale() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -48,6 +49,7 @@ export default function NewSale() {
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+  const [showRecentOrders, setShowRecentOrders] = useState(false);
   
   // Preloaded customization data
   const [preloadedData, setPreloadedData] = useState<{
@@ -714,6 +716,16 @@ export default function NewSale() {
                       </span>
                     </Button>
                   </div>
+                  
+                  {/* Botón de Historial de Órdenes */}
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setShowRecentOrders(true)}
+                  >
+                    <History className="w-4 h-4" />
+                    <span>Últimas Órdenes</span>
+                  </Button>
 
                   <Cart
                   items={cartItems}
@@ -885,6 +897,12 @@ export default function NewSale() {
         runaRewardValue={runaRewardValue}
         onRunasChange={setUsedRunas}
         usedRunas={usedRunas}
+      />
+
+      {/* Recent Orders Modal */}
+      <RecentOrdersModal
+        isOpen={showRecentOrders}
+        onClose={() => setShowRecentOrders(false)}
       />
     </div>
   );
