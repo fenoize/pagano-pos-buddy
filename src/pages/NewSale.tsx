@@ -716,16 +716,6 @@ export default function NewSale() {
                       </span>
                     </Button>
                   </div>
-                  
-                  {/* Botón de Historial de Órdenes */}
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start gap-2"
-                    onClick={() => setShowRecentOrders(true)}
-                  >
-                    <History className="w-4 h-4" />
-                    <span>Últimas Órdenes</span>
-                  </Button>
 
                   <Cart
                   items={cartItems}
@@ -803,6 +793,16 @@ export default function NewSale() {
         
         {/* Step Navigation */}
         <div className="flex items-center gap-2">
+          {/* Botón de Últimas Órdenes */}
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => setShowRecentOrders(true)}
+          >
+            <History className="w-4 h-4" />
+            <span className="hidden sm:inline">Últimas Órdenes</span>
+          </Button>
+          
           {currentStep > 1 && (
             <Button
               variant="outline"
