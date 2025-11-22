@@ -274,6 +274,15 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     }
   };
 
+  // Recalcular total automáticamente cuando cambian las selecciones o extras
+  useEffect(() => {
+    if (selections.length > 0 && comboConfig) {
+      const total = calculateComboTotal();
+      console.log('[ComboSelector] Total recalculated:', total, 'selections:', selections);
+      onComboTotalChange(total);
+    }
+  }, [selections, productExtras, comboConfig]);
+
   const updateSelection = (slotIndex: number, updates: Partial<ComboItemSelection>) => {
     const newSelections = selections.map((selection, index) => 
       index === slotIndex 
@@ -412,6 +421,16 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         Object.entries(selection.extras).forEach(([extraId, qty]) => {
           const categoryExtras = productExtras[selection.comboSlot.category_id] || [];
           const extra = categoryExtras.find(e => e.id === extraId);
+          
+          console.log('[ComboSelector] Processing extra:', {
+            extraId,
+            qty,
+            categoryId: selection.comboSlot.category_id,
+            availableExtras: categoryExtras.length,
+            found: !!extra,
+            extraPrice: extra?.price
+          });
+          
           if (extra) {
             total += extra.price * qty * selection.quantity;
           }
@@ -419,6 +438,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       }
     });
 
+    console.log('[ComboSelector] Final combo total:', total);
     return Math.max(0, total);
   };
 
@@ -449,6 +469,14 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     const selection = selections[slotIndex];
     const currentExtras = selection.extras || {};
     const newQty = Math.max(0, (currentExtras[extraId] || 0) + change);
+    
+    console.log('[ComboSelector] handleExtraChange:', { 
+      slotIndex, 
+      extraId, 
+      change, 
+      newQty,
+      availableExtras: productExtras[selection.comboSlot.category_id]
+    });
     
     let newExtras: Record<string, number>;
     if (newQty === 0) {
