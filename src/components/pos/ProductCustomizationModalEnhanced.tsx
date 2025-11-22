@@ -70,6 +70,11 @@ export function ProductCustomizationModalEnhanced({
   const [comboSelections, setComboSelections] = useState<any[]>([]);
   const [comboTotal, setComboTotal] = useState(0);
   const [useCombo, setUseCombo] = useState(false);
+
+  // Debug: Log when comboTotal updates
+  useEffect(() => {
+    console.log('[ProductCustomization] comboTotal updated:', comboTotal);
+  }, [comboTotal]);
   
   // Extras modal state
   const [showExtrasModal, setShowExtrasModal] = useState(false);
@@ -205,10 +210,13 @@ export function ProductCustomizationModalEnhanced({
 
   const getTotalPrice = () => {
     if (hasCombo) {
+      console.log('[ProductCustomization] Combo total:', comboTotal, 'quantity:', quantity);
       // Para combos, los extras se manejan dentro del combo
       return comboTotal * quantity;
     }
-    return (getBasePrice() + getExtrasTotal() + getModifiersTotal()) * quantity;
+    const total = (getBasePrice() + getExtrasTotal() + getModifiersTotal()) * quantity;
+    console.log('[ProductCustomization] Regular total:', total);
+    return total;
   };
 
   const handleExtraChange = (extraId: string, change: number) => {
