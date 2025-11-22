@@ -337,8 +337,15 @@ export function ProductCustomizationModalEnhanced({
         });
       }
 
+      // Enrich comboSlot with category info
+      const enrichedComboSlot = {
+        ...selection.comboSlot,
+        category: preloadedComboData?.categories?.find((c: any) => c.id === selection.comboSlot.category_id)
+      };
+
       return {
         ...selection,
+        comboSlot: enrichedComboSlot,
         extras: enrichedExtras,
         modifiers: enrichedModifiers
       };
