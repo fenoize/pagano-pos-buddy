@@ -61,8 +61,11 @@ export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem
                       <p className="text-xs text-muted-foreground">
                         {/* Display variant info based on system used */}
                         {item.variant_name ? (
-                          // New variant system
+                          // New variant system or combo
                           item.variant_name
+                        ) : item.is_combo_item ? (
+                          // Combo item without variant_name
+                          'Combo'
                         ) : (
                           // Legacy system
                           `${item.size} • ${item.priceKind === 'combo' ? 'Combo' : 'Solo'}`

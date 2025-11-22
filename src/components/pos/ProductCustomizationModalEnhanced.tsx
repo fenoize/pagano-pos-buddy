@@ -299,6 +299,51 @@ export function ProductCustomizationModalEnhanced({
       };
     });
 
+    // Transform combo selections to include extra names
+    const enrichedComboSelections = useCombo ? comboSelections.map((selection: any) => {
+      // Transform extras from Record<string, number> to array with names
+      const enrichedExtras: any[] = [];
+      if (selection.extras && typeof selection.extras === 'object') {
+        Object.entries(selection.extras).forEach(([extraId, qty]) => {
+          const qtyNum = qty as number;
+          // Find extra in preloaded data
+          const categoryExtras = preloadedComboData?.productExtras?.[selection.comboSlot.category_id] || [];
+          const extra = categoryExtras.find((e: any) => e.id === extraId);
+          if (extra && qtyNum > 0) {
+            enrichedExtras.push({
+              key: extraId,
+              label: extra.name,
+              name: extra.name,
+              price: extra.price,
+              quantity: qtyNum
+            });
+          }
+        });
+      }
+
+      // Transform modifiers to include names
+      const enrichedModifiers: any[] = [];
+      if (selection.modifiers && Array.isArray(selection.modifiers)) {
+        const categoryModifiers = preloadedComboData?.productModifiers?.[selection.selectedProduct?.id] || [];
+        selection.modifiers.forEach((modifierId: string) => {
+          const modifier = categoryModifiers.find((m: any) => m.id === modifierId);
+          if (modifier) {
+            enrichedModifiers.push({
+              id: modifierId,
+              name: modifier.name,
+              price: 0
+            });
+          }
+        });
+      }
+
+      return {
+        ...selection,
+        extras: enrichedExtras,
+        modifiers: enrichedModifiers
+      };
+    }) : undefined;
+
     const orderItem: any = {
       productId: product.id!,
       productName: product.name,
@@ -309,10 +354,10 @@ export function ProductCustomizationModalEnhanced({
       notes: specialNotes.trim() || undefined,
       // Combo data
       is_combo_item: useCombo,
-      combo_selections: useCombo ? comboSelections : undefined,
-      // Variant data (solo si no es combo)
+      combo_selections: enrichedComboSelections,
+      // Variant data
       category_variant_id: useCombo ? undefined : selectedVariantOption?.category_variant_id,
-      variant_name: useCombo ? undefined : selectedVariantOption?.variant?.name,
+      variant_name: useCombo ? 'Combo' : selectedVariantOption?.variant?.name,
       product_variant_option_id: useCombo ? undefined : selectedVariantOption?.id,
     };
 
