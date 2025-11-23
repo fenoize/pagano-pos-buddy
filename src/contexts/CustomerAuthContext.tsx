@@ -94,7 +94,7 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const signUp = async (email: string, password: string, name: string, phone?: string, birthDate?: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -108,6 +108,46 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
 
       if (error) throw error;
+
+      // Fallback: verificar si se creó el customer, si no, crearlo manualmente
+      if (data.user) {
+        try {
+          // Esperar un momento para que el trigger se ejecute
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Verificar si existe el customer
+          const { data: existingCustomer, error: checkError } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('auth_user_id', data.user.id)
+            .maybeSingle();
+
+          // Si no existe y no hubo error de permisos, intentar crearlo manualmente
+          if (!existingCustomer && !checkError) {
+            console.log('Trigger did not create customer, creating manually...');
+            const { error: insertError } = await supabase
+              .from('customers')
+              .insert({
+                auth_user_id: data.user.id,
+                email: email,
+                name: name || email.split('@')[0],
+                nombres: name || email.split('@')[0],
+                phone: phone,
+                fecha_nacimiento: birthDate || null,
+                estado_cliente: 'Activo',
+              });
+
+            if (insertError) {
+              console.error('Failed to create customer manually:', insertError);
+              // No lanzar error, el trigger podría haberlo creado después
+            }
+          }
+        } catch (fallbackError) {
+          console.error('Error in customer creation fallback:', fallbackError);
+          // No lanzar error, esto no debe bloquear el registro
+        }
+      }
+
       return { error: null };
     } catch (error) {
       return { error: error as Error };
