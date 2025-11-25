@@ -133,9 +133,11 @@ export function ProductCustomizationModalEnhanced({
       
       // Set combo state
       if (editingItem.is_combo_item) {
-      setUseCombo(true);
-      setComboSelections(editingItem.combo_selections || []);
-    }
+        setUseCombo(true);
+        setComboSelections(editingItem.combo_selections || []);
+        // Set the combo total from editing item
+        setComboTotal(editingItem.basePrice || 0);
+      }
   }
 }, [isOpen, product.id, editingItem, preloadedVariants, preloadedExtras, preloadedModifiers, preloadedComboData]);
 
@@ -400,6 +402,7 @@ export function ProductCustomizationModalEnhanced({
               onComboItemsChange={setComboSelections}
               onComboTotalChange={setComboTotal}
               preloadedComboData={preloadedComboData}
+              initialSelections={editingItem?.combo_selections}
             />
           ) : (
             <Card>
