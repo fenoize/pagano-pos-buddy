@@ -354,9 +354,9 @@ export function ProductCustomizationModalEnhanced({
     const orderItem: any = {
       productId: product.id!,
       productName: product.name,
-      basePrice: getBasePrice(),
+      basePrice: useCombo ? comboTotal : getBasePrice(),
       quantity,
-      extras: selectedExtrasArray,
+      extras: useCombo ? [] : selectedExtrasArray,
       modifiers: selectedModifiersArray,
       notes: specialNotes.trim() || undefined,
       // Combo data
