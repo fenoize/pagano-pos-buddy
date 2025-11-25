@@ -55,6 +55,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
   const [productVariants, setProductVariants] = useState<Record<string, ProductVariantOption[]>>({});
   const [productExtras, setProductExtras] = useState<ProductExtra[]>([]);
   const [productModifiers, setProductModifiers] = useState<ProductModifier[]>([]);
+  const [productCombos, setProductCombos] = useState<Record<string, any>>({});
   const { config } = usePOSConfig();
 
   useEffect(() => {
@@ -277,6 +278,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
       setProductVariants(variantsByProduct);
       setProductExtras(extrasRes.data || []);
       setProductModifiers(modifiersRes.data || []);
+      setProductCombos(combos);
 
       if (onDataPreloaded) {
         onDataPreloaded({
@@ -299,6 +301,12 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
   };
 
   const getMinPrice = (product: Product) => {
+    // Check if product has combo configuration
+    const comboData = productCombos[product.id!];
+    if (comboData?.config?.base_price) {
+      return comboData.config.base_price;
+    }
+
     const variants = productVariants[product.id!] || [];
     
     // If product has new variant system, use variant prices

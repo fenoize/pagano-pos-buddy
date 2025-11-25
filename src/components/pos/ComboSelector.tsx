@@ -15,6 +15,7 @@ interface ComboSelectorProps {
   onComboItemsChange: (items: ComboItemSelection[]) => void;
   onComboTotalChange: (total: number) => void;
   preloadedComboData?: any;
+  initialSelections?: ComboItemSelection[];
 }
 
 interface ComboItemSelection {
@@ -30,7 +31,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   product,
   onComboItemsChange,
   onComboTotalChange,
-  preloadedComboData = null
+  preloadedComboData = null,
+  initialSelections = []
 }) => {
   const [comboConfig, setComboConfig] = useState<ComboProduct | null>(null);
   const [comboSlots, setComboSlots] = useState<ComboItem[]>([]);
@@ -67,34 +69,42 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         setProductExtras(preloadedComboData.productExtras);
         setProductModifiers(preloadedComboData.productModifiers);
 
-        // Initialize selections with defaults
-        const initialSelections: ComboItemSelection[] = (preloadedComboData.slots || []).map((slot: ComboItem) => {
-          const categoryProducts = preloadedComboData.slotProducts[slot.category_id] || [];
-          const defaultProduct = slot.default_product_id 
-            ? categoryProducts.find((p: Product) => p.id === slot.default_product_id)
-            : categoryProducts[0];
-
-          const productVariants = defaultProduct ? preloadedComboData.productVariants[defaultProduct.id!] || [] : [];
-          const defaultVariant = slot.default_variant_id
-            ? productVariants.find((v: ProductVariantOption) => v.id === slot.default_variant_id)
-            : productVariants.find((v: ProductVariantOption) => v.is_default) || productVariants[0];
-
-          return {
-            comboSlot: slot,
-            selectedProduct: defaultProduct,
-            selectedVariant: defaultVariant,
-            quantity: slot.quantity,
-            extras: {},
-            modifiers: []
-          };
-        });
-
-        setSelections(initialSelections);
+        // Initialize selections - use initialSelections prop if provided (editing mode)
+        let computedSelections: ComboItemSelection[];
         
-        // Notify parent immediately with preloaded selections
-        const total = calculateComboTotalFromSelections(initialSelections, preloadedComboData.config, preloadedComboData.productExtras, preloadedComboData.productVariants);
+        if (initialSelections && initialSelections.length > 0) {
+          console.log('[ComboSelector] Using provided initialSelections (editing mode)');
+          computedSelections = initialSelections;
+        } else {
+          console.log('[ComboSelector] Creating default selections');
+          computedSelections = (preloadedComboData.slots || []).map((slot: ComboItem) => {
+            const categoryProducts = preloadedComboData.slotProducts[slot.category_id] || [];
+            const defaultProduct = slot.default_product_id 
+              ? categoryProducts.find((p: Product) => p.id === slot.default_product_id)
+              : categoryProducts[0];
+
+            const productVariants = defaultProduct ? preloadedComboData.productVariants[defaultProduct.id!] || [] : [];
+            const defaultVariant = slot.default_variant_id
+              ? productVariants.find((v: ProductVariantOption) => v.id === slot.default_variant_id)
+              : productVariants.find((v: ProductVariantOption) => v.is_default) || productVariants[0];
+
+            return {
+              comboSlot: slot,
+              selectedProduct: defaultProduct,
+              selectedVariant: defaultVariant,
+              quantity: slot.quantity,
+              extras: {},
+              modifiers: []
+            };
+          });
+        }
+
+        setSelections(computedSelections);
+        
+        // Notify parent immediately with computed selections
+        const total = calculateComboTotalFromSelections(computedSelections, preloadedComboData.config, preloadedComboData.productExtras, preloadedComboData.productVariants);
         onComboTotalChange(total);
-        onComboItemsChange(initialSelections);
+        onComboItemsChange(computedSelections);
         
         setLoading(false);
         return;
@@ -239,7 +249,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       setProductModifiers(groupedModifiers);
 
       // Initialize selections with defaults
-      const initialSelections: ComboItemSelection[] = (slotsData || []).map(slot => {
+      const defaultSelections: ComboItemSelection[] = (slotsData || []).map(slot => {
         const categoryProducts = groupedProducts[slot.category_id] || [];
         const defaultProduct = slot.default_product_id 
           ? categoryProducts.find(p => p.id === slot.default_product_id)
@@ -260,7 +270,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         };
       });
 
-      setSelections(initialSelections);
+      setSelections(defaultSelections);
 
     } catch (error) {
       console.error('Error fetching combo data:', error);
