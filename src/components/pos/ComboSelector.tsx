@@ -49,7 +49,50 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     if (product.id) {
       fetchComboData();
     }
-  }, [product.id, initialSelections]);
+  }, [product.id]);
+
+  // Separate effect to handle when initialSelections change (for editing mode)
+  useEffect(() => {
+    if (initialSelections && initialSelections.length > 0 && selections.length > 0 && comboConfig) {
+      console.log('[ComboSelector] Detected initialSelections change, updating selections');
+      
+      // Transform enriched format back to internal format
+      const transformedSelections = initialSelections.map((selection: any) => {
+        // Convert extras from array back to Record<string, number>
+        let transformedExtras: Record<string, number> = {};
+        if (Array.isArray(selection.extras)) {
+          selection.extras.forEach((extra: any) => {
+            const extraId = extra.key || extra.id;
+            const quantity = extra.quantity || 1;
+            if (extraId) {
+              transformedExtras[extraId] = quantity;
+            }
+          });
+        } else if (selection.extras && typeof selection.extras === 'object') {
+          transformedExtras = selection.extras;
+        }
+        
+        // Convert modifiers from array of objects back to array of IDs
+        let transformedModifiers: string[] = [];
+        if (Array.isArray(selection.modifiers)) {
+          transformedModifiers = selection.modifiers.map((mod: any) => 
+            typeof mod === 'string' ? mod : (mod.id || mod.key)
+          ).filter(Boolean);
+        }
+        
+        return {
+          ...selection,
+          extras: transformedExtras,
+          modifiers: transformedModifiers
+        };
+      });
+      
+      setSelections(transformedSelections);
+      const total = calculateComboTotalFromSelections(transformedSelections, comboConfig, productExtras, productVariants);
+      onComboTotalChange(total);
+      onComboItemsChange(transformedSelections);
+    }
+  }, [initialSelections?.length]);
 
   // Remove auto-notification effect - let parent handle when to update
 
@@ -73,14 +116,12 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         let computedSelections: ComboItemSelection[];
         
         if (initialSelections && initialSelections.length > 0) {
-          console.log('[ComboSelector] Using provided initialSelections (editing mode)');
+          console.log('[ComboSelector] Using provided initialSelections (editing mode) on initial load');
           
           // Transform enriched format back to internal format
           computedSelections = initialSelections.map((selection: any) => {
-            // Convert extras from array back to Record<string, number>
             let transformedExtras: Record<string, number> = {};
             if (Array.isArray(selection.extras)) {
-              // Formato enriched: [{ key, label, price, quantity }]
               selection.extras.forEach((extra: any) => {
                 const extraId = extra.key || extra.id;
                 const quantity = extra.quantity || 1;
@@ -89,11 +130,9 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                 }
               });
             } else if (selection.extras && typeof selection.extras === 'object') {
-              // Ya está en formato correcto
               transformedExtras = selection.extras;
             }
             
-            // Convert modifiers from array of objects back to array of IDs
             let transformedModifiers: string[] = [];
             if (Array.isArray(selection.modifiers)) {
               transformedModifiers = selection.modifiers.map((mod: any) => 
@@ -119,6 +158,12 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
             const defaultVariant = slot.default_variant_id
               ? productVariants.find((v: ProductVariantOption) => v.id === slot.default_variant_id)
               : productVariants.find((v: ProductVariantOption) => v.is_default) || productVariants[0];
+
+            console.log('[ComboSelector] Default selection for slot:', {
+              slotId: slot.id,
+              product: defaultProduct?.name,
+              variant: defaultVariant?.name || defaultVariant
+            });
 
             return {
               comboSlot: slot,
