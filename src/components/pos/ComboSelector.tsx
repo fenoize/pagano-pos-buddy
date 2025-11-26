@@ -49,7 +49,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     if (product.id) {
       fetchComboData();
     }
-  }, [product.id]);
+  }, [product.id, initialSelections]);
 
   // Remove auto-notification effect - let parent handle when to update
 
@@ -74,7 +74,39 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         
         if (initialSelections && initialSelections.length > 0) {
           console.log('[ComboSelector] Using provided initialSelections (editing mode)');
-          computedSelections = initialSelections;
+          
+          // Transform enriched format back to internal format
+          computedSelections = initialSelections.map((selection: any) => {
+            // Convert extras from array back to Record<string, number>
+            let transformedExtras: Record<string, number> = {};
+            if (Array.isArray(selection.extras)) {
+              // Formato enriched: [{ key, label, price, quantity }]
+              selection.extras.forEach((extra: any) => {
+                const extraId = extra.key || extra.id;
+                const quantity = extra.quantity || 1;
+                if (extraId) {
+                  transformedExtras[extraId] = quantity;
+                }
+              });
+            } else if (selection.extras && typeof selection.extras === 'object') {
+              // Ya está en formato correcto
+              transformedExtras = selection.extras;
+            }
+            
+            // Convert modifiers from array of objects back to array of IDs
+            let transformedModifiers: string[] = [];
+            if (Array.isArray(selection.modifiers)) {
+              transformedModifiers = selection.modifiers.map((mod: any) => 
+                typeof mod === 'string' ? mod : (mod.id || mod.key)
+              ).filter(Boolean);
+            }
+            
+            return {
+              ...selection,
+              extras: transformedExtras,
+              modifiers: transformedModifiers
+            };
+          });
         } else {
           console.log('[ComboSelector] Creating default selections');
           computedSelections = (preloadedComboData.slots || []).map((slot: ComboItem) => {
