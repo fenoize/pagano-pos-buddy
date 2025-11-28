@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Edit2, Trash2, Search } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Trash2, Search, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useRawMaterials } from "@/hooks/useRawMaterials";
+import { useStockBalances } from "@/hooks/useStockBalances";
 import { RawMaterialForm } from "@/components/inventory/RawMaterialForm";
 import { RawMaterial } from "@/types";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -29,11 +31,19 @@ import {
 export default function RawMaterials() {
   const navigate = useNavigate();
   const { materials, loading, createMaterial, updateMaterial, deleteMaterial } = useRawMaterials();
+  const { balances, loading: balancesLoading } = useStockBalances();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<RawMaterial | undefined>();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const getStockForMaterial = (materialId: string): number => {
+    // Sum stock across all warehouses
+    return balances
+      .filter(b => b.raw_material_id === materialId)
+      .reduce((sum, b) => sum + b.quantity, 0);
+  };
 
   const handleOpenDialog = (material?: RawMaterial) => {
     setEditingMaterial(material);
@@ -60,7 +70,7 @@ export default function RawMaterials() {
     m.code?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) {
+  if (loading || balancesLoading) {
     return <div className="flex items-center justify-center h-64">Cargando...</div>;
   }
 
@@ -103,7 +113,8 @@ export default function RawMaterials() {
                 <TableHead>Código</TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Unidad Base</TableHead>
-                <TableHead>Stock Mín.</TableHead>
+                <TableHead className="text-right">Stock Actual</TableHead>
+                <TableHead className="text-right">Stock Mín.</TableHead>
                 <TableHead>Costo Prom.</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -112,30 +123,37 @@ export default function RawMaterials() {
             <TableBody>
               {filteredMaterials.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     {searchTerm ? "No se encontraron resultados" : "No hay materias primas registradas"}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredMaterials.map((material) => (
-                  <TableRow key={material.id}>
+                filteredMaterials.map((material) => {
+                  const currentStock = getStockForMaterial(material.id);
+                  const minStock = material.min_stock || 0;
+                  const isLowStock = currentStock < minStock && minStock > 0;
+
+                  return (
+                  <TableRow key={material.id} className={isLowStock ? "bg-destructive/5" : ""}>
                     <TableCell className="font-medium">{material.code || "—"}</TableCell>
                     <TableCell>{material.name}</TableCell>
                     <TableCell>
                       {material.base_uom?.abbreviation || "—"}
                     </TableCell>
-                    <TableCell>{material.min_stock || 0}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className={isLowStock ? "text-destructive font-medium" : ""}>
+                          {currentStock}
+                        </span>
+                        {isLowStock && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">{minStock}</TableCell>
                     <TableCell>${(material.avg_cost || 0).toLocaleString('es-CL')}</TableCell>
                     <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          material.is_active
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                        }`}
-                      >
+                      <Badge variant={material.is_active ? "secondary" : "destructive"}>
                         {material.is_active ? "Activo" : "Inactivo"}
-                      </span>
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -157,7 +175,7 @@ export default function RawMaterials() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
+                );})
               )}
             </TableBody>
           </Table>
