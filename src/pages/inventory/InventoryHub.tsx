@@ -1,5 +1,4 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { 
   Package, 
   Warehouse, 
@@ -8,14 +7,17 @@ import {
   History, 
   Settings as SettingsIcon, 
   TrendingUp,
-  ArrowRightLeft
+  ArrowRightLeft,
+  AlertTriangle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useStockBalances } from "@/hooks/useStockBalances";
 
 export default function InventoryHub() {
   const navigate = useNavigate();
   const { canManageInventory, canViewInventory } = usePermissions();
+  const { stats, loading: statsLoading } = useStockBalances();
 
   const modules = [
     {
@@ -125,34 +127,49 @@ export default function InventoryHub() {
           ))}
       </div>
 
-      {/* Quick Stats - Placeholder para futuro */}
+      {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Materias Primas</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Package className="h-4 w-4 text-primary" />
+              Materias Primas
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">--</div>
+            <div className="text-2xl font-bold text-primary">
+              {statsLoading ? "..." : stats.totalMaterials}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Activas en sistema</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Stock Crítico</CardTitle>
+        <Card className={stats.lowStockCount > 0 ? "border-destructive/50" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <AlertTriangle className={`h-4 w-4 ${stats.lowStockCount > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+              Stock Crítico
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">--</div>
+            <div className={`text-2xl font-bold ${stats.lowStockCount > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+              {statsLoading ? "..." : stats.lowStockCount}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Items bajo mínimo</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Movimientos Hoy</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <History className="h-4 w-4 text-green-600" />
+              Movimientos Hoy
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">--</div>
+            <div className="text-2xl font-bold text-green-600">
+              {statsLoading ? "..." : stats.movementsToday}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Transacciones registradas</p>
           </CardContent>
         </Card>

@@ -71,6 +71,7 @@ const Warehouses = lazy(() => import("@/pages/inventory/Warehouses"));
 const RawMaterials = lazy(() => import("@/pages/inventory/RawMaterials"));
 const Recipes = lazy(() => import("@/pages/inventory/Recipes"));
 const Kardex = lazy(() => import("@/pages/inventory/Kardex"));
+const StockAdjustments = lazy(() => import("@/pages/inventory/StockAdjustments"));
 
 // Finance Pages
 const FinanceKPIs = lazy(() => import("@/pages/finance/FinanceKPIs"));
@@ -387,9 +388,7 @@ const App = () => (
               <Route path="/pos/inventario/ajustes" element={
                 <StaffProtectedRoute>
                   <StaffLayout>
-                    <div className="p-6 text-center text-muted-foreground">
-                      Ajustes de Inventario - En desarrollo
-                    </div>
+                    <StockAdjustments />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />
