@@ -1,0 +1,120 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { setStaffContext } from '@/lib/dbContext';
+
+interface ActiveShift {
+  id: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  openedAt: string;
+  openingCash: number;
+  acceptAppOrders: boolean;
+  totalSales: number;
+  salesCount: number;
+}
+
+export function useAllActiveShifts() {
+  const [shifts, setShifts] = useState<ActiveShift[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuthContext();
+
+  const loadAllActiveShifts = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      setError(null);
+      
+      // Set staff context for RLS
+      await setStaffContext(user.id);
+
+      // Get all active cash sessions (where closed_at is null)
+      const { data: sessions, error: sessionError } = await supabase
+        .from('cash_sessions')
+        .select('*')
+        .is('closed_at', null)
+        .order('opened_at', { ascending: false });
+
+      if (sessionError) {
+        console.error('Error loading active sessions:', sessionError);
+        throw sessionError;
+      }
+
+      if (!sessions || sessions.length === 0) {
+        setShifts([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get user info for each session
+      const userIds = [...new Set(sessions.map(s => s.user_id))];
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, username, full_name, role')
+        .in('id', userIds);
+
+      if (usersError) {
+        console.error('Error loading users:', usersError);
+      }
+
+      const userMap = new Map(users?.map(u => [u.id, u]) || []);
+
+      // Get orders for each session
+      const shiftsWithStats = await Promise.all(
+        sessions.map(async (session) => {
+          const { data: orders } = await supabase
+            .from('orders')
+            .select('total, status')
+            .gte('created_at', session.opened_at)
+            .eq('status', 'Entregado');
+
+          const user = userMap.get(session.user_id);
+          const completedOrders = orders || [];
+          const totalSales = completedOrders.reduce((sum, o) => sum + o.total, 0);
+
+          return {
+            id: session.id,
+            userId: session.user_id,
+            userName: user?.full_name || user?.username || 'Usuario desconocido',
+            userRole: user?.role || 'Sin rol',
+            openedAt: session.opened_at || '',
+            openingCash: session.opening_cash,
+            acceptAppOrders: session.accept_app_orders || false,
+            totalSales,
+            salesCount: completedOrders.length,
+          };
+        })
+      );
+
+      setShifts(shiftsWithStats);
+    } catch (err) {
+      console.error('Error loading all active shifts:', err);
+      setError('No se pudieron cargar los turnos activos');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadAllActiveShifts();
+  }, [loadAllActiveShifts]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadAllActiveShifts();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [loadAllActiveShifts]);
+
+  return {
+    shifts,
+    loading,
+    error,
+    refresh: loadAllActiveShifts,
+    hasActiveShifts: shifts.length > 0,
+  };
+}
