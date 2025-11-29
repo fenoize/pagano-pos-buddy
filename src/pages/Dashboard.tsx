@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/utils';
 import { CajeroDashboard } from '@/components/dashboard/CajeroDashboard';
 import { RepartoDashboard } from '@/components/dashboard/RepartoDashboard';
 import { ActiveShiftWidget } from '@/components/dashboard/ActiveShiftWidget';
+import { AllActiveShiftsWidget } from '@/components/dashboard/AllActiveShiftsWidget';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -279,8 +280,11 @@ function DefaultDashboard() {
         </p>
       </div>
 
-      {/* Active Shift Widget */}
+      {/* Active Shift Widget - Own shift */}
       <ActiveShiftWidget />
+
+      {/* All Active Shifts Widget - For admins to see all team shifts */}
+      {user?.role === 'Administrador' && <AllActiveShiftsWidget />}
 
       {/* KPIs Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
