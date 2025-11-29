@@ -35,7 +35,7 @@ export function useStockBalances(warehouseId?: string) {
       let query = supabase
         .from('stock_balances')
         .select(`
-          quantity,
+          qty_on_hand,
           raw_material_id,
           warehouse_id,
           raw_materials!inner(id, name, code, min_stock, is_active, base_uom_id, units_of_measure!raw_materials_base_uom_id_fkey(abbreviation)),
@@ -58,10 +58,10 @@ export function useStockBalances(warehouseId?: string) {
         raw_material_code: item.raw_materials?.code || null,
         warehouse_id: item.warehouse_id,
         warehouse_name: item.warehouses?.name || '',
-        quantity: item.quantity || 0,
+        quantity: item.qty_on_hand || 0,
         uom_abbreviation: item.raw_materials?.units_of_measure?.abbreviation || '',
         min_stock: item.raw_materials?.min_stock || 0,
-        is_low_stock: (item.quantity || 0) < (item.raw_materials?.min_stock || 0),
+        is_low_stock: (item.qty_on_hand || 0) < (item.raw_materials?.min_stock || 0),
       }));
 
       setBalances(mappedBalances);
@@ -84,13 +84,13 @@ export function useStockBalances(warehouseId?: string) {
       const { data: lowStockData } = await supabase
         .from('stock_balances')
         .select(`
-          quantity,
+          qty_on_hand,
           raw_materials!inner(min_stock, is_active)
         `)
         .eq('raw_materials.is_active', true);
 
       const lowStockCount = (lowStockData || []).filter(
-        (item: any) => (item.quantity || 0) < (item.raw_materials?.min_stock || 0)
+        (item: any) => (item.qty_on_hand || 0) < (item.raw_materials?.min_stock || 0)
       ).length;
 
       // Movements today
