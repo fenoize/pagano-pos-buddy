@@ -269,6 +269,29 @@ export default function CustomerSearchStep({ customer, onCustomerChange, orderNa
                   </Badge>
                 )}
               </div>
+              <div className="flex gap-2 mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onCustomerChange({});
+                    setSearchTerm('');
+                  }}
+                >
+                  Quitar cliente
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onCustomerChange({});
+                    setSearchTerm('');
+                    setShowNewCustomerForm(false);
+                  }}
+                >
+                  Cambiar cliente
+                </Button>
+              </div>
             </div>
           )}
 

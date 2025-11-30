@@ -756,6 +756,7 @@ export default function NewSale() {
           <FulfillmentStep
             fulfillment={fulfillment}
             customer={customer}
+            initialDeliveryData={deliveryData}
             onFulfillmentChange={handleFulfillmentChange}
             onDeliveryDataChange={handleDeliveryDataChange}
             onNext={handleFulfillmentNext}
