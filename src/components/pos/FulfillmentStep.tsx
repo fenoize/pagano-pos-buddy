@@ -30,12 +30,13 @@ export interface DeliveryData {
 interface FulfillmentStepProps {
   fulfillment: FulfillmentType;
   customer?: Partial<Customer>;
+  initialDeliveryData?: DeliveryData | null;
   onFulfillmentChange: (fulfillment: FulfillmentType, deliveryFee?: number, deliveryZoneId?: string) => void;
   onDeliveryDataChange?: (data: DeliveryData) => void;
   onNext: () => void;
 }
 
-export default function FulfillmentStep({ fulfillment, customer, onFulfillmentChange, onDeliveryDataChange, onNext }: FulfillmentStepProps) {
+export default function FulfillmentStep({ fulfillment, customer, initialDeliveryData, onFulfillmentChange, onDeliveryDataChange, onNext }: FulfillmentStepProps) {
   const [selectedZoneId, setSelectedZoneId] = useState<string>('');
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
@@ -63,6 +64,23 @@ export default function FulfillmentStep({ fulfillment, customer, onFulfillmentCh
   useEffect(() => {
     loadRepartidores();
   }, []);
+  
+  // Restore initial delivery data when provided (e.g., when navigating back from payment)
+  useEffect(() => {
+    if (initialDeliveryData && fulfillment === 'delivery') {
+      if (initialDeliveryData.zone) {
+        setSelectedZoneId(initialDeliveryData.zone.id);
+        setSelectedZone(initialDeliveryData.zone);
+        setDeliveryFee(initialDeliveryData.zone.delivery_fee);
+      }
+      setAddressLine(initialDeliveryData.addressLine || '');
+      setAddressNumber(initialDeliveryData.addressNumber || '');
+      setSelectedComunaId(initialDeliveryData.comunaId || '');
+      setReference(initialDeliveryData.reference || '');
+      setSelectedRepartidorId(initialDeliveryData.repartidorId || '');
+      setSaveAddress(initialDeliveryData.saveAddress || false);
+    }
+  }, [initialDeliveryData, fulfillment]);
   
   // Load customer addresses
   useEffect(() => {

@@ -83,12 +83,10 @@ export default function PaymentModal({
     }
   }, [isOpen]);
 
+  // Reset all payment fields every time modal opens
   useEffect(() => {
-    if (isOpen && paymentMethods.length > 0 && !currentMethod) {
-      const firstActiveMethod = paymentMethods.find(m => m.is_active);
-      if (firstActiveMethod) {
-        setCurrentMethod(firstActiveMethod.name);
-      }
+    if (isOpen) {
+      // Always reset all fields when modal opens
       setPayments([]);
       setCurrentAmount('');
       setCurrentReceiptNumber('');
@@ -96,11 +94,19 @@ export default function PaymentModal({
       setCurrentRunas('');
       setNotes('');
       setIsSubmitting(false);
-    } else if (!isOpen) {
-      // Resetear cuando el modal se cierra
+      
+      // Set default payment method
+      if (paymentMethods.length > 0) {
+        const firstActiveMethod = paymentMethods.find(m => m.is_active);
+        if (firstActiveMethod) {
+          setCurrentMethod(firstActiveMethod.name);
+        }
+      }
+    } else {
+      // Reset when modal closes
       setIsSubmitting(false);
     }
-  }, [isOpen, paymentMethods]);
+  }, [isOpen]);
 
   // Auto-llenar campos al cambiar método de pago
   useEffect(() => {
