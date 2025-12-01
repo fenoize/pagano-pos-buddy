@@ -90,10 +90,13 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
     }
   }, [initialDeliveryData, fulfillment]);
   
-  // Load customer addresses
+  // Load customer addresses when customer changes
   useEffect(() => {
     if (customer?.id && fulfillment === 'delivery') {
       loadCustomerAddresses();
+    } else if (!customer?.id) {
+      setCustomerAddresses([]);
+      setSelectedAddressId('');
     }
   }, [customer?.id, fulfillment]);
   

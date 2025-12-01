@@ -753,24 +753,80 @@ export default function NewSale() {
         );
       case 2:
         return (
-          <FulfillmentStep
-            fulfillment={fulfillment}
-            customer={customer}
-            initialDeliveryData={deliveryData}
-            onFulfillmentChange={handleFulfillmentChange}
-            onDeliveryDataChange={handleDeliveryDataChange}
-            onNext={handleFulfillmentNext}
-          />
+          <div className="space-y-4">
+            {/* Persistent Customer Widget */}
+            <Card className="border-dashed">
+              <CardContent className="py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <User className="w-5 h-5 text-muted-foreground" />
+                    {customer.id ? (
+                      <div>
+                        <span className="font-medium">{customer.name} {customer.apellido}</span>
+                        <span className="text-sm text-muted-foreground ml-2">{customer.phone}</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Sin cliente seleccionado</span>
+                    )}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsCustomerModalOpen(true)}
+                  >
+                    {customer.id ? 'Cambiar' : 'Añadir Cliente'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <FulfillmentStep
+              fulfillment={fulfillment}
+              customer={customer}
+              initialDeliveryData={deliveryData}
+              onFulfillmentChange={handleFulfillmentChange}
+              onDeliveryDataChange={handleDeliveryDataChange}
+              onNext={handleFulfillmentNext}
+            />
+          </div>
         );
       case 3:
         return (
-          <CustomerSearchStep
-            customer={customer}
-            onCustomerChange={setCustomer}
-            orderName={orderName}
-            onOrderNameChange={setOrderName}
-            onNext={handleCustomerNext}
-          />
+          <div className="space-y-4">
+            {/* Persistent Customer Widget */}
+            <Card className="border-dashed">
+              <CardContent className="py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <User className="w-5 h-5 text-muted-foreground" />
+                    {customer.id ? (
+                      <div>
+                        <span className="font-medium">{customer.name} {customer.apellido}</span>
+                        <span className="text-sm text-muted-foreground ml-2">{customer.phone}</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Sin cliente seleccionado</span>
+                    )}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsCustomerModalOpen(true)}
+                  >
+                    {customer.id ? 'Cambiar' : 'Añadir Cliente'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <CustomerSearchStep
+              customer={customer}
+              onCustomerChange={setCustomer}
+              orderName={orderName}
+              onOrderNameChange={setOrderName}
+              onNext={handleCustomerNext}
+            />
+          </div>
         );
       default:
         return null;
