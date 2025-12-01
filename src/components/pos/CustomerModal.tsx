@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Customer } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, User, Coins, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import RunasCalculator from './RunasCalculator';
 
 interface CustomerModalProps {
@@ -49,21 +50,52 @@ export function CustomerModal({
   const searchCustomers = async () => {
     setIsSearching(true);
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .or(`name.ilike.%${searchTerm}%,apellido.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,rut.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
-        .limit(5);
+      // Obtener token de sesión
+      const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
 
-      if (error) throw error;
-      setSearchResults(data || []);
+      // Construir URL de Edge Function
+      const supabaseUrl = (supabase as any).supabaseUrl || 'https://lxxfhayifyiioglfbsyj.supabase.co';
+      
+      // Llamar Edge Function con búsqueda
+      const params = new URLSearchParams({
+        q: searchTerm,
+        limit: '5',
+        offset: '0',
+      });
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/staff-list-customers?${params}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token inválido/expirado - forzar logout
+          clearStaffStorage();
+          window.location.href = '/pos/login';
+          return;
+        }
+        throw new Error(`Error ${response.status}: ${await response.text()}`);
+      }
+
+      const result = await response.json();
+      setSearchResults(result.data || []);
     } catch (error) {
       console.error('Error searching customers:', error);
       toast({
         title: "Error",
-        description: "No se pudieron buscar clientes",
+        description: error instanceof Error ? error.message : "No se pudieron buscar clientes",
         variant: "destructive"
       });
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -111,6 +143,9 @@ export function CustomerModal({
             <User className="w-5 h-5" />
             Cliente (opcional)
           </DialogTitle>
+          <DialogDescription>
+            Busca un cliente existente o crea uno nuevo
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

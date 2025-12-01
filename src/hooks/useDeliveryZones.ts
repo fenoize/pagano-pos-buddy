@@ -33,8 +33,6 @@ export function useDeliveryZones() {
   const { user } = useAuthContext();
 
   const fetchZones = async () => {
-    if (!user) return;
-    
     setLoading(true);
     setError(null);
     
@@ -142,7 +140,7 @@ export function useDeliveryZones() {
 
   useEffect(() => {
     fetchZones();
-  }, [user]);
+  }, []);
 
   return {
     zones,
