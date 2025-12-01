@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FulfillmentType, Customer, Address, DeliveryZone, User } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,14 +60,22 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
   const { comunas, loading: comunasLoading } = useComunas();
   const { getCustomerAddresses } = useCustomerAddresses();
   
+  // Use refs to avoid callback in dependency array
+  const onDeliveryDataChangeRef = useRef(onDeliveryDataChange);
+  onDeliveryDataChangeRef.current = onDeliveryDataChange;
+  
+  // Track if initial data has been applied
+  const initialDataApplied = useRef(false);
+  
   // Load repartidores
   useEffect(() => {
     loadRepartidores();
   }, []);
   
-  // Restore initial delivery data when provided (e.g., when navigating back from payment)
+  // Restore initial delivery data ONLY once when component mounts with delivery mode
   useEffect(() => {
-    if (initialDeliveryData && fulfillment === 'delivery') {
+    if (initialDeliveryData && fulfillment === 'delivery' && !initialDataApplied.current) {
+      initialDataApplied.current = true;
       if (initialDeliveryData.zone) {
         setSelectedZoneId(initialDeliveryData.zone.id);
         setSelectedZone(initialDeliveryData.zone);
@@ -89,13 +97,13 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
     }
   }, [customer?.id, fulfillment]);
   
-  // Update delivery data when fields change
+  // Update delivery data when fields change - use ref to avoid callback loop
   useEffect(() => {
-    if (fulfillment === 'delivery' && onDeliveryDataChange) {
+    if (fulfillment === 'delivery' && onDeliveryDataChangeRef.current) {
       const comunaName = comunas.find(c => c.id === selectedComunaId)?.name || '';
       const repartidorName = repartidores.find(r => r.id === selectedRepartidorId)?.full_name || '';
       
-      onDeliveryDataChange({
+      onDeliveryDataChangeRef.current({
         zone: selectedZone,
         addressLine,
         addressNumber,
@@ -107,7 +115,7 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
         saveAddress
       });
     }
-  }, [selectedZone, addressLine, addressNumber, selectedComunaId, reference, selectedRepartidorId, saveAddress, fulfillment, onDeliveryDataChange, comunas, repartidores]);
+  }, [selectedZone, addressLine, addressNumber, selectedComunaId, reference, selectedRepartidorId, saveAddress, fulfillment, comunas, repartidores]);
   
   const loadRepartidores = async () => {
     try {
@@ -157,23 +165,16 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
     }
   };
 
-  const handleZoneChange = async (zoneId: string, fee: number) => {
+  const handleZoneChange = useCallback((zoneId: string, fee: number, zone?: DeliveryZone) => {
     setSelectedZoneId(zoneId);
     setDeliveryFee(fee);
     
-    // Get full zone data
-    const { data } = await supabase
-      .from('delivery_zones')
-      .select('*')
-      .eq('id', zoneId)
-      .single();
-    
-    if (data) {
-      setSelectedZone(data as DeliveryZone);
+    if (zone) {
+      setSelectedZone(zone);
     }
     
     onFulfillmentChange('delivery', fee, zoneId);
-  };
+  }, [onFulfillmentChange]);
   
   const handleSelectSavedAddress = (addressId: string) => {
     setSelectedAddressId(addressId);

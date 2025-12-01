@@ -1,32 +1,31 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
-import { useDeliveryZones } from '@/hooks/useDeliveryZones';
+import { useDeliveryZones, DeliveryZone } from '@/hooks/useDeliveryZones';
 
 interface DeliveryZoneGridProps {
   selectedZoneId?: string;
-  onZoneChange: (zoneId: string, deliveryFee: number) => void;
+  onZoneChange: (zoneId: string, deliveryFee: number, zone: DeliveryZone) => void;
   disabled?: boolean;
 }
 
 export function DeliveryZoneGrid({ selectedZoneId, onZoneChange, disabled }: DeliveryZoneGridProps) {
-  const { getActiveZones, loading } = useDeliveryZones();
-  const activeZones = getActiveZones();
+  const { zones, loading } = useDeliveryZones();
+  
+  // Memoize active zones to prevent recalculation on every render
+  const activeZones = useMemo(() => zones.filter(zone => zone.active), [zones]);
 
-  const handleZoneSelect = (zoneId: string) => {
-    const selectedZone = activeZones.find(zone => zone.id === zoneId);
-    if (selectedZone) {
-      onZoneChange(zoneId, selectedZone.delivery_fee);
-    }
-  };
+  const handleZoneSelect = useCallback((zone: DeliveryZone) => {
+    onZoneChange(zone.id, zone.delivery_fee, zone);
+  }, [onZoneChange]);
 
-  const formatPrice = (price: number) => {
+  const formatPrice = useCallback((price: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
       currency: 'CLP',
       minimumFractionDigits: 0,
     }).format(price);
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -56,7 +55,7 @@ export function DeliveryZoneGrid({ selectedZoneId, onZoneChange, disabled }: Del
           key={zone.id}
           variant={selectedZoneId === zone.id ? 'default' : 'outline'}
           disabled={disabled}
-          onClick={() => handleZoneSelect(zone.id)}
+          onClick={() => handleZoneSelect(zone)}
           className="h-auto p-4 flex flex-col items-center gap-2 text-center"
         >
           <div className="flex items-center gap-2">
