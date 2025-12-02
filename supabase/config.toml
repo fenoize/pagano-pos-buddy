@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.upload-pwa-icon]
 verify_jwt = false
+
+[functions.mapbox-geocode]
+verify_jwt = false

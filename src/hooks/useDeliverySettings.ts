@@ -9,8 +9,19 @@ export interface DeliverySettings {
   id: string;
   assignment_mode: AssignmentMode;
   map_provider: MapProvider;
+  store_lat: number | null;
+  store_lng: number | null;
+  store_address: string | null;
+  auto_zone_detection: boolean;
+  mapbox_token: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface StoreLocation {
+  lat: number;
+  lng: number;
+  address: string;
 }
 
 export const useDeliverySettings = () => {
@@ -35,7 +46,10 @@ export const useDeliverySettings = () => {
     }
   };
 
-  const updateSettings = async (updates: Partial<Pick<DeliverySettings, 'assignment_mode' | 'map_provider'>>) => {
+  const updateSettings = async (updates: Partial<Pick<DeliverySettings, 
+    'assignment_mode' | 'map_provider' | 'store_lat' | 'store_lng' | 
+    'store_address' | 'auto_zone_detection' | 'mapbox_token'
+  >>) => {
     try {
       if (!settings) return false;
 
@@ -58,6 +72,25 @@ export const useDeliverySettings = () => {
     }
   };
 
+  const updateStoreLocation = async (location: StoreLocation | null) => {
+    if (!settings) return false;
+
+    return updateSettings({
+      store_lat: location?.lat ?? null,
+      store_lng: location?.lng ?? null,
+      store_address: location?.address ?? null
+    });
+  };
+
+  const getStoreLocation = (): StoreLocation | null => {
+    if (!settings?.store_lat || !settings?.store_lng) return null;
+    return {
+      lat: settings.store_lat,
+      lng: settings.store_lng,
+      address: settings.store_address || ''
+    };
+  };
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -66,6 +99,8 @@ export const useDeliverySettings = () => {
     settings,
     loading,
     updateSettings,
+    updateStoreLocation,
+    getStoreLocation,
     refetch: fetchSettings
   };
 };
