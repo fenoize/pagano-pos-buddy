@@ -1328,23 +1328,38 @@ export type Database = {
       delivery_settings: {
         Row: {
           assignment_mode: string
+          auto_zone_detection: boolean | null
           created_at: string
           id: string
           map_provider: string
+          mapbox_token: string | null
+          store_address: string | null
+          store_lat: number | null
+          store_lng: number | null
           updated_at: string
         }
         Insert: {
           assignment_mode?: string
+          auto_zone_detection?: boolean | null
           created_at?: string
           id?: string
           map_provider?: string
+          mapbox_token?: string | null
+          store_address?: string | null
+          store_lat?: number | null
+          store_lng?: number | null
           updated_at?: string
         }
         Update: {
           assignment_mode?: string
+          auto_zone_detection?: boolean | null
           created_at?: string
           id?: string
           map_provider?: string
+          mapbox_token?: string | null
+          store_address?: string | null
+          store_lat?: number | null
+          store_lng?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -1352,29 +1367,41 @@ export type Database = {
       delivery_zones: {
         Row: {
           active: boolean
+          calculation_mode: string | null
           created_at: string
           delivery_fee: number
           description: string | null
           id: string
+          min_fee: number | null
           name: string
+          polygon: Json | null
+          price_per_km: number | null
           updated_at: string
         }
         Insert: {
           active?: boolean
+          calculation_mode?: string | null
           created_at?: string
           delivery_fee?: number
           description?: string | null
           id?: string
+          min_fee?: number | null
           name: string
+          polygon?: Json | null
+          price_per_km?: number | null
           updated_at?: string
         }
         Update: {
           active?: boolean
+          calculation_mode?: string | null
           created_at?: string
           delivery_fee?: number
           description?: string | null
           id?: string
+          min_fee?: number | null
           name?: string
+          polygon?: Json | null
+          price_per_km?: number | null
           updated_at?: string
         }
         Relationships: []

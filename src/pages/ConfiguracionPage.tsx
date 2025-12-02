@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart, TruckIcon } from 'lucide-react';
+import { Settings, DollarSign, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart, TruckIcon, Puzzle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
 import { DeliveryConfig } from '@/components/config/DeliveryConfig';
@@ -12,6 +12,7 @@ import { PWAConfig } from '@/components/config/PWAConfig';
 import { CategoryConfig } from '@/components/config/CategoryConfig';
 import CouponsManagement from './CouponsManagement';
 import { OnlineOrdersConfig } from '@/components/config/OnlineOrdersConfig';
+import { IntegrationsConfig } from '@/components/config/IntegrationsConfig';
 
 export default function ConfiguracionPage() {
   const { user } = useAuthContext();
@@ -66,6 +67,10 @@ export default function ConfiguracionPage() {
             <Smartphone className="w-4 h-4" />
             <span>PWA</span>
           </TabsTrigger>
+          <TabsTrigger value="integrations" className="w-full justify-start gap-3 px-4 py-2.5">
+            <Puzzle className="w-4 h-4" />
+            <span>Integraciones</span>
+          </TabsTrigger>
           <TabsTrigger value="permissions" className="w-full justify-start gap-3 px-4 py-2.5">
             <Shield className="w-4 h-4" />
             <span>Permisos</span>
@@ -99,6 +104,10 @@ export default function ConfiguracionPage() {
 
           <TabsContent value="pwa" className="mt-0 space-y-6">
             <PWAConfig />
+          </TabsContent>
+
+          <TabsContent value="integrations" className="mt-0 space-y-6">
+            <IntegrationsConfig />
           </TabsContent>
 
           <TabsContent value="permissions" className="mt-0 space-y-6">
