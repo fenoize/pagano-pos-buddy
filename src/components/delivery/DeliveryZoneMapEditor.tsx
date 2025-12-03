@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from '@/components/ui/button';
@@ -29,9 +29,15 @@ export function DeliveryZoneMapEditor({
   const [drawnPoints, setDrawnPoints] = useState<[number, number][]>([]);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const storeMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const isDrawingRef = useRef(false);
 
   // Default center (Santiago, Chile)
   const defaultCenter: [number, number] = [-70.6483, -33.4569];
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    isDrawingRef.current = isDrawing;
+  }, [isDrawing]);
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -121,9 +127,9 @@ export function DeliveryZoneMapEditor({
       }
     });
 
-    // Click handler for drawing mode
+    // Click handler for drawing mode - use ref to get current state
     const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
-      if (!isDrawing || readonly) return;
+      if (!isDrawingRef.current || readonly) return;
 
       const point: [number, number] = [e.lngLat.lng, e.lngLat.lat];
       setDrawnPoints(prev => [...prev, point]);
@@ -154,6 +160,18 @@ export function DeliveryZoneMapEditor({
       });
     }
   }, [polygon]);
+
+  // Update map cursor when drawing mode changes
+  useEffect(() => {
+    if (!map.current) return;
+    
+    const canvas = map.current.getCanvas();
+    if (isDrawing) {
+      canvas.style.cursor = 'crosshair';
+    } else {
+      canvas.style.cursor = '';
+    }
+  }, [isDrawing]);
 
   // Update markers when drawing
   useEffect(() => {
@@ -316,7 +334,10 @@ export function DeliveryZoneMapEditor({
       <div 
         ref={mapContainer} 
         className="rounded-lg overflow-hidden border"
-        style={{ height }}
+        style={{ 
+          height,
+          cursor: isDrawing ? 'crosshair' : 'grab'
+        }}
       />
       
       {!readonly && (
