@@ -238,6 +238,10 @@ export interface DeliveryZone {
   description?: string;
   delivery_fee: number;
   active: boolean;
+  polygon?: any;
+  price_per_km?: number;
+  min_fee?: number;
+  calculation_mode?: 'fixed' | 'distance';
   created_at: string;
   updated_at: string;
 }

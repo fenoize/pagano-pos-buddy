@@ -8,6 +8,10 @@ export interface DeliveryZone {
   description?: string;
   delivery_fee: number;
   active: boolean;
+  polygon?: any;
+  price_per_km?: number;
+  min_fee?: number;
+  calculation_mode?: 'fixed' | 'distance';
   created_at: string;
   updated_at: string;
 }
@@ -48,7 +52,10 @@ export function useDeliveryZones() {
         return;
       }
 
-      setZones(data || []);
+      setZones((data || []).map(z => ({
+        ...z,
+        calculation_mode: z.calculation_mode as 'fixed' | 'distance' | undefined
+      })));
     } catch (error) {
       console.error('Error fetching delivery zones:', error);
       setError('Error al cargar las zonas de delivery');

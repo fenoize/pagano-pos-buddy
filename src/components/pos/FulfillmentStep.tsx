@@ -8,11 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Store, Truck } from 'lucide-react';
+import { Store, Truck, MapPin, Edit2, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { DeliveryZoneGrid } from './DeliveryZoneGrid';
 import { useComunas } from '@/hooks/useComunas';
 import { useCustomerAddresses } from '@/hooks/useCustomerAddresses';
+import { useDeliveryZones } from '@/hooks/useDeliveryZones';
+import { useDeliveryGeo, DeliveryZoneWithGeo } from '@/hooks/useDeliveryGeo';
+import { AddressAutocomplete } from './AddressAutocomplete';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DeliveryData {
@@ -25,6 +27,9 @@ export interface DeliveryData {
   repartidorId: string;
   repartidorName: string;
   saveAddress: boolean;
+  coordinates?: { lat: number; lng: number };
+  distance?: number;
+  calculatedFee?: number;
 }
 
 interface FulfillmentStepProps {
@@ -40,14 +45,25 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
   const [selectedZoneId, setSelectedZoneId] = useState<string>('');
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
+  const [isEditingFee, setIsEditingFee] = useState(false);
+  const [manualFee, setManualFee] = useState<string>('');
   
   // Address fields
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
-  const [addressLine, setAddressLine] = useState('');
+  const [fullAddress, setFullAddress] = useState('');
   const [addressNumber, setAddressNumber] = useState('');
   const [selectedComunaId, setSelectedComunaId] = useState('');
   const [reference, setReference] = useState('');
   const [saveAddress, setSaveAddress] = useState(false);
+  
+  // Geo data
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [zoneError, setZoneError] = useState<string | null>(null);
+  
+  // Store location
+  const [storeLocation, setStoreLocation] = useState<{ lat: number; lng: number } | null>(null);
   
   // Repartidor
   const [selectedRepartidorId, setSelectedRepartidorId] = useState('');
@@ -57,8 +73,10 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
   const [customerAddresses, setCustomerAddresses] = useState<Address[]>([]);
   
   const { toast } = useToast();
-  const { comunas, loading: comunasLoading } = useComunas();
+  const { comunas } = useComunas();
   const { getCustomerAddresses } = useCustomerAddresses();
+  const { zones } = useDeliveryZones();
+  const { findZoneByCoordinates, calculateDistance, calculateDeliveryFee } = useDeliveryGeo();
   
   // Use refs to avoid callback in dependency array
   const onDeliveryDataChangeRef = useRef(onDeliveryDataChange);
@@ -67,10 +85,26 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
   // Track if initial data has been applied
   const initialDataApplied = useRef(false);
   
-  // Load repartidores
+  // Load repartidores and store location
   useEffect(() => {
     loadRepartidores();
+    loadStoreLocation();
   }, []);
+  
+  const loadStoreLocation = async () => {
+    try {
+      const { data } = await supabase
+        .from('delivery_settings')
+        .select('store_lat, store_lng')
+        .single();
+      
+      if (data?.store_lat && data?.store_lng) {
+        setStoreLocation({ lat: data.store_lat, lng: data.store_lng });
+      }
+    } catch (error) {
+      console.error('Error loading store location:', error);
+    }
+  };
   
   // Restore initial delivery data ONLY once when component mounts with delivery mode
   useEffect(() => {
@@ -81,12 +115,21 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
         setSelectedZone(initialDeliveryData.zone);
         setDeliveryFee(initialDeliveryData.zone.delivery_fee);
       }
-      setAddressLine(initialDeliveryData.addressLine || '');
+      setFullAddress(initialDeliveryData.addressLine || '');
       setAddressNumber(initialDeliveryData.addressNumber || '');
       setSelectedComunaId(initialDeliveryData.comunaId || '');
       setReference(initialDeliveryData.reference || '');
       setSelectedRepartidorId(initialDeliveryData.repartidorId || '');
       setSaveAddress(initialDeliveryData.saveAddress || false);
+      if (initialDeliveryData.coordinates) {
+        setCoordinates(initialDeliveryData.coordinates);
+      }
+      if (initialDeliveryData.distance) {
+        setDistance(initialDeliveryData.distance);
+      }
+      if (initialDeliveryData.calculatedFee) {
+        setDeliveryFee(initialDeliveryData.calculatedFee);
+      }
     }
   }, [initialDeliveryData, fulfillment]);
   
@@ -108,17 +151,20 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
       
       onDeliveryDataChangeRef.current({
         zone: selectedZone,
-        addressLine,
+        addressLine: fullAddress,
         addressNumber,
         comunaId: selectedComunaId,
         comunaName,
         reference,
         repartidorId: selectedRepartidorId,
         repartidorName,
-        saveAddress
+        saveAddress,
+        coordinates: coordinates || undefined,
+        distance: distance || undefined,
+        calculatedFee: deliveryFee
       });
     }
-  }, [selectedZone, addressLine, addressNumber, selectedComunaId, reference, selectedRepartidorId, saveAddress, fulfillment, comunas, repartidores]);
+  }, [selectedZone, fullAddress, addressNumber, selectedComunaId, reference, selectedRepartidorId, saveAddress, fulfillment, comunas, repartidores, coordinates, distance, deliveryFee]);
   
   const loadRepartidores = async () => {
     try {
@@ -160,7 +206,6 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
 
   const handleFulfillmentSelect = (type: FulfillmentType) => {
     if (type === 'delivery') {
-      // Don't proceed to next step, wait for zone selection
       onFulfillmentChange(type);
     } else {
       onFulfillmentChange(type, 0);
@@ -168,71 +213,150 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
     }
   };
 
-  const handleZoneChange = useCallback((zoneId: string, fee: number, zone?: DeliveryZone) => {
-    setSelectedZoneId(zoneId);
-    setDeliveryFee(fee);
+  // Handle address selection from autocomplete
+  const handleAddressSelect = useCallback(async (result: { address: string; coordinates: { lat: number; lng: number }; comuna?: string }) => {
+    setFullAddress(result.address);
+    setCoordinates(result.coordinates);
+    setZoneError(null);
+    setIsCalculating(true);
     
-    if (zone) {
-      setSelectedZone(zone);
+    try {
+      // Convert zones to DeliveryZoneWithGeo format
+      const zonesWithGeo: DeliveryZoneWithGeo[] = zones
+        .filter(z => z.active)
+        .map(z => ({
+          id: z.id,
+          name: z.name,
+          delivery_fee: z.delivery_fee,
+          polygon: z.polygon,
+          price_per_km: z.price_per_km || 1000,
+          min_fee: z.min_fee || 2000,
+          calculation_mode: (z.calculation_mode || 'fixed') as 'fixed' | 'distance',
+          active: z.active
+        }));
+      
+      // Find zone by coordinates
+      const detectedZone = findZoneByCoordinates(result.coordinates, zonesWithGeo);
+      
+      if (!detectedZone) {
+        setZoneError('La dirección está fuera de las zonas de cobertura');
+        setSelectedZoneId('');
+        setSelectedZone(null);
+        setDeliveryFee(0);
+        setDistance(null);
+        return;
+      }
+      
+      // Calculate distance if store location is available
+      let distanceKm: number | null = null;
+      if (storeLocation) {
+        distanceKm = calculateDistance(storeLocation, result.coordinates);
+        setDistance(distanceKm);
+      }
+      
+      // Calculate fee
+      const fee = distanceKm !== null 
+        ? calculateDeliveryFee(detectedZone, distanceKm)
+        : detectedZone.delivery_fee;
+      
+      // Update state
+      setSelectedZoneId(detectedZone.id);
+      setSelectedZone({
+        id: detectedZone.id,
+        name: detectedZone.name,
+        delivery_fee: fee,
+        active: detectedZone.active,
+        polygon: detectedZone.polygon,
+        price_per_km: detectedZone.price_per_km,
+        min_fee: detectedZone.min_fee,
+        calculation_mode: detectedZone.calculation_mode,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+      setDeliveryFee(fee);
+      
+      // Update fulfillment with fee
+      onFulfillmentChange('delivery', fee, detectedZone.id);
+      
+      // Try to set comuna from result
+      if (result.comuna) {
+        const matchingComuna = comunas.find(c => 
+          c.name.toLowerCase().includes(result.comuna?.toLowerCase() || '') ||
+          result.comuna?.toLowerCase().includes(c.name.toLowerCase())
+        );
+        if (matchingComuna) {
+          setSelectedComunaId(matchingComuna.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error calculating delivery:', error);
+      setZoneError('Error al calcular la zona de delivery');
+    } finally {
+      setIsCalculating(false);
     }
-    
-    onFulfillmentChange('delivery', fee, zoneId);
-  }, [onFulfillmentChange]);
+  }, [zones, storeLocation, findZoneByCoordinates, calculateDistance, calculateDeliveryFee, onFulfillmentChange, comunas]);
   
   const handleSelectSavedAddress = (addressId: string) => {
     setSelectedAddressId(addressId);
     
     if (addressId === 'new') {
-      // Clear form
-      setAddressLine('');
+      setFullAddress('');
       setAddressNumber('');
       setSelectedComunaId('');
       setReference('');
+      setCoordinates(null);
+      setDistance(null);
+      setSelectedZoneId('');
+      setSelectedZone(null);
+      setDeliveryFee(0);
+      setZoneError(null);
       return;
     }
     
     const address = customerAddresses.find(a => a.id === addressId);
     if (address) {
-      setAddressLine(address.calle);
+      const fullAddr = `${address.calle} ${address.numero}, ${address.comuna}`;
+      setFullAddress(fullAddr);
       setAddressNumber(address.numero);
       setSelectedComunaId(address.comuna_id || '');
       setReference(address.observaciones || '');
+      
+      // Trigger geocoding for saved address
+      handleAddressSelect({
+        address: fullAddr,
+        coordinates: { lat: -33.4569, lng: -70.6483 },
+        comuna: address.comuna
+      });
     }
+  };
+
+  const handleEditFee = () => {
+    setManualFee(deliveryFee.toString());
+    setIsEditingFee(true);
+  };
+
+  const handleSaveFee = () => {
+    const newFee = parseInt(manualFee) || 0;
+    setDeliveryFee(newFee);
+    setIsEditingFee(false);
+    onFulfillmentChange('delivery', newFee, selectedZoneId);
   };
 
   const handleContinue = () => {
     if (fulfillment === 'delivery') {
-      if (!selectedZoneId) {
+      if (!fullAddress.trim()) {
         toast({
           title: "Error",
-          description: "Selecciona una zona de delivery",
+          description: "Ingresa la dirección de entrega",
           variant: "destructive"
         });
         return;
       }
       
-      if (!addressLine.trim()) {
+      if (zoneError) {
         toast({
           title: "Error",
-          description: "Ingresa la dirección",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      if (!addressNumber.trim()) {
-        toast({
-          title: "Error",
-          description: "Ingresa el número",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      if (!selectedComunaId) {
-        toast({
-          title: "Error",
-          description: "Selecciona una comuna",
+          description: zoneError,
           variant: "destructive"
         });
         return;
@@ -279,92 +403,137 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
         </CardContent>
       </Card>
 
-      {/* Delivery Zone Selection */}
+      {/* Delivery Address Section */}
       {fulfillment === 'delivery' && (
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Zona de Delivery</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                Dirección de Entrega
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <DeliveryZoneGrid
-                selectedZoneId={selectedZoneId}
-                onZoneChange={handleZoneChange}
-              />
+              {/* Saved Addresses Selector */}
+              {customer?.id && customerAddresses.length > 0 && (
+                <div>
+                  <Label>Direcciones guardadas</Label>
+                  <Select value={selectedAddressId} onValueChange={handleSelectSavedAddress}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar dirección guardada" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">+ Nueva dirección</SelectItem>
+                      {customerAddresses.map(addr => (
+                        <SelectItem key={addr.id} value={addr.id}>
+                          {addr.calle} {addr.numero}, {addr.comuna}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Address Autocomplete */}
+              <div>
+                <Label>Buscar dirección *</Label>
+                <AddressAutocomplete
+                  value={fullAddress}
+                  onChange={setFullAddress}
+                  onSelect={handleAddressSelect}
+                  placeholder="Escribe la dirección completa..."
+                />
+              </div>
               
-              {selectedZoneId && deliveryFee > 0 && (
-                <div className="p-4 border rounded-lg bg-primary/5">
+              {/* Calculating indicator */}
+              {isCalculating && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Calculando zona y tarifa...</span>
+                </div>
+              )}
+              
+              {/* Zone Error */}
+              {zoneError && (
+                <div className="flex items-center gap-2 text-destructive p-3 border border-destructive/30 rounded-lg bg-destructive/5">
+                  <AlertCircle className="w-5 h-5" />
+                  <span>{zoneError}</span>
+                </div>
+              )}
+              
+              {/* Delivery Fee Display */}
+              {selectedZone && !zoneError && (
+                <div className="p-4 border rounded-lg bg-primary/5 space-y-2">
                   <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm text-muted-foreground">Zona detectada:</span>
+                      <Badge variant="secondary" className="ml-2">{selectedZone.name}</Badge>
+                    </div>
+                  </div>
+                  
+                  {distance !== null && (
+                    <div className="text-sm text-muted-foreground">
+                      Distancia: {distance.toFixed(1)} km
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between pt-2 border-t">
                     <span className="font-medium">Costo de delivery:</span>
-                    <Badge variant="default">{formatPrice(deliveryFee)}</Badge>
+                    <div className="flex items-center gap-2">
+                      {isEditingFee ? (
+                        <>
+                          <Input
+                            type="number"
+                            value={manualFee}
+                            onChange={(e) => setManualFee(e.target.value)}
+                            className="w-24 h-8"
+                          />
+                          <Button size="sm" variant="ghost" onClick={handleSaveFee}>
+                            <Check className="w-4 h-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Badge variant="default" className="text-base">
+                            {formatPrice(deliveryFee)}
+                          </Badge>
+                          <Button size="sm" variant="ghost" onClick={handleEditFee}>
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
 
-          {/* Address Form */}
-          {selectedZoneId && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Dirección de Entrega</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Saved Addresses Selector */}
-                  {customer?.id && customerAddresses.length > 0 && (
+              {/* Additional fields */}
+              {selectedZone && (
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Direcciones guardadas</Label>
-                      <Select value={selectedAddressId} onValueChange={handleSelectSavedAddress}>
+                      <Label>Número / Depto</Label>
+                      <Input 
+                        value={addressNumber}
+                        onChange={(e) => setAddressNumber(e.target.value)}
+                        placeholder="123, Depto 45..."
+                      />
+                    </div>
+                    <div>
+                      <Label>Comuna</Label>
+                      <Select value={selectedComunaId} onValueChange={setSelectedComunaId}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar dirección guardada" />
+                          <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="new">+ Nueva dirección</SelectItem>
-                          {customerAddresses.map(addr => (
-                            <SelectItem key={addr.id} value={addr.id}>
-                              {addr.calle} {addr.numero}, {addr.comuna}
+                          {comunas.filter(c => c.is_active).map(comuna => (
+                            <SelectItem key={comuna.id} value={comuna.id}>
+                              {comuna.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                  )}
-
-                  {/* Address Form */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2 md:col-span-1">
-                      <Label>Dirección *</Label>
-                      <Input 
-                        value={addressLine}
-                        onChange={(e) => setAddressLine(e.target.value)}
-                        placeholder="Calle, Avenida..."
-                      />
-                    </div>
-                    <div className="col-span-2 md:col-span-1">
-                      <Label>Número *</Label>
-                      <Input 
-                        value={addressNumber}
-                        onChange={(e) => setAddressNumber(e.target.value)}
-                        placeholder="123"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Comuna *</Label>
-                    <Select value={selectedComunaId} onValueChange={setSelectedComunaId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar comuna" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {comunas.filter(c => c.is_active).map(comuna => (
-                          <SelectItem key={comuna.id} value={comuna.id}>
-                            {comuna.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
 
                   <div>
@@ -372,7 +541,7 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
                     <Textarea 
                       value={reference}
                       onChange={(e) => setReference(e.target.value)}
-                      placeholder="Depto, Torre, Color de casa..."
+                      placeholder="Torre, color de casa, referencias..."
                       rows={2}
                     />
                   </div>
@@ -390,34 +559,36 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
                       </Label>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-              {/* Repartidor Selection */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Asignar Repartidor</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div>
-                    <Label>Repartidor (opcional)</Label>
-                    <Select value={selectedRepartidorId} onValueChange={setSelectedRepartidorId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sin asignar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Sin asignar</SelectItem>
-                        {repartidores.map(rep => (
-                          <SelectItem key={rep.id} value={rep.id}>
-                            {rep.full_name || rep.username}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-            </>
+          {/* Repartidor Selection */}
+          {selectedZone && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Asignar Repartidor</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div>
+                  <Label>Repartidor (opcional)</Label>
+                  <Select value={selectedRepartidorId} onValueChange={setSelectedRepartidorId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sin asignar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin asignar</SelectItem>
+                      {repartidores.map(rep => (
+                        <SelectItem key={rep.id} value={rep.id}>
+                          {rep.full_name || rep.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </>
       )}
@@ -429,7 +600,7 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
         </Button>
       )}
       
-      {fulfillment === 'delivery' && selectedZoneId && addressLine && addressNumber && selectedComunaId && (
+      {fulfillment === 'delivery' && selectedZone && fullAddress && (
         <Button onClick={handleContinue} className="w-full" size="lg">
           Continuar a Cliente
         </Button>
