@@ -1236,6 +1236,77 @@ export type Database = {
           },
         ]
       }
+      customer_runa_subscriptions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          is_active: boolean
+          last_executed_at: string | null
+          next_execution_date: string | null
+          notes: string | null
+          runas_amount: number
+          subscription_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          is_active?: boolean
+          last_executed_at?: string | null
+          next_execution_date?: string | null
+          notes?: string | null
+          runas_amount?: number
+          subscription_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          is_active?: boolean
+          last_executed_at?: string | null
+          next_execution_date?: string | null
+          notes?: string | null
+          runas_amount?: number
+          subscription_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_runa_subscriptions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_runa_subscriptions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_runa_subscriptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_runa_subscriptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           account_id: string | null
@@ -3029,6 +3100,27 @@ export type Database = {
         }
         Relationships: []
       }
+      runa_auto_config: {
+        Row: {
+          config_key: string
+          config_value: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          config_key: string
+          config_value?: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       runas_transactions: {
         Row: {
           amount: number
@@ -4013,6 +4105,7 @@ export type Database = {
       is_delivery_courier: { Args: never; Returns: boolean }
       is_staff_admin: { Args: never; Returns: boolean }
       is_user_admin: { Args: { p_user_id: string }; Returns: boolean }
+      process_auto_runas: { Args: never; Returns: Json }
       process_purchase_receipt: {
         Args: {
           p_expiry_date?: string

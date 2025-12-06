@@ -16,6 +16,7 @@ import { es } from 'date-fns/locale';
 import CustomerForm from '@/components/clientes/CustomerForm';
 import CustomerAddresses from '@/components/clientes/CustomerAddresses';
 import CustomerRunes from '@/components/clientes/CustomerRunes';
+import CustomerRunaSubscriptions from '@/components/clientes/CustomerRunaSubscriptions';
 import CustomerOrders from '@/components/clientes/CustomerOrders';
 import DeleteCustomerModal from '@/components/clientes/DeleteCustomerModal';
 import { CustomerPasswordModal } from '@/components/clientes/CustomerPasswordModal';
@@ -470,10 +471,11 @@ export default function Clientes() {
           
           {selectedCustomer && (
             <Tabs defaultValue="datos" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="datos">Datos</TabsTrigger>
                 <TabsTrigger value="direcciones">Direcciones</TabsTrigger>
                 <TabsTrigger value="runas">Runas</TabsTrigger>
+                <TabsTrigger value="suscripciones">Suscripciones</TabsTrigger>
                 <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
               </TabsList>
               
@@ -490,6 +492,13 @@ export default function Clientes() {
               
               <TabsContent value="runas" className="space-y-4">
                 <CustomerRunes customerId={selectedCustomer.id} />
+              </TabsContent>
+              
+              <TabsContent value="suscripciones" className="space-y-4">
+                <CustomerRunaSubscriptions 
+                  customerId={selectedCustomer.id} 
+                  customerBirthday={selectedCustomer.fecha_nacimiento}
+                />
               </TabsContent>
               
               <TabsContent value="pedidos" className="space-y-4">
