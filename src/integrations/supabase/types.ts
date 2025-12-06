@@ -4086,6 +4086,10 @@ export type Database = {
         Returns: boolean
       }
       staff_has_permission: { Args: { perm: string }; Returns: boolean }
+      update_customer_runas: {
+        Args: { p_cantidad_runas: number; p_customer_id: string }
+        Returns: undefined
+      }
       update_online_order_settings:
         | { Args: { p_settings: Json }; Returns: Json }
         | { Args: { p_settings: Json; p_user_id?: string }; Returns: Json }
