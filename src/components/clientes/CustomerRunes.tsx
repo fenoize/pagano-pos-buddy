@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Filter, TrendingUp, TrendingDown, Clock, DollarSign } from 'lucide-react';
+import { Plus, Minus, TrendingUp, TrendingDown, Clock, DollarSign, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useCustomerRunes, RunasTransactionFilters, RunasAdjustmentData } from '@/hooks/useCustomerRunes';
 import { RunasTransaction, RunaMovementType, OrigenMovimiento } from '@/types';
 import { format } from 'date-fns';
@@ -18,11 +19,15 @@ interface CustomerRunesProps {
   customerId: string;
 }
 
+type AdjustmentMode = 'add' | 'subtract';
+
 export default function CustomerRunes({ customerId }: CustomerRunesProps) {
   const [currentSaldo, setCurrentSaldo] = useState(0);
   const [transactions, setTransactions] = useState<RunasTransaction[]>([]);
   const [filters, setFilters] = useState<RunasTransactionFilters>({});
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [adjustmentMode, setAdjustmentMode] = useState<AdjustmentMode>('add');
+  const [adjustmentAmount, setAdjustmentAmount] = useState(0);
   const [adjustmentData, setAdjustmentData] = useState<RunasAdjustmentData>({
     runas: 0,
     motivo: ''
@@ -94,20 +99,38 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
     }
   };
 
+  // Calcular runas finales basado en modo y cantidad
+  const calculateFinalRunas = (mode: AdjustmentMode, amount: number): number => {
+    return mode === 'add' ? Math.abs(amount) : -Math.abs(amount);
+  };
+
   const handleAdjustment = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const success = await createManualAdjustment(customerId, adjustmentData);
+      const finalRunas = calculateFinalRunas(adjustmentMode, adjustmentAmount);
+      const success = await createManualAdjustment(customerId, {
+        runas: finalRunas,
+        motivo: adjustmentData.motivo
+      });
       if (success) {
         setIsAdjustmentModalOpen(false);
         setAdjustmentData({ runas: 0, motivo: '' });
+        setAdjustmentAmount(0);
+        setAdjustmentMode('add');
         loadData();
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const openAdjustmentModal = (mode: AdjustmentMode) => {
+    setAdjustmentMode(mode);
+    setAdjustmentAmount(0);
+    setAdjustmentData({ runas: 0, motivo: '' });
+    setIsAdjustmentModalOpen(true);
   };
 
   return (
@@ -169,10 +192,16 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
           </p>
         </div>
         {canAdjustRunes && (
-          <Button onClick={() => setIsAdjustmentModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Ajuste Manual
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => openAdjustmentModal('add')} variant="default">
+              <Plus className="w-4 h-4 mr-2" />
+              Agregar
+            </Button>
+            <Button onClick={() => openAdjustmentModal('subtract')} variant="outline">
+              <Minus className="w-4 h-4 mr-2" />
+              Restar
+            </Button>
+          </div>
         )}
       </div>
 
@@ -318,32 +347,77 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
       <Dialog open={isAdjustmentModalOpen} onOpenChange={setIsAdjustmentModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Ajuste Manual de Runas</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {adjustmentMode === 'add' ? (
+                <>
+                  <Plus className="w-5 h-5 text-green-600" />
+                  Agregar Runas
+                </>
+              ) : (
+                <>
+                  <Minus className="w-5 h-5 text-red-600" />
+                  Restar Runas
+                </>
+              )}
+            </DialogTitle>
           </DialogHeader>
           
           <form onSubmit={handleAdjustment} className="space-y-4">
-            <Card className="bg-yellow-50 border-yellow-200">
+            <Card className={adjustmentMode === 'add' ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}>
               <CardContent className="p-4">
-                <p className="text-sm text-yellow-800">
+                <p className={`text-sm ${adjustmentMode === 'add' ? 'text-green-800' : 'text-red-800'}`}>
                   <strong>Atención:</strong> Los ajustes manuales quedan registrados en el historial 
-                  con tu usuario como responsable. Asegúrate de incluir un motivo claro.
+                  con tu usuario como responsable.
                 </p>
               </CardContent>
             </Card>
 
+            {/* Toggle entre agregar/restar */}
+            <div className="flex items-center justify-center gap-4 p-3 bg-muted rounded-lg">
+              <Button
+                type="button"
+                variant={adjustmentMode === 'add' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setAdjustmentMode('add')}
+                className={adjustmentMode === 'add' ? 'bg-green-600 hover:bg-green-700' : ''}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Agregar
+              </Button>
+              <Button
+                type="button"
+                variant={adjustmentMode === 'subtract' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setAdjustmentMode('subtract')}
+                className={adjustmentMode === 'subtract' ? 'bg-red-600 hover:bg-red-700' : ''}
+              >
+                <Minus className="w-4 h-4 mr-1" />
+                Restar
+              </Button>
+            </div>
+
             {/* Runas Amount */}
             <div className="space-y-2">
               <Label htmlFor="runas">Cantidad de Runas *</Label>
-              <Input
-                id="runas"
-                type="number"
-                value={adjustmentData.runas}
-                onChange={(e) => setAdjustmentData({...adjustmentData, runas: parseInt(e.target.value) || 0})}
-                placeholder="Ej: 100 para sumar, -50 para restar"
-                required
-              />
+              <div className="relative">
+                <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-bold ${adjustmentMode === 'add' ? 'text-green-600' : 'text-red-600'}`}>
+                  {adjustmentMode === 'add' ? '+' : '-'}
+                </span>
+                <Input
+                  id="runas"
+                  type="number"
+                  min="1"
+                  value={adjustmentAmount || ''}
+                  onChange={(e) => setAdjustmentAmount(Math.abs(parseInt(e.target.value) || 0))}
+                  placeholder="Ej: 100"
+                  className="pl-8"
+                  required
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
-                Usa números positivos para agregar runas, negativos para quitar
+                {adjustmentMode === 'add' 
+                  ? 'Ingresa la cantidad de runas a agregar al cliente'
+                  : 'Ingresa la cantidad de runas a restar del cliente'}
               </p>
             </div>
 
@@ -354,23 +428,34 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
                 id="motivo"
                 value={adjustmentData.motivo}
                 onChange={(e) => setAdjustmentData({...adjustmentData, motivo: e.target.value})}
-                placeholder="Explica el motivo del ajuste (ej: Compensación por error en pedido)"
+                placeholder={adjustmentMode === 'add' 
+                  ? "Ej: Compensación por error en pedido, Bono de bienvenida..."
+                  : "Ej: Corrección de saldo, Expiración de runas, Ajuste por error..."}
                 rows={3}
                 required
               />
             </div>
 
             {/* Preview */}
-            {adjustmentData.runas !== 0 && (
+            {adjustmentAmount > 0 && (
               <Card>
                 <CardContent className="p-4">
                   <h4 className="font-medium mb-2">Vista Previa del Ajuste</h4>
                   <div className="space-y-1 text-sm">
                     <p>Saldo actual: <strong>{formatRunas(currentSaldo)} runas</strong></p>
-                    <p>Ajuste: <strong className={adjustmentData.runas > 0 ? 'text-green-600' : 'text-red-600'}>
-                      {adjustmentData.runas > 0 ? '+' : ''}{formatRunas(adjustmentData.runas)} runas
+                    <p>Ajuste: <strong className={adjustmentMode === 'add' ? 'text-green-600' : 'text-red-600'}>
+                      {adjustmentMode === 'add' ? '+' : '-'}{formatRunas(adjustmentAmount)} runas
                     </strong></p>
-                    <p>Saldo final: <strong>{formatRunas(currentSaldo + adjustmentData.runas)} runas</strong></p>
+                    <p>Saldo final: <strong>{formatRunas(
+                      adjustmentMode === 'add' 
+                        ? currentSaldo + adjustmentAmount 
+                        : Math.max(0, currentSaldo - adjustmentAmount)
+                    )} runas</strong></p>
+                    {adjustmentMode === 'subtract' && adjustmentAmount > currentSaldo && (
+                      <p className="text-orange-600 text-xs mt-2">
+                        ⚠️ El cliente quedará con saldo negativo ({formatRunas(currentSaldo - adjustmentAmount)})
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -381,14 +466,18 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
               <Button type="button" variant="outline" onClick={() => setIsAdjustmentModalOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading || adjustmentData.runas === 0 || !adjustmentData.motivo.trim()}>
+              <Button 
+                type="submit" 
+                disabled={loading || adjustmentAmount === 0 || !adjustmentData.motivo.trim()}
+                className={adjustmentMode === 'add' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+              >
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Procesando...
                   </>
                 ) : (
-                  'Aplicar Ajuste'
+                  adjustmentMode === 'add' ? 'Agregar Runas' : 'Restar Runas'
                 )}
               </Button>
             </div>
