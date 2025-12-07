@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Order, OrderStatus } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useKDSHistory } from '@/hooks/useKDSHistory';
+import { triggerOrderStatusNotification } from '@/lib/notificationTriggers';
 
 export function useKitchenOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -312,7 +313,17 @@ export function useKitchenOrders() {
       
       console.log(`[KDS] Order ${orderId} successfully updated to ${newStatus} in database`);
 
-      // PASO 4: Mostrar notificación de éxito
+      // PASO 4: Disparar notificación push al cliente (fire and forget)
+      if (['En preparación', 'Listo', 'En camino', 'Entregado'].includes(newStatus)) {
+        triggerOrderStatusNotification(
+          previousOrder.customer_id || null,
+          previousOrder.order_number,
+          newStatus,
+          previousOrder.fulfillment as 'pickup' | 'delivery'
+        ).catch(err => console.error('[KDS] Push notification error:', err));
+      }
+
+      // PASO 5: Mostrar notificación de éxito local
       if (newStatus === 'Listo') {
         toast({
           title: "¡Pedido Listo!",

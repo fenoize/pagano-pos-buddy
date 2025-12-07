@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Order, OrderStatus } from '@/types';
 import { useAuth } from './useAuth';
 import { useDeliverySettings } from './useDeliverySettings';
+import { triggerOrderStatusNotification, triggerDeliveryAssignedNotification } from '@/lib/notificationTriggers';
 
 export interface DeliveryOrder extends Omit<Order, 'customer'> {
   customer_name?: string;
@@ -116,7 +117,22 @@ export const useDeliveryOrders = () => {
           .eq('id', orderId);
 
         if (assignError) throw assignError;
+
+        // Notificar al cliente que se asignó repartidor
+        triggerDeliveryAssignedNotification(
+          order?.customer_id || null,
+          order?.order_number || 0,
+          user.full_name || user.username || 'Repartidor'
+        ).catch(err => console.error('[Delivery] Push notification error:', err));
       }
+
+      // Notificar cambio de estado "En camino"
+      triggerOrderStatusNotification(
+        order?.customer_id || null,
+        order?.order_number || 0,
+        'En camino',
+        'delivery'
+      ).catch(err => console.error('[Delivery] Push notification error:', err));
 
       toast.success('Pedido marcado como "En camino"');
       await fetchOrders();
@@ -168,6 +184,14 @@ export const useDeliveryOrders = () => {
         .eq('id', orderId);
 
       if (deliveryError) throw deliveryError;
+
+      // Notificar cambio de estado "Entregado"
+      triggerOrderStatusNotification(
+        order?.customer_id || null,
+        order?.order_number || 0,
+        'Entregado',
+        'delivery'
+      ).catch(err => console.error('[Delivery] Push notification error:', err));
 
       toast.success('Pedido marcado como entregado');
       await fetchOrders();

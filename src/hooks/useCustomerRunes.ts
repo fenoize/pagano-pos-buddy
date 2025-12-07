@@ -4,6 +4,7 @@ import { RunasTransaction, RunaMovementType, OrigenMovimiento } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from './usePermissions';
+import { triggerRunasEarnedNotification } from '@/lib/notificationTriggers';
 
 export interface RunasAdjustmentData {
   runas: number;
@@ -187,6 +188,10 @@ export function useCustomerRunes() {
       // Actualizar cantidad_runas en customers
       const newSaldo = await calculateRunasSaldo(customerId);
       await updateCustomerRunasBalance(customerId, newSaldo);
+
+      // Disparar notificación push de runas ganadas (fire and forget)
+      triggerRunasEarnedNotification(customerId, runasEarned)
+        .catch(err => console.error('[Runas] Push notification error:', err));
 
       return data;
     } catch (error) {

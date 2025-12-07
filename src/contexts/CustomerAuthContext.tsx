@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import type { User, Session } from '@supabase/supabase-js';
 import { STORAGE_KEYS, clearCustomerStorage } from '@/lib/storageKeys';
 import { setCustomerContext, clearDBContext } from '@/lib/dbContext';
+import { initOneSignal, setExternalUserId, removeExternalUserId } from '@/lib/onesignal';
 
 type Customer = Database['public']['Tables']['customers']['Row'];
 
@@ -27,6 +28,7 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [session, setSession] = useState<Session | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
+  const oneSignalInitialized = useRef(false);
 
   const loadCustomerData = async (userId: string) => {
     try {
@@ -46,7 +48,36 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
           await setCustomerContext(customerData.account_id, customerData.id);
         } catch (contextError) {
           console.error('Failed to set customer DB context:', contextError);
-          // No bloqueamos el login si falla el contexto, pero lo logueamos
+        }
+      }
+
+      // Inicializar OneSignal para notificaciones push
+      if (customerData && !oneSignalInitialized.current) {
+        try {
+          // Obtener app_id desde config pública
+          const { data: configData } = await supabase
+            .from('config')
+            .select('value')
+            .eq('key', 'onesignal_app_id')
+            .single();
+
+          const { data: enabledData } = await supabase
+            .from('config')
+            .select('value')
+            .eq('key', 'onesignal_enabled')
+            .single();
+
+          const appId = configData?.value as string;
+          const isEnabled = enabledData?.value as boolean;
+
+          if (appId && isEnabled) {
+            console.log('[OneSignal] Initializing with customer:', customerData.id);
+            await initOneSignal(appId);
+            await setExternalUserId(customerData.id);
+            oneSignalInitialized.current = true;
+          }
+        } catch (osError) {
+          console.error('[OneSignal] Initialization error:', osError);
         }
       }
     } catch (error) {
@@ -171,6 +202,14 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const signOut = async () => {
     // Limpiar contexto DB antes del signout
     await clearDBContext();
+
+    // Limpiar OneSignal external user id
+    try {
+      await removeExternalUserId();
+      oneSignalInitialized.current = false;
+    } catch (err) {
+      console.error('[OneSignal] Error removing external user:', err);
+    }
     
     await supabase.auth.signOut();
     clearCustomerStorage();
