@@ -2011,6 +2011,197 @@ export type Database = {
           },
         ]
       }
+      marketing_push_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error_count: number | null
+          id: string
+          message: string
+          recipients_count: number | null
+          scheduled_at: string | null
+          segment: string
+          send_type: string
+          sent_at: string | null
+          sent_count: number | null
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error_count?: number | null
+          id?: string
+          message: string
+          recipients_count?: number | null
+          scheduled_at?: string | null
+          segment?: string
+          send_type?: string
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error_count?: number | null
+          id?: string
+          message?: string
+          recipients_count?: number | null
+          scheduled_at?: string | null
+          segment?: string
+          send_type?: string
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_push_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_push_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_events: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          customer_id: string | null
+          error_message: string | null
+          id: string
+          payload: Json
+          sent_at: string | null
+          status: string
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          channel?: string
+          created_at?: string
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          sent_at?: string | null
+          status?: string
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          sent_at?: string | null
+          status?: string
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "notification_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          customer_id: string
+          delivery_push_enabled: boolean
+          id: string
+          marketing_push_enabled: boolean
+          onesignal_subscribed: boolean
+          order_push_enabled: boolean
+          permission_prompted_at: string | null
+          runas_push_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          delivery_push_enabled?: boolean
+          id?: string
+          marketing_push_enabled?: boolean
+          onesignal_subscribed?: boolean
+          order_push_enabled?: boolean
+          permission_prompted_at?: string | null
+          runas_push_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          delivery_push_enabled?: boolean
+          id?: string
+          marketing_push_enabled?: boolean
+          onesignal_subscribed?: boolean
+          order_push_enabled?: boolean
+          permission_prompted_at?: string | null
+          runas_push_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       online_order_settings: {
         Row: {
           app_delivery_enabled: boolean
@@ -3992,6 +4183,10 @@ export type Database = {
         Args: { p_badge_code: string; p_customer_id: string }
         Returns: boolean
       }
+      check_notification_allowed: {
+        Args: { p_customer_id: string; p_type: string }
+        Returns: boolean
+      }
       cleanup_expired_reset_codes: { Args: never; Returns: undefined }
       convert_uom_to_base: {
         Args: {
@@ -4122,6 +4317,14 @@ export type Database = {
       get_material_base_uom: {
         Args: { p_raw_material_id: string }
         Returns: string
+      }
+      get_onesignal_config: {
+        Args: never
+        Returns: {
+          app_id: string
+          enabled: boolean
+          web_site_name: string
+        }[]
       }
       get_online_order_settings:
         | { Args: never; Returns: Json }
