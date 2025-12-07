@@ -27,6 +27,7 @@ import {
   FileText as FileTextIcon,
   Building2,
   Megaphone,
+  Bell,
   TruckIcon
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -99,6 +100,7 @@ const financeItems = [
 // Marketing menu items
 const marketingItems = [
   { title: "Promos App", url: "/pos/marketing/promos-app", icon: Megaphone, roles: ['Administrador'] },
+  { title: "Notificaciones", url: "/pos/marketing/notificaciones", icon: Bell, roles: ['Administrador'] },
 ];
 
 export function AppSidebar() {
