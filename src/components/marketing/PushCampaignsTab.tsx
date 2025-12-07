@@ -40,8 +40,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Send, Trash2, Loader2, Bell, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Send, Trash2, Loader2, Bell, Clock, CheckCircle2, XCircle, FlaskConical } from 'lucide-react';
 import { useMarketingPushCampaigns } from '@/hooks/useMarketingPushCampaigns';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -55,6 +58,7 @@ const STATUS_BADGES: Record<string, { variant: 'default' | 'secondary' | 'destru
 
 export const PushCampaignsTab: React.FC = () => {
   const { campaigns, loading, sending, createCampaign, deleteCampaign } = useMarketingPushCampaigns();
+  const { user } = useAuthContext();
   const [modalOpen, setModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   
@@ -64,6 +68,14 @@ export const PushCampaignsTab: React.FC = () => {
   const [segment, setSegment] = useState('all_customers');
   const [sendType, setSendType] = useState<'now' | 'scheduled'>('now');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Test notification state
+  const [testTitle, setTestTitle] = useState('Paganos Burger');
+  const [testMessage, setTestMessage] = useState('🔥 Prueba de notificación desde Paganos');
+  const [isSendingTest, setIsSendingTest] = useState(false);
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'Administrador';
 
   const resetForm = () => {
     setTitle('');
@@ -102,6 +114,42 @@ export const PushCampaignsTab: React.FC = () => {
     }
   };
 
+  const handleSendTestNotification = async () => {
+    if (!user?.id || !testTitle.trim() || !testMessage.trim()) {
+      toast.error('Completa el título y mensaje');
+      return;
+    }
+
+    setIsSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          action: 'test',
+          external_user_id: user.id,
+          title: testTitle.trim(),
+          body: testMessage.trim(),
+        }
+      });
+
+      if (error) {
+        console.error('Error sending test notification:', error);
+        toast.error(`Error al enviar: ${error.message}`);
+        return;
+      }
+
+      if (data?.success) {
+        toast.success('Notificación de prueba enviada correctamente');
+      } else {
+        toast.error(`Error: ${data?.error || 'Error desconocido'}`);
+      }
+    } catch (err) {
+      console.error('Exception sending test notification:', err);
+      toast.error('Error inesperado al enviar notificación');
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -121,7 +169,67 @@ export const PushCampaignsTab: React.FC = () => {
   }
 
   return (
-    <>
+    <div className="space-y-6">
+      {/* Test Notification Block - Admin Only */}
+      {isAdmin && (
+        <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FlaskConical className="w-5 h-5 text-primary" />
+              Probar notificaciones push
+            </CardTitle>
+            <CardDescription>
+              Envía una notificación de prueba a tu dispositivo para verificar la integración
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="test-title">Título</Label>
+                <Input
+                  id="test-title"
+                  value={testTitle}
+                  onChange={(e) => setTestTitle(e.target.value)}
+                  placeholder="Paganos Burger"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="test-message">Mensaje</Label>
+                <Input
+                  id="test-message"
+                  value={testMessage}
+                  onChange={(e) => setTestMessage(e.target.value)}
+                  placeholder="🔥 Prueba de notificación"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleSendTestNotification}
+                disabled={isSendingTest || !testTitle.trim() || !testMessage.trim()}
+                variant="outline"
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              >
+                {isSendingTest ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Enviar notificación de prueba a mi usuario
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Se enviará al usuario: <code className="bg-muted px-1 rounded">{user?.id?.slice(0, 8)}...</code>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -320,6 +428,6 @@ export const PushCampaignsTab: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 };
