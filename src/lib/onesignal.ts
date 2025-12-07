@@ -85,19 +85,27 @@ export async function setExternalUserId(userId: string): Promise<void> {
 }
 
 /**
- * Logout the current user from OneSignal
+ * Remove the external user ID (logout from OneSignal)
  */
-export async function logoutOneSignal(): Promise<void> {
+export async function removeExternalUserId(): Promise<void> {
   if (!window.OneSignal || !isInitialized) {
+    console.warn('OneSignal: Not initialized, cannot remove external user ID');
     return;
   }
 
   try {
     await window.OneSignal.logout();
-    console.log('OneSignal: User logged out');
+    console.log('OneSignal: External user ID removed (logged out)');
   } catch (error) {
-    console.error('OneSignal: Error logging out', error);
+    console.error('OneSignal: Error removing external user ID', error);
   }
+}
+
+/**
+ * Logout the current user from OneSignal (alias for removeExternalUserId)
+ */
+export async function logoutOneSignal(): Promise<void> {
+  return removeExternalUserId();
 }
 
 /**
