@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Puzzle, Save, CheckCircle2, XCircle, Loader2, ExternalLink, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { OneSignalConfig } from './OneSignalConfig';
 
 export const IntegrationsConfig: React.FC = () => {
   const [mapboxToken, setMapboxToken] = useState('');
@@ -220,6 +221,9 @@ export const IntegrationsConfig: React.FC = () => {
             </ul>
           </div>
         </div>
+
+        {/* OneSignal Integration */}
+        <OneSignalConfig />
 
         {/* Save Button */}
         <div className="flex justify-end pt-4">

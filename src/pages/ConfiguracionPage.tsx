@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart, TruckIcon, Puzzle } from 'lucide-react';
+import { Settings, DollarSign, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart, TruckIcon, Puzzle, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
 import { DeliveryConfig } from '@/components/config/DeliveryConfig';
@@ -13,6 +13,7 @@ import { CategoryConfig } from '@/components/config/CategoryConfig';
 import CouponsManagement from './CouponsManagement';
 import { OnlineOrdersConfig } from '@/components/config/OnlineOrdersConfig';
 import { IntegrationsConfig } from '@/components/config/IntegrationsConfig';
+import { NotificationsGlobalConfig } from '@/components/config/NotificationsGlobalConfig';
 
 export default function ConfiguracionPage() {
   const { user } = useAuthContext();
@@ -71,6 +72,10 @@ export default function ConfiguracionPage() {
             <Puzzle className="w-4 h-4" />
             <span>Integraciones</span>
           </TabsTrigger>
+          <TabsTrigger value="notifications" className="w-full justify-start gap-3 px-4 py-2.5">
+            <Bell className="w-4 h-4" />
+            <span>Notificaciones</span>
+          </TabsTrigger>
           <TabsTrigger value="permissions" className="w-full justify-start gap-3 px-4 py-2.5">
             <Shield className="w-4 h-4" />
             <span>Permisos</span>
@@ -108,6 +113,10 @@ export default function ConfiguracionPage() {
 
           <TabsContent value="integrations" className="mt-0 space-y-6">
             <IntegrationsConfig />
+          </TabsContent>
+
+          <TabsContent value="notifications" className="mt-0 space-y-6">
+            <NotificationsGlobalConfig />
           </TabsContent>
 
           <TabsContent value="permissions" className="mt-0 space-y-6">
