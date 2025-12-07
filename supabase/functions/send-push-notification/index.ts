@@ -12,7 +12,7 @@ const ONESIGNAL_API_URL = 'https://onesignal.com/api/v1/notifications';
 interface NotificationRequest {
   customer_id?: string;
   user_id?: string;
-  type: 'order_status' | 'delivery_assigned' | 'runas_earned' | 'marketing' | 'rider_new_order';
+  type: 'order_status' | 'delivery_assigned' | 'runas_earned' | 'marketing' | 'rider_new_order' | 'test';
   title: string;
   body: string;
   payload?: Record<string, any>;
@@ -25,6 +25,12 @@ interface BulkNotificationRequest {
   body: string;
   payload?: Record<string, any>;
   campaign_id: string;
+}
+
+interface TestNotificationRequest {
+  external_user_id: string;
+  title: string;
+  body: string;
 }
 
 serve(async (req) => {
@@ -82,6 +88,11 @@ serve(async (req) => {
       );
     }
 
+    // Handle test notification (direct send without preferences check)
+    if (action === 'test') {
+      return await handleTestNotification(data as TestNotificationRequest, oneSignalAppId, oneSignalRestApiKey);
+    }
+
     // Handle bulk marketing notifications
     if (action === 'bulk') {
       return await handleBulkNotification(supabase, data as BulkNotificationRequest, oneSignalAppId, oneSignalRestApiKey);
@@ -98,6 +109,69 @@ serve(async (req) => {
     );
   }
 });
+
+async function handleTestNotification(
+  data: TestNotificationRequest,
+  appId: string,
+  apiKey: string
+) {
+  const { external_user_id, title, body } = data;
+
+  if (!external_user_id) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'No external_user_id provided' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  try {
+    const oneSignalPayload = {
+      app_id: appId,
+      include_aliases: {
+        external_id: [external_user_id]
+      },
+      target_channel: 'push',
+      headings: { en: title },
+      contents: { en: body },
+      data: { type: 'test' }
+    };
+
+    console.log('Sending test OneSignal notification:', JSON.stringify(oneSignalPayload));
+
+    const response = await fetch(ONESIGNAL_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(oneSignalPayload)
+    });
+
+    const result = await response.json();
+    console.log('OneSignal test response:', JSON.stringify(result));
+
+    if (!response.ok || result.errors) {
+      const errorMessage = result.errors ? JSON.stringify(result.errors) : 'OneSignal API error';
+      return new Response(
+        JSON.stringify({ success: false, error: errorMessage }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, notification_id: result.id }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error sending test notification:', error);
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
 
 async function handleSingleNotification(
   supabase: any,
