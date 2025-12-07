@@ -168,6 +168,11 @@ export function ClosureDetailDrawer({
                   <div className="text-lg font-semibold text-blue-600">
                     {formatCurrency(closure.fixed_expenses)}
                   </div>
+                  {/* Desglose de fijos */}
+                  <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                    <div>▸ Recurrentes: {formatCurrency(closure.recurring_fixed_expenses || 0)}</div>
+                    <div>▸ No recurrentes: {formatCurrency(closure.non_recurring_fixed_expenses || 0)}</div>
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Gastos Variables</div>
