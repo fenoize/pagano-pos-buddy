@@ -17,11 +17,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreVertical, Pencil, Copy, Trash2, BarChart3, Bell } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Copy, Trash2, BarChart3 } from 'lucide-react';
 import { useMarketingPromotions, MarketingPromotion } from '@/hooks/useMarketingPromotions';
 import { PromoFormModal } from '@/components/marketing/PromoFormModal';
 import { PromoAnalyticsDashboard } from '@/components/marketing/PromoAnalyticsDashboard';
-import { PushCampaignsTab } from '@/components/marketing/PushCampaignsTab';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -109,7 +108,7 @@ export default function MarketingPromosApp() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Marketing</h1>
+          <h1 className="text-3xl font-bold">Promos App</h1>
           <p className="text-muted-foreground mt-1">
             Gestiona promociones y analiza su rendimiento en la app de clientes
           </p>
@@ -123,10 +122,6 @@ export default function MarketingPromosApp() {
       <Tabs defaultValue="promotions" className="space-y-6">
         <TabsList>
           <TabsTrigger value="promotions">Promociones</TabsTrigger>
-          <TabsTrigger value="notifications">
-            <Bell className="mr-2 h-4 w-4" />
-            Notificaciones
-          </TabsTrigger>
           <TabsTrigger value="analytics">
             <BarChart3 className="mr-2 h-4 w-4" />
             Analytics
@@ -237,10 +232,6 @@ export default function MarketingPromosApp() {
           )}
         </CardContent>
       </Card>
-        </TabsContent>
-
-        <TabsContent value="notifications">
-          <PushCampaignsTab />
         </TabsContent>
 
         <TabsContent value="analytics">
