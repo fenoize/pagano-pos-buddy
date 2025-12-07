@@ -72,7 +72,9 @@ export const PushCampaignsTab: React.FC = () => {
   // Test notification state
   const [testTitle, setTestTitle] = useState('Paganos Burger');
   const [testMessage, setTestMessage] = useState('🔥 Prueba de notificación desde Paganos');
+  const [testCustomerEmail, setTestCustomerEmail] = useState('');
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
 
   // Check if user is admin
   const isAdmin = user?.role === 'Administrador';
@@ -115,17 +117,45 @@ export const PushCampaignsTab: React.FC = () => {
   };
 
   const handleSendTestNotification = async () => {
-    if (!user?.id || !testTitle.trim() || !testMessage.trim()) {
+    if (!testTitle.trim() || !testMessage.trim()) {
       toast.error('Completa el título y mensaje');
       return;
     }
 
     setIsSendingTest(true);
+    setTestError(null);
+
     try {
+      // If customer email is provided, look up their ID
+      let externalUserId = user?.id;
+      
+      if (testCustomerEmail.trim()) {
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('email', testCustomerEmail.trim().toLowerCase())
+          .maybeSingle();
+        
+        if (customerError) {
+          console.error('Error looking up customer:', customerError);
+          setTestError('Error al buscar cliente');
+          setIsSendingTest(false);
+          return;
+        }
+        
+        if (!customerData) {
+          setTestError(`No se encontró cliente con email: ${testCustomerEmail}`);
+          setIsSendingTest(false);
+          return;
+        }
+        
+        externalUserId = customerData.id;
+      }
+
       const { data, error } = await supabase.functions.invoke('send-push-notification', {
         body: {
           action: 'test',
-          external_user_id: user.id,
+          external_user_id: externalUserId,
           title: testTitle.trim(),
           body: testMessage.trim(),
         }
@@ -133,18 +163,25 @@ export const PushCampaignsTab: React.FC = () => {
 
       if (error) {
         console.error('Error sending test notification:', error);
-        toast.error(`Error al enviar: ${error.message}`);
+        setTestError(`Error al enviar: ${error.message}`);
         return;
       }
 
       if (data?.success) {
         toast.success('Notificación de prueba enviada correctamente');
+        setTestError(null);
       } else {
-        toast.error(`Error: ${data?.error || 'Error desconocido'}`);
+        const errorMsg = data?.error || 'Error desconocido';
+        // Provide helpful message for common errors
+        if (errorMsg.includes('not subscribed')) {
+          setTestError('El usuario no está suscrito a notificaciones push. Debe aceptar notificaciones desde la app de clientes primero.');
+        } else {
+          setTestError(`Error: ${errorMsg}`);
+        }
       }
     } catch (err) {
       console.error('Exception sending test notification:', err);
-      toast.error('Error inesperado al enviar notificación');
+      setTestError('Error inesperado al enviar notificación');
     } finally {
       setIsSendingTest(false);
     }
@@ -179,11 +216,24 @@ export const PushCampaignsTab: React.FC = () => {
               Probar notificaciones push
             </CardTitle>
             <CardDescription>
-              Envía una notificación de prueba a tu dispositivo para verificar la integración
+              Envía una notificación de prueba. El destinatario debe haber aceptado notificaciones desde la app de clientes.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="test-customer-email">Email del cliente (opcional)</Label>
+                <Input
+                  id="test-customer-email"
+                  type="email"
+                  value={testCustomerEmail}
+                  onChange={(e) => setTestCustomerEmail(e.target.value)}
+                  placeholder="cliente@email.com"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Deja vacío para enviar a tu usuario actual
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="test-title">Título</Label>
                 <Input
@@ -203,6 +253,13 @@ export const PushCampaignsTab: React.FC = () => {
                 />
               </div>
             </div>
+            
+            {testError && (
+              <div className="p-3 rounded-md bg-destructive/10 border border-destructive/30 text-sm text-destructive">
+                {testError}
+              </div>
+            )}
+            
             <div className="flex items-center gap-3">
               <Button
                 onClick={handleSendTestNotification}
@@ -218,13 +275,10 @@ export const PushCampaignsTab: React.FC = () => {
                 ) : (
                   <>
                     <Send className="w-4 h-4 mr-2" />
-                    Enviar notificación de prueba a mi usuario
+                    Enviar notificación de prueba
                   </>
                 )}
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Se enviará al usuario: <code className="bg-muted px-1 rounded">{user?.id?.slice(0, 8)}...</code>
-              </p>
             </div>
           </CardContent>
         </Card>
