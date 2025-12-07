@@ -1,4 +1,4 @@
-// OneSignal Web SDK Integration
+// OneSignal Web SDK Integration for Paganos POS
 // Documentation: https://documentation.onesignal.com/docs/web-push-sdk
 
 declare global {
@@ -33,11 +33,11 @@ export async function initOneSignal(appId: string): Promise<boolean> {
           try {
             await OneSignal.init({
               appId: appId,
-              allowLocalhostAsSecureOrigin: true, // For development
+              allowLocalhostAsSecureOrigin: true,
               serviceWorkerParam: { scope: '/push/onesignal/' },
               serviceWorkerPath: '/push/onesignal/OneSignalSDKWorker.js',
               notifyButton: {
-                enable: false, // We'll use our own UI
+                enable: false,
               },
               welcomeNotification: {
                 disable: true,
@@ -119,7 +119,6 @@ export async function promptForPushPermission(): Promise<boolean> {
   }
 
   try {
-    // Check current permission state
     const permission = await window.OneSignal.Notifications.permission;
     
     if (permission) {
@@ -127,10 +126,8 @@ export async function promptForPushPermission(): Promise<boolean> {
       return true;
     }
 
-    // Request permission
     await window.OneSignal.Notifications.requestPermission();
     
-    // Check if granted
     const newPermission = await window.OneSignal.Notifications.permission;
     console.log('OneSignal: Permission result:', newPermission);
     

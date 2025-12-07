@@ -4,7 +4,7 @@ import type { Database } from '@/integrations/supabase/types';
 import type { User, Session } from '@supabase/supabase-js';
 import { STORAGE_KEYS, clearCustomerStorage } from '@/lib/storageKeys';
 import { setCustomerContext, clearDBContext } from '@/lib/dbContext';
-import { initOneSignal, setExternalUserId, removeExternalUserId } from '@/lib/onesignal';
+import { initOneSignal, setExternalUserId, logoutOneSignal } from '@/lib/onesignal';
 
 type Customer = Database['public']['Tables']['customers']['Row'];
 
@@ -205,7 +205,7 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     // Limpiar OneSignal external user id
     try {
-      await removeExternalUserId();
+      await logoutOneSignal();
       oneSignalInitialized.current = false;
     } catch (err) {
       console.error('[OneSignal] Error removing external user:', err);
