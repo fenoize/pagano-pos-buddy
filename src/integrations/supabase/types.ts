@@ -1540,9 +1540,11 @@ export type Database = {
           document_type: string | null
           expense_date: string
           expense_type: string
+          fixed_subtype: string | null
           id: string
           notes: string | null
           payment_method: string | null
+          recurring_id: string | null
           registered_by: string | null
           supplier: string | null
           updated_at: string
@@ -1558,9 +1560,11 @@ export type Database = {
           document_type?: string | null
           expense_date?: string
           expense_type: string
+          fixed_subtype?: string | null
           id?: string
           notes?: string | null
           payment_method?: string | null
+          recurring_id?: string | null
           registered_by?: string | null
           supplier?: string | null
           updated_at?: string
@@ -1576,9 +1580,11 @@ export type Database = {
           document_type?: string | null
           expense_date?: string
           expense_type?: string
+          fixed_subtype?: string | null
           id?: string
           notes?: string | null
           payment_method?: string | null
+          recurring_id?: string | null
           registered_by?: string | null
           supplier?: string | null
           updated_at?: string
@@ -1589,6 +1595,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_expenses_recurring_id_fkey"
+            columns: ["recurring_id"]
+            isOneToOne: false
+            referencedRelation: "finance_recurring_expenses"
             referencedColumns: ["id"]
           },
           {
@@ -1672,6 +1685,36 @@ export type Database = {
           },
         ]
       }
+      finance_recurring_expenses: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       financial_closures: {
         Row: {
           created_at: string | null
@@ -1684,8 +1727,10 @@ export type Database = {
           is_locked: boolean
           margin_amount: number | null
           margin_percent: number | null
+          non_recurring_fixed_expenses: number | null
           notes: string | null
           period_type: string
+          recurring_fixed_expenses: number | null
           total_app: number | null
           total_balance: number | null
           total_cash: number | null
@@ -1709,8 +1754,10 @@ export type Database = {
           is_locked?: boolean
           margin_amount?: number | null
           margin_percent?: number | null
+          non_recurring_fixed_expenses?: number | null
           notes?: string | null
           period_type: string
+          recurring_fixed_expenses?: number | null
           total_app?: number | null
           total_balance?: number | null
           total_cash?: number | null
@@ -1734,8 +1781,10 @@ export type Database = {
           is_locked?: boolean
           margin_amount?: number | null
           margin_percent?: number | null
+          non_recurring_fixed_expenses?: number | null
           notes?: string | null
           period_type?: string
+          recurring_fixed_expenses?: number | null
           total_app?: number | null
           total_balance?: number | null
           total_cash?: number | null
@@ -4078,6 +4127,16 @@ export type Database = {
         | { Args: never; Returns: Json }
         | { Args: { p_user_id?: string }; Returns: Json }
       get_store_status: { Args: never; Returns: Json }
+      get_top_recurring_expenses_for_closure: {
+        Args: { _end: string; _limit?: number; _start: string }
+        Returns: {
+          category: string
+          expense_count: number
+          recurring_id: string
+          recurring_name: string
+          total_amount: number
+        }[]
+      }
       get_user_id_from_current_session: { Args: never; Returns: string }
       has_active_staff_session: { Args: never; Returns: boolean }
       has_orders_in_last_4_weeks: {

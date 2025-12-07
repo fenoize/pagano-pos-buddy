@@ -18,7 +18,8 @@ export function useFinanceExpenses() {
         .from('finance_expenses')
         .select(`
           *,
-          account:finance_accounts(id, name, type)
+          account:finance_accounts(id, name, type),
+          recurring:finance_recurring_expenses(id, name, category)
         `)
         .order('expense_date', { ascending: false });
 

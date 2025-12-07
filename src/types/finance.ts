@@ -11,7 +11,7 @@ export interface FinancialClosure {
   created_at: string;
   updated_at: string;
   
-  // Nuevos campos PRO
+  // Campos PRO
   total_cash: number;
   total_pos: number;
   total_transfer: number;
@@ -19,6 +19,8 @@ export interface FinancialClosure {
   total_expenses: number;
   fixed_expenses: number;
   variable_expenses: number;
+  recurring_fixed_expenses: number;
+  non_recurring_fixed_expenses: number;
   margin_amount: number;
   margin_percent: number;
   total_tax: number;
@@ -91,7 +93,7 @@ export interface FinanceExpense {
   };
   amount: number;
   currency: string;
-  expense_type: 'Variable' | 'Inversión' | 'Otro';
+  expense_type: 'Variable' | 'Inversión' | 'Otro' | 'Fijo';
   category: string;
   supplier: string | null;
   payment_method: string | null;
@@ -100,6 +102,13 @@ export interface FinanceExpense {
   notes: string | null;
   attachment_url: string | null;
   registered_by: string | null;
+  recurring_id: string | null;
+  fixed_subtype: 'simple' | 'recurrente' | null;
+  recurring?: {
+    id: string;
+    name: string;
+    category: string;
+  } | null;
   created_at: string;
   updated_at: string;
 }

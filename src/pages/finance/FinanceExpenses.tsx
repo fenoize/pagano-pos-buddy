@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useFinanceExpenses } from '@/hooks/useFinanceExpenses';
 import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
+import { useRecurringExpenses } from '@/hooks/useRecurringExpenses';
 import { useAuth } from '@/hooks/useAuth';
 import { SupplierSelect } from '@/components/finance/SupplierSelect';
 import { ExpenseSettingsModal } from '@/components/finance/ExpenseSettingsModal';
@@ -27,7 +28,7 @@ import { formatDateShort } from '@/lib/dateUtils';
 import { Badge } from '@/components/ui/badge';
 import * as XLSX from 'xlsx';
 
-const EXPENSE_TYPES = ['Variable', 'Inversión', 'Otro'];
+const EXPENSE_TYPES = ['Variable', 'Fijo', 'Inversión', 'Otro'];
 
 const DOCUMENT_TYPES = ['Boleta', 'Factura', 'Recibo', 'Otro'];
 
@@ -35,6 +36,7 @@ export default function FinanceExpenses() {
   const { user } = useAuth();
   const { expenses, loading: loadingExpenses, createExpense, updateExpense, deleteExpense } = useFinanceExpenses();
   const { accounts } = useFinanceAccounts();
+  const { activeRecurringExpenses } = useRecurringExpenses();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<FinanceExpense | null>(null);
@@ -60,7 +62,7 @@ export default function FinanceExpenses() {
     expense_date: format(new Date(), 'yyyy-MM-dd'),
     account_id: '',
     amount: '',
-    expense_type: 'Variable' as 'Variable' | 'Inversión' | 'Otro',
+    expense_type: 'Variable' as 'Variable' | 'Fijo' | 'Inversión' | 'Otro',
     category: '',
     supplier: '',
     payment_method: '',
@@ -68,6 +70,8 @@ export default function FinanceExpenses() {
     document_number: '',
     attachment_url: '',
     notes: '',
+    recurring_id: '' as string,
+    fixed_subtype: '' as 'simple' | 'recurrente' | '',
   });
 
   const isAdmin = user?.role === 'Administrador';
@@ -167,7 +171,7 @@ export default function FinanceExpenses() {
         expense_date: expense.expense_date,
         account_id: expense.account_id,
         amount: expense.amount.toString(),
-        expense_type: expense.expense_type,
+        expense_type: expense.expense_type as 'Variable' | 'Fijo' | 'Inversión' | 'Otro',
         category: expense.category,
         supplier: expense.supplier || '',
         payment_method: expense.payment_method || paymentMethods[0] || '',
@@ -175,6 +179,8 @@ export default function FinanceExpenses() {
         document_number: expense.document_number || '',
         attachment_url: expense.attachment_url || '',
         notes: expense.notes || '',
+        recurring_id: expense.recurring_id || '',
+        fixed_subtype: expense.fixed_subtype || '',
       });
       setIncludeDocumentation(!!expense.document_type);
     } else {
@@ -191,6 +197,8 @@ export default function FinanceExpenses() {
         document_number: '',
         attachment_url: '',
         notes: '',
+        recurring_id: '',
+        fixed_subtype: '',
       });
       setIncludeDocumentation(false);
     }
@@ -235,6 +243,10 @@ export default function FinanceExpenses() {
       document_number: includeDocumentation ? formData.document_number : null,
       notes: formData.notes || null,
       attachment_url: formData.attachment_url || null,
+      recurring_id: formData.expense_type === 'Fijo' && formData.recurring_id ? formData.recurring_id : null,
+      fixed_subtype: formData.expense_type === 'Fijo' 
+        ? (formData.recurring_id ? 'recurrente' : 'simple') as 'simple' | 'recurrente'
+        : null,
     };
 
     const success = editingExpense
@@ -483,6 +495,34 @@ export default function FinanceExpenses() {
                   </Select>
                 </div>
               </div>
+
+              {/* Campo condicional: Gasto Recurrente (solo si tipo = Fijo) */}
+              {formData.expense_type === 'Fijo' && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <Label htmlFor="recurring_id" className="text-blue-700 dark:text-blue-300">
+                    ¿Es un gasto recurrente? (opcional)
+                  </Label>
+                  <Select
+                    value={formData.recurring_id}
+                    onValueChange={(value) => setFormData({ ...formData, recurring_id: value })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Seleccionar gasto recurrente..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Ninguno (gasto fijo puntual)</SelectItem>
+                      {activeRecurringExpenses.map((re) => (
+                        <SelectItem key={re.id} value={re.id}>
+                          {re.name} ({re.category})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Si vinculas a un gasto recurrente, aparecerá agrupado en los cierres financieros.
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
