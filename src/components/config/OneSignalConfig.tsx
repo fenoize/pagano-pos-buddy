@@ -163,7 +163,7 @@ export const OneSignalConfig: React.FC = () => {
           </ul>
         </div>
 
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md text-sm space-y-2 border border-blue-200 dark:border-blue-800">
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md text-sm space-y-3 border border-blue-200 dark:border-blue-800">
           <p className="font-medium text-blue-800 dark:text-blue-200">🧪 Herramientas de Testing</p>
           <p className="text-blue-700 dark:text-blue-300 text-xs">
             Si el banner de notificaciones no aparece en la app de cliente, usa este botón para resetear el estado y probar nuevamente.
@@ -181,6 +181,16 @@ export const OneSignalConfig: React.FC = () => {
           >
             Resetear banner de notificaciones
           </Button>
+          
+          <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted/50 rounded">
+            <p className="font-medium mb-1">Pasos para probar notificaciones:</p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>Abre la app de cliente (no /pos) en ventana incógnito</li>
+              <li>Inicia sesión como cliente registrado</li>
+              <li>Acepta el banner de notificaciones cuando aparezca</li>
+              <li>Ve a Marketing → Notificaciones y envía una prueba al email del cliente</li>
+            </ol>
+          </div>
         </div>
 
         <p className="text-xs text-muted-foreground">

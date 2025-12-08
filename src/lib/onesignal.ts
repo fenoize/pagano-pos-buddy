@@ -202,6 +202,11 @@ export async function logoutOneSignal(): Promise<void> {
 /**
  * Prompt the user for push notification permission
  * Returns true if permission was granted and subscription was created
+ * 
+ * IMPORTANT: In SDK v16, the order matters:
+ * 1. First request permission via Notifications.requestPermission()
+ * 2. Then optIn() to create the push subscription
+ * 3. The subscription will be linked to whatever external_id was set via login()
  */
 export async function promptForPushPermission(): Promise<boolean> {
   if (!window.OneSignal || !isInitialized) {
@@ -212,15 +217,16 @@ export async function promptForPushPermission(): Promise<boolean> {
   try {
     // Check current permission
     const currentPermission = await window.OneSignal.Notifications.permission;
+    console.log('[OneSignal] Current permission:', currentPermission);
     
     if (currentPermission === true) {
-      console.log('[OneSignal] Already has permission');
-      // Ensure subscription is active even if permission was already granted
+      console.log('[OneSignal] Already has permission, ensuring subscription is active');
       await ensurePushSubscription();
       return true;
     }
 
     // Request permission using Notifications.requestPermission
+    console.log('[OneSignal] Requesting permission...');
     await window.OneSignal.Notifications.requestPermission();
     
     // Check result
@@ -229,7 +235,21 @@ export async function promptForPushPermission(): Promise<boolean> {
     
     if (newPermission === true) {
       // After permission granted, explicitly opt-in to create the push subscription
+      // This MUST happen after login() was called for the external_id to be linked
+      console.log('[OneSignal] Permission granted, creating subscription...');
       await ensurePushSubscription();
+      
+      // Wait a moment for the subscription to be registered
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Verify subscription was created
+      const pushSub = window.OneSignal.User?.PushSubscription;
+      if (pushSub?.id) {
+        console.log('[OneSignal] ✅ Subscription created with ID:', pushSub.id);
+      } else {
+        console.warn('[OneSignal] ⚠️ Subscription may not be fully registered yet');
+      }
+      
       return true;
     }
     
