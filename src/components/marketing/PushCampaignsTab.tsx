@@ -128,11 +128,12 @@ export const PushCampaignsTab: React.FC = () => {
     try {
       // If customer email is provided, look up their ID
       let externalUserId = user?.id;
+      let targetDescription = 'tu usuario actual (staff)';
       
       if (testCustomerEmail.trim()) {
         const { data: customerData, error: customerError } = await supabase
           .from('customers')
-          .select('id')
+          .select('id, name')
           .eq('email', testCustomerEmail.trim().toLowerCase())
           .maybeSingle();
         
@@ -150,7 +151,23 @@ export const PushCampaignsTab: React.FC = () => {
         }
         
         externalUserId = customerData.id;
+        targetDescription = `cliente "${customerData.name || testCustomerEmail}"`;
+        
+        // Check if customer has onesignal subscription in preferences
+        const { data: prefData } = await supabase
+          .from('notification_preferences')
+          .select('onesignal_subscribed')
+          .eq('customer_id', customerData.id)
+          .maybeSingle();
+        
+        if (!prefData?.onesignal_subscribed) {
+          setTestError(`El cliente "${customerData.name || testCustomerEmail}" no ha aceptado notificaciones push en la app. Debe: 1) Abrir la app de cliente 2) Iniciar sesión 3) Aceptar el banner de notificaciones.`);
+          setIsSendingTest(false);
+          return;
+        }
       }
+
+      console.log('[Test Push] Sending to:', externalUserId, '(' + targetDescription + ')');
 
       const { data, error } = await supabase.functions.invoke('send-push-notification', {
         body: {
@@ -168,13 +185,13 @@ export const PushCampaignsTab: React.FC = () => {
       }
 
       if (data?.success) {
-        toast.success('Notificación de prueba enviada correctamente');
+        toast.success(`Notificación enviada a ${targetDescription}`);
         setTestError(null);
       } else {
         const errorMsg = data?.error || 'Error desconocido';
         // Provide helpful message for common errors
-        if (errorMsg.includes('not subscribed')) {
-          setTestError('El usuario no está suscrito a notificaciones push. Debe aceptar notificaciones desde la app de clientes primero.');
+        if (errorMsg.includes('not subscribed') || errorMsg.includes('All included players')) {
+          setTestError(`El destinatario (${targetDescription}) no tiene una suscripción push activa en OneSignal. Esto puede pasar si:\n• No aceptó notificaciones en la app de cliente\n• Usó un navegador diferente\n• Necesita volver a aceptar notificaciones desde la app`);
         } else {
           setTestError(`Error: ${errorMsg}`);
         }
