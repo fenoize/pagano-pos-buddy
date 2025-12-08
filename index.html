@@ -15,68 +15,98 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Paganos">
-    <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/wVTlZ7C69hTXueuwzCN66OIBujU2/uploads/1760384024831-iso_paganos_512.png">
+    
+    <!-- Apple Touch Icons - se actualizan dinámicamente desde la DB -->
+    <link rel="apple-touch-icon" id="apple-touch-icon-180" sizes="180x180" href="/icons/paganos-180.png">
+    <link rel="apple-touch-icon" id="apple-touch-icon-192" sizes="192x192" href="/icons/paganos-192.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" id="favicon-link" type="image/png" href="/icons/paganos-192.png">
 
     <!-- Open Graph -->
-    
-    
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/wVTlZ7C69hTXueuwzCN66OIBujU2/social-images/social-1757714703493-nuevo logoINSTAGRAM copia.jpg">
-
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/wVTlZ7C69hTXueuwzCN66OIBujU2/social-images/social-1757714703493-nuevo logoINSTAGRAM copia.jpg">
+    <meta property="og:title" content="Paganos Burger">
+    <meta name="twitter:title" content="Paganos Burger">
+    <meta property="og:description" content="Hamburguesería Smash">
+    <meta name="twitter:description" content="Hamburguesería Smash">
     
     <script>
-      // Cargar manifest dinámicamente desde edge function según la ruta
+      // Cargar manifest y apple-touch-icons dinámicamente según la ruta
       (function() {
         const path = window.location.pathname;
         const manifestLink = document.getElementById('manifest-placeholder');
+        const SUPABASE_URL = 'https://lxxfhayifyiioglfbsyj.supabase.co';
+        const appType = path.startsWith('/pos') ? 'pos' : 'customer';
         
-        if (path.startsWith('/pos')) {
-          // POS: generar manifest desde DB
-          manifestLink.href = 'https://lxxfhayifyiioglfbsyj.supabase.co/functions/v1/generate-manifest?type=pos';
-          document.title = 'Paganos POS';
-        } else {
-          // Portal de clientes: generar manifest desde DB
-          manifestLink.href = 'https://lxxfhayifyiioglfbsyj.supabase.co/functions/v1/generate-manifest?type=customer';
-          document.title = 'Paganos Burger';
-        }
+        // Configurar manifest desde edge function
+        manifestLink.href = SUPABASE_URL + '/functions/v1/generate-manifest?type=' + appType;
+        document.title = appType === 'pos' ? 'Paganos POS' : 'Paganos Burger';
+        
+        // Cargar íconos desde la configuración PWA en Supabase
+        fetch(SUPABASE_URL + '/rest/v1/pwa_config?app_type=eq.' + appType + '&select=icon_192_url,icon_512_url', {
+          headers: {
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4eGZoYXlpZnlpaW9nbGZic3lqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ0ODk5MTgsImV4cCI6MjA2MDA2NTkxOH0.f0j5MXYbJqv-CiZqpj80n5O1MJmNnvAbRCvxEAJbUOE'
+          }
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data && data.length > 0) {
+            var config = data[0];
+            var icon192 = config.icon_192_url;
+            var icon512 = config.icon_512_url;
+            
+            // Actualizar apple-touch-icons si existen en la config
+            if (icon192) {
+              var appleIcon180 = document.getElementById('apple-touch-icon-180');
+              var appleIcon192 = document.getElementById('apple-touch-icon-192');
+              var favicon = document.getElementById('favicon-link');
+              
+              if (appleIcon180) appleIcon180.href = icon192;
+              if (appleIcon192) appleIcon192.href = icon192;
+              if (favicon) favicon.href = icon192;
+            }
+            
+            // Usar 512 si está disponible para el apple-touch-icon principal
+            if (icon512) {
+              var appleIcon180 = document.getElementById('apple-touch-icon-180');
+              if (appleIcon180) appleIcon180.href = icon512;
+            }
+          }
+        })
+        .catch(function(err) {
+          console.log('Error loading PWA icons:', err);
+        });
       })();
       
       // Registrar Service Worker solo para el portal de clientes
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          const path = window.location.pathname;
+        window.addEventListener('load', function() {
+          var path = window.location.pathname;
           
           // Solo registrar SW si NO estamos en /pos/*
           if (!path.startsWith('/pos')) {
             navigator.serviceWorker.register('/sw.js')
-              .then(registration => {
+              .then(function(registration) {
                 console.log('SW registered:', registration);
               })
-              .catch(error => {
+              .catch(function(error) {
                 console.log('SW registration failed:', error);
               });
           } else {
             // Si estamos en /pos, asegurar que no haya SW activo
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-              for (let registration of registrations) {
-                registration.unregister();
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              for (var i = 0; i < registrations.length; i++) {
+                registrations[i].unregister();
               }
             });
           }
         });
       }
     </script>
-    
-  
-  
-  
-  <meta property="og:title" content="Paganos Burger">
-  <meta name="twitter:title" content="Paganos Burger">
-  <meta property="og:description" content="Hamburguesería Smash">
-  <meta name="twitter:description" content="Hamburguesería Smash">
-</head>
+  </head>
 
   <body>
     <div id="root"></div>
