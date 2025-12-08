@@ -154,13 +154,26 @@ export const PushCampaignsTab: React.FC = () => {
         targetDescription = `cliente "${customerData.name || testCustomerEmail}"`;
         
         // Check if customer has onesignal subscription in preferences
-        const { data: prefData } = await supabase
+        // Force fresh fetch to avoid cache issues
+        const { data: prefData, error: prefError } = await supabase
           .from('notification_preferences')
-          .select('onesignal_subscribed')
+          .select('onesignal_subscribed, marketing_push_enabled')
           .eq('customer_id', customerData.id)
           .maybeSingle();
         
-        if (!prefData?.onesignal_subscribed) {
+        console.log('[Test Push] Customer preferences:', { 
+          customerId: customerData.id, 
+          prefData, 
+          prefError 
+        });
+        
+        if (!prefData) {
+          setTestError(`El cliente "${customerData.name || testCustomerEmail}" no tiene preferencias de notificación registradas. Debe abrir la app de cliente e iniciar sesión.`);
+          setIsSendingTest(false);
+          return;
+        }
+        
+        if (!prefData.onesignal_subscribed) {
           setTestError(`El cliente "${customerData.name || testCustomerEmail}" no ha aceptado notificaciones push en la app. Debe: 1) Abrir la app de cliente 2) Iniciar sesión 3) Aceptar el banner de notificaciones.`);
           setIsSendingTest(false);
           return;
