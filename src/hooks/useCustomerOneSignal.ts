@@ -186,10 +186,8 @@ export function useCustomerOneSignal() {
       setIsSubscribed(true);
       setShowBanner(false);
       
-      // Update tags to mark as subscribed
-      await setUserTags({
-        notifications_enabled: true,
-      });
+      // NOTE: Tags were already set in setupUser(), no need to set again here
+      // This avoids 409 conflict errors from concurrent tag operations
 
       // Update preferences in database
       console.log('[useCustomerOneSignal] Updating notification_preferences for customer:', customer.id);
