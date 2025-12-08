@@ -7,6 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit2, Trash2, MapPin } from 'lucide-react';
 import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import { DeliveryZoneForm } from './DeliveryZoneForm';
+import { DeliveryZonesMiniMap } from './DeliveryZonesMiniMap';
 import { toast } from 'sonner';
 
 export function DeliveryZoneManagement() {
@@ -184,6 +185,10 @@ export function DeliveryZoneManagement() {
               ))}
             </TableBody>
           </Table>
+        )}
+
+        {zones.length > 0 && (
+          <DeliveryZonesMiniMap zones={zones} />
         )}
 
         <DeliveryZoneForm
