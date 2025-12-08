@@ -163,6 +163,26 @@ export const OneSignalConfig: React.FC = () => {
           </ul>
         </div>
 
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md text-sm space-y-2 border border-blue-200 dark:border-blue-800">
+          <p className="font-medium text-blue-800 dark:text-blue-200">🧪 Herramientas de Testing</p>
+          <p className="text-blue-700 dark:text-blue-300 text-xs">
+            Si el banner de notificaciones no aparece en la app de cliente, usa este botón para resetear el estado y probar nuevamente.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              localStorage.removeItem('paganos_notification_banner_dismissed');
+              localStorage.removeItem('paganos_notification_permission_asked');
+              toast.success('Estado reseteado', {
+                description: 'Recarga la app de cliente para ver el banner de notificaciones'
+              });
+            }}
+          >
+            Resetear banner de notificaciones
+          </Button>
+        </div>
+
         <p className="text-xs text-muted-foreground">
           Obtén tus credenciales en{' '}
           <a
