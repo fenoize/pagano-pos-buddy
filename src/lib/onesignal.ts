@@ -96,10 +96,12 @@ export async function initOneSignal(appId: string): Promise<boolean> {
 function doInit(appId: string, resolve: (value: boolean) => void) {
   window.OneSignalDeferred!.push(async function(OneSignal: any) {
     try {
+      console.log('[OneSignal] Starting initialization with appId:', appId);
+      
       await OneSignal.init({
         appId: appId,
         allowLocalhostAsSecureOrigin: true,
-        // Service worker is in public/
+        // Service worker must be from same origin - use local file
         serviceWorkerParam: { scope: '/' },
         serviceWorkerPath: '/OneSignalSDKWorker.js',
         // Disable native prompt - we use our own custom banner
@@ -118,10 +120,11 @@ function doInit(appId: string, resolve: (value: boolean) => void) {
       });
       
       isInitialized = true;
-      console.log('[OneSignal] Initialized successfully');
+      console.log('[OneSignal] ✅ SDK initialized successfully');
+      console.log('[OneSignal] ✅ Service Worker registered at /OneSignalSDKWorker.js');
       resolve(true);
     } catch (error) {
-      console.error('[OneSignal] Initialization failed:', error);
+      console.error('[OneSignal] ❌ Initialization failed:', error);
       initPromise = null;
       resolve(false);
     }
@@ -245,15 +248,19 @@ async function ensurePushSubscription(): Promise<void> {
       if (!optedIn) {
         console.log('[OneSignal] Calling optIn() to create subscription...');
         await pushSub.optIn();
-        console.log('[OneSignal] optIn() completed');
+        console.log('[OneSignal] ✅ optIn() completed - subscription created');
       }
       
       // Log subscription ID for debugging
       const subId = pushSub.id;
-      console.log('[OneSignal] Subscription ID:', subId);
+      if (subId) {
+        console.log('[OneSignal] ✅ PushSubscription activa, ID:', subId);
+      } else {
+        console.warn('[OneSignal] ⚠️ No subscription ID yet');
+      }
     }
   } catch (error) {
-    console.error('[OneSignal] Error ensuring push subscription:', error);
+    console.error('[OneSignal] ❌ Error ensuring push subscription:', error);
   }
 }
 
