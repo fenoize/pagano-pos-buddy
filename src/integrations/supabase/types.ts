@@ -2815,6 +2815,7 @@ export type Database = {
           image_url: string | null
           name: string
           prices: Json
+          raw_material_id: string | null
           show_in_app: boolean | null
           show_in_pos: boolean | null
           updated_at: string | null
@@ -2827,6 +2828,7 @@ export type Database = {
           image_url?: string | null
           name: string
           prices: Json
+          raw_material_id?: string | null
           show_in_app?: boolean | null
           show_in_pos?: boolean | null
           updated_at?: string | null
@@ -2839,11 +2841,20 @@ export type Database = {
           image_url?: string | null
           name?: string
           prices?: Json
+          raw_material_id?: string | null
           show_in_app?: boolean | null
           show_in_pos?: boolean | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       promotions: {
         Row: {
