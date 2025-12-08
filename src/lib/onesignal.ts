@@ -168,9 +168,16 @@ export async function setUserTags(tags: Record<string, string | number | boolean
   }
 
   try {
+    // Small delay to avoid race conditions with login()
+    await new Promise(resolve => setTimeout(resolve, 300));
     await window.OneSignal.User.addTags(tags);
     console.log('[OneSignal] Tags set:', tags);
-  } catch (error) {
+  } catch (error: any) {
+    // 409 Conflict errors are expected with concurrent operations - ignore silently
+    if (error?.status === 409 || error?.message?.includes('409') || error?.message?.includes('Conflict')) {
+      console.log('[OneSignal] Tags conflict (409), already being set - ignoring');
+      return;
+    }
     console.error('[OneSignal] Error setting tags:', error);
   }
 }
