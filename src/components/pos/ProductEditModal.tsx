@@ -4,19 +4,25 @@ import { Product } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ImageUpload } from './ImageUpload';
 import { CategoryManagement } from './CategoryManagement';
 import { ExtrasManagement } from './ExtrasManagement';
 import { ModifiersManagement } from './ModifiersManagement';
 import ProductVariantsManagementEnhanced from './ProductVariantsManagementEnhanced';
 import ComboManagement from './ComboManagement';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
+import { useRawMaterials } from '@/hooks/useRawMaterials';
 interface ProductEditModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -30,11 +36,13 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
     active: true,
     image_url: '',
     show_in_pos: true,
-    show_in_app: true
+    show_in_app: true,
+    raw_material_id: '' as string | null
   });
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('general');
   const [isComboProduct, setIsComboProduct] = useState(false);
+  const { materials } = useRawMaterials();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,7 +52,8 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
         active: product.active,
         image_url: product.image_url || '',
         show_in_pos: (product as any).show_in_pos ?? true,
-        show_in_app: (product as any).show_in_app ?? true
+        show_in_app: (product as any).show_in_app ?? true,
+        raw_material_id: (product as any).raw_material_id || null
       });
       
       // Cargar categorías del producto
@@ -112,6 +121,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             image_url: formData.image_url || null,
             show_in_pos: formData.show_in_pos,
             show_in_app: formData.show_in_app,
+            raw_material_id: formData.raw_material_id || null,
             prices: { combo: {}, only: {} } // Default empty prices for backward compatibility
           })
           .eq('id', product.id);
@@ -127,6 +137,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             image_url: formData.image_url || null,
             show_in_pos: formData.show_in_pos,
             show_in_app: formData.show_in_app,
+            raw_material_id: formData.raw_material_id || null,
             prices: { combo: {}, only: {} } // Default empty prices for backward compatibility
           })
           .select()
@@ -181,7 +192,8 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
       active: true,
       image_url: '',
       show_in_pos: true,
-      show_in_app: true
+      show_in_app: true,
+      raw_material_id: null
     });
     setSelectedCategories([]);
     setActiveTab('general');
@@ -275,6 +287,33 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
                   />
                   <Label htmlFor="show_in_app">Mostrar en App Cliente</Label>
                 </div>
+              </div>
+
+              {/* Inventario - Materia Prima Directa */}
+              <div className="space-y-3 border-t pt-4">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <h4 className="text-sm font-medium">Inventario (Producto Simple)</h4>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Para productos sin receta (ej: bebidas), vincula directamente a una materia prima para descuento 1:1.
+                </p>
+                <Select
+                  value={formData.raw_material_id || "none"}
+                  onValueChange={(value) => setFormData({ ...formData, raw_material_id: value === "none" ? null : value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin vinculación directa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin vinculación directa</SelectItem>
+                    {materials.filter(m => m.is_active).map((material) => (
+                      <SelectItem key={material.id} value={material.id}>
+                        {material.code ? `${material.code} - ` : ""}{material.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </TabsContent>
 
