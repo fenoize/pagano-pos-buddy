@@ -7,7 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit2, Trash2, MapPin } from 'lucide-react';
 import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import { DeliveryZoneForm } from './DeliveryZoneForm';
-import { DeliveryZonesMiniMap } from './DeliveryZonesMiniMap';
+import { DeliveryZonesMiniMap, ZONE_COLORS } from './DeliveryZonesMiniMap';
 import { toast } from 'sonner';
 
 export function DeliveryZoneManagement() {
@@ -133,9 +133,20 @@ export function DeliveryZoneManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {zones.map((zone) => (
+              {zones.map((zone, index) => (
                 <TableRow key={zone.id}>
-                  <TableCell className="font-medium">{zone.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-sm flex-shrink-0" 
+                        style={{ 
+                          backgroundColor: ZONE_COLORS[index % ZONE_COLORS.length],
+                          opacity: zone.active ? 1 : 0.4
+                        }} 
+                      />
+                      {zone.name}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {zone.description || '-'}
                   </TableCell>
