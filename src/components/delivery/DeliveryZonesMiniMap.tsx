@@ -9,8 +9,8 @@ interface DeliveryZonesMiniMapProps {
   zones: DeliveryZone[];
 }
 
-// Generate distinct colors for zones
-const ZONE_COLORS = [
+// Generate distinct colors for zones - exported for use in table
+export const ZONE_COLORS = [
   '#3b82f6', // blue
   '#10b981', // emerald
   '#f59e0b', // amber
