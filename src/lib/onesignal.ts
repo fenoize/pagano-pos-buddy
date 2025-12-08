@@ -188,7 +188,7 @@ export async function logoutOneSignal(): Promise<void> {
 
 /**
  * Prompt the user for push notification permission
- * Returns true if permission was granted
+ * Returns true if permission was granted and subscription was created
  */
 export async function promptForPushPermission(): Promise<boolean> {
   if (!window.OneSignal || !isInitialized) {
@@ -202,20 +202,58 @@ export async function promptForPushPermission(): Promise<boolean> {
     
     if (currentPermission === true) {
       console.log('[OneSignal] Already has permission');
+      // Ensure subscription is active even if permission was already granted
+      await ensurePushSubscription();
       return true;
     }
 
-    // Request permission
+    // Request permission using Notifications.requestPermission
     await window.OneSignal.Notifications.requestPermission();
     
     // Check result
     const newPermission = await window.OneSignal.Notifications.permission;
     console.log('[OneSignal] Permission result:', newPermission);
     
-    return newPermission === true;
+    if (newPermission === true) {
+      // After permission granted, explicitly opt-in to create the push subscription
+      await ensurePushSubscription();
+      return true;
+    }
+    
+    return false;
   } catch (error) {
     console.error('[OneSignal] Error requesting permission:', error);
     return false;
+  }
+}
+
+/**
+ * Ensure push subscription is active by calling optIn()
+ * This is required in SDK v16 to create the actual subscription after permission is granted
+ */
+async function ensurePushSubscription(): Promise<void> {
+  if (!window.OneSignal) return;
+  
+  try {
+    // In SDK v16, User.PushSubscription.optIn() creates/activates the subscription
+    const pushSub = window.OneSignal.User?.PushSubscription;
+    if (pushSub) {
+      // Check if already opted in
+      const optedIn = pushSub.optedIn;
+      console.log('[OneSignal] Current optedIn status:', optedIn);
+      
+      if (!optedIn) {
+        console.log('[OneSignal] Calling optIn() to create subscription...');
+        await pushSub.optIn();
+        console.log('[OneSignal] optIn() completed');
+      }
+      
+      // Log subscription ID for debugging
+      const subId = pushSub.id;
+      console.log('[OneSignal] Subscription ID:', subId);
+    }
+  } catch (error) {
+    console.error('[OneSignal] Error ensuring push subscription:', error);
   }
 }
 
@@ -259,10 +297,15 @@ export async function getSubscriptionState(): Promise<{
   try {
     const isPushEnabled = await window.OneSignal.Notifications.permission;
     const pushSubscription = window.OneSignal.User?.PushSubscription;
+    
+    // In SDK v16, check optedIn status and subscription id
+    const optedIn = pushSubscription?.optedIn ?? false;
     const subscriptionId = pushSubscription?.id || null;
     
+    console.log('[OneSignal] getSubscriptionState:', { isPushEnabled, optedIn, subscriptionId });
+    
     return {
-      isSubscribed: isPushEnabled && !!subscriptionId,
+      isSubscribed: isPushEnabled && optedIn && !!subscriptionId,
       isPushEnabled: isPushEnabled === true,
       userId: subscriptionId
     };
