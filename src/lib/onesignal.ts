@@ -97,20 +97,35 @@ function doInit(appId: string, resolve: (value: boolean) => void) {
   window.OneSignalDeferred!.push(async function(OneSignal: any) {
     try {
       console.log('[OneSignal] Starting initialization with appId:', appId);
-      console.log('[OneSignal] Using service worker: /OneSignalSDKWorker.js');
       
-      // OneSignal SDK v16 - correct service worker configuration
-      // serviceWorkerPath and serviceWorkerParam must be at root level
+      // Build absolute URL for service worker to prevent SDK misinterpretation
+      const swUrl = `${window.location.origin}/OneSignalSDKWorker.js`;
+      console.log('[OneSignal] Service Worker URL:', swUrl);
+      
+      // Verify the SW file exists before initializing
+      try {
+        const swCheck = await fetch(swUrl, { method: 'HEAD' });
+        if (!swCheck.ok) {
+          console.error('[OneSignal] ❌ Service Worker file not found at:', swUrl);
+          resolve(false);
+          return;
+        }
+        console.log('[OneSignal] ✅ Service Worker file verified');
+      } catch (e) {
+        console.warn('[OneSignal] Could not verify SW file, continuing anyway');
+      }
+      
+      // OneSignal SDK v16 configuration
+      // IMPORTANT: serviceWorkerPath must start with / and be relative to origin
       await OneSignal.init({
         appId: appId,
         allowLocalhostAsSecureOrigin: true,
-        // CRITICAL: Service worker configuration for SDK v16
-        // The SW file MUST be at /OneSignalSDKWorker.js on same origin
+        // Service worker MUST be at root with exact path
         serviceWorkerPath: '/OneSignalSDKWorker.js',
         serviceWorkerParam: { 
-          scope: '/' 
+          scope: '/'
         },
-        // Disable native prompt - we use our own custom banner
+        // Disable all automatic prompts - we use custom banner
         promptOptions: {
           autoPrompt: false,
           slidedown: {
@@ -127,13 +142,12 @@ function doInit(appId: string, resolve: (value: boolean) => void) {
       
       isInitialized = true;
       console.log('[OneSignal] ✅ SDK initialized successfully');
-      console.log('[OneSignal] ✅ Service Worker path: /OneSignalSDKWorker.js');
       
-      // Log current optedIn status after init
+      // Log current subscription state
       const pushSub = OneSignal.User?.PushSubscription;
       if (pushSub) {
-        console.log('[OneSignal] Current optedIn:', pushSub.optedIn);
-        console.log('[OneSignal] Current subscription ID:', pushSub.id || 'none');
+        console.log('[OneSignal] optedIn:', pushSub.optedIn);
+        console.log('[OneSignal] subscription ID:', pushSub.id || 'none');
       }
       
       resolve(true);
