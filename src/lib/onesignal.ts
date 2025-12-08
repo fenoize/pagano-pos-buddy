@@ -97,31 +97,45 @@ function doInit(appId: string, resolve: (value: boolean) => void) {
   window.OneSignalDeferred!.push(async function(OneSignal: any) {
     try {
       console.log('[OneSignal] Starting initialization with appId:', appId);
+      console.log('[OneSignal] Using service worker: /OneSignalSDKWorker.js');
       
+      // OneSignal SDK v16 - correct service worker configuration
+      // serviceWorkerPath and serviceWorkerParam must be at root level
       await OneSignal.init({
         appId: appId,
         allowLocalhostAsSecureOrigin: true,
-        // Service worker must be from same origin - use local file
-        serviceWorkerParam: { scope: '/' },
+        // CRITICAL: Service worker configuration for SDK v16
+        // The SW file MUST be at /OneSignalSDKWorker.js on same origin
         serviceWorkerPath: '/OneSignalSDKWorker.js',
+        serviceWorkerParam: { 
+          scope: '/' 
+        },
         // Disable native prompt - we use our own custom banner
         promptOptions: {
           autoPrompt: false,
           slidedown: {
-            prompts: [] // Disable slidedown prompts
+            prompts: []
           }
         },
         notifyButton: {
-          enable: false, // Disable floating bell button
+          enable: false,
         },
         welcomeNotification: {
-          disable: true, // Disable welcome notification
+          disable: true,
         }
       });
       
       isInitialized = true;
       console.log('[OneSignal] ✅ SDK initialized successfully');
-      console.log('[OneSignal] ✅ Service Worker registered at /OneSignalSDKWorker.js');
+      console.log('[OneSignal] ✅ Service Worker path: /OneSignalSDKWorker.js');
+      
+      // Log current optedIn status after init
+      const pushSub = OneSignal.User?.PushSubscription;
+      if (pushSub) {
+        console.log('[OneSignal] Current optedIn:', pushSub.optedIn);
+        console.log('[OneSignal] Current subscription ID:', pushSub.id || 'none');
+      }
+      
       resolve(true);
     } catch (error) {
       console.error('[OneSignal] ❌ Initialization failed:', error);
