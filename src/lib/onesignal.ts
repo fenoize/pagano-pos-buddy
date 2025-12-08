@@ -94,57 +94,21 @@ export async function initOneSignal(appId: string): Promise<boolean> {
 }
 
 /**
- * Manually register the service worker BEFORE OneSignal tries to
- * This forces our local SW and prevents the SDK from using dashboard config
+ * Perform the actual initialization
+ * Uses the main sw.js which includes OneSignal SDK
  */
-async function registerServiceWorkerManually(): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator)) {
-    console.warn('[OneSignal] ServiceWorker not supported');
-    return null;
-  }
-
-  const swPath = '/OneSignalSDKWorker.js';
-  
-  try {
-    // First, unregister any existing OneSignal SW with wrong path
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    for (const reg of registrations) {
-      if (reg.active?.scriptURL && 
-          (reg.active.scriptURL.includes('onesignal') || 
-           reg.active.scriptURL.includes('OneSignal'))) {
-        // Check if it's NOT our correct SW
-        if (!reg.active.scriptURL.endsWith('/OneSignalSDKWorker.js')) {
-          console.log('[OneSignal] Unregistering old SW:', reg.active.scriptURL);
-          await reg.unregister();
-        }
-      }
-    }
-
-    // Register our correct service worker
-    console.log('[OneSignal] Registering SW at:', swPath);
-    const registration = await navigator.serviceWorker.register(swPath, { scope: '/' });
-    console.log('[OneSignal] ✅ SW registered successfully:', registration.scope);
-    return registration;
-  } catch (error) {
-    console.error('[OneSignal] ❌ SW registration failed:', error);
-    return null;
-  }
-}
-
 function doInit(appId: string, resolve: (value: boolean) => void) {
   window.OneSignalDeferred!.push(async function(OneSignal: any) {
     try {
       console.log('[OneSignal] Starting initialization with appId:', appId);
       
-      // CRITICAL: Register our SW manually first to prevent SDK from using dashboard config
-      await registerServiceWorkerManually();
-      
-      // Initialize with minimal config - SW is already registered
+      // Initialize using the main service worker (sw.js) which imports OneSignal SDK
+      // This avoids conflicts between PWA SW and OneSignal SW
       await OneSignal.init({
         appId: appId,
         allowLocalhostAsSecureOrigin: true,
-        // Explicitly set SW path to prevent SDK from using dashboard config
-        serviceWorkerPath: '/OneSignalSDKWorker.js',
+        // Use the main sw.js which imports OneSignal SDK
+        serviceWorkerPath: '/sw.js',
         serviceWorkerParam: { scope: '/' },
         // Disable automatic prompts - we use custom banner
         promptOptions: {
