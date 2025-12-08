@@ -132,22 +132,32 @@ export function OnlineOrdersConfig() {
               />
             </div>
 
-            <div className="flex items-center justify-between opacity-50">
+            <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4" />
                   <Label htmlFor="app_delivery_enabled">Delivery</Label>
-                  <Badge variant="secondary" className="text-xs">Próximamente</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Delivery con integración de Mapbox para cálculo de tarifas
+                  Los clientes pueden pedir delivery a su dirección
                 </p>
               </div>
               <Switch
                 id="app_delivery_enabled"
                 checked={localSettings.app_delivery_enabled}
-                disabled={true}
+                onCheckedChange={(checked) => handleChange('app_delivery_enabled', checked)}
+                disabled={!localSettings.app_orders_enabled || !isAdmin || loading}
               />
             </div>
+
+            {localSettings.app_delivery_enabled && (
+              <Alert className="bg-muted/50">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  Asegúrate de tener zonas de delivery configuradas en la pestaña <strong>"Zonas de Delivery"</strong> para que los clientes puedan seleccionar su ubicación y ver el costo de envío.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </CardContent>
       </Card>
