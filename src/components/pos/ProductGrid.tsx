@@ -133,7 +133,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         return {};
       }
 
-      const [productsRes, variantsRes, extrasRes, modifiersRes] = await Promise.all([
+      const [productsRes, variantsRes, extrasRes, modifiersRes, stockBalancesRes] = await Promise.all([
         supabase
           .from('products')
           .select(`
@@ -161,8 +161,20 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         supabase
           .from('product_modifiers')
           .select('*')
-          .eq('active', true)
+          .eq('active', true),
+        
+        // Fetch stock balances for raw materials
+        supabase
+          .from('stock_balances')
+          .select('raw_material_id, qty_on_hand')
       ]);
+
+      // Create a map of raw_material_id -> total stock
+      const stockByMaterial: Record<string, number> = {};
+      stockBalancesRes.data?.forEach((balance: any) => {
+        const materialId = balance.raw_material_id;
+        stockByMaterial[materialId] = (stockByMaterial[materialId] || 0) + (balance.qty_on_hand || 0);
+      });
 
       const comboDataByProduct: Record<string, any> = {};
       
@@ -187,7 +199,15 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           if (!productVariants[variant.product_id]) {
             productVariants[variant.product_id] = [];
           }
-          productVariants[variant.product_id].push(variant);
+          // Calculate real stock from linked raw material
+          let realStock = variant.stock ?? 0;
+          if (variant.raw_material_id && stockByMaterial[variant.raw_material_id] !== undefined) {
+            realStock = stockByMaterial[variant.raw_material_id];
+          }
+          productVariants[variant.product_id].push({
+            ...variant,
+            stock: realStock
+          });
         });
 
         const productExtras: Record<string, any[]> = {};
@@ -237,7 +257,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         });
       });
 
-      const [variantsRes, extrasRes, modifiersRes, combos] = await Promise.all([
+      const [variantsRes, extrasRes, modifiersRes, combos, stockBalancesRes] = await Promise.all([
         supabase
           .from('product_variant_options')
           .select(`
@@ -259,12 +279,23 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           .select('*')
           .in('product_id', productIds)
           .eq('active', true),
-        preloadComboData(productIds)
+        preloadComboData(productIds),
+        // Fetch stock balances for all raw materials to calculate real stock for variants
+        supabase
+          .from('stock_balances')
+          .select('raw_material_id, qty_on_hand')
       ]);
 
       if (variantsRes.error) throw variantsRes.error;
       if (extrasRes.error) throw extrasRes.error;
       if (modifiersRes.error) throw modifiersRes.error;
+
+      // Create a map of raw_material_id -> total stock
+      const stockByMaterial: Record<string, number> = {};
+      stockBalancesRes.data?.forEach((balance: any) => {
+        const materialId = balance.raw_material_id;
+        stockByMaterial[materialId] = (stockByMaterial[materialId] || 0) + (balance.qty_on_hand || 0);
+      });
 
       const variantsByProduct: Record<string, ProductVariantOption[]> = {};
       variantsRes.data?.forEach((variant) => {
@@ -272,7 +303,17 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         if (!variantsByProduct[productId]) {
           variantsByProduct[productId] = [];
         }
-        variantsByProduct[productId].push(variant);
+        
+        // Calculate real stock: if variant has raw_material_id, use material stock; otherwise use variant.stock
+        let realStock = variant.stock ?? 0;
+        if (variant.raw_material_id && stockByMaterial[variant.raw_material_id] !== undefined) {
+          realStock = stockByMaterial[variant.raw_material_id];
+        }
+        
+        variantsByProduct[productId].push({
+          ...variant,
+          stock: realStock
+        });
       });
 
       setProductVariants(variantsByProduct);
