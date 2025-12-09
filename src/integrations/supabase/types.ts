@@ -1531,6 +1531,39 @@ export type Database = {
           },
         ]
       }
+      finance_expense_categories: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          include_vat: boolean | null
+          is_active: boolean | null
+          name: string
+          requires_document: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          include_vat?: boolean | null
+          is_active?: boolean | null
+          name: string
+          requires_document?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          include_vat?: boolean | null
+          is_active?: boolean | null
+          name?: string
+          requires_document?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       finance_expenses: {
         Row: {
           account_id: string
@@ -1718,6 +1751,108 @@ export type Database = {
           name?: string
           notes?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      finance_settings: {
+        Row: {
+          alerta_cierre_financiero: boolean | null
+          alerta_egreso_sobre_monto: boolean | null
+          aplicar_redondeo: boolean | null
+          banco_principal: string | null
+          ciudad: string | null
+          comuna: string | null
+          correo_contable: string | null
+          correos_notificacion: string | null
+          created_at: string | null
+          dia_corte_mensual: number | null
+          dia_corte_semanal: string | null
+          direccion_tributaria: string | null
+          exigir_documento_sobre_monto: boolean | null
+          fecha_inicio_actividades: string | null
+          giro: string | null
+          id: string
+          moneda: string | null
+          monto_alerta_egreso: number | null
+          monto_aprobacion_oc: number | null
+          monto_exigir_documento: number | null
+          monto_max_caja_chica: number | null
+          monto_min_orden_compra: number | null
+          nombre_fantasia: string | null
+          pais: string | null
+          periodo_cierre: string | null
+          razon_social: string | null
+          regla_redondeo: string | null
+          rut: string | null
+          telefono_contable: string | null
+          updated_at: string | null
+          usuarios_aprobadores_oc: string[] | null
+        }
+        Insert: {
+          alerta_cierre_financiero?: boolean | null
+          alerta_egreso_sobre_monto?: boolean | null
+          aplicar_redondeo?: boolean | null
+          banco_principal?: string | null
+          ciudad?: string | null
+          comuna?: string | null
+          correo_contable?: string | null
+          correos_notificacion?: string | null
+          created_at?: string | null
+          dia_corte_mensual?: number | null
+          dia_corte_semanal?: string | null
+          direccion_tributaria?: string | null
+          exigir_documento_sobre_monto?: boolean | null
+          fecha_inicio_actividades?: string | null
+          giro?: string | null
+          id?: string
+          moneda?: string | null
+          monto_alerta_egreso?: number | null
+          monto_aprobacion_oc?: number | null
+          monto_exigir_documento?: number | null
+          monto_max_caja_chica?: number | null
+          monto_min_orden_compra?: number | null
+          nombre_fantasia?: string | null
+          pais?: string | null
+          periodo_cierre?: string | null
+          razon_social?: string | null
+          regla_redondeo?: string | null
+          rut?: string | null
+          telefono_contable?: string | null
+          updated_at?: string | null
+          usuarios_aprobadores_oc?: string[] | null
+        }
+        Update: {
+          alerta_cierre_financiero?: boolean | null
+          alerta_egreso_sobre_monto?: boolean | null
+          aplicar_redondeo?: boolean | null
+          banco_principal?: string | null
+          ciudad?: string | null
+          comuna?: string | null
+          correo_contable?: string | null
+          correos_notificacion?: string | null
+          created_at?: string | null
+          dia_corte_mensual?: number | null
+          dia_corte_semanal?: string | null
+          direccion_tributaria?: string | null
+          exigir_documento_sobre_monto?: boolean | null
+          fecha_inicio_actividades?: string | null
+          giro?: string | null
+          id?: string
+          moneda?: string | null
+          monto_alerta_egreso?: number | null
+          monto_aprobacion_oc?: number | null
+          monto_exigir_documento?: number | null
+          monto_max_caja_chica?: number | null
+          monto_min_orden_compra?: number | null
+          nombre_fantasia?: string | null
+          pais?: string | null
+          periodo_cierre?: string | null
+          razon_social?: string | null
+          regla_redondeo?: string | null
+          rut?: string | null
+          telefono_contable?: string | null
+          updated_at?: string | null
+          usuarios_aprobadores_oc?: string[] | null
         }
         Relationships: []
       }
@@ -2597,12 +2732,14 @@ export type Database = {
       }
       payment_methods: {
         Row: {
+          affects_cash_flow: boolean | null
           counts_as_real_sale: boolean
           created_at: string | null
           display_name: string
           display_order: number
           icon: string
           id: string
+          internal_only: boolean | null
           is_active: boolean
           name: string
           requires_change: boolean
@@ -2611,12 +2748,14 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          affects_cash_flow?: boolean | null
           counts_as_real_sale?: boolean
           created_at?: string | null
           display_name: string
           display_order?: number
           icon?: string
           id?: string
+          internal_only?: boolean | null
           is_active?: boolean
           name: string
           requires_change?: boolean
@@ -2625,12 +2764,14 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          affects_cash_flow?: boolean | null
           counts_as_real_sale?: boolean
           created_at?: string | null
           display_name?: string
           display_order?: number
           icon?: string
           id?: string
+          internal_only?: boolean | null
           is_active?: boolean
           name?: string
           requires_change?: boolean

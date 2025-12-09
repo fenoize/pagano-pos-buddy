@@ -98,6 +98,7 @@ const financeItems = [
   { title: "Egresos", url: "/pos/finanzas/egresos", icon: FileTextIcon, roles: ['Administrador', 'Cajero'] },
   { title: "Cierres Financieros", url: "/pos/finanzas/cierres", icon: FileText, roles: ['Administrador'] },
   { title: "Exportaciones", url: "/pos/finanzas/exportaciones", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
+  { title: "Configuración", url: "/pos/finanzas/configuracion", icon: SettingsIcon, roles: ['Administrador'] },
 ];
 
 // Marketing menu items
