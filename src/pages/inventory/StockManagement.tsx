@@ -26,12 +26,18 @@ import {
   CheckCircle2,
   XCircle,
   ArrowUpDown,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRawMaterials } from "@/hooks/useRawMaterials";
+import { RawMaterialForm } from "@/components/inventory/RawMaterialForm";
+import { RawMaterial } from "@/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +68,7 @@ export default function StockManagement() {
   const { warehouses, loading: warehousesLoading } = useWarehouses();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { createMaterial, updateMaterial, deleteMaterial } = useRawMaterials();
   
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("");
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
@@ -72,6 +79,12 @@ export default function StockManagement() {
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  
+  // CRUD state
+  const [showMaterialForm, setShowMaterialForm] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState<RawMaterial | undefined>(undefined);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState<StockItem | null>(null);
   
   // Set default warehouse when warehouses load
   useEffect(() => {
@@ -268,6 +281,56 @@ export default function StockManagement() {
     return 'ok';
   };
 
+  // CRUD handlers
+  const handleAddMaterial = () => {
+    setEditingMaterial(undefined);
+    setShowMaterialForm(true);
+  };
+
+  const handleEditMaterial = async (item: StockItem) => {
+    // Fetch full material data
+    const { data, error } = await supabase
+      .from('raw_materials')
+      .select(`*, base_uom:units_of_measure(*)`)
+      .eq('id', item.id)
+      .single();
+    
+    if (data) {
+      setEditingMaterial(data as RawMaterial);
+      setShowMaterialForm(true);
+    }
+  };
+
+  const handleDeleteClick = (item: StockItem) => {
+    setMaterialToDelete(item);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!materialToDelete) return;
+    
+    const result = await deleteMaterial(materialToDelete.id);
+    if (result.success) {
+      setShowDeleteDialog(false);
+      setMaterialToDelete(null);
+      fetchStockData();
+    }
+  };
+
+  const handleSaveMaterial = async (materialData: Omit<RawMaterial, 'id' | 'created_at' | 'updated_at'>) => {
+    if (editingMaterial) {
+      const result = await updateMaterial(editingMaterial.id, materialData);
+      if (result.success) {
+        fetchStockData();
+      }
+    } else {
+      const result = await createMaterial(materialData);
+      if (result.success) {
+        fetchStockData();
+      }
+    }
+  };
+
   const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <Button
       variant="ghost"
@@ -299,18 +362,29 @@ export default function StockManagement() {
           </p>
         </div>
         
-        {changedItems.length > 0 && (
+        <div className="flex gap-2">
           <Button 
-            onClick={() => setShowConfirmDialog(true)}
+            onClick={handleAddMaterial}
+            variant="outline"
             className="gap-2"
           >
-            <Save className="h-4 w-4" />
-            Guardar Cambios
-            <Badge variant="secondary" className="ml-1">
-              {changedItems.length}
-            </Badge>
+            <Plus className="h-4 w-4" />
+            Nueva Materia Prima
           </Button>
-        )}
+          
+          {changedItems.length > 0 && (
+            <Button 
+              onClick={() => setShowConfirmDialog(true)}
+              className="gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Guardar Cambios
+              <Badge variant="secondary" className="ml-1">
+                {changedItems.length}
+              </Badge>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -419,12 +493,13 @@ export default function StockManagement() {
                     </TableHead>
                     <TableHead className="w-32 text-right">Nuevo Stock</TableHead>
                     <TableHead className="w-24 text-center">Estado</TableHead>
+                    <TableHead className="w-24 text-center">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         No se encontraron materias primas
                       </TableCell>
                     </TableRow>
@@ -488,6 +563,28 @@ export default function StockManagement() {
                               </Badge>
                             )}
                           </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleEditMaterial(item)}
+                                title="Editar"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteClick(item)}
+                                title="Eliminar"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       );
                     })
@@ -538,6 +635,36 @@ export default function StockManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar materia prima?</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que deseas eliminar "{materialToDelete?.name}"? 
+              Esta acción desactivará la materia prima y no podrá ser usada en nuevas recetas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Material Form Modal */}
+      <RawMaterialForm
+        open={showMaterialForm}
+        onOpenChange={setShowMaterialForm}
+        material={editingMaterial}
+        onSave={handleSaveMaterial}
+      />
     </div>
   );
 }
