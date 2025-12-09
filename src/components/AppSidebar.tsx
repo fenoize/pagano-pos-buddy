@@ -6,6 +6,7 @@ import {
   ChefHat, 
   Monitor,
   Package,
+  Boxes,
   Tags,
   Archive,
   Users,
@@ -77,6 +78,7 @@ const deliveryItems = [
 
 const inventoryItems = [
   { title: "Hub Inventario", url: "/pos/inventario", icon: Archive, roles: ['Administrador'] },
+  { title: "Stock", url: "/pos/inventario/stock", icon: Boxes, roles: ['Administrador'] },
   { title: "Almacenes", url: "/pos/inventario/almacenes", icon: Warehouse, roles: ['Administrador'] },
   { title: "Materias Primas", url: "/pos/inventario/materias-primas", icon: Package, roles: ['Administrador'] },
   { title: "Recetas", url: "/pos/inventario/recetas", icon: BookOpen, roles: ['Administrador'] },
