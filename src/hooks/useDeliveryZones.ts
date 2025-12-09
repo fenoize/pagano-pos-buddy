@@ -36,6 +36,9 @@ export function useDeliveryZones() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuthContext();
 
+  // Define canManageZones early so it can be used in all functions
+  const canManageZones = user?.role === 'Administrador';
+
   const fetchZones = async () => {
     setLoading(true);
     setError(null);
@@ -65,7 +68,7 @@ export function useDeliveryZones() {
   };
 
   const createZone = async (zoneData: CreateDeliveryZoneData): Promise<{ success: boolean; error?: string }> => {
-    if (!user || user.role !== 'Administrador') {
+    if (!canManageZones) {
       return { success: false, error: 'No tienes permisos para crear zonas' };
     }
 
@@ -90,7 +93,7 @@ export function useDeliveryZones() {
   };
 
   const updateZone = async (zoneId: string, updateData: UpdateDeliveryZoneData): Promise<{ success: boolean; error?: string }> => {
-    if (!user || user.role !== 'Administrador') {
+    if (!canManageZones) {
       return { success: false, error: 'No tienes permisos para actualizar zonas' };
     }
 
@@ -114,7 +117,7 @@ export function useDeliveryZones() {
   };
 
   const deleteZone = async (zoneId: string): Promise<{ success: boolean; error?: string }> => {
-    if (!user || user.role !== 'Administrador') {
+    if (!canManageZones) {
       return { success: false, error: 'No tienes permisos para eliminar zonas' };
     }
 
@@ -126,7 +129,7 @@ export function useDeliveryZones() {
 
       if (deleteError) {
         console.error('Error deleting delivery zone:', deleteError);
-        return { success: false, error: 'Error al eliminar la zona de delivery' };
+        return { success: false, error: 'Error al eliminar la zona de delivery: ' + deleteError.message };
       }
 
       await fetchZones();
@@ -159,6 +162,6 @@ export function useDeliveryZones() {
     deleteZone,
     toggleZoneStatus,
     getActiveZones,
-    canManageZones: user?.role === 'Administrador'
+    canManageZones
   };
 }
