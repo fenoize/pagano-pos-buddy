@@ -154,7 +154,7 @@ export function CategoryConfig() {
     show_in_app: true
   });
   const { toast } = useToast();
-  const { config, updateGridColumns } = usePOSConfig();
+  const { config, updateGridColumns, updateShowVariantStock } = usePOSConfig();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -410,6 +410,22 @@ export function CategoryConfig() {
             <p className="text-sm text-muted-foreground mt-2">
               Actualmente: <strong>{config.gridColumns} columnas</strong>
             </p>
+          </div>
+
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="showVariantStock">Mostrar stock en variantes</Label>
+                <p className="text-sm text-muted-foreground">
+                  Muestra la cantidad disponible en variantes vinculadas a inventario
+                </p>
+              </div>
+              <Switch
+                id="showVariantStock"
+                checked={config.showVariantStock}
+                onCheckedChange={updateShowVariantStock}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
