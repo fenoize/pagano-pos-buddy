@@ -2759,6 +2759,7 @@ export type Database = {
           is_enabled: boolean | null
           price: number
           product_id: string
+          raw_material_id: string | null
           sku: string | null
           stock: number
           updated_at: string
@@ -2772,6 +2773,7 @@ export type Database = {
           is_enabled?: boolean | null
           price?: number
           product_id: string
+          raw_material_id?: string | null
           sku?: string | null
           stock?: number
           updated_at?: string
@@ -2785,6 +2787,7 @@ export type Database = {
           is_enabled?: boolean | null
           price?: number
           product_id?: string
+          raw_material_id?: string | null
           sku?: string | null
           stock?: number
           updated_at?: string
@@ -2802,6 +2805,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_options_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
             referencedColumns: ["id"]
           },
         ]
