@@ -511,7 +511,7 @@ export default function StockManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           
-          <div className="max-h-60 overflow-y-auto space-y-2">
+          <div className="max-h-72 overflow-y-auto space-y-2">
             {changedItems.map(item => {
               const diff = (item.new_stock || 0) - item.current_stock;
               return (
@@ -521,7 +521,9 @@ export default function StockManagement() {
                     <span className="text-muted-foreground">{item.current_stock}</span>
                     <span>→</span>
                     <span className="font-medium">{item.new_stock}</span>
-                    <Badge variant={diff > 0 ? 'default' : 'destructive'} className="ml-2">
+                    <Badge 
+                      className={`ml-2 ${diff > 0 ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+                    >
                       {diff > 0 ? '+' : ''}{diff.toFixed(2)}
                     </Badge>
                   </div>
