@@ -4186,6 +4186,17 @@ export type Database = {
       }
     }
     Functions: {
+      adjust_stock_quick: {
+        Args: {
+          p_current_stock: number
+          p_new_stock: number
+          p_notes: string
+          p_raw_material_id: string
+          p_user_id: string
+          p_warehouse_id: string
+        }
+        Returns: Json
+      }
       assign_orders_to_sessions: { Args: never; Returns: undefined }
       auth_jwt: { Args: never; Returns: Json }
       authenticate_customer: {

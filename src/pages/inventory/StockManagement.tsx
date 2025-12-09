@@ -226,44 +226,22 @@ export default function StockManagement() {
     setSaving(true);
     try {
       for (const item of changedItems) {
-        const adjustment = (item.new_stock || 0) - item.current_stock;
-        
-        if (adjustment === 0) continue;
-
-        // Create stock movement for adjustment using RPC function (bypasses RLS)
-        const { error: moveError } = await supabase.rpc('insert_stock_adjustment', {
+        // Use comprehensive RPC function that handles both stock_moves and stock_balances
+        const { data, error } = await supabase.rpc('adjust_stock_quick', {
           p_raw_material_id: item.id,
           p_warehouse_id: selectedWarehouse,
-          p_qty_in: adjustment > 0 ? adjustment : 0,
-          p_qty_out: adjustment < 0 ? Math.abs(adjustment) : 0,
+          p_new_stock: item.new_stock || 0,
+          p_current_stock: item.current_stock,
           p_notes: 'Conteo físico - Ajuste rápido de stock',
           p_user_id: user.id,
         });
 
-        if (moveError) throw moveError;
-
-        // Update or create stock balance using composite key
-        if (item.has_balance) {
-          const { error: updateError } = await supabase
-            .from('stock_balances')
-            .update({ 
-              qty_on_hand: item.new_stock,
-              updated_at: new Date().toISOString()
-            })
-            .eq('raw_material_id', item.id)
-            .eq('warehouse_id', selectedWarehouse);
-
-          if (updateError) throw updateError;
-        } else {
-          const { error: insertError } = await supabase
-            .from('stock_balances')
-            .insert({
-              raw_material_id: item.id,
-              warehouse_id: selectedWarehouse,
-              qty_on_hand: item.new_stock || 0,
-            });
-
-          if (insertError) throw insertError;
+        if (error) throw error;
+        
+        // Check if RPC returned an error
+        const result = data as { success: boolean; error?: string } | null;
+        if (result && !result.success) {
+          throw new Error(result.error || 'Error al ajustar stock');
         }
       }
 
