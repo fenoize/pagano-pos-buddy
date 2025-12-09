@@ -191,14 +191,13 @@ export function usePurchaseOrders() {
 
       if (orderError) throw orderError;
 
-      // Create purchase items
+      // Create purchase items (total_cost is a generated column, don't insert it)
       const itemsToInsert = data.items.map(item => ({
         purchase_id: order.id,
         raw_material_id: item.raw_material_id,
         qty: item.qty,
         uom_id: item.uom_id,
         unit_cost: item.unit_cost,
-        total_cost: item.qty * item.unit_cost,
         qty_received: 0,
       }));
 
