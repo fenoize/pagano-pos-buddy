@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Building2, Plus, Pencil, Trash2, TrendingUp, Hash, DollarSign } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, TrendingUp, Hash, DollarSign, RefreshCw } from 'lucide-react';
 import type { FixedExpense } from '@/types/finance';
 
 const DEPARTMENTS = ['Operativo', 'Administración', 'Boss', 'Digital'];
@@ -90,6 +90,7 @@ export default function FixedExpenses() {
     document_type: '',
     notes: '',
     is_active: true,
+    is_variable_amount: false,
     start_date: '',
     end_date: '',
   });
@@ -144,6 +145,7 @@ export default function FixedExpenses() {
         document_type: expense.document_type || '',
         notes: expense.notes || '',
         is_active: expense.is_active,
+        is_variable_amount: expense.is_variable_amount ?? false,
         start_date: expense.start_date || '',
         end_date: expense.end_date || '',
       });
@@ -160,6 +162,7 @@ export default function FixedExpenses() {
         document_type: '',
         notes: '',
         is_active: true,
+        is_variable_amount: false,
         start_date: '',
         end_date: '',
       });
@@ -183,6 +186,7 @@ export default function FixedExpenses() {
       document_type: formData.document_type || null,
       notes: formData.notes || null,
       is_active: formData.is_active,
+      is_variable_amount: formData.is_variable_amount,
       start_date: formData.start_date || null,
       end_date: formData.end_date || null,
     };
@@ -345,9 +349,9 @@ export default function FixedExpenses() {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Categoría</TableHead>
                   <TableHead className="text-right">Monto</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Frecuencia</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Vigencia</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -362,16 +366,27 @@ export default function FixedExpenses() {
                       {expense.category}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
-                      {formatCurrency(Number(expense.amount))}
+                      {expense.is_variable_amount ? (
+                        <span className="text-muted-foreground italic">~{formatCurrency(Number(expense.amount))}</span>
+                      ) : (
+                        formatCurrency(Number(expense.amount))
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {expense.is_variable_amount ? (
+                        <Badge variant="secondary" className="gap-1">
+                          <RefreshCw className="w-3 h-3" />
+                          Variable
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">Fijo</Badge>
+                      )}
                     </TableCell>
                     <TableCell>{getFrequencyLabel(expense.frequency)}</TableCell>
                     <TableCell>
                       <Badge variant={expense.is_active ? 'default' : 'secondary'}>
                         {expense.is_active ? 'Activo' : 'Inactivo'}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {expense.start_date || '-'} {expense.end_date && `→ ${expense.end_date}`}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -465,7 +480,7 @@ export default function FixedExpenses() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="amount">
-                  Monto <span className="text-destructive">*</span>
+                  {formData.is_variable_amount ? 'Monto Estimado' : 'Monto'} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="amount"
@@ -474,6 +489,11 @@ export default function FixedExpenses() {
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 />
+                {formData.is_variable_amount && (
+                  <p className="text-xs text-muted-foreground">
+                    Monto referencial. El monto real se registra en cada período.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -493,6 +513,23 @@ export default function FixedExpenses() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Monto Variable Toggle */}
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+              <div className="space-y-0.5">
+                <Label htmlFor="is_variable_amount" className="text-base font-medium">
+                  Monto Variable
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  El monto cambia cada período (ej: luz, agua, gas). Se registra manualmente en Gastos.
+                </p>
+              </div>
+              <Switch
+                id="is_variable_amount"
+                checked={formData.is_variable_amount}
+                onCheckedChange={(v) => setFormData({ ...formData, is_variable_amount: v })}
+              />
             </div>
 
             <div className="grid grid-cols-3 gap-4">

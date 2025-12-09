@@ -1633,6 +1633,7 @@ export type Database = {
           frequency: string
           id: string
           is_active: boolean | null
+          is_variable_amount: boolean
           name: string
           notes: string | null
           payment_day: number | null
@@ -1651,6 +1652,7 @@ export type Database = {
           frequency?: string
           id?: string
           is_active?: boolean | null
+          is_variable_amount?: boolean
           name: string
           notes?: string | null
           payment_day?: number | null
@@ -1669,6 +1671,7 @@ export type Database = {
           frequency?: string
           id?: string
           is_active?: boolean | null
+          is_variable_amount?: boolean
           name?: string
           notes?: string | null
           payment_day?: number | null
