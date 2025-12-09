@@ -68,6 +68,7 @@ const DeliveryHistory = lazy(() => import("@/pages/delivery/DeliveryHistory"));
 
 // Inventory Pages
 const InventoryHub = lazy(() => import("@/pages/inventory/InventoryHub"));
+const InventoryCategories = lazy(() => import("@/pages/inventory/InventoryCategories"));
 const Warehouses = lazy(() => import("@/pages/inventory/Warehouses"));
 const RawMaterials = lazy(() => import("@/pages/inventory/RawMaterials"));
 const Recipes = lazy(() => import("@/pages/inventory/Recipes"));
@@ -408,6 +409,14 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <StockManagement />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/categorias" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <InventoryCategories />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />
