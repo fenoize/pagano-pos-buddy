@@ -230,18 +230,15 @@ export default function StockManagement() {
         
         if (adjustment === 0) continue;
 
-        // Create stock movement for adjustment
-        const { error: moveError } = await supabase
-          .from('stock_moves')
-          .insert({
-            raw_material_id: item.id,
-            warehouse_id: selectedWarehouse,
-            move_type: 'adjustment',
-            qty_in: adjustment > 0 ? adjustment : 0,
-            qty_out: adjustment < 0 ? Math.abs(adjustment) : 0,
-            notes: 'Conteo físico - Ajuste rápido de stock',
-            created_by: user.id,
-          });
+        // Create stock movement for adjustment using RPC function (bypasses RLS)
+        const { error: moveError } = await supabase.rpc('insert_stock_adjustment', {
+          p_raw_material_id: item.id,
+          p_warehouse_id: selectedWarehouse,
+          p_qty_in: adjustment > 0 ? adjustment : 0,
+          p_qty_out: adjustment < 0 ? Math.abs(adjustment) : 0,
+          p_notes: 'Conteo físico - Ajuste rápido de stock',
+          p_user_id: user.id,
+        });
 
         if (moveError) throw moveError;
 
