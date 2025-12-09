@@ -904,6 +904,7 @@ export default function NewSale() {
           preloadedExtras={preloadedData.extras}
           preloadedModifiers={preloadedData.modifiers.filter(m => m.product_id === selectedProduct.id)}
           preloadedComboData={preloadedData.combos[selectedProduct.id!]}
+          showVariantStock={true}
         />
       )}
 

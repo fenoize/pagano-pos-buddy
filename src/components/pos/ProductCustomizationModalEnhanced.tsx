@@ -38,6 +38,7 @@ interface ProductCustomizationModalEnhancedProps {
   preloadedExtras?: ProductExtra[];
   preloadedModifiers?: ProductModifier[];
   preloadedComboData?: any;
+  showVariantStock?: boolean;
 }
 
 export function ProductCustomizationModalEnhanced({ 
@@ -50,7 +51,8 @@ export function ProductCustomizationModalEnhanced({
   preloadedVariants = [],
   preloadedExtras = [],
   preloadedModifiers = [],
-  preloadedComboData = null
+  preloadedComboData = null,
+  showVariantStock = false
 }: ProductCustomizationModalEnhancedProps) {
   // Variant system state
   const [availableVariants, setAvailableVariants] = useState<ProductVariantOption[]>([]);
@@ -430,6 +432,7 @@ export function ProductCustomizationModalEnhanced({
                       setSelectedVariantOption(variant);
                     }}
                     disabled={false}
+                    showStockCount={showVariantStock}
                   />
                 )}
               </CardContent>
