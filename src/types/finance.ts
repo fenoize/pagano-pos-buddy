@@ -145,6 +145,7 @@ export interface FixedExpense {
   document_type?: string | null;
   notes?: string | null;
   is_active: boolean;
+  is_variable_amount: boolean;
   start_date?: string | null;
   end_date?: string | null;
   created_by?: string | null;
