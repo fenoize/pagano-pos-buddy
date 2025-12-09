@@ -76,6 +76,9 @@ const Kardex = lazy(() => import("@/pages/inventory/Kardex"));
 const StockAdjustments = lazy(() => import("@/pages/inventory/StockAdjustments"));
 const StockTransfers = lazy(() => import("@/pages/inventory/StockTransfers"));
 const StockManagement = lazy(() => import("@/pages/inventory/StockManagement"));
+const PurchaseOrders = lazy(() => import("@/pages/inventory/PurchaseOrders"));
+const PurchaseOrderForm = lazy(() => import("@/pages/inventory/PurchaseOrderForm"));
+const PurchaseOrderDetail = lazy(() => import("@/pages/inventory/PurchaseOrderDetail"));
 
 // Finance Pages
 const FinanceKPIs = lazy(() => import("@/pages/finance/FinanceKPIs"));
@@ -382,9 +385,23 @@ const App = () => (
               <Route path="/pos/inventario/compras" element={
                 <StaffProtectedRoute>
                   <StaffLayout>
-                    <div className="p-6 text-center text-muted-foreground">
-                      Órdenes de Compra - En desarrollo
-                    </div>
+                    <PurchaseOrders />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/compras/nueva" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <PurchaseOrderForm />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/compras/:id" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <PurchaseOrderDetail />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />
