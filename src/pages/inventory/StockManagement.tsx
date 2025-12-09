@@ -239,9 +239,8 @@ export default function StockManagement() {
             move_type: 'adjustment',
             qty_in: adjustment > 0 ? adjustment : 0,
             qty_out: adjustment < 0 ? Math.abs(adjustment) : 0,
-            reference_type: 'manual',
             notes: 'Conteo físico - Ajuste rápido de stock',
-            created_by_user_id: user.id,
+            created_by: user.id,
           });
 
         if (moveError) throw moveError;
