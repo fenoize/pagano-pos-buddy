@@ -88,7 +88,7 @@ const FinanceAccounts = lazy(() => import("@/pages/finance/FinanceAccounts"));
 const FinanceExpenses = lazy(() => import("@/pages/finance/FinanceExpenses"));
 const FixedExpenses = lazy(() => import("@/pages/finance/FixedExpenses"));
 const FinanceSuppliers = lazy(() => import("@/pages/finance/FinanceSuppliers"));
-
+const FinanceConfig = lazy(() => import("@/pages/finance/FinanceConfig"));
 // Loading component para Suspense
 function LoadingFallback() {
   return (
@@ -463,6 +463,7 @@ const App = () => (
               <Route path="/pos/finanzas/gastos-fijos" element={<StaffProtectedRoute><StaffLayout><FixedExpenses /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/finanzas/egresos" element={<StaffProtectedRoute><StaffLayout><FinanceExpenses /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/finanzas/cierres" element={<StaffProtectedRoute><StaffLayout><FinanceCierres /></StaffLayout></StaffProtectedRoute>} />
+              <Route path="/pos/finanzas/configuracion" element={<StaffProtectedRoute><StaffLayout><FinanceConfig /></StaffLayout></StaffProtectedRoute>} />
               
               <Route path="/pos/finanzas/exportaciones" element={
                 <StaffProtectedRoute>

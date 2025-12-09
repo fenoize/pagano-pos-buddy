@@ -13,6 +13,8 @@ export interface PaymentMethod {
   requires_operation_number: boolean;
   counts_as_real_sale: boolean;
   display_order: number;
+  affects_cash_flow?: boolean;
+  internal_only?: boolean;
   created_at?: string;
   updated_at?: string;
 }
