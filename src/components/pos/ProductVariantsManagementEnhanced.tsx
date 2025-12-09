@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Save, Edit2 } from "lucide-react";
+import { AlertTriangle, Save, Edit2, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useRawMaterials } from "@/hooks/useRawMaterials";
 import {
   Table,
   TableBody,
@@ -16,6 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CategoryVariant {
   id: string;
@@ -33,6 +41,7 @@ interface ProductVariantOption {
   is_default: boolean;
   active: boolean;
   is_enabled: boolean;
+  raw_material_id: string | null;
   category_variant?: CategoryVariant;
 }
 
@@ -51,6 +60,7 @@ export default function ProductVariantsManagementEnhanced({
   const [bulkEditMode, setBulkEditMode] = useState(false);
   const [bulkPrices, setBulkPrices] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const { materials } = useRawMaterials();
 
   useEffect(() => {
     if (productId && categoryIds.length > 0) {
@@ -227,6 +237,35 @@ export default function ProductVariantsManagementEnhanced({
       toast({
         title: "Error",
         description: "Error al establecer variante por defecto",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateVariantRawMaterial = async (variantOptionId: string, rawMaterialId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from("product_variant_options")
+        .update({
+          raw_material_id: rawMaterialId === "none" ? null : rawMaterialId,
+        })
+        .eq("id", variantOptionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Materia prima actualizada",
+        description: rawMaterialId && rawMaterialId !== "none" 
+          ? "Variante vinculada a materia prima para inventario"
+          : "Vinculación de inventario removida",
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error("Error updating raw material:", error);
+      toast({
+        title: "Error",
+        description: "Error al actualizar materia prima",
         variant: "destructive",
       });
     }
@@ -418,6 +457,7 @@ export default function ProductVariantsManagementEnhanced({
               <TableHead>Variante</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Precio</TableHead>
+              <TableHead>Materia Prima</TableHead>
               <TableHead>Por Defecto</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
