@@ -4381,6 +4381,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_stock_adjustment: {
+        Args: {
+          p_notes: string
+          p_qty_in: number
+          p_qty_out: number
+          p_raw_material_id: string
+          p_user_id: string
+          p_warehouse_id: string
+        }
+        Returns: string
+      }
       invalidate_staff_session: { Args: { _token: string }; Returns: boolean }
       is_active_admin: { Args: never; Returns: boolean }
       is_active_staff: { Args: never; Returns: boolean }
