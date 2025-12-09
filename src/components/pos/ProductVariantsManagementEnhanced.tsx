@@ -542,6 +542,27 @@ export default function ProductVariantsManagementEnhanced({
 
                   <TableCell>
                     {existingOption && (
+                      <Select
+                        value={existingOption.raw_material_id || "none"}
+                        onValueChange={(value) => updateVariantRawMaterial(existingOption.id, value)}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Sin vincular" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sin vincular</SelectItem>
+                          {materials.map((mat) => (
+                            <SelectItem key={mat.id} value={mat.id}>
+                              {mat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </TableCell>
+
+                  <TableCell>
+                    {existingOption && (
                       <Switch
                         checked={existingOption.is_default}
                         onCheckedChange={() => setDefaultVariant(existingOption.id)}
