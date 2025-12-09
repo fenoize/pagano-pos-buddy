@@ -262,26 +262,48 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
       setSlotProducts(groupedProducts);
 
-      // Fetch product variants
+      // Fetch product variants and stock balances
       const productIds = productsData?.map(p => p.id) || [];
-      const { data: variantsData, error: variantsError } = await supabase
-        .from('product_variant_options')
-        .select(`
-          *,
-          variant:category_variants(*)
-        `)
-        .in('product_id', productIds)
-        .eq('active', true);
+      const [variantsRes, stockBalancesRes] = await Promise.all([
+        supabase
+          .from('product_variant_options')
+          .select(`
+            *,
+            variant:category_variants(*)
+          `)
+          .in('product_id', productIds)
+          .eq('active', true),
+        supabase
+          .from('stock_balances')
+          .select('raw_material_id, qty_on_hand')
+      ]);
 
-      if (variantsError) throw variantsError;
+      if (variantsRes.error) throw variantsRes.error;
 
-      // Group variants by product
+      // Create a map of raw_material_id -> total stock
+      const stockByMaterial: Record<string, number> = {};
+      stockBalancesRes.data?.forEach((balance: any) => {
+        const materialId = balance.raw_material_id;
+        stockByMaterial[materialId] = (stockByMaterial[materialId] || 0) + (balance.qty_on_hand || 0);
+      });
+
+      // Group variants by product with calculated stock
       const groupedVariants: Record<string, ProductVariantOption[]> = {};
-      variantsData?.forEach((variant) => {
+      variantsRes.data?.forEach((variant) => {
         if (!groupedVariants[variant.product_id]) {
           groupedVariants[variant.product_id] = [];
         }
-        groupedVariants[variant.product_id].push(variant);
+        // Calculate real stock:
+        // - If variant has raw_material_id, use material stock from stock_balances
+        // - If no raw_material_id, set stock as undefined (no inventory control = unlimited)
+        let realStock: number | undefined = undefined;
+        if (variant.raw_material_id) {
+          realStock = stockByMaterial[variant.raw_material_id] ?? 0;
+        }
+        groupedVariants[variant.product_id].push({
+          ...variant,
+          stock: realStock
+        });
       });
 
       setProductVariants(groupedVariants);
