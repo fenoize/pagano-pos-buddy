@@ -81,10 +81,10 @@ export function usePOSConfig() {
     try {
       const { error } = await supabase
         .from('config')
-        .upsert({ 
-          key: 'pos_show_variant_stock', 
-          value: show 
-        });
+        .upsert(
+          { key: 'pos_show_variant_stock', value: show },
+          { onConflict: 'key' }
+        );
 
       if (error) throw error;
       
