@@ -1,0 +1,1 @@
+INSERT INTO config (key, value) VALUES ('pos_show_variant_stock', 'true') ON CONFLICT (key) DO UPDATE SET value = 'true';

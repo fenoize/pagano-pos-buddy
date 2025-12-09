@@ -22,6 +22,7 @@ import { CouponManager } from '@/components/pos/CouponManager';
 import { CouponModal } from '@/components/pos/CouponModal';
 import { ArrowLeft, ArrowRight, User, Ticket, History } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
+import { usePOSConfig } from '@/hooks/usePOSConfig';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { checkAndAwardBadges } from '@/lib/badgeAwarder';
 import { RecentOrdersModal } from '@/components/sales/RecentOrdersModal';
@@ -63,6 +64,7 @@ export default function NewSale() {
   const { canCreateOrders, loading: permissionsLoading } = usePermissions();
   const { hasActiveSession } = useCashSession();
   const { deductInventoryFromOrder } = useInventory();
+  const { config: posConfig } = usePOSConfig();
 
   const subtotal = cartItems.reduce((sum, item) => {
     const extrasTotal = item.extras.reduce((extraSum, extra) => extraSum + (extra.price * (extra.quantity || 1)), 0);
@@ -904,7 +906,7 @@ export default function NewSale() {
           preloadedExtras={preloadedData.extras}
           preloadedModifiers={preloadedData.modifiers.filter(m => m.product_id === selectedProduct.id)}
           preloadedComboData={preloadedData.combos[selectedProduct.id!]}
-          showVariantStock={true}
+          showVariantStock={posConfig.showVariantStock}
         />
       )}
 
