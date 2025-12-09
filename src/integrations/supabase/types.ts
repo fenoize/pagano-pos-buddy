@@ -1479,6 +1479,7 @@ export type Database = {
       }
       finance_accounts: {
         Row: {
+          balance: number
           code: string | null
           created_at: string
           created_by: string | null
@@ -1490,6 +1491,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          balance?: number
           code?: string | null
           created_at?: string
           created_by?: string | null
@@ -1501,6 +1503,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          balance?: number
           code?: string | null
           created_at?: string
           created_by?: string | null

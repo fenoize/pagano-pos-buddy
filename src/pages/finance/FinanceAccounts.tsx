@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Power } from 'lucide-react';
+import { Plus, Pencil, Power, Eye, EyeOff } from 'lucide-react';
 import { FinanceAccount } from '@/types/finance';
 
 export default function FinanceAccounts() {
@@ -19,15 +19,32 @@ export default function FinanceAccounts() {
   const { accounts, loading, createAccount, updateAccount, toggleActiveAccount } = useFinanceAccounts();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<FinanceAccount | null>(null);
+  const [visibleBalances, setVisibleBalances] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({
     name: '',
     code: '',
     type: 'Efectivo' as 'Efectivo' | 'Banco' | 'Digital' | 'Otro',
     description: '',
     is_active: true,
+    balance: 0,
   });
 
   const isAdmin = user?.role === 'Administrador';
+
+  const toggleBalanceVisibility = (accountId: string) => {
+    setVisibleBalances(prev => ({
+      ...prev,
+      [accountId]: !prev[accountId]
+    }));
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0
+    }).format(value);
+  };
 
   const handleOpenDialog = (account?: FinanceAccount) => {
     if (account) {
@@ -38,6 +55,7 @@ export default function FinanceAccounts() {
         type: account.type,
         description: account.description || '',
         is_active: account.is_active,
+        balance: account.balance || 0,
       });
     } else {
       setEditingAccount(null);
@@ -47,6 +65,7 @@ export default function FinanceAccounts() {
         type: 'Efectivo',
         description: '',
         is_active: true,
+        balance: 0,
       });
     }
     setIsDialogOpen(true);
@@ -61,6 +80,7 @@ export default function FinanceAccounts() {
       type: formData.type,
       description: formData.description || null,
       is_active: formData.is_active,
+      balance: formData.balance,
     };
 
     const success = editingAccount
@@ -142,6 +162,17 @@ export default function FinanceAccounts() {
                 </div>
 
                 <div>
+                  <Label htmlFor="balance">Saldo Actual</Label>
+                  <Input
+                    id="balance"
+                    type="number"
+                    value={formData.balance}
+                    onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
                   <Label htmlFor="description">Descripción</Label>
                   <Textarea
                     id="description"
@@ -190,8 +221,8 @@ export default function FinanceAccounts() {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Código</TableHead>
+                  {isAdmin && <TableHead>Saldo</TableHead>}
                   <TableHead>Estado</TableHead>
-                  <TableHead>Fecha Creación</TableHead>
                   {isAdmin && <TableHead className="text-right">Acciones</TableHead>}
                 </TableRow>
               </TableHeader>
@@ -207,13 +238,34 @@ export default function FinanceAccounts() {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm min-w-[100px]">
+                            {visibleBalances[account.id] 
+                              ? formatCurrency(account.balance || 0)
+                              : '••••••••'
+                            }
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => toggleBalanceVisibility(account.id)}
+                          >
+                            {visibleBalances[account.id] ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Badge variant={account.is_active ? 'default' : 'secondary'}>
                         {account.is_active ? 'Activa' : 'Inactiva'}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(account.created_at).toLocaleDateString('es-CL')}
                     </TableCell>
                     {isAdmin && (
                       <TableCell className="text-right">
