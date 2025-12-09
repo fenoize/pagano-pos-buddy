@@ -12,6 +12,7 @@ interface VariantSelectorProps {
   defaultVariantId?: string;
   showExtraCost?: boolean;
   hideOutOfStockBadge?: boolean; // Ocultar badge "Agotado" (para app cliente)
+  showStockCount?: boolean; // Mostrar cantidad de stock disponible
 }
 
 const VariantSelector: React.FC<VariantSelectorProps> = ({
@@ -21,7 +22,8 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
   disabled = false,
   defaultVariantId,
   showExtraCost = false,
-  hideOutOfStockBadge = false
+  hideOutOfStockBadge = false,
+  showStockCount = false
 }) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -91,10 +93,20 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                   <div className="text-primary font-semibold">
                     {showExtraCost && isDefault ? "Incluido" : formatPrice(variant.price)}
                   </div>
-                  {!hideOutOfStockBadge && variant.stock !== undefined && variant.stock <= 0 && (
-                    <Badge variant="destructive" className="text-xs">
-                      Agotado
-                    </Badge>
+                  {variant.stock !== undefined && (
+                    variant.stock <= 0 ? (
+                      !hideOutOfStockBadge && (
+                        <Badge variant="destructive" className="text-xs">
+                          Agotado
+                        </Badge>
+                      )
+                    ) : (
+                      showStockCount && (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          Stock: {variant.stock}
+                        </Badge>
+                      )
+                    )
                   )}
                 </div>
               </CardContent>

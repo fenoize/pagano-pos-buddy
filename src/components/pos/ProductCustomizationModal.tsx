@@ -36,9 +36,10 @@ interface ProductCustomizationModalProps {
   editingItem?: any;
   editingIndex?: number;
   hideComboToggle?: boolean; // Ocultar selector Individual/Combo (para app de cliente)
+  showVariantStock?: boolean;
 }
 
-export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, product, editingItem, editingIndex, hideComboToggle = false }: ProductCustomizationModalProps) {
+export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, product, editingItem, editingIndex, hideComboToggle = false, showVariantStock = false }: ProductCustomizationModalProps) {
   // New variant system state
   const [availableVariants, setAvailableVariants] = useState<ProductVariantOption[]>([]);
   const [selectedVariantOption, setSelectedVariantOption] = useState<ProductVariantOption | null>(null);
@@ -438,6 +439,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
                       }}
                       disabled={false}
                       hideOutOfStockBadge={hideComboToggle}
+                      showStockCount={showVariantStock}
                     />
                   </CardContent>
                 </Card>

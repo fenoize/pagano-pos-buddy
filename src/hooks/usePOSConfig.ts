@@ -4,10 +4,11 @@ import { useToast } from '@/hooks/use-toast';
 
 interface POSConfig {
   gridColumns: number;
+  showVariantStock: boolean;
 }
 
 export function usePOSConfig() {
-  const [config, setConfig] = useState<POSConfig>({ gridColumns: 4 });
+  const [config, setConfig] = useState<POSConfig>({ gridColumns: 4, showVariantStock: false });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -15,27 +16,33 @@ export function usePOSConfig() {
     try {
       const { data, error } = await supabase
         .from('config')
-        .select('value')
-        .eq('key', 'pos_grid_columns')
-        .single();
+        .select('key, value')
+        .in('key', ['pos_grid_columns', 'pos_show_variant_stock']);
 
       if (error) throw error;
       
-      if (data?.value) {
-        const columns = typeof data.value === 'number' ? data.value : 4;
-        setConfig({ gridColumns: columns });
-      }
+      let gridColumns = 4;
+      let showVariantStock = false;
+      
+      data?.forEach((row: any) => {
+        if (row.key === 'pos_grid_columns') {
+          gridColumns = typeof row.value === 'number' ? row.value : 4;
+        }
+        if (row.key === 'pos_show_variant_stock') {
+          showVariantStock = row.value === true;
+        }
+      });
+      
+      setConfig({ gridColumns, showVariantStock });
     } catch (error) {
       console.error('Error fetching POS config:', error);
-      // Use default config on error
-      setConfig({ gridColumns: 4 });
+      setConfig({ gridColumns: 4, showVariantStock: false });
     } finally {
       setLoading(false);
     }
   };
 
   const updateGridColumns = async (columns: number) => {
-    // Validate range 3-6
     if (columns < 3 || columns > 6) {
       toast({
         title: "Error",
@@ -55,10 +62,36 @@ export function usePOSConfig() {
 
       if (error) throw error;
       
-      setConfig({ gridColumns: columns });
+      setConfig(prev => ({ ...prev, gridColumns: columns }));
       toast({
         title: "Éxito",
         description: `Configuración actualizada: ${columns} columnas`
+      });
+    } catch (error: any) {
+      console.error('Error updating POS config:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar la configuración",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateShowVariantStock = async (show: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('config')
+        .upsert({ 
+          key: 'pos_show_variant_stock', 
+          value: show 
+        });
+
+      if (error) throw error;
+      
+      setConfig(prev => ({ ...prev, showVariantStock: show }));
+      toast({
+        title: "Éxito",
+        description: show ? "Stock de variantes visible" : "Stock de variantes oculto"
       });
     } catch (error: any) {
       console.error('Error updating POS config:', error);
@@ -74,5 +107,5 @@ export function usePOSConfig() {
     fetchConfig();
   }, []);
 
-  return { config, loading, updateGridColumns };
+  return { config, loading, updateGridColumns, updateShowVariantStock };
 }
