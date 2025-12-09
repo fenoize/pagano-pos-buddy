@@ -46,6 +46,7 @@ export default function PurchaseOrderForm() {
   const { createOrder } = usePurchaseOrders();
 
   const [saving, setSaving] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [supplierId, setSupplierId] = useState('');
   const [warehouseId, setWarehouseId] = useState('');
   const [expectedDate, setExpectedDate] = useState('');
@@ -111,15 +112,49 @@ export default function PurchaseOrderForm() {
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value);
   };
 
-  const handleSubmit = async () => {
+  const validateBasicInfo = () => {
     if (!supplierId) {
       toast({ title: 'Error', description: 'Selecciona un proveedor', variant: 'destructive' });
-      return;
+      return false;
     }
     if (!warehouseId) {
       toast({ title: 'Error', description: 'Selecciona un almacén', variant: 'destructive' });
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleSaveDraft = async () => {
+    if (!validateBasicInfo()) return;
+    
+    // For drafts, allow empty items or incomplete items
+    const validItems = items.filter(i => i.raw_material_id && i.uom_id && i.qty > 0);
+
+    setSavingDraft(true);
+    const orderId = await createOrder({
+      supplier_id: supplierId,
+      warehouse_id: warehouseId,
+      expected_date: expectedDate || undefined,
+      notes,
+      items: validItems.map(({ raw_material_id, qty, uom_id, unit_cost }) => ({
+        raw_material_id,
+        qty,
+        uom_id,
+        unit_cost,
+      })),
+    });
+
+    setSavingDraft(false);
+
+    if (orderId) {
+      toast({ title: 'Borrador guardado', description: 'La orden se guardó como borrador' });
+      navigate(`/pos/inventario/compras/${orderId}`);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!validateBasicInfo()) return;
+    
     if (items.length === 0) {
       toast({ title: 'Error', description: 'Agrega al menos un item', variant: 'destructive' });
       return;
@@ -373,7 +408,7 @@ export default function PurchaseOrderForm() {
             className="w-full" 
             size="lg"
             onClick={handleSubmit}
-            disabled={saving || items.length === 0}
+            disabled={saving || savingDraft || items.length === 0}
           >
             {saving ? (
               <>
@@ -385,6 +420,22 @@ export default function PurchaseOrderForm() {
                 <Save className="h-4 w-4 mr-2" />
                 Crear Orden
               </>
+            )}
+          </Button>
+
+          <Button 
+            variant="secondary" 
+            className="w-full"
+            onClick={handleSaveDraft}
+            disabled={saving || savingDraft}
+          >
+            {savingDraft ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              'Guardar como Borrador'
             )}
           </Button>
 
