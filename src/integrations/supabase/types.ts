@@ -4364,6 +4364,13 @@ export type Database = {
       get_online_order_settings:
         | { Args: never; Returns: Json }
         | { Args: { p_user_id?: string }; Returns: Json }
+      get_stock_balances: {
+        Args: { p_warehouse_id: string }
+        Returns: {
+          qty_on_hand: number
+          raw_material_id: string
+        }[]
+      }
       get_store_status: { Args: never; Returns: Json }
       get_top_recurring_expenses_for_closure: {
         Args: { _end: string; _limit?: number; _start: string }

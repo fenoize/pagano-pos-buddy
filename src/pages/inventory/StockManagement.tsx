@@ -103,11 +103,9 @@ export default function StockManagement() {
 
       if (materialsError) throw materialsError;
 
-      // Get stock balances for selected warehouse
+      // Get stock balances for selected warehouse using RPC to bypass RLS
       const { data: balances, error: balancesError } = await supabase
-        .from('stock_balances')
-        .select('raw_material_id, qty_on_hand')
-        .eq('warehouse_id', selectedWarehouse);
+        .rpc('get_stock_balances', { p_warehouse_id: selectedWarehouse });
 
       if (balancesError) throw balancesError;
 
