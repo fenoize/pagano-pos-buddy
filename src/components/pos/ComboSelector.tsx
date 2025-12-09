@@ -16,6 +16,7 @@ interface ComboSelectorProps {
   onComboTotalChange: (total: number) => void;
   preloadedComboData?: any;
   initialSelections?: ComboItemSelection[];
+  showVariantStock?: boolean;
 }
 
 interface ComboItemSelection {
@@ -32,7 +33,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   onComboItemsChange,
   onComboTotalChange,
   preloadedComboData = null,
-  initialSelections = []
+  initialSelections = [],
+  showVariantStock = false
 }) => {
   const [comboConfig, setComboConfig] = useState<ComboProduct | null>(null);
   const [comboSlots, setComboSlots] = useState<ComboItem[]>([]);
@@ -701,6 +703,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                         disabled={false}
                         defaultVariantId={slot.default_variant_id}
                         showExtraCost={comboConfig?.pricing_mode === 'fixed'}
+                        showStockCount={showVariantStock}
                       />
                     ) : (
                       // Mostrar solo la variante por defecto (no modificable)
