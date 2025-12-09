@@ -8,7 +8,8 @@ import {
   Settings as SettingsIcon, 
   TrendingUp,
   ArrowRightLeft,
-  AlertTriangle
+  AlertTriangle,
+  Boxes
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -20,6 +21,15 @@ export default function InventoryHub() {
   const { stats, loading: statsLoading } = useStockBalances();
 
   const modules = [
+    {
+      title: "Stock",
+      description: "Gestión rápida de stock",
+      icon: Boxes,
+      route: "/pos/inventario/stock",
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50 hover:bg-emerald-100",
+      permission: canManageInventory,
+    },
     {
       title: "Almacenes",
       description: "Gestión de ubicaciones físicas",

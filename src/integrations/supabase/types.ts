@@ -3150,6 +3150,7 @@ export type Database = {
         Row: {
           avg_cost: number | null
           base_uom_id: string | null
+          category: string | null
           code: string | null
           conversion_to_base: number | null
           created_at: string | null
@@ -3165,6 +3166,7 @@ export type Database = {
         Insert: {
           avg_cost?: number | null
           base_uom_id?: string | null
+          category?: string | null
           code?: string | null
           conversion_to_base?: number | null
           created_at?: string | null
@@ -3180,6 +3182,7 @@ export type Database = {
         Update: {
           avg_cost?: number | null
           base_uom_id?: string | null
+          category?: string | null
           code?: string | null
           conversion_to_base?: number | null
           created_at?: string | null
