@@ -405,6 +405,7 @@ export function ProductCustomizationModalEnhanced({
               onComboTotalChange={setComboTotal}
               preloadedComboData={preloadedComboData}
               initialSelections={editingItem?.combo_selections}
+              showVariantStock={showVariantStock}
             />
           ) : (
             <Card>
