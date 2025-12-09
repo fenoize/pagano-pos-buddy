@@ -2911,6 +2911,8 @@ export type Database = {
           id: string
           purchase_id: string | null
           qty: number
+          qty_pending: number | null
+          qty_received: number | null
           raw_material_id: string | null
           total_cost: number | null
           unit_cost: number
@@ -2921,6 +2923,8 @@ export type Database = {
           id?: string
           purchase_id?: string | null
           qty: number
+          qty_pending?: number | null
+          qty_received?: number | null
           raw_material_id?: string | null
           total_cost?: number | null
           unit_cost: number
@@ -2931,6 +2935,8 @@ export type Database = {
           id?: string
           purchase_id?: string | null
           qty?: number
+          qty_pending?: number | null
+          qty_received?: number | null
           raw_material_id?: string | null
           total_cost?: number | null
           unit_cost?: number
@@ -3014,11 +3020,16 @@ export type Database = {
       }
       purchase_orders: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           created_at: string | null
           created_by: string | null
+          expected_date: string | null
           id: string
           notes: string | null
           po_number: string | null
+          received_date: string | null
+          sent_at: string | null
           status: Database["public"]["Enums"]["po_status"]
           subtotal: number | null
           supplier_id: string | null
@@ -3028,11 +3039,16 @@ export type Database = {
           warehouse_id: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string | null
           created_by?: string | null
+          expected_date?: string | null
           id?: string
           notes?: string | null
           po_number?: string | null
+          received_date?: string | null
+          sent_at?: string | null
           status?: Database["public"]["Enums"]["po_status"]
           subtotal?: number | null
           supplier_id?: string | null
@@ -3042,11 +3058,16 @@ export type Database = {
           warehouse_id?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string | null
           created_by?: string | null
+          expected_date?: string | null
           id?: string
           notes?: string | null
           po_number?: string | null
+          received_date?: string | null
+          sent_at?: string | null
           status?: Database["public"]["Enums"]["po_status"]
           subtotal?: number | null
           supplier_id?: string | null
@@ -3056,6 +3077,20 @@ export type Database = {
           warehouse_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_orders_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_orders_created_by_fkey"
             columns: ["created_by"]
@@ -4333,6 +4368,7 @@ export type Database = {
           ts_start: string
         }[]
       }
+      generate_po_number: { Args: never; Returns: string }
       generate_simple_hash: { Args: { password: string }; Returns: string }
       get_active_staff_user_id: { Args: never; Returns: string }
       get_current_customer_id: { Args: never; Returns: string }
@@ -4559,7 +4595,14 @@ export type Database = {
         | "mixto"
         | "aplicacion"
         | "runas"
-      po_status: "draft" | "sent" | "received" | "rejected"
+      po_status:
+        | "draft"
+        | "sent"
+        | "received"
+        | "rejected"
+        | "approved"
+        | "partial"
+        | "cancelled"
       runa_movement_type: "acumulacion" | "canje" | "ajuste" | "promo"
       stock_move_type:
         | "purchase"
@@ -4719,7 +4762,15 @@ export const Constants = {
       ],
       origen_movimiento: ["POS", "Web", "Manual", "Edición"],
       payment_method: ["efectivo", "mp", "pos", "mixto", "aplicacion", "runas"],
-      po_status: ["draft", "sent", "received", "rejected"],
+      po_status: [
+        "draft",
+        "sent",
+        "received",
+        "rejected",
+        "approved",
+        "partial",
+        "cancelled",
+      ],
       runa_movement_type: ["acumulacion", "canje", "ajuste", "promo"],
       stock_move_type: [
         "purchase",
