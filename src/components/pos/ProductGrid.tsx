@@ -199,10 +199,12 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           if (!productVariants[variant.product_id]) {
             productVariants[variant.product_id] = [];
           }
-          // Calculate real stock from linked raw material
-          let realStock = variant.stock ?? 0;
-          if (variant.raw_material_id && stockByMaterial[variant.raw_material_id] !== undefined) {
-            realStock = stockByMaterial[variant.raw_material_id];
+          // Calculate real stock:
+          // - If variant has raw_material_id, use material stock from stock_balances
+          // - If no raw_material_id, set stock as undefined (no inventory control = unlimited)
+          let realStock: number | undefined = undefined;
+          if (variant.raw_material_id) {
+            realStock = stockByMaterial[variant.raw_material_id] ?? 0;
           }
           productVariants[variant.product_id].push({
             ...variant,
@@ -304,10 +306,12 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           variantsByProduct[productId] = [];
         }
         
-        // Calculate real stock: if variant has raw_material_id, use material stock; otherwise use variant.stock
-        let realStock = variant.stock ?? 0;
-        if (variant.raw_material_id && stockByMaterial[variant.raw_material_id] !== undefined) {
-          realStock = stockByMaterial[variant.raw_material_id];
+        // Calculate real stock:
+        // - If variant has raw_material_id, use material stock from stock_balances
+        // - If no raw_material_id, set stock as undefined (no inventory control = unlimited)
+        let realStock: number | undefined = undefined;
+        if (variant.raw_material_id) {
+          realStock = stockByMaterial[variant.raw_material_id] ?? 0;
         }
         
         variantsByProduct[productId].push({
