@@ -9,7 +9,8 @@ import {
   TrendingUp,
   ArrowRightLeft,
   AlertTriangle,
-  Boxes
+  Boxes,
+  Tags
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -46,6 +47,15 @@ export default function InventoryHub() {
       route: "/pos/inventario/materias-primas",
       color: "text-green-600",
       bgColor: "bg-green-50 hover:bg-green-100",
+      permission: canManageInventory,
+    },
+    {
+      title: "Categorías",
+      description: "Organiza tus materias primas",
+      icon: Tags,
+      route: "/pos/inventario/categorias",
+      color: "text-pink-600",
+      bgColor: "bg-pink-50 hover:bg-pink-100",
       permission: canManageInventory,
     },
     {
