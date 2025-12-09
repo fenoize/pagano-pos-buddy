@@ -22,6 +22,7 @@ export function RawMaterialForm({ open, onOpenChange, material, onSave }: RawMat
     code: "",
     name: "",
     description: "",
+    category: "",
     base_uom_id: "",
     conversion_to_base: 1,
     min_stock: 0,
@@ -30,12 +31,25 @@ export function RawMaterialForm({ open, onOpenChange, material, onSave }: RawMat
     is_active: true,
   });
 
+  const categoryOptions = [
+    "Carnes",
+    "Lácteos",
+    "Vegetales",
+    "Salsas",
+    "Panes",
+    "Bebidas",
+    "Packaging",
+    "Insumos",
+    "Otros"
+  ];
+
   useEffect(() => {
     if (material) {
       setFormData({
         code: material.code || "",
         name: material.name,
         description: material.description || "",
+        category: material.category || "",
         base_uom_id: material.base_uom_id || "",
         conversion_to_base: material.conversion_to_base || 1,
         min_stock: material.min_stock || 0,
@@ -48,6 +62,7 @@ export function RawMaterialForm({ open, onOpenChange, material, onSave }: RawMat
         code: "",
         name: "",
         description: "",
+        category: "",
         base_uom_id: "",
         conversion_to_base: 1,
         min_stock: 0,
@@ -93,15 +108,35 @@ export function RawMaterialForm({ open, onOpenChange, material, onSave }: RawMat
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Detalles de la materia prima"
-              rows={2}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="description">Descripción</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Detalles de la materia prima"
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label htmlFor="category">Categoría</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData({ ...formData, category: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

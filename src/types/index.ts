@@ -115,6 +115,7 @@ export interface RawMaterial {
   code?: string;
   name: string;
   description?: string;
+  category?: string;
   base_uom_id?: string;
   conversion_to_base?: number;
   min_stock?: number;
