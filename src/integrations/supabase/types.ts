@@ -2961,7 +2961,7 @@ export type Database = {
             foreignKeyName: "purchase_items_uom_id_fkey"
             columns: ["uom_id"]
             isOneToOne: false
-            referencedRelation: "unit_of_measures"
+            referencedRelation: "units_of_measure"
             referencedColumns: ["id"]
           },
         ]
