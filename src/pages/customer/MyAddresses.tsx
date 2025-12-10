@@ -134,7 +134,9 @@ export default function MyAddresses() {
           description: 'Tu dirección ha sido actualizada correctamente',
         });
       } else {
-        // Crear
+        // Crear - buscar el nombre de la comuna
+        const selectedComuna = comunas.find(c => c.id === formData.comuna_id);
+        
         const { error } = await supabase.from('addresses').insert([{
           customer_id: customer.id,
           alias: formData.alias,
@@ -142,10 +144,10 @@ export default function MyAddresses() {
           numero: formData.numero,
           depto: formData.depto || null,
           comuna_id: formData.comuna_id,
+          comuna: selectedComuna?.name || '',
           observaciones: formData.observaciones || null,
           is_default: formData.is_default,
-          ciudad: 'Santiago',
-          comuna: ''
+          ciudad: 'Santiago'
         }]);
 
         if (error) throw error;
