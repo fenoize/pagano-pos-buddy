@@ -276,7 +276,7 @@ export default function CustomerCheckout() {
                     <div className="text-center py-6 space-y-3">
                       <MapPin className="h-12 w-12 mx-auto text-muted-foreground" />
                       <p className="text-muted-foreground">No tienes direcciones guardadas</p>
-                      <Button variant="outline" onClick={() => navigate('/addresses')}>
+                      <Button variant="outline" onClick={() => navigate('/my-addresses')}>
                         <Plus className="h-4 w-4 mr-2" />
                         Agregar dirección
                       </Button>
@@ -324,7 +324,7 @@ export default function CustomerCheckout() {
                         ))}
                       </RadioGroup>
                       
-                      <Button variant="ghost" size="sm" onClick={() => navigate('/addresses')}>
+                      <Button variant="ghost" size="sm" onClick={() => navigate('/my-addresses')}>
                         <Plus className="h-4 w-4 mr-2" />
                         Agregar nueva dirección
                       </Button>
@@ -364,7 +364,7 @@ export default function CustomerCheckout() {
                   <div className="text-center py-6 space-y-3">
                     <MapPin className="h-12 w-12 mx-auto text-muted-foreground" />
                     <p className="text-muted-foreground">No tienes direcciones guardadas</p>
-                    <Button variant="outline" onClick={() => navigate('/addresses')}>
+                    <Button variant="outline" onClick={() => navigate('/my-addresses')}>
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar dirección
                     </Button>

@@ -271,6 +271,7 @@ const App = () => (
               {/* Legacy redirects for old customer routes */}
               <Route path="/customer" element={<Navigate to="/" replace />} />
               <Route path="/customer/login" element={<Navigate to="/login" replace />} />
+              <Route path="/addresses" element={<Navigate to="/my-addresses" replace />} />
               
               {/* ==================== STAFF ROUTES (/pos/*) ==================== */}
               <Route path="/pos/login" element={<Login />} />
