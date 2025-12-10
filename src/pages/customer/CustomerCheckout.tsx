@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2, Coins } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2, Coins, Truck, MapPin, Plus } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { RunasPaymentSection } from '@/components/customer/RunasPaymentSection';
@@ -16,9 +17,23 @@ import { useCart } from '@/contexts/CartContext';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
 import { useCustomerOrderSettings } from '@/hooks/useCustomerOrderSettings';
+import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import { createRunasOrder } from '@/lib/integrations/runasPayment';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+interface CustomerAddress {
+  id: string;
+  alias: string;
+  calle: string;
+  numero: string;
+  depto?: string | null;
+  comuna: string;
+  comuna_id?: string | null;
+  observaciones?: string | null;
+  is_default: boolean;
+}
 
 export default function CustomerCheckout() {
   const navigate = useNavigate();
@@ -26,6 +41,8 @@ export default function CustomerCheckout() {
   const { customer } = useCustomerAuth();
   const { loading: mpLoading, createPaymentAndRedirect } = useMercadoPago();
   const { settings: paymentSettings, loading: settingsLoading } = useCustomerOrderSettings();
+  const { zones: deliveryZones, loading: zonesLoading } = useDeliveryZones();
+  
   const [notes, setNotes] = useState('');
   const [canOrder, setCanOrder] = useState(true);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mercadopago' | 'runas'>('mercadopago');
@@ -33,8 +50,72 @@ export default function CustomerCheckout() {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [processingRunas, setProcessingRunas] = useState(false);
 
+  // Fulfillment state
+  const [fulfillmentType, setFulfillmentType] = useState<'retiro' | 'delivery'>('retiro');
+  const [customerAddresses, setCustomerAddresses] = useState<CustomerAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [deliveryFee, setDeliveryFee] = useState(0);
+
   const mpEnabled = paymentSettings?.mp_payment_enabled ?? true;
   const runasEnabled = paymentSettings?.runas_payment_enabled ?? true;
+  const deliveryEnabled = paymentSettings?.app_delivery_enabled ?? false;
+  const pickupEnabled = paymentSettings?.app_pickup_enabled ?? true;
+
+  // Fetch customer addresses
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      if (!customer?.id) return;
+      
+      setLoadingAddresses(true);
+      try {
+        const { data, error } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('customer_id', customer.id)
+          .order('is_default', { ascending: false })
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setCustomerAddresses(data || []);
+        
+        // Auto-select default address
+        const defaultAddr = data?.find(a => a.is_default);
+        if (defaultAddr) {
+          setSelectedAddressId(defaultAddr.id);
+        }
+      } catch (error) {
+        console.error('Error fetching addresses:', error);
+      } finally {
+        setLoadingAddresses(false);
+      }
+    };
+
+    if (deliveryEnabled) {
+      fetchAddresses();
+    }
+  }, [customer?.id, deliveryEnabled]);
+
+  // Calculate delivery fee when address changes
+  useEffect(() => {
+    if (fulfillmentType !== 'delivery' || !selectedAddressId) {
+      setDeliveryFee(0);
+      return;
+    }
+
+    // For now, use a simple fee from the first active zone
+    // In production, you'd calculate based on the address location
+    const activeZones = deliveryZones.filter(z => z.active);
+    if (activeZones.length > 0) {
+      const zone = activeZones[0];
+      if (zone.calculation_mode === 'fixed') {
+        setDeliveryFee(zone.delivery_fee);
+      } else {
+        // For distance-based, use min_fee as fallback
+        setDeliveryFee(zone.min_fee || zone.delivery_fee);
+      }
+    }
+  }, [fulfillmentType, selectedAddressId, deliveryZones]);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -48,7 +129,17 @@ export default function CustomerCheckout() {
     } else if (!mpEnabled && runasEnabled) {
       setSelectedPaymentMethod('runas');
     }
-  }, [items.length, mpEnabled, runasEnabled, navigate]);
+
+    // Si solo hay un tipo de entrega, seleccionarlo
+    if (deliveryEnabled && !pickupEnabled) {
+      setFulfillmentType('delivery');
+    } else if (!deliveryEnabled && pickupEnabled) {
+      setFulfillmentType('retiro');
+    }
+  }, [items.length, mpEnabled, runasEnabled, deliveryEnabled, pickupEnabled, navigate]);
+
+  const selectedAddress = customerAddresses.find(a => a.id === selectedAddressId);
+  const total = subtotal + (fulfillmentType === 'delivery' ? deliveryFee : 0);
 
   const handlePayment = async () => {
     if (!canOrder) {
@@ -61,7 +152,17 @@ export default function CustomerCheckout() {
       return;
     }
 
+    // Validate delivery address
+    if (fulfillmentType === 'delivery' && !selectedAddressId) {
+      toast.error('Debes seleccionar una dirección de entrega');
+      return;
+    }
+
     try {
+      const deliveryAddress = selectedAddress 
+        ? `${selectedAddress.calle} ${selectedAddress.numero}${selectedAddress.depto ? `, ${selectedAddress.depto}` : ''}, ${selectedAddress.comuna}`
+        : undefined;
+
       if (selectedPaymentMethod === 'mercadopago') {
         // Flujo de MercadoPago (redirección)
         await createPaymentAndRedirect({
@@ -75,7 +176,10 @@ export default function CustomerCheckout() {
             selectedVariant: item.selectedVariant
           })),
           customer_id: customer.id,
-          notes: notes || 'Pedido desde app cliente'
+          notes: notes || 'Pedido desde app cliente',
+          fulfillment: fulfillmentType,
+          delivery_address: deliveryAddress,
+          delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0
         });
       } else if (selectedPaymentMethod === 'runas') {
         // Flujo de Runas (sin redirección)
@@ -86,7 +190,10 @@ export default function CustomerCheckout() {
           customer_id: customer.id,
           notes: notes || 'Pedido pagado con runas',
           runas_to_use: runasToUse,
-          discount_amount: discountAmount
+          discount_amount: discountAmount,
+          fulfillment: fulfillmentType,
+          delivery_address: deliveryAddress,
+          delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0
         });
 
         if (result.success) {
@@ -109,7 +216,7 @@ export default function CustomerCheckout() {
   };
 
   const canPayWithRunas = customer && (customer.cantidad_runas || 0) >= runasToUse;
-  const loading = mpLoading || processingRunas || settingsLoading;
+  const loading = mpLoading || processingRunas || settingsLoading || zonesLoading;
 
   return (
     <div className="customer-app min-h-screen pb-20 bg-background">
@@ -131,22 +238,200 @@ export default function CustomerCheckout() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="p-4 border-2 border-primary rounded-lg bg-primary/5">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Store className="h-6 w-6 text-primary" />
+            {deliveryEnabled && pickupEnabled ? (
+              <Tabs value={fulfillmentType} onValueChange={(v) => setFulfillmentType(v as 'retiro' | 'delivery')}>
+                <TabsList className="w-full">
+                  <TabsTrigger value="retiro" className="flex-1 gap-2">
+                    <Store className="h-4 w-4" />
+                    Retiro en local
+                  </TabsTrigger>
+                  <TabsTrigger value="delivery" className="flex-1 gap-2">
+                    <Truck className="h-4 w-4" />
+                    Delivery
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="retiro" className="mt-4">
+                  <div className="p-4 border-2 border-primary rounded-lg bg-primary/5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                        <Store className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold">Retiro en local</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Retira tu pedido en el local una vez esté listo
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="delivery" className="mt-4 space-y-4">
+                  {loadingAddresses ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : customerAddresses.length === 0 ? (
+                    <div className="text-center py-6 space-y-3">
+                      <MapPin className="h-12 w-12 mx-auto text-muted-foreground" />
+                      <p className="text-muted-foreground">No tienes direcciones guardadas</p>
+                      <Button variant="outline" onClick={() => navigate('/addresses')}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Agregar dirección
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Label>Selecciona una dirección de entrega</Label>
+                      <RadioGroup
+                        value={selectedAddressId || ''}
+                        onValueChange={setSelectedAddressId}
+                        className="space-y-3"
+                      >
+                        {customerAddresses.map((address) => (
+                          <div
+                            key={address.id}
+                            className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                              selectedAddressId === address.id 
+                                ? 'border-primary bg-primary/5' 
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                            onClick={() => setSelectedAddressId(address.id)}
+                          >
+                            <RadioGroupItem value={address.id} id={address.id} className="mt-1" />
+                            <div className="flex-1">
+                              <Label htmlFor={address.id} className="font-semibold cursor-pointer">
+                                {address.alias}
+                                {address.is_default && (
+                                  <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                                    Principal
+                                  </span>
+                                )}
+                              </Label>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {address.calle} {address.numero}
+                                {address.depto && `, ${address.depto}`}
+                              </p>
+                              <p className="text-sm text-muted-foreground">{address.comuna}</p>
+                              {address.observaciones && (
+                                <p className="text-xs text-muted-foreground italic mt-1">
+                                  {address.observaciones}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                      
+                      <Button variant="ghost" size="sm" onClick={() => navigate('/addresses')}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Agregar nueva dirección
+                      </Button>
+
+                      {deliveryFee > 0 && (
+                        <div className="p-3 bg-muted rounded-lg flex items-center justify-between">
+                          <span className="text-sm">Costo de delivery</span>
+                          <span className="font-semibold">{formatCurrency(deliveryFee)}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </TabsContent>
+              </Tabs>
+            ) : deliveryEnabled ? (
+              // Only delivery available
+              <div className="space-y-4">
+                <div className="p-4 border-2 border-primary rounded-lg bg-primary/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Truck className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">Delivery</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Recibe tu pedido en la dirección que elijas
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">Retiro en local</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Retira tu pedido en el local una vez esté listo
-                  </p>
+                
+                {loadingAddresses ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : customerAddresses.length === 0 ? (
+                  <div className="text-center py-6 space-y-3">
+                    <MapPin className="h-12 w-12 mx-auto text-muted-foreground" />
+                    <p className="text-muted-foreground">No tienes direcciones guardadas</p>
+                    <Button variant="outline" onClick={() => navigate('/addresses')}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar dirección
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Label>Selecciona una dirección de entrega</Label>
+                    <RadioGroup
+                      value={selectedAddressId || ''}
+                      onValueChange={setSelectedAddressId}
+                      className="space-y-3"
+                    >
+                      {customerAddresses.map((address) => (
+                        <div
+                          key={address.id}
+                          className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                            selectedAddressId === address.id 
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                          onClick={() => setSelectedAddressId(address.id)}
+                        >
+                          <RadioGroupItem value={address.id} id={`only-${address.id}`} className="mt-1" />
+                          <div className="flex-1">
+                            <Label htmlFor={`only-${address.id}`} className="font-semibold cursor-pointer">
+                              {address.alias}
+                              {address.is_default && (
+                                <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                                  Principal
+                                </span>
+                              )}
+                            </Label>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {address.calle} {address.numero}
+                              {address.depto && `, ${address.depto}`}
+                            </p>
+                            <p className="text-sm text-muted-foreground">{address.comuna}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                    
+                    {deliveryFee > 0 && (
+                      <div className="p-3 bg-muted rounded-lg flex items-center justify-between">
+                        <span className="text-sm">Costo de delivery</span>
+                        <span className="font-semibold">{formatCurrency(deliveryFee)}</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : (
+              // Only pickup available (default)
+              <div className="p-4 border-2 border-primary rounded-lg bg-primary/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Store className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Retiro en local</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Retira tu pedido en el local una vez esté listo
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              El delivery estará disponible próximamente
-            </p>
+            )}
           </CardContent>
         </Card>
 
@@ -222,7 +507,7 @@ export default function CustomerCheckout() {
                       {customer && (
                         <RunasPaymentSection
                           customerRunas={customer.cantidad_runas || 0}
-                          subtotal={subtotal}
+                          subtotal={total}
                           onRunasCalculated={handleRunasCalculated}
                         />
                       )}
@@ -243,7 +528,7 @@ export default function CustomerCheckout() {
                     {runasEnabled && customer && (
                       <RunasPaymentSection
                         customerRunas={customer.cantidad_runas || 0}
-                        subtotal={subtotal}
+                        subtotal={total}
                         onRunasCalculated={handleRunasCalculated}
                       />
                     )}
@@ -268,10 +553,25 @@ export default function CustomerCheckout() {
                 </div>
               ))}
             </div>
+            
+            {fulfillmentType === 'delivery' && deliveryFee > 0 && (
+              <>
+                <Separator />
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Delivery</span>
+                  <span>{formatCurrency(deliveryFee)}</span>
+                </div>
+              </>
+            )}
+            
             <Separator />
             <div className="flex justify-between text-xl font-bold">
               <span>Total</span>
-              <span>{formatCurrency(subtotal)}</span>
+              <span>{formatCurrency(total)}</span>
             </div>
           </CardContent>
         </Card>
@@ -281,7 +581,12 @@ export default function CustomerCheckout() {
           size="lg"
           className="w-full"
           onClick={handlePayment}
-          disabled={loading || !canOrder || (selectedPaymentMethod === 'runas' && !canPayWithRunas)}
+          disabled={
+            loading || 
+            !canOrder || 
+            (selectedPaymentMethod === 'runas' && !canPayWithRunas) ||
+            (fulfillmentType === 'delivery' && !selectedAddressId)
+          }
         >
           {loading ? (
             <>
