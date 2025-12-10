@@ -12,6 +12,9 @@ export interface CreateMPPreferenceParams {
   }>;
   customer_id?: string;
   notes?: string;
+  fulfillment?: 'retiro' | 'delivery';
+  delivery_address?: string;
+  delivery_fee?: number;
 }
 
 export interface CreateMPPreferenceResponse {

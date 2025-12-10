@@ -7,6 +7,9 @@ export interface CreateRunasOrderParams {
   notes: string;
   runas_to_use: number;
   discount_amount: number;
+  fulfillment?: 'retiro' | 'delivery';
+  delivery_address?: string;
+  delivery_fee?: number;
 }
 
 export interface CreateRunasOrderResponse {
@@ -94,7 +97,7 @@ export async function calculateRunasDiscount(runas: number): Promise<number> {
 export async function createRunasOrder(
   params: CreateRunasOrderParams
 ): Promise<CreateRunasOrderResponse> {
-  const { items, customer_id, notes, runas_to_use, discount_amount } = params;
+  const { items, customer_id, notes, runas_to_use, discount_amount, fulfillment, delivery_address, delivery_fee } = params;
 
   try {
     // 1. Validar saldo de runas
@@ -124,18 +127,22 @@ export async function createRunasOrder(
     }));
 
     // 4. Crear la orden con contexto de cliente
+    const actualDeliveryFee = delivery_fee || 0;
+    const actualFulfillment = fulfillment === 'delivery' ? 'delivery' : 'pickup';
+    
     const { data: orderData, error: orderError } = await supabase.rpc(
       'create_order_with_context',
       {
         p_user_id: '00000000-0000-0000-0000-000000000000', // Sin usuario POS
         p_order_data: {
           customer_id,
-          fulfillment: 'pickup',
+          fulfillment: actualFulfillment,
           items: orderItems,
           subtotal,
-          delivery_fee: 0,
+          delivery_fee: actualDeliveryFee,
+          delivery_address: delivery_address || null,
           discount: discount_amount,
-          total: subtotal - discount_amount,
+          total: subtotal + actualDeliveryFee - discount_amount,
           payment_efectivo: 0,
           payment_mp: 0,
           payment_pos: 0,
