@@ -19,7 +19,7 @@ serve(async (req) => {
     );
     
     const body = await req.json();
-    const { items, customer_id, notes } = body;
+    const { items, customer_id, notes, fulfillment, delivery_address, delivery_fee } = body;
     
     if (!items || !Array.isArray(items) || items.length === 0) {
       throw new Error('Items are required');
@@ -89,15 +89,20 @@ serve(async (req) => {
     }
     
     // 3. CREAR ORDEN EN DB con status='PendientePago' (pago no completado aún)
+    const actualDeliveryFee = delivery_fee || 0;
+    const actualFulfillment = fulfillment === 'delivery' ? 'delivery' : 'pickup';
+    const total = subtotal + actualDeliveryFee;
+    
     const orderData = {
       customer_id: customer_id || null,
       source: 'customer_app',
-      fulfillment: 'retiro',
+      fulfillment: actualFulfillment,
       items: items,
       subtotal: subtotal,
-      total: subtotal,
+      total: total,
       discount: 0,
-      delivery_fee: 0,
+      delivery_fee: actualDeliveryFee,
+      delivery_address: delivery_address || null,
       status: 'PendientePago',  // ⚠️ CRÍTICO: No enviar a cocina hasta que se confirme el pago
       payment_method: 'mp',
       payment_mp: 0,
@@ -132,7 +137,7 @@ serve(async (req) => {
       items: [{
         title: `Pedido Paganos #${order.order_number}`,
         quantity: 1,
-        unit_price: subtotal,
+        unit_price: total,
         currency_id: 'CLP'
       }],
       external_reference: order.id,
