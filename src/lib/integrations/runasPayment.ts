@@ -173,7 +173,7 @@ export async function createRunasOrder(
         runas: -runas_to_use,
         amount: discount_amount,
         origen: 'Web',
-        referencia: orderId,
+        order_id: orderId,
         motivo: `Pago de pedido #${orderNumber} con runas`
       }]);
 
