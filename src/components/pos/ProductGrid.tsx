@@ -133,6 +133,8 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         return {};
       }
 
+      // Para combos, NO filtrar por show_in_pos - los productos dentro de combos
+      // pueden existir solo como parte del combo sin estar visibles individualmente en POS
       const [productsRes, variantsRes, extrasRes, modifiersRes, stockBalancesRes] = await Promise.all([
         supabase
           .from('products')
@@ -141,8 +143,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
             product_categories!inner(category_id)
           `)
           .in('product_categories.category_id', categoryIds)
-          .eq('active', true)
-          .eq('show_in_pos', true),
+          .eq('active', true),
         
         supabase
           .from('product_variant_options')
