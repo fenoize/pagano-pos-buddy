@@ -2631,20 +2631,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "orders_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "app_public_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false

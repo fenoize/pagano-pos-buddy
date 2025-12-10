@@ -128,12 +128,13 @@ export async function createRunasOrder(
 
     // 4. Crear la orden con contexto de cliente
     const actualDeliveryFee = delivery_fee || 0;
-    const actualFulfillment = fulfillment === 'delivery' ? 'delivery' : 'pickup';
+    // IMPORTANTE: el enum en la DB es 'retiro' no 'pickup'
+    const actualFulfillment = fulfillment === 'delivery' ? 'delivery' : 'retiro';
     
     const { data: orderData, error: orderError } = await supabase.rpc(
       'create_order_with_context',
       {
-        p_user_id: '00000000-0000-0000-0000-000000000000', // Sin usuario POS
+        p_user_id: null, // Sin usuario POS - dejar null para pedidos de clientes
         p_order_data: {
           customer_id,
           fulfillment: actualFulfillment,
