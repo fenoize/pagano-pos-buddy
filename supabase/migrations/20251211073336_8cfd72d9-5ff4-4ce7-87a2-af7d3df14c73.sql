@@ -1,0 +1,1 @@
+DELETE FROM delivery_cash_pending WHERE id = 'bd6046a9-ffb8-4d06-8f7d-84917e79c8ab';
