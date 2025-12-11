@@ -324,20 +324,38 @@ export function useCashSession() {
       // Get pending cash from delivery drivers
       const { data: pendingCashData } = await supabase
         .from('delivery_cash_pending')
-        .select('amount, delivery_person_id')
+        .select('amount, delivery_person_id, collected_at')
         .eq('status', 'pendiente');
 
       const totalCashDeliveryPending = pendingCashData?.reduce((sum, p) => sum + p.amount, 0) || 0;
       const deliveryPersonsWithPending = new Set(pendingCashData?.map(p => p.delivery_person_id) || []).size;
 
-      // Get deposited cash during this session
+      // Get deposited cash during this session with details
       const { data: depositedCashData } = await supabase
         .from('delivery_cash_pending')
-        .select('amount')
+        .select('amount, collected_at, deposited_at')
         .eq('status', 'depositado')
         .eq('deposited_to_session_id', sessionToQuery);
 
       const totalCashDeliveryDeposited = depositedCashData?.reduce((sum, p) => sum + p.amount, 0) || 0;
+
+      // Calculate how much deposited cash came from other shifts (collected before session opened)
+      const sessionOpenedAt = new Date(session.opened_at);
+      sessionOpenedAt.setHours(0, 0, 0, 0); // Start of day when session opened
+      
+      let deliveryCashFromOtherShifts = 0;
+      let deliveryCashFromThisShift = 0;
+      
+      depositedCashData?.forEach(item => {
+        const collectedAt = new Date(item.collected_at);
+        collectedAt.setHours(0, 0, 0, 0);
+        
+        if (collectedAt < sessionOpenedAt) {
+          deliveryCashFromOtherShifts += item.amount;
+        } else {
+          deliveryCashFromThisShift += item.amount;
+        }
+      });
 
       // expectedCash now excludes delivery cash that hasn't been deposited
       const expectedCash = (session.opening_cash || 0) + totalCash + ingresos - egresos - totalCashDeliveryPending;
@@ -359,6 +377,7 @@ export function useCashSession() {
           totalPOS,
           totalAplicacion,
           totalRunasAmount,
+          totalRunasQuantity: Math.abs(totalRunasCanjeadas),
           ventasConRunas,
           ingresos,
           egresos,
@@ -368,7 +387,9 @@ export function useCashSession() {
           totalRunasAcumuladas,
           totalCashDeliveryPending,
           totalCashDeliveryDeposited,
-          deliveryPersonsWithPending
+          deliveryPersonsWithPending,
+          deliveryCashFromOtherShifts,
+          deliveryCashFromThisShift
         }
       };
 

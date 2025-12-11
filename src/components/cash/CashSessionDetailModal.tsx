@@ -12,7 +12,7 @@ import { useCashSession } from "@/hooks/useCashSession";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { FileDown, DollarSign, ShoppingCart, Truck, Coins, TrendingUp, TrendingDown, Edit, Save, X, User, Sparkles, Eye, Trash2, Plus } from "lucide-react";
+import { FileDown, DollarSign, ShoppingCart, Truck, Coins, TrendingUp, TrendingDown, Edit, Save, X, User, Sparkles, Eye, Trash2, Plus, Wallet, AlertTriangle, CalendarDays } from "lucide-react";
 import jsPDF from 'jspdf';
 import { ClosedSessionOrdersModal } from './ClosedSessionOrdersModal';
 import { 
@@ -768,7 +768,65 @@ export function CashSessionDetailModal({
             </Card>
           )}
 
-          {/* Movimientos de Caja */}
+          {/* Efectivo de Delivery */}
+          {(summary?.totalCashDeliveryDeposited > 0 || summary?.totalCashDeliveryPending > 0) && (
+            <Card className="border-amber-200 bg-amber-50/30 dark:border-amber-800 dark:bg-amber-950/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-amber-600" />
+                  Efectivo de Delivery
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Deposited this session */}
+                {summary?.totalCashDeliveryDeposited > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Depositado durante este turno:</span>
+                      <span className="font-semibold text-green-600">{formatCurrency(summary.totalCashDeliveryDeposited)}</span>
+                    </div>
+                    
+                    {/* Breakdown */}
+                    <div className="pl-4 space-y-1 text-sm">
+                      {summary?.deliveryCashFromThisShift > 0 && (
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>└ De este turno:</span>
+                          <span>{formatCurrency(summary.deliveryCashFromThisShift)}</span>
+                        </div>
+                      )}
+                      {summary?.deliveryCashFromOtherShifts > 0 && (
+                        <div className="flex justify-between text-amber-700">
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="w-3 h-3" />
+                            └ De turnos anteriores:
+                          </span>
+                          <Badge variant="outline" className="text-amber-700 border-amber-400">
+                            {formatCurrency(summary.deliveryCashFromOtherShifts)}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Still pending */}
+                {summary?.totalCashDeliveryPending > 0 && (
+                  <div className="flex justify-between items-center p-3 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
+                      <span className="text-sm font-medium">Aún pendiente con repartidores:</span>
+                    </div>
+                    <Badge variant="destructive">
+                      {formatCurrency(summary.totalCashDeliveryPending)}
+                      {summary?.deliveryPersonsWithPending > 0 && (
+                        <span className="ml-1">({summary.deliveryPersonsWithPending} repartidor{summary.deliveryPersonsWithPending !== 1 ? 'es' : ''})</span>
+                      )}
+                    </Badge>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
