@@ -205,21 +205,63 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
                         {/* Items */}
                         <div>
                           <div className="text-sm font-medium mb-2">Items:</div>
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             {order.items.map((item: any, idx: number) => (
-                              <div key={idx} className="flex justify-between text-sm bg-muted/50 p-2 rounded">
-                                <div>
-                                  <span className="font-medium">{item.quantity}x</span> {item.productName}
-                                  {item.variant_name && (
-                                    <span className="text-muted-foreground ml-1">({item.variant_name})</span>
-                                  )}
-                                  {item.size && (
-                                    <span className="text-muted-foreground ml-1">({item.size})</span>
-                                  )}
+                              <div key={idx} className="bg-muted/50 p-3 rounded space-y-1">
+                                <div className="flex justify-between">
+                                  <span className="font-medium">{item.quantity}x {item.productName}</span>
+                                  <span className="font-medium">{formatPrice(item.basePrice * item.quantity)}</span>
                                 </div>
-                                <div className="font-medium">
-                                  {formatPrice(item.basePrice * item.quantity)}
-                                </div>
+                                
+                                {/* Variante */}
+                                {item.variant_name && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Variante: {item.variant_name}
+                                  </div>
+                                )}
+                                
+                                {/* Combo items */}
+                                {item.is_combo_item && item.combo_selections?.map((sel: any, i: number) => (
+                                  <div key={i} className="ml-3 text-xs border-l-2 border-primary/30 pl-2 py-1">
+                                    <span className="font-medium">
+                                      {sel.quantity || 1}x {sel.selectedProduct?.name || 'Producto'}
+                                    </span>
+                                    {sel.selectedVariant?.variant?.name && (
+                                      <span className="text-muted-foreground"> - {sel.selectedVariant.variant.name}</span>
+                                    )}
+                                    {/* Extras del combo item */}
+                                    {sel.extras && sel.extras.length > 0 && (
+                                      <div className="text-muted-foreground">
+                                        + {sel.extras.map((e: any) => `${e.quantity || 1}x ${e.label || e.name}`).join(', ')}
+                                      </div>
+                                    )}
+                                    {/* Modificadores del combo item */}
+                                    {sel.modifiers && sel.modifiers.length > 0 && (
+                                      <div className="text-muted-foreground italic">
+                                        Mod: {sel.modifiers.map((m: any) => typeof m === 'string' ? m : m.name).join(', ')}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                                
+                                {/* Extras normales (no combo) */}
+                                {!item.is_combo_item && item.extras && item.extras.length > 0 && (
+                                  <div className="text-xs text-muted-foreground">
+                                    + {item.extras.map((e: any) => `${e.quantity || 1}x ${e.label || e.name}`).join(', ')}
+                                  </div>
+                                )}
+                                
+                                {/* Modificadores normales (no combo) */}
+                                {!item.is_combo_item && item.modifiers && item.modifiers.length > 0 && (
+                                  <div className="text-xs text-muted-foreground italic">
+                                    Mod: {item.modifiers.map((m: any) => typeof m === 'string' ? m : m.name).join(', ')}
+                                  </div>
+                                )}
+                                
+                                {/* Notas */}
+                                {item.notes && (
+                                  <div className="text-xs italic text-amber-600">📝 {item.notes}</div>
+                                )}
                               </div>
                             ))}
                           </div>

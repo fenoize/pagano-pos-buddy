@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product, ProductVariantOption, ComboProduct } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -73,6 +73,10 @@ export function ProductCustomizationModalEnhanced({
   const [comboTotal, setComboTotal] = useState(0);
   const [useCombo, setUseCombo] = useState(false);
 
+  // Track initialization to prevent variant reset
+  const isInitialized = useRef(false);
+  const lastProductId = useRef<string | null>(null);
+
   // Debug: Log when comboTotal updates
   useEffect(() => {
     console.log('[ProductCustomization] comboTotal updated:', comboTotal);
@@ -83,65 +87,84 @@ export function ProductCustomizationModalEnhanced({
   
   const { toast } = useToast();
 
+  // Reset initialization when modal closes or product changes
+  useEffect(() => {
+    if (!isOpen) {
+      isInitialized.current = false;
+      lastProductId.current = null;
+    } else if (product.id !== lastProductId.current) {
+      isInitialized.current = false;
+      lastProductId.current = product.id || null;
+    }
+  }, [isOpen, product.id]);
+
   // Consolidated initialization effect with preloaded data
   useEffect(() => {
     if (!isOpen || !product.id) return;
 
-    // Use preloaded variants
+    // Always update available variants
     setAvailableVariants(preloadedVariants);
     
-    // Set default variant
-    if (preloadedVariants.length > 0) {
-      const defaultVariant = preloadedVariants.find(v => v.is_default) || preloadedVariants[0];
-      setSelectedVariantOption(defaultVariant);
+    // Only set default variant on first initialization (not on every render)
+    if (!isInitialized.current) {
+      isInitialized.current = true;
       
-      // If editing and has variant_id, find and set it
-      if (editingItem?.product_variant_option_id) {
-        const editingVariant = preloadedVariants.find(v => v.id === editingItem.product_variant_option_id);
-        if (editingVariant) {
-          setSelectedVariantOption(editingVariant);
+      // Set default variant
+      if (preloadedVariants.length > 0) {
+        // If editing and has variant_id, use that
+        if (editingItem?.product_variant_option_id) {
+          const editingVariant = preloadedVariants.find(v => v.id === editingItem.product_variant_option_id);
+          if (editingVariant) {
+            setSelectedVariantOption(editingVariant);
+          } else {
+            const defaultVariant = preloadedVariants.find(v => v.is_default) || preloadedVariants[0];
+            setSelectedVariantOption(defaultVariant);
+          }
+        } else {
+          const defaultVariant = preloadedVariants.find(v => v.is_default) || preloadedVariants[0];
+          setSelectedVariantOption(defaultVariant);
+        }
+      }
+
+      // Use preloaded extras and modifiers
+      setExtras(preloadedExtras);
+      setModifiers(preloadedModifiers);
+
+      // Use preloaded combo data if available
+      if (preloadedComboData) {
+        setHasCombo(true);
+        setComboConfig(preloadedComboData.config);
+      } else {
+        // Fallback: load combo config if not preloaded
+        loadComboConfig();
+      }
+      
+      // Initialize form if editing
+      if (editingItem) {
+        setQuantity(editingItem.quantity);
+        setSpecialNotes(editingItem.notes || '');
+        
+        // Set extras
+        const extrasMap: Record<string, number> = {};
+        editingItem.extras?.forEach((extra: any) => {
+          extrasMap[extra.key] = extra.quantity || 1;
+        });
+        setSelectedExtras(extrasMap);
+        
+        // Set modifiers
+        const modifierIds = editingItem.modifiers?.map((mod: any) => mod.id) || [];
+        setSelectedModifiers(modifierIds);
+        
+        // Set combo state
+        if (editingItem.is_combo_item) {
+          setUseCombo(true);
+          setComboSelections(editingItem.combo_selections || []);
+          // Set the combo total from editing item
+          setComboTotal(editingItem.basePrice || 0);
         }
       }
     }
-
-    // Use preloaded extras and modifiers
-    setExtras(preloadedExtras);
-    setModifiers(preloadedModifiers);
-
-    // Use preloaded combo data if available
-    if (preloadedComboData) {
-      setHasCombo(true);
-      setComboConfig(preloadedComboData.config);
-    } else {
-      // Fallback: load combo config if not preloaded
-      loadComboConfig();
-    }
-    
-    // Initialize form if editing
-    if (editingItem) {
-      setQuantity(editingItem.quantity);
-      setSpecialNotes(editingItem.notes || '');
-      
-      // Set extras
-      const extrasMap: Record<string, number> = {};
-      editingItem.extras?.forEach((extra: any) => {
-        extrasMap[extra.key] = extra.quantity || 1;
-      });
-      setSelectedExtras(extrasMap);
-      
-      // Set modifiers
-      const modifierIds = editingItem.modifiers?.map((mod: any) => mod.id) || [];
-      setSelectedModifiers(modifierIds);
-      
-      // Set combo state
-      if (editingItem.is_combo_item) {
-        setUseCombo(true);
-        setComboSelections(editingItem.combo_selections || []);
-        // Set the combo total from editing item
-        setComboTotal(editingItem.basePrice || 0);
-      }
-  }
-}, [isOpen, product.id, editingItem, preloadedVariants, preloadedExtras, preloadedModifiers, preloadedComboData]);
+  }, [isOpen, product.id, editingItem, preloadedVariants, preloadedExtras, preloadedModifiers, preloadedComboData]);
 
   // Auto-enable combo if available
   useEffect(() => {

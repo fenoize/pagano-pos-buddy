@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product, ComboProduct, ComboItem, Category, ProductVariantOption } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,8 +47,19 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Track initialization to prevent re-fetching
+  const isInitialized = useRef(false);
+  const lastProductId = useRef<string | null>(null);
+
   useEffect(() => {
-    if (product.id) {
+    // Reset if product changes
+    if (product.id !== lastProductId.current) {
+      isInitialized.current = false;
+      lastProductId.current = product.id || null;
+    }
+    
+    if (product.id && !isInitialized.current) {
+      isInitialized.current = true;
       fetchComboData();
     }
   }, [product.id]);
