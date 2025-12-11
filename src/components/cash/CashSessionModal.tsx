@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,11 +12,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { formatCurrency } from '@/lib/utils';
 import { useCashSession } from '@/hooks/useCashSession';
+import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { useToast } from '@/hooks/use-toast';
-import { Smartphone } from 'lucide-react';
+import { Smartphone, Wallet } from 'lucide-react';
 
 interface CashSessionModalProps {
   isOpen: boolean;
@@ -25,14 +33,44 @@ interface CashSessionModalProps {
   sessionSummary?: any;
 }
 
+const EXPENSE_CATEGORIES = [
+  { value: 'caja_insumos', label: 'Insumos / Compras menores' },
+  { value: 'caja_delivery', label: 'Gastos de delivery' },
+  { value: 'caja_propinas', label: 'Propinas' },
+  { value: 'caja_servicios', label: 'Servicios / Mantención' },
+  { value: 'caja_otros', label: 'Otros gastos de caja' },
+];
+
 export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: CashSessionModalProps) {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [movementType, setMovementType] = useState<'ingreso' | 'egreso'>('ingreso');
   const [acceptAppOrders, setAcceptAppOrders] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [syncToFinance, setSyncToFinance] = useState(true);
+  
   const { openSession, closeSession, addCashMovement } = useCashSession();
+  const { accounts } = useFinanceAccounts();
   const { toast } = useToast();
+
+  // Filtrar cuentas activas tipo efectivo/caja
+  const cashAccounts = accounts.filter(
+    acc => acc.is_active && acc.type === 'Efectivo'
+  );
+
+  // Reset form cuando se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      setAmount('');
+      setNote('');
+      setMovementType('ingreso');
+      setSelectedCategory('');
+      setSelectedAccountId('');
+      setSyncToFinance(true);
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +101,6 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
           try {
             await closeSession(amountValue);
             
-            // Solo cerrar modal y mostrar éxito si llegamos aquí
             toast({
               title: "✅ Turno cerrado",
               description: "El turno ha sido cerrado correctamente."
@@ -80,15 +117,36 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
               variant: "destructive"
             });
             setLoading(false);
-            return; // Detener ejecución y NO cerrar el modal
+            return;
           }
           break;
         
         case 'movement':
-          await addCashMovement(movementType, amountValue, note);
+          // Validar que egresos tengan categoría si se sincroniza a finanzas
+          if (movementType === 'egreso' && syncToFinance && !selectedCategory) {
+            toast({
+              title: "Error",
+              description: "Selecciona una categoría para el egreso.",
+              variant: "destructive"
+            });
+            setLoading(false);
+            return;
+          }
+
+          await addCashMovement(
+            movementType,
+            amountValue,
+            note,
+            movementType === 'egreso' ? selectedCategory : undefined,
+            movementType === 'egreso' && syncToFinance ? selectedAccountId || undefined : undefined,
+            movementType === 'egreso' ? syncToFinance : false
+          );
+          
           toast({
             title: "Movimiento registrado",
-            description: `${movementType === 'ingreso' ? 'Ingreso' : 'Egreso'} de ${formatCurrency(amountValue)} registrado.`
+            description: `${movementType === 'ingreso' ? 'Ingreso' : 'Egreso'} de ${formatCurrency(amountValue)} registrado.${
+              movementType === 'egreso' && syncToFinance ? ' Sincronizado a Finanzas.' : ''
+            }`
           });
           break;
       }
@@ -164,9 +222,15 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
                 <span>Egresos:</span>
                 <span className="font-medium text-red-600">-{formatCurrency(sessionSummary.summary.egresos)}</span>
               </div>
+              {sessionSummary.summary.totalCashDeliveryPending > 0 && (
+                <div className="flex justify-between text-amber-600">
+                  <span>⚠️ Efectivo con repartidores:</span>
+                  <span className="font-medium">{formatCurrency(sessionSummary.summary.totalCashDeliveryPending)}</span>
+                </div>
+              )}
               <hr />
               <div className="flex justify-between font-semibold">
-                <span>Efectivo esperado:</span>
+                <span>Efectivo esperado en caja:</span>
                 <span>{formatCurrency(sessionSummary.summary.expectedCash)}</span>
               </div>
             </CardContent>
@@ -231,6 +295,62 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
                 </p>
               </div>
             </div>
+          )}
+
+          {/* Campos adicionales para egresos */}
+          {type === 'movement' && movementType === 'egreso' && (
+            <>
+              <div className="space-y-2">
+                <Label>Categoría del egreso</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona una categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EXPENSE_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center space-x-2 p-3 border rounded-md bg-muted/30">
+                <Checkbox
+                  id="sync_to_finance"
+                  checked={syncToFinance}
+                  onCheckedChange={(checked) => setSyncToFinance(checked as boolean)}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="sync_to_finance" className="flex items-center gap-2 cursor-pointer">
+                    <Wallet className="h-4 w-4" />
+                    Sincronizar a Finanzas / Egresos
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Registra automáticamente este egreso en el módulo de Finanzas
+                  </p>
+                </div>
+              </div>
+
+              {syncToFinance && cashAccounts.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Cuenta contable (opcional)</Label>
+                  <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona una cuenta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cashAccounts.map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.name} ({acc.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </>
           )}
 
           {(type === 'movement' || type === 'close') && (

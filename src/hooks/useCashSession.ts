@@ -131,25 +131,55 @@ export function useCashSession() {
   const addCashMovement = async (
     type: 'ingreso' | 'egreso',
     amount: number,
-    note?: string
+    note?: string,
+    category?: string,
+    accountId?: string,
+    syncToFinance: boolean = true
   ): Promise<CashMovement> => {
     if (!currentSession) throw new Error('No active session');
     if (!user?.id) throw new Error('User not authenticated');
 
     return withStaffContext(user.id, async () => {
       try {
+        // Insertar movimiento de caja
         const { data, error } = await supabase
           .from('cash_movements')
           .insert({
             session_id: currentSession.id,
             type,
             amount,
-            note
+            note,
+            category: category || null,
+            account_id: accountId || null,
+            synced_to_finance: type === 'egreso' && syncToFinance
           })
           .select()
           .single();
 
         if (error) throw error;
+
+        // Si es un egreso y tiene cuenta asignada, sincronizar con finance_expenses
+        if (type === 'egreso' && syncToFinance && accountId) {
+          const { error: financeError } = await supabase
+            .from('finance_expenses')
+            .insert({
+              expense_date: new Date().toISOString().split('T')[0],
+              account_id: accountId,
+              amount: amount,
+              expense_type: 'Variable',
+              category: category || 'Caja - Movimiento de Turno',
+              notes: note || null,
+              payment_method: 'Efectivo',
+              cash_movement_id: data.id,
+              cash_session_id: currentSession.id
+            });
+
+          if (financeError) {
+            console.error('Error syncing to finance_expenses:', financeError);
+            // No lanzar error, el movimiento de caja ya se registró
+          }
+        }
+
         return data;
       } catch (error) {
         console.error('Error adding cash movement:', error);
@@ -291,7 +321,26 @@ export function useCashSession() {
       const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
       const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
 
-      const expectedCash = (session.opening_cash || 0) + totalCash + ingresos - egresos;
+      // Get pending cash from delivery drivers
+      const { data: pendingCashData } = await supabase
+        .from('delivery_cash_pending')
+        .select('amount, delivery_person_id')
+        .eq('status', 'pendiente');
+
+      const totalCashDeliveryPending = pendingCashData?.reduce((sum, p) => sum + p.amount, 0) || 0;
+      const deliveryPersonsWithPending = new Set(pendingCashData?.map(p => p.delivery_person_id) || []).size;
+
+      // Get deposited cash during this session
+      const { data: depositedCashData } = await supabase
+        .from('delivery_cash_pending')
+        .select('amount')
+        .eq('status', 'depositado')
+        .eq('deposited_to_session_id', sessionToQuery);
+
+      const totalCashDeliveryDeposited = depositedCashData?.reduce((sum, p) => sum + p.amount, 0) || 0;
+
+      // expectedCash now excludes delivery cash that hasn't been deposited
+      const expectedCash = (session.opening_cash || 0) + totalCash + ingresos - egresos - totalCashDeliveryPending;
 
       // Calculate runas totals from transactions (for reference)
       const totalRunasCanjeadas = runasTransactions?.filter(t => t.type === 'canje').reduce((sum, t) => sum + t.runas, 0) || 0;
@@ -316,7 +365,10 @@ export function useCashSession() {
           expectedCash,
           difference: session.closing_cash ? session.closing_cash - expectedCash : 0,
           totalRunasCanjeadas,
-          totalRunasAcumuladas
+          totalRunasAcumuladas,
+          totalCashDeliveryPending,
+          totalCashDeliveryDeposited,
+          deliveryPersonsWithPending
         }
       };
 
