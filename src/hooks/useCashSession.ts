@@ -139,53 +139,50 @@ export function useCashSession() {
     if (!currentSession) throw new Error('No active session');
     if (!user?.id) throw new Error('User not authenticated');
 
-    return withStaffContext(user.id, async () => {
-      try {
-        // Insertar movimiento de caja
-        const { data, error } = await supabase
-          .from('cash_movements')
+    try {
+      // Usar RPC que establece contexto y hace insert en la misma transacción
+      const { data, error } = await supabase.rpc('insert_cash_movement_with_context', {
+        p_user_id: user.id,
+        p_session_id: currentSession.id,
+        p_type: type,
+        p_amount: amount,
+        p_note: note || null,
+        p_category: category || null,
+        p_account_id: accountId || null,
+        p_synced_to_finance: type === 'egreso' && syncToFinance
+      });
+
+      if (error) throw error;
+
+      const movementData = data as unknown as CashMovement;
+
+      // Si es un egreso y tiene cuenta asignada, sincronizar con finance_expenses
+      if (type === 'egreso' && syncToFinance && accountId) {
+        const { error: financeError } = await supabase
+          .from('finance_expenses')
           .insert({
-            session_id: currentSession.id,
-            type,
-            amount,
-            note,
-            category: category || null,
-            account_id: accountId || null,
-            synced_to_finance: type === 'egreso' && syncToFinance
-          })
-          .select()
-          .single();
+            expense_date: new Date().toISOString().split('T')[0],
+            account_id: accountId,
+            amount: amount,
+            expense_type: 'Variable',
+            category: category || 'Caja - Movimiento de Turno',
+            notes: note || null,
+            payment_method: 'Efectivo',
+            cash_movement_id: movementData.id,
+            cash_session_id: currentSession.id
+          });
 
-        if (error) throw error;
-
-        // Si es un egreso y tiene cuenta asignada, sincronizar con finance_expenses
-        if (type === 'egreso' && syncToFinance && accountId) {
-          const { error: financeError } = await supabase
-            .from('finance_expenses')
-            .insert({
-              expense_date: new Date().toISOString().split('T')[0],
-              account_id: accountId,
-              amount: amount,
-              expense_type: 'Variable',
-              category: category || 'Caja - Movimiento de Turno',
-              notes: note || null,
-              payment_method: 'Efectivo',
-              cash_movement_id: data.id,
-              cash_session_id: currentSession.id
-            });
-
-          if (financeError) {
-            console.error('Error syncing to finance_expenses:', financeError);
-            // No lanzar error, el movimiento de caja ya se registró
-          }
+        if (financeError) {
+          console.error('Error syncing to finance_expenses:', financeError);
+          // No lanzar error, el movimiento de caja ya se registró
         }
-
-        return data;
-      } catch (error) {
-        console.error('Error adding cash movement:', error);
-        throw error;
       }
-    });
+
+      return movementData;
+    } catch (error) {
+      console.error('Error adding cash movement:', error);
+      throw error;
+    }
   };
 
   const getSessionSummary = async (sessionId?: string) => {
