@@ -62,6 +62,11 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
   const [isCalculating, setIsCalculating] = useState(false);
   const [zoneError, setZoneError] = useState<string | null>(null);
   
+  // Exception mode for addresses outside coverage zone
+  const [isExceptionMode, setIsExceptionMode] = useState(false);
+  const [exceptionAddress, setExceptionAddress] = useState('');
+  const [exceptionFee, setExceptionFee] = useState('');
+  
   // Store location
   const [storeLocation, setStoreLocation] = useState<{ lat: number; lng: number } | null>(null);
   
@@ -344,6 +349,34 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
 
   const handleContinue = () => {
     if (fulfillment === 'delivery') {
+      // Exception mode - use manual address and fee
+      if (isExceptionMode) {
+        if (!exceptionAddress.trim()) {
+          toast({
+            title: "Error",
+            description: "Ingresa la dirección de excepción",
+            variant: "destructive"
+          });
+          return;
+        }
+        if (!exceptionFee || parseInt(exceptionFee) <= 0) {
+          toast({
+            title: "Error",
+            description: "Ingresa el costo de delivery para la excepción",
+            variant: "destructive"
+          });
+          return;
+        }
+        // Update fee and address for exception
+        const fee = parseInt(exceptionFee);
+        setFullAddress(exceptionAddress);
+        setDeliveryFee(fee);
+        onFulfillmentChange('delivery', fee, undefined);
+        onNext();
+        return;
+      }
+      
+      // Normal mode
       if (!fullAddress.trim()) {
         toast({
           title: "Error",
@@ -353,7 +386,7 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
         return;
       }
       
-      if (zoneError) {
+      if (zoneError && !isExceptionMode) {
         toast({
           title: "Error",
           description: zoneError,
@@ -453,11 +486,64 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
                 </div>
               )}
               
-              {/* Zone Error */}
-              {zoneError && (
-                <div className="flex items-center gap-2 text-destructive p-3 border border-destructive/30 rounded-lg bg-destructive/5">
-                  <AlertCircle className="w-5 h-5" />
-                  <span>{zoneError}</span>
+              {/* Zone Error with Exception Option */}
+              {zoneError && !isExceptionMode && (
+                <div className="p-4 border border-destructive/30 rounded-lg bg-destructive/5 space-y-3">
+                  <div className="flex items-center gap-2 text-destructive">
+                    <AlertCircle className="w-5 h-5" />
+                    <span>{zoneError}</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setIsExceptionMode(true);
+                      setExceptionAddress(fullAddress);
+                    }}
+                  >
+                    Agregar como excepción
+                  </Button>
+                </div>
+              )}
+              
+              {/* Exception Mode Form */}
+              {isExceptionMode && (
+                <div className="p-4 border border-amber-400 rounded-lg bg-amber-50 dark:bg-amber-950/20 space-y-4">
+                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium">
+                    <AlertCircle className="w-5 h-5" />
+                    Pedido con excepción de zona
+                  </div>
+                  
+                  <div>
+                    <Label>Dirección completa *</Label>
+                    <Input 
+                      value={exceptionAddress}
+                      onChange={(e) => setExceptionAddress(e.target.value)}
+                      placeholder="Ingresa la dirección manualmente"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Costo de delivery (manual) *</Label>
+                    <Input
+                      type="number"
+                      value={exceptionFee}
+                      onChange={(e) => setExceptionFee(e.target.value)}
+                      placeholder="Ej: 5000"
+                    />
+                  </div>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setIsExceptionMode(false);
+                      setExceptionAddress('');
+                      setExceptionFee('');
+                    }}
+                  >
+                    Cancelar excepción
+                  </Button>
                 </div>
               )}
               
@@ -600,7 +686,7 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
         </Button>
       )}
       
-      {fulfillment === 'delivery' && selectedZone && fullAddress && (
+      {fulfillment === 'delivery' && ((selectedZone && fullAddress) || isExceptionMode) && (
         <Button onClick={handleContinue} className="w-full" size="lg">
           Continuar a Cliente
         </Button>
