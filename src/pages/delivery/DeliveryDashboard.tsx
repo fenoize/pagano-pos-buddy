@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useDeliveryOrders } from '@/hooks/useDeliveryOrders';
 import { useDeliverySettings } from '@/hooks/useDeliverySettings';
 import { DeliveryOrderCard } from '@/components/delivery/DeliveryOrderCard';
+import { DeliveryPendingCashBanner } from '@/components/delivery/DeliveryPendingCashBanner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TruckIcon, RefreshCw, Package } from 'lucide-react';
@@ -59,6 +60,9 @@ export default function DeliveryDashboard() {
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </Button>
       </div>
+
+      {/* Banner de efectivo pendiente */}
+      <DeliveryPendingCashBanner />
 
       {/* Tabs para estado de pedidos */}
       <Tabs defaultValue="ready" className="w-full">
