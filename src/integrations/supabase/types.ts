@@ -4647,6 +4647,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_cash_movement_with_context: {
+        Args: {
+          p_account_id?: string
+          p_amount: number
+          p_category?: string
+          p_note?: string
+          p_session_id: string
+          p_synced_to_finance?: boolean
+          p_type: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       insert_stock_adjustment: {
         Args: {
           p_notes: string
