@@ -598,17 +598,26 @@ export default function NewSale() {
           console.log(`No se acumulan runas en orden ${fullOrderData.id}: ${reason}`);
         }
 
-        // Insert transactions and update balance
+        // Insert transactions using RPC to avoid RLS issues
         if (transactions.length > 0) {
-          await supabase.from('runas_transactions').insert(transactions);
-          
-          const runasChange = transactions.reduce((sum, t) => sum + t.runas, 0);
-          const newBalance = (orderSnapshot.customer.cantidad_runas || 0) + runasChange;
-          
-          await supabase
-            .from('customers')
-            .update({ cantidad_runas: Math.max(0, newBalance) })
-            .eq('id', customerId);
+          for (const transaction of transactions) {
+            const { data: rpcResult, error: rpcError } = await supabase.rpc('insert_runas_transaction_with_context', {
+              p_user_id: validUserId,
+              p_customer_id: transaction.customer_id,
+              p_order_id: transaction.order_id,
+              p_type: transaction.type,
+              p_runas: transaction.runas,
+              p_amount: transaction.amount,
+              p_origen: transaction.origen || 'POS',
+              p_motivo: null
+            });
+            
+            if (rpcError) {
+              console.error('Error insertando transacción de runas:', rpcError);
+            } else {
+              console.log(`✅ Transacción de runas registrada: ${transaction.type} ${transaction.runas} runas`, rpcResult);
+            }
+          }
         }
       }
 

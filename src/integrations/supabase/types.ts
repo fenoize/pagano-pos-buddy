@@ -4660,6 +4660,19 @@ export type Database = {
         }
         Returns: Json
       }
+      insert_runas_transaction_with_context: {
+        Args: {
+          p_amount: number
+          p_customer_id: string
+          p_motivo?: string
+          p_order_id: string
+          p_origen?: string
+          p_runas: number
+          p_type: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       insert_stock_adjustment: {
         Args: {
           p_notes: string
