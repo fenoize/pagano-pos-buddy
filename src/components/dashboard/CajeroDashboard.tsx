@@ -16,6 +16,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useCashSession } from '@/hooks/useCashSession';
 import { CashSessionStatus } from '@/components/cash/CashSessionStatus';
 import { CashSessionModal } from '@/components/cash/CashSessionModal';
+import { DeliveryCashPendingWidget } from '@/components/cash/DeliveryCashPendingWidget';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -280,6 +281,9 @@ export function CajeroDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delivery Cash Pending Widget */}
+      {hasActiveSession() && <DeliveryCashPendingWidget />}
 
       {/* Cash Movement Modal */}
       <CashSessionModal

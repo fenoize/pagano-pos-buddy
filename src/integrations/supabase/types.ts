@@ -86,30 +86,47 @@ export type Database = {
       }
       cash_movements: {
         Row: {
+          account_id: string | null
           amount: number
+          category: string | null
           created_at: string | null
           id: string
           note: string | null
           session_id: string | null
+          synced_to_finance: boolean | null
           type: Database["public"]["Enums"]["cash_movement_type"]
         }
         Insert: {
+          account_id?: string | null
           amount: number
+          category?: string | null
           created_at?: string | null
           id?: string
           note?: string | null
           session_id?: string | null
+          synced_to_finance?: boolean | null
           type: Database["public"]["Enums"]["cash_movement_type"]
         }
         Update: {
+          account_id?: string | null
           amount?: number
+          category?: string | null
           created_at?: string | null
           id?: string
           note?: string | null
           session_id?: string | null
+          synced_to_finance?: boolean | null
           type?: Database["public"]["Enums"]["cash_movement_type"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cash_movements_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cash_session_audits: {
         Row: {
@@ -1396,6 +1413,48 @@ export type Database = {
           },
         ]
       }
+      delivery_cash_pending: {
+        Row: {
+          amount: number
+          collected_at: string
+          created_at: string | null
+          delivery_person_id: string
+          deposited_at: string | null
+          deposited_to_session_id: string | null
+          id: string
+          notes: string | null
+          order_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          collected_at?: string
+          created_at?: string | null
+          delivery_person_id: string
+          deposited_at?: string | null
+          deposited_to_session_id?: string | null
+          id?: string
+          notes?: string | null
+          order_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          collected_at?: string
+          created_at?: string | null
+          delivery_person_id?: string
+          deposited_at?: string | null
+          deposited_to_session_id?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       delivery_settings: {
         Row: {
           assignment_mode: string
@@ -1569,6 +1628,8 @@ export type Database = {
           account_id: string
           amount: number
           attachment_url: string | null
+          cash_movement_id: string | null
+          cash_session_id: string | null
           category: string
           created_at: string
           currency: string
@@ -1589,6 +1650,8 @@ export type Database = {
           account_id: string
           amount: number
           attachment_url?: string | null
+          cash_movement_id?: string | null
+          cash_session_id?: string | null
           category: string
           created_at?: string
           currency?: string
@@ -1609,6 +1672,8 @@ export type Database = {
           account_id?: string
           amount?: number
           attachment_url?: string | null
+          cash_movement_id?: string | null
+          cash_session_id?: string | null
           category?: string
           created_at?: string
           currency?: string
@@ -1631,6 +1696,20 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_expenses_cash_movement_id_fkey"
+            columns: ["cash_movement_id"]
+            isOneToOne: false
+            referencedRelation: "cash_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_expenses_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
             referencedColumns: ["id"]
           },
           {

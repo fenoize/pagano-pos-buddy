@@ -168,6 +168,8 @@ export const useDeliveryOrders = () => {
 
       // Setear delivery_delivered_at y asegurar que el repartidor está asignado
       const order = orders.find(o => o.id === orderId);
+      const deliveryPersonId = order?.delivery_person_id || user.id;
+      
       const deliveryUpdates: any = {
         delivery_delivered_at: new Date().toISOString()
       };
@@ -184,6 +186,27 @@ export const useDeliveryOrders = () => {
         .eq('id', orderId);
 
       if (deliveryError) throw deliveryError;
+
+      // Si el pedido tiene pago en efectivo, crear registro de efectivo pendiente
+      const cashAmount = order?.payment_efectivo || 0;
+      if (cashAmount > 0) {
+        const { error: pendingCashError } = await supabase
+          .from('delivery_cash_pending')
+          .insert({
+            order_id: orderId,
+            delivery_person_id: deliveryPersonId,
+            amount: cashAmount,
+            status: 'pendiente',
+            collected_at: new Date().toISOString()
+          });
+
+        if (pendingCashError) {
+          console.error('Error creating pending cash record:', pendingCashError);
+          // No bloquear la entrega por este error
+        } else {
+          console.log(`[Delivery] Efectivo pendiente registrado: $${cashAmount} para repartidor ${deliveryPersonId}`);
+        }
+      }
 
       // Notificar cambio de estado "Entregado"
       triggerOrderStatusNotification(
