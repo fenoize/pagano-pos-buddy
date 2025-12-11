@@ -169,31 +169,40 @@ export function useCustomerRunes() {
 
       if (runasEarned <= 0) return null;
 
-      const { data, error } = await supabase
-        .from('runas_transactions')
-        .insert({
-          customer_id: customerId,
-          type: 'acumulacion' as RunaMovementType,
-          runas: runasEarned,
-          amount: totalAmount,
-          origen: 'POS' as OrigenMovimiento,
-          referencia: orderId,
-          responsable_id: user?.id
-        })
-        .select()
-        .single();
+      // Usar RPC para evitar problemas de RLS
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('insert_runas_transaction_with_context', {
+        p_user_id: user?.id || null,
+        p_customer_id: customerId,
+        p_order_id: orderId || null,
+        p_type: 'acumulacion',
+        p_runas: runasEarned,
+        p_amount: totalAmount,
+        p_origen: 'POS',
+        p_motivo: null
+      });
 
-      if (error) throw error;
+      if (rpcError) {
+        console.error('RPC error creating accumulation:', rpcError);
+        throw rpcError;
+      }
 
-      // Actualizar cantidad_runas en customers
-      const newSaldo = await calculateRunasSaldo(customerId);
-      await updateCustomerRunasBalance(customerId, newSaldo);
+      const result = rpcResult as { success: boolean; transaction_id?: string; new_balance?: number; error?: string } | null;
+      
+      if (!result?.success) {
+        throw new Error(result?.error || 'Error desconocido');
+      }
 
       // Disparar notificación push de runas ganadas (fire and forget)
       triggerRunasEarnedNotification(customerId, runasEarned)
         .catch(err => console.error('[Runas] Push notification error:', err));
 
-      return data;
+      return {
+        id: result.transaction_id,
+        customer_id: customerId,
+        type: 'acumulacion' as RunaMovementType,
+        runas: runasEarned,
+        amount: totalAmount
+      } as RunasTransaction;
     } catch (error) {
       console.error('Error creating accumulation transaction:', error);
       return null;
@@ -220,27 +229,36 @@ export function useCustomerRunes() {
         return null;
       }
 
-      const { data, error } = await supabase
-        .from('runas_transactions')
-        .insert({
-          customer_id: customerId,
-          type: 'canje' as RunaMovementType,
-          runas: -runasUsed, // Negativo para canje
-          amount: discountAmount,
-          origen: 'POS' as OrigenMovimiento,
-          referencia: orderId,
-          responsable_id: user?.id
-        })
-        .select()
-        .single();
+      // Usar RPC para evitar problemas de RLS
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('insert_runas_transaction_with_context', {
+        p_user_id: user?.id || null,
+        p_customer_id: customerId,
+        p_order_id: orderId || null,
+        p_type: 'canje',
+        p_runas: -runasUsed, // Negativo para canje
+        p_amount: discountAmount,
+        p_origen: 'POS',
+        p_motivo: null
+      });
 
-      if (error) throw error;
+      if (rpcError) {
+        console.error('RPC error creating redemption:', rpcError);
+        throw rpcError;
+      }
 
-      // Actualizar cantidad_runas en customers
-      const newSaldo = await calculateRunasSaldo(customerId);
-      await updateCustomerRunasBalance(customerId, newSaldo);
+      const result = rpcResult as { success: boolean; transaction_id?: string; new_balance?: number; error?: string } | null;
 
-      return data;
+      if (!result?.success) {
+        throw new Error(result?.error || 'Error desconocido');
+      }
+
+      return {
+        id: result.transaction_id,
+        customer_id: customerId,
+        type: 'canje' as RunaMovementType,
+        runas: -runasUsed,
+        amount: discountAmount
+      } as RunasTransaction;
     } catch (error) {
       console.error('Error creating redemption transaction:', error);
       return null;
