@@ -100,6 +100,16 @@ export function useKitchenOrders() {
     };
   }, []);
 
+  // Helper: determinar si un pedido delivery debe ocultarse del KDS
+  const shouldHideDeliveryOrder = (order: Order) => {
+    // Los pedidos delivery se ocultan del KDS cuando están "Listo" o "En camino"
+    // porque ya pasaron a responsabilidad del repartidor
+    if (order.fulfillment === 'delivery' && ['Listo', 'En camino'].includes(order.status)) {
+      return true;
+    }
+    return false;
+  };
+
   const fetchOrders = async () => {
     try {
       const { data, error } = await supabase
@@ -135,9 +145,14 @@ export function useKitchenOrders() {
         items: order.items as any
       })) as Order[];
       
-      const filtered = ordersWithItems.filter(order => !isInHistory(order.id));
+      // Filtrar: no mostrar si está en history O si es delivery y ya está "Listo"/"En camino"
+      const filtered = ordersWithItems.filter(order => {
+        if (isInHistory(order.id)) return false;
+        if (shouldHideDeliveryOrder(order)) return false;
+        return true;
+      });
       
-      console.log(`[KDS] Loaded ${ordersWithItems.length} orders, showing ${filtered.length} (${ordersWithItems.length - filtered.length} filtered from history)`);
+      console.log(`[KDS] Loaded ${ordersWithItems.length} orders, showing ${filtered.length} (filtered: history + delivery ready)`);
       
       setOrders(filtered);
     } catch (error) {
@@ -225,6 +240,12 @@ export function useKitchenOrders() {
         if (orderWithItems.status === 'Entregado' || orderWithItems.status === 'Cancelado') {
           console.log(`[KDS] Order #${orderWithItems.order_number} marked as ${orderWithItems.status}, adding to history`);
           addToHistory(orderId);
+          return prev.filter(order => order.id !== orderId);
+        }
+        
+        // Si es un pedido delivery y está "Listo" o "En camino", ocultarlo del KDS
+        if (shouldHideDeliveryOrder(orderWithItems)) {
+          console.log(`[KDS] Delivery order #${orderWithItems.order_number} is ${orderWithItems.status}, hiding from KDS`);
           return prev.filter(order => order.id !== orderId);
         }
         
