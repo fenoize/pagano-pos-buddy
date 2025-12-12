@@ -46,7 +46,9 @@ export default function CustomerAddresses({ customerId }: CustomerAddressesProps
   };
 
   useEffect(() => {
-    loadAddresses();
+    if (customerId) {
+      loadAddresses();
+    }
   }, [customerId]);
 
   const handleOpenModal = (address?: Address) => {

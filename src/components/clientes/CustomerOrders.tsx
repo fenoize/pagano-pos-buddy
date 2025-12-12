@@ -48,7 +48,9 @@ export default function CustomerOrders({ customerId }: CustomerOrdersProps) {
   };
 
   useEffect(() => {
-    loadOrders();
+    if (customerId) {
+      loadOrders();
+    }
   }, [customerId, filters, currentPage]);
 
   const formatPrice = (price: number) => {

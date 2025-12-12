@@ -84,10 +84,7 @@ export function useCustomerRunes() {
     page = 0,
     limit = 50
   ): Promise<{ transactions: RunasTransaction[], totalCount: number }> => {
-    if (!canViewRunes) {
-      return { transactions: [], totalCount: 0 };
-    }
-
+    // No verificamos canViewRunes aquí - el RPC es SECURITY DEFINER y maneja autorización internamente
     try {
       const { data: rpcResult, error } = await supabase.rpc('get_runas_history_with_context', {
         p_user_id: user?.id || null,
