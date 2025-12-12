@@ -39,14 +39,12 @@ export function useSuppliers(includeInactive = false) {
 
   const createSupplier = async (data: Partial<Supplier>) => {
     try {
-      const insertData = { ...data, is_active: true };
-      delete insertData.id;
-      delete insertData.created_at;
-      delete insertData.updated_at;
+      const { id, created_at, updated_at, ...rest } = data;
+      const insertData = { ...rest, is_active: true, name: data.name || '' };
       
       const { error } = await supabase
         .from('suppliers')
-        .insert([insertData]);
+        .insert([insertData as any]);
 
       if (error) throw error;
 
