@@ -4586,6 +4586,27 @@ export type Database = {
       get_current_customer_id: { Args: never; Returns: string }
       get_current_staff_user_from_token: { Args: never; Returns: string }
       get_current_staff_user_id: { Args: never; Returns: string }
+      get_customer_addresses_with_context: {
+        Args: { p_customer_id: string; p_user_id: string }
+        Returns: Json
+      }
+      get_customer_order_stats_with_context: {
+        Args: { p_customer_id: string; p_user_id: string }
+        Returns: Json
+      }
+      get_customer_orders_with_context: {
+        Args: {
+          p_customer_id: string
+          p_date_from?: string
+          p_date_to?: string
+          p_fulfillment?: string
+          p_limit?: number
+          p_page?: number
+          p_status?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_fixed_expenses_for_closure: {
         Args: { _end: string; _start: string }
         Returns: {
@@ -4612,6 +4633,19 @@ export type Database = {
       get_online_order_settings:
         | { Args: never; Returns: Json }
         | { Args: { p_user_id?: string }; Returns: Json }
+      get_runas_history_with_context: {
+        Args: {
+          p_customer_id: string
+          p_date_from?: string
+          p_date_to?: string
+          p_limit?: number
+          p_origen?: string
+          p_page?: number
+          p_type?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_stock_balances: {
         Args: { p_warehouse_id: string }
         Returns: {

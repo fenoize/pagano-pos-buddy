@@ -77,7 +77,7 @@ export function useCustomerRunes() {
     }
   };
 
-  // Obtener historial de transacciones de runas
+  // Obtener historial de transacciones de runas usando RPC para evitar problemas de RLS
   const getRunasHistory = async (
     customerId: string, 
     filters: RunasTransactionFilters = {},
@@ -89,40 +89,28 @@ export function useCustomerRunes() {
     }
 
     try {
-      let query = supabase
-        .from('runas_transactions')
-        .select('*', { count: 'exact' })
-        .eq('customer_id', customerId);
-
-      // Aplicar filtros
-      if (filters.type) {
-        query = query.eq('type', filters.type);
-      }
-
-      if (filters.origen) {
-        query = query.eq('origen', filters.origen);
-      }
-
-      if (filters.dateFrom) {
-        query = query.gte('created_at', filters.dateFrom);
-      }
-
-      if (filters.dateTo) {
-        query = query.lte('created_at', filters.dateTo);
-      }
-
-      // Paginación y orden
-      query = query
-        .order('created_at', { ascending: false })
-        .range(page * limit, (page + 1) * limit - 1);
-
-      const { data, error, count } = await query;
+      const { data: rpcResult, error } = await supabase.rpc('get_runas_history_with_context', {
+        p_user_id: user?.id || null,
+        p_customer_id: customerId,
+        p_type: filters.type || null,
+        p_origen: filters.origen || null,
+        p_date_from: filters.dateFrom ? new Date(filters.dateFrom).toISOString() : null,
+        p_date_to: filters.dateTo ? new Date(filters.dateTo).toISOString() : null,
+        p_page: page,
+        p_limit: limit
+      });
 
       if (error) throw error;
 
+      const result = rpcResult as unknown as { success: boolean; transactions?: RunasTransaction[]; total_count?: number; error?: string } | null;
+
+      if (!result?.success) {
+        throw new Error(result?.error || 'Error desconocido');
+      }
+
       return {
-        transactions: data || [],
-        totalCount: count || 0
+        transactions: result.transactions || [],
+        totalCount: result.total_count || 0
       };
     } catch (error) {
       console.error('Error fetching runas history:', error);

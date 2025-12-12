@@ -24,16 +24,21 @@ export function useCustomerAddresses() {
 
   const getCustomerAddresses = async (customerId: string): Promise<Address[]> => {
     try {
-      const { data, error } = await supabase
-        .from('addresses')
-        .select('*')
-        .eq('customer_id', customerId)
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: true });
+      // Usar RPC para evitar problemas de RLS con el contexto de staff
+      const { data: rpcResult, error } = await supabase.rpc('get_customer_addresses_with_context', {
+        p_user_id: user?.id || null,
+        p_customer_id: customerId
+      });
 
       if (error) throw error;
 
-      return data || [];
+      const result = rpcResult as unknown as { success: boolean; addresses?: Address[]; error?: string } | null;
+
+      if (!result?.success) {
+        throw new Error(result?.error || 'Error desconocido');
+      }
+
+      return result.addresses || [];
     } catch (error) {
       console.error('Error fetching addresses:', error);
       return [];
