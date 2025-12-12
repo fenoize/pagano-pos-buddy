@@ -26,7 +26,7 @@ export function useCustomerOrders() {
 
   const canViewOrders = user?.role === 'Administrador' || user?.role === 'Cajero' || user?.role === 'Reparto';
 
-  // Obtener historial de pedidos de un cliente
+  // Obtener historial de pedidos de un cliente usando RPC para evitar problemas de RLS
   const getCustomerOrders = async (
     customerId: string,
     filters: CustomerOrderFilters = {},
@@ -40,61 +40,31 @@ export function useCustomerOrders() {
     try {
       setLoading(true);
 
-      let query = supabase
-        .from('orders')
-        .select(`
-          *,
-          customer:customers (
-            id,
-            nombres,
-            apellidos,
-            name,
-            apellido,
-            phone,
-            rut,
-            email,
-            created_at,
-            updated_at
-          )
-        `, { count: 'exact' })
-        .eq('customer_id', customerId);
-
-      // Aplicar filtros
-      if (filters.status) {
-        query = query.eq('status', filters.status as any);
-      }
-
-      if (filters.fulfillment) {
-        query = query.eq('fulfillment', filters.fulfillment);
-      }
-
-      if (filters.paymentMethod) {
-        query = query.eq('payment_method', filters.paymentMethod as any);
-      }
-
-      if (filters.dateFrom) {
-        query = query.gte('created_at', filters.dateFrom);
-      }
-
-      if (filters.dateTo) {
-        query = query.lte('created_at', filters.dateTo);
-      }
-
-      // Paginación y orden
-      query = query
-        .order('created_at', { ascending: false })
-        .range(page * limit, (page + 1) * limit - 1);
-
-      const { data, error, count } = await query;
+      const { data: rpcResult, error } = await supabase.rpc('get_customer_orders_with_context', {
+        p_user_id: user?.id || null,
+        p_customer_id: customerId,
+        p_status: filters.status || null,
+        p_fulfillment: filters.fulfillment || null,
+        p_date_from: filters.dateFrom ? new Date(filters.dateFrom).toISOString() : null,
+        p_date_to: filters.dateTo ? new Date(filters.dateTo).toISOString() : null,
+        p_page: page,
+        p_limit: limit
+      });
 
       if (error) throw error;
 
+      const result = rpcResult as unknown as { success: boolean; orders?: any[]; total_count?: number; error?: string } | null;
+
+      if (!result?.success) {
+        throw new Error(result?.error || 'Error desconocido');
+      }
+
       return {
-        orders: data?.map(order => ({
+        orders: (result.orders || []).map(order => ({
           ...order,
           items: order.items as any
-        })) as Order[] || [],
-        totalCount: count || 0
+        })) as Order[],
+        totalCount: result.total_count || 0
       };
     } catch (error) {
       console.error('Error fetching customer orders:', error);
@@ -109,7 +79,7 @@ export function useCustomerOrders() {
     }
   };
 
-  // Obtener estadísticas de pedidos del cliente
+  // Obtener estadísticas de pedidos del cliente usando RPC
   const getCustomerOrderStats = async (customerId: string): Promise<CustomerOrderStats> => {
     if (!canViewOrders) {
       return {
@@ -120,26 +90,31 @@ export function useCustomerOrders() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('total, created_at')
-        .eq('customer_id', customerId)
-        .eq('status', 'Entregado'); // Solo contar pedidos completados
+      const { data: rpcResult, error } = await supabase.rpc('get_customer_order_stats_with_context', {
+        p_user_id: user?.id || null,
+        p_customer_id: customerId
+      });
 
       if (error) throw error;
 
-      const orders = data || [];
-      const totalOrders = orders.length;
-      const totalSpent = orders.reduce((sum, order) => sum + order.total, 0);
-      const averageOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0;
-      const lastOrderDate = orders.length > 0 ? 
-        Math.max(...orders.map(order => new Date(order.created_at).getTime())) : undefined;
+      const result = rpcResult as unknown as { 
+        success: boolean; 
+        total_orders?: number; 
+        total_spent?: number; 
+        average_order_value?: number; 
+        last_order_date?: string; 
+        error?: string 
+      } | null;
+
+      if (!result?.success) {
+        throw new Error(result?.error || 'Error desconocido');
+      }
 
       return {
-        totalOrders,
-        totalSpent,
-        averageOrderValue,
-        lastOrderDate: lastOrderDate ? new Date(lastOrderDate).toISOString() : undefined
+        totalOrders: result.total_orders || 0,
+        totalSpent: result.total_spent || 0,
+        averageOrderValue: result.average_order_value || 0,
+        lastOrderDate: result.last_order_date || undefined
       };
     } catch (error) {
       console.error('Error fetching customer order stats:', error);
