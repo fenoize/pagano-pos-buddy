@@ -33,10 +33,7 @@ export function useCustomerOrders() {
     page = 0,
     limit = 20
   ): Promise<{ orders: Order[], totalCount: number }> => {
-    if (!canViewOrders) {
-      return { orders: [], totalCount: 0 };
-    }
-
+    // No verificamos canViewOrders aquí - el RPC es SECURITY DEFINER y maneja autorización internamente
     try {
       setLoading(true);
 
@@ -81,14 +78,7 @@ export function useCustomerOrders() {
 
   // Obtener estadísticas de pedidos del cliente usando RPC
   const getCustomerOrderStats = async (customerId: string): Promise<CustomerOrderStats> => {
-    if (!canViewOrders) {
-      return {
-        totalOrders: 0,
-        totalSpent: 0,
-        averageOrderValue: 0
-      };
-    }
-
+    // No verificamos canViewOrders aquí - el RPC es SECURITY DEFINER y maneja autorización internamente
     try {
       const { data: rpcResult, error } = await supabase.rpc('get_customer_order_stats_with_context', {
         p_user_id: user?.id || null,

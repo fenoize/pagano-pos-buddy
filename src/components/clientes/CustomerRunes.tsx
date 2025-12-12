@@ -53,8 +53,10 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
   };
 
   useEffect(() => {
-    loadData();
-    fetchRunaValue();
+    if (customerId) {
+      loadData();
+      fetchRunaValue();
+    }
   }, [customerId, filters]);
 
   const formatPrice = (price: number) => {
