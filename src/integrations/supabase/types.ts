@@ -3242,6 +3242,8 @@ export type Database = {
           po_number: string | null
           received_date: string | null
           sent_at: string | null
+          sent_method: string | null
+          sent_to_contact_id: string | null
           status: Database["public"]["Enums"]["po_status"]
           subtotal: number | null
           supplier_id: string | null
@@ -3261,6 +3263,8 @@ export type Database = {
           po_number?: string | null
           received_date?: string | null
           sent_at?: string | null
+          sent_method?: string | null
+          sent_to_contact_id?: string | null
           status?: Database["public"]["Enums"]["po_status"]
           subtotal?: number | null
           supplier_id?: string | null
@@ -3280,6 +3284,8 @@ export type Database = {
           po_number?: string | null
           received_date?: string | null
           sent_at?: string | null
+          sent_method?: string | null
+          sent_to_contact_id?: string | null
           status?: Database["public"]["Enums"]["po_status"]
           subtotal?: number | null
           supplier_id?: string | null
@@ -3315,6 +3321,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_sent_to_contact_id_fkey"
+            columns: ["sent_to_contact_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_contacts"
             referencedColumns: ["id"]
           },
           {
@@ -3970,37 +3983,204 @@ export type Database = {
           },
         ]
       }
-      suppliers: {
+      supplier_contacts: {
         Row: {
-          address: string | null
           created_at: string | null
           email: string | null
           id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          name: string
+          notes: string | null
+          phone: string | null
+          position: string | null
+          receive_payments: boolean | null
+          receive_purchase_orders: boolean | null
+          supplier_id: string
+          updated_at: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          receive_payments?: boolean | null
+          receive_purchase_orders?: boolean | null
+          supplier_id: string
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          receive_payments?: boolean | null
+          receive_purchase_orders?: boolean | null
+          supplier_id?: string
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_contacts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_payables: {
+        Row: {
+          amount_paid: number | null
+          amount_total: number
+          created_at: string | null
+          document_date: string | null
+          document_number: string | null
+          document_type: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          purchase_order_id: string | null
+          status: string | null
+          supplier_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount_paid?: number | null
+          amount_total: number
+          created_at?: string | null
+          document_date?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          purchase_order_id?: string | null
+          status?: string | null
+          supplier_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount_paid?: number | null
+          amount_total?: number
+          created_at?: string | null
+          document_date?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          purchase_order_id?: string | null
+          status?: string | null
+          supplier_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_payables_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payables_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          bank_account_holder: string | null
+          bank_account_holder_rut: string | null
+          bank_account_number: string | null
+          bank_account_type: string | null
+          bank_name: string | null
+          ciudad_fiscal: string | null
+          comuna_fiscal: string | null
+          created_at: string | null
+          direccion_fiscal: string | null
+          email: string | null
+          giro: string | null
+          id: string
           is_active: boolean
           name: string
+          notes: string | null
+          payment_terms_days: number | null
+          payment_terms_type: string | null
           phone: string | null
+          preferred_contact_method: string | null
+          razon_social: string | null
           rut: string | null
           updated_at: string | null
         }
         Insert: {
           address?: string | null
+          bank_account_holder?: string | null
+          bank_account_holder_rut?: string | null
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_name?: string | null
+          ciudad_fiscal?: string | null
+          comuna_fiscal?: string | null
           created_at?: string | null
+          direccion_fiscal?: string | null
           email?: string | null
+          giro?: string | null
           id?: string
           is_active?: boolean
           name: string
+          notes?: string | null
+          payment_terms_days?: number | null
+          payment_terms_type?: string | null
           phone?: string | null
+          preferred_contact_method?: string | null
+          razon_social?: string | null
           rut?: string | null
           updated_at?: string | null
         }
         Update: {
           address?: string | null
+          bank_account_holder?: string | null
+          bank_account_holder_rut?: string | null
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_name?: string | null
+          ciudad_fiscal?: string | null
+          comuna_fiscal?: string | null
           created_at?: string | null
+          direccion_fiscal?: string | null
           email?: string | null
+          giro?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          notes?: string | null
+          payment_terms_days?: number | null
+          payment_terms_type?: string | null
           phone?: string | null
+          preferred_contact_method?: string | null
+          razon_social?: string | null
           rut?: string | null
           updated_at?: string | null
         }
@@ -4654,6 +4834,10 @@ export type Database = {
         }[]
       }
       get_store_status: { Args: never; Returns: Json }
+      get_supplier_pending_amount: {
+        Args: { p_supplier_id: string }
+        Returns: number
+      }
       get_top_recurring_expenses_for_closure: {
         Args: { _end: string; _limit?: number; _start: string }
         Returns: {

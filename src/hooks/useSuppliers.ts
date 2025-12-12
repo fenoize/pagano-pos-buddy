@@ -1,31 +1,27 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Supplier } from '@/types/supplier';
 
-export interface Supplier {
-  id: string;
-  name: string;
-  rut?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+export type { Supplier } from '@/types/supplier';
 
-export function useSuppliers() {
+export function useSuppliers(includeInactive = false) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('suppliers')
         .select('*')
-        .eq('is_active', true)
         .order('name');
+
+      if (!includeInactive) {
+        query = query.eq('is_active', true);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setSuppliers((data || []) as Supplier[]);
@@ -41,11 +37,16 @@ export function useSuppliers() {
     }
   };
 
-  const createSupplier = async (data: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'is_active'>) => {
+  const createSupplier = async (data: Partial<Supplier>) => {
     try {
+      const insertData = { ...data, is_active: true };
+      delete insertData.id;
+      delete insertData.created_at;
+      delete insertData.updated_at;
+      
       const { error } = await supabase
         .from('suppliers')
-        .insert([{ ...data, is_active: true }]);
+        .insert([insertData]);
 
       if (error) throw error;
 
@@ -100,7 +101,7 @@ export function useSuppliers() {
 
   useEffect(() => {
     fetchSuppliers();
-  }, []);
+  }, [includeInactive]);
 
   return {
     suppliers,

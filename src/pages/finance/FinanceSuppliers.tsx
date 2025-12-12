@@ -1,18 +1,11 @@
 import { useState } from 'react';
-import { useSuppliers, Supplier } from '@/hooks/useSuppliers';
+import { useSuppliers } from '@/hooks/useSuppliers';
+import { Supplier } from '@/types/supplier';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -22,7 +15,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast';
 import { 
   Plus, 
   Pencil, 
@@ -32,13 +24,19 @@ import {
   Package,
   Loader2,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  DollarSign,
+  AlertTriangle
 } from 'lucide-react';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SupplierFormModalEnhanced } from '@/components/finance/SupplierFormModalEnhanced';
+import { SupplierPayablesTable } from '@/components/finance/SupplierPayablesTable';
+import { useSupplierPayables } from '@/hooks/useSupplierPayables';
 
 interface SupplierItemPrice {
   raw_material_id: string;
@@ -50,50 +48,15 @@ interface SupplierItemPrice {
   purchase_count: number;
 }
 
-interface SupplierFormData {
-  name: string;
-  rut: string;
-  email: string;
-  phone: string;
-  address: string;
-}
-
-const emptyForm: SupplierFormData = {
-  name: '',
-  rut: '',
-  email: '',
-  phone: '',
-  address: '',
-};
-
 export default function FinanceSuppliers() {
-  const { suppliers, loading, createSupplier, updateSupplier, toggleActiveSupplier, refetch } = useSuppliers();
+  const [showInactive, setShowInactive] = useState(false);
+  const { suppliers, loading, createSupplier, updateSupplier, toggleActiveSupplier, refetch } = useSuppliers(showInactive);
+  const { totalPending: globalPending, getOverduePayables } = useSupplierPayables();
   const [searchTerm, setSearchTerm] = useState('');
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-  const [formData, setFormData] = useState<SupplierFormData>(emptyForm);
-  const [saving, setSaving] = useState(false);
   const [expandedSuppliers, setExpandedSuppliers] = useState<Set<string>>(new Set());
-  const [showInactive, setShowInactive] = useState(false);
-
-  // Fetch all suppliers including inactive
-  const { data: allSuppliers } = useQuery({
-    queryKey: ['all-suppliers', showInactive],
-    queryFn: async () => {
-      const query = supabase
-        .from('suppliers')
-        .select('*')
-        .order('name');
-      
-      if (!showInactive) {
-        query.eq('is_active', true);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data || []) as Supplier[];
-    },
-  });
+  const [activeTab, setActiveTab] = useState('suppliers');
 
   // Fetch item prices for a specific supplier
   const fetchSupplierItems = async (supplierId: string): Promise<SupplierItemPrice[]> => {
@@ -117,7 +80,6 @@ export default function FinanceSuppliers() {
       return [];
     }
 
-    // Group by raw_material_id and get latest price
     const itemMap = new Map<string, SupplierItemPrice>();
     
     (data || []).forEach((item: any) => {
@@ -142,7 +104,6 @@ export default function FinanceSuppliers() {
     return Array.from(itemMap.values());
   };
 
-  // Query for expanded supplier items
   const { data: supplierItemsMap } = useQuery({
     queryKey: ['supplier-items', Array.from(expandedSuppliers)],
     queryFn: async () => {
@@ -155,58 +116,30 @@ export default function FinanceSuppliers() {
     enabled: expandedSuppliers.size > 0,
   });
 
-  const displaySuppliers = allSuppliers || suppliers;
-  const filteredSuppliers = displaySuppliers.filter(s => 
+  const filteredSuppliers = suppliers.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (s.rut && s.rut.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleOpenNew = () => {
     setEditingSupplier(null);
-    setFormData(emptyForm);
     setShowFormModal(true);
   };
 
   const handleOpenEdit = (supplier: Supplier) => {
     setEditingSupplier(supplier);
-    setFormData({
-      name: supplier.name,
-      rut: supplier.rut || '',
-      email: supplier.email || '',
-      phone: supplier.phone || '',
-      address: supplier.address || '',
-    });
     setShowFormModal(true);
   };
 
-  const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast({ title: 'Error', description: 'El nombre es requerido', variant: 'destructive' });
-      return;
-    }
-
-    setSaving(true);
-
+  const handleSaveSupplier = async (data: Partial<Supplier>) => {
+    let success = false;
     if (editingSupplier) {
-      const success = await updateSupplier(editingSupplier.id, formData);
-      if (success) {
-        setShowFormModal(false);
-        refetch();
-      }
+      success = await updateSupplier(editingSupplier.id, data);
     } else {
-      const success = await createSupplier(formData);
-      if (success) {
-        setShowFormModal(false);
-        refetch();
-      }
+      success = await createSupplier(data);
     }
-
-    setSaving(false);
-  };
-
-  const handleToggleActive = async (supplier: Supplier) => {
-    await toggleActiveSupplier(supplier.id, supplier.is_active);
-    refetch();
+    if (success) refetch();
+    return success;
   };
 
   const toggleExpanded = (supplierId: string) => {
@@ -229,6 +162,8 @@ export default function FinanceSuppliers() {
     return new Date(dateStr).toLocaleDateString('es-CL');
   };
 
+  const overdueCount = getOverduePayables().length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -242,7 +177,7 @@ export default function FinanceSuppliers() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Proveedores</h1>
-          <p className="text-muted-foreground">Gestiona tus proveedores y sus últimos precios</p>
+          <p className="text-muted-foreground">Gestiona tus proveedores, contactos y cuentas por pagar</p>
         </div>
         <Button onClick={handleOpenNew}>
           <Plus className="h-4 w-4 mr-2" />
@@ -250,228 +185,179 @@ export default function FinanceSuppliers() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4 justify-between">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre o RUT..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-8 w-8 text-primary" />
+              <div>
+                <p className="text-sm text-muted-foreground">Proveedores Activos</p>
+                <p className="text-2xl font-bold">{suppliers.filter(s => s.is_active).length}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                  className="mr-2"
-                />
-                Mostrar inactivos
-              </label>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <DollarSign className="h-8 w-8 text-destructive" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total Por Pagar</p>
+                <p className="text-2xl font-bold">{formatCurrency(globalPending)}</p>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {filteredSuppliers.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No hay proveedores registrados</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-8 w-8 text-amber-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Documentos Vencidos</p>
+                <p className="text-2xl font-bold">{overdueCount}</p>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {filteredSuppliers.map((supplier) => {
-                const isExpanded = expandedSuppliers.has(supplier.id);
-                const items = supplierItemsMap?.[supplier.id] || [];
-                
-                return (
-                  <Collapsible
-                    key={supplier.id}
-                    open={isExpanded}
-                    onOpenChange={() => toggleExpanded(supplier.id)}
-                  >
-                    <div className={`border rounded-lg ${!supplier.is_active ? 'opacity-60' : ''}`}>
-                      <CollapsibleTrigger asChild>
-                        <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-4">
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            )}
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{supplier.name}</span>
-                                {!supplier.is_active && (
-                                  <Badge variant="secondary">Inactivo</Badge>
-                                )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="suppliers">Proveedores</TabsTrigger>
+          <TabsTrigger value="payables">Cuentas por Pagar</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="suppliers" className="mt-4">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nombre o RUT..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={showInactive}
+                    onChange={(e) => setShowInactive(e.target.checked)}
+                  />
+                  Mostrar inactivos
+                </label>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredSuppliers.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No hay proveedores registrados</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredSuppliers.map((supplier) => {
+                    const isExpanded = expandedSuppliers.has(supplier.id);
+                    const items = supplierItemsMap?.[supplier.id] || [];
+                    
+                    return (
+                      <Collapsible key={supplier.id} open={isExpanded} onOpenChange={() => toggleExpanded(supplier.id)}>
+                        <div className={`border rounded-lg ${!supplier.is_active ? 'opacity-60' : ''}`}>
+                          <CollapsibleTrigger asChild>
+                            <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                              <div className="flex items-center gap-4">
+                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{supplier.name}</span>
+                                    {!supplier.is_active && <Badge variant="secondary">Inactivo</Badge>}
+                                    {supplier.payment_terms_type === 'credito' && (
+                                      <Badge variant="outline">Crédito {supplier.payment_terms_days}d</Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {supplier.rut && <span className="mr-4">RUT: {supplier.rut}</span>}
+                                    {supplier.phone && <span>{supplier.phone}</span>}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                {supplier.rut && <span className="mr-4">RUT: {supplier.rut}</span>}
-                                {supplier.phone && <span className="mr-4">{supplier.phone}</span>}
-                                {supplier.email && <span>{supplier.email}</span>}
+                              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(supplier)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => toggleActiveSupplier(supplier.id, supplier.is_active)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleOpenEdit(supplier)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleToggleActive(supplier)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CollapsibleTrigger>
-                      
-                      <CollapsibleContent>
-                        <div className="border-t p-4 bg-muted/20">
-                          <h4 className="font-medium mb-3 flex items-center gap-2">
-                            <Package className="h-4 w-4" />
-                            Productos y Últimos Precios
-                          </h4>
+                          </CollapsibleTrigger>
                           
-                          {items.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-4 text-center">
-                              No hay compras registradas para este proveedor
-                            </p>
-                          ) : (
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Código</TableHead>
-                                  <TableHead>Producto</TableHead>
-                                  <TableHead>Unidad</TableHead>
-                                  <TableHead className="text-right">Último Precio</TableHead>
-                                  <TableHead className="text-right">Última Compra</TableHead>
-                                  <TableHead className="text-right">Compras</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {items.map((item) => (
-                                  <TableRow key={item.raw_material_id}>
-                                    <TableCell className="font-mono text-sm">
-                                      {item.raw_material_code || '-'}
-                                    </TableCell>
-                                    <TableCell>{item.raw_material_name}</TableCell>
-                                    <TableCell>{item.uom_name}</TableCell>
-                                    <TableCell className="text-right font-medium">
-                                      {formatCurrency(item.last_unit_cost)}
-                                    </TableCell>
-                                    <TableCell className="text-right text-muted-foreground">
-                                      {formatDate(item.last_purchase_date)}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      <Badge variant="secondary">{item.purchase_count}</Badge>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          )}
+                          <CollapsibleContent>
+                            <div className="border-t p-4 bg-muted/20">
+                              <h4 className="font-medium mb-3 flex items-center gap-2">
+                                <Package className="h-4 w-4" />
+                                Productos y Últimos Precios
+                              </h4>
+                              {items.length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-4 text-center">
+                                  No hay compras registradas para este proveedor
+                                </p>
+                              ) : (
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>Código</TableHead>
+                                      <TableHead>Producto</TableHead>
+                                      <TableHead>Unidad</TableHead>
+                                      <TableHead className="text-right">Último Precio</TableHead>
+                                      <TableHead className="text-right">Última Compra</TableHead>
+                                      <TableHead className="text-right">Compras</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {items.map((item) => (
+                                      <TableRow key={item.raw_material_id}>
+                                        <TableCell className="font-mono text-sm">{item.raw_material_code || '-'}</TableCell>
+                                        <TableCell>{item.raw_material_name}</TableCell>
+                                        <TableCell>{item.uom_name}</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(item.last_unit_cost)}</TableCell>
+                                        <TableCell className="text-right text-muted-foreground">{formatDate(item.last_purchase_date)}</TableCell>
+                                        <TableCell className="text-right"><Badge variant="secondary">{item.purchase_count}</Badge></TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              )}
+                            </div>
+                          </CollapsibleContent>
                         </div>
-                      </CollapsibleContent>
-                    </div>
-                  </Collapsible>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Form Modal */}
-      <Dialog open={showFormModal} onOpenChange={setShowFormModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editingSupplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Nombre del proveedor"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="rut">RUT</Label>
-              <Input
-                id="rut"
-                value={formData.rut}
-                onChange={(e) => setFormData({ ...formData, rut: e.target.value })}
-                placeholder="12.345.678-9"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="email@ejemplo.com"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone">Teléfono</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+56 9 1234 5678"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="address">Dirección</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Dirección del proveedor"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowFormModal(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                'Guardar'
+                      </Collapsible>
+                    );
+                  })}
+                </div>
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payables" className="mt-4">
+          <Card>
+            <CardContent className="p-6">
+              <SupplierPayablesTable supplierId="" showSupplierColumn />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <SupplierFormModalEnhanced
+        open={showFormModal}
+        onOpenChange={setShowFormModal}
+        supplier={editingSupplier}
+        onSave={handleSaveSupplier}
+      />
     </div>
   );
 }
