@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,31 +18,28 @@ import { APP_VERSION, APP_BUILD_DATE, APP_NAME } from '@/config/version.ts';
 
 export function SystemLogConfig() {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [swVersion, setSwVersion] = useState<string | null>(null);
   const [swStatus, setSwStatus] = useState<'checking' | 'active' | 'none'>('checking');
 
-  // Check service worker status on mount
-  useState(() => {
-    checkServiceWorkerStatus();
-  });
-
-  const checkServiceWorkerStatus = async () => {
-    if ('serviceWorker' in navigator) {
-      try {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        if (registrations.length > 0) {
-          setSwStatus('active');
-          setSwVersion(registrations[0].active?.scriptURL?.split('?')[0] || 'Activo');
-        } else {
+  useEffect(() => {
+    const checkServiceWorkerStatus = async () => {
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          if (registrations.length > 0) {
+            setSwStatus('active');
+          } else {
+            setSwStatus('none');
+          }
+        } catch {
           setSwStatus('none');
         }
-      } catch {
+      } else {
         setSwStatus('none');
       }
-    } else {
-      setSwStatus('none');
-    }
-  };
+    };
+    
+    checkServiceWorkerStatus();
+  }, []);
 
   const forceUpdate = async () => {
     setIsUpdating(true);
