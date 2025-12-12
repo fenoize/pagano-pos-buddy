@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, DollarSign, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart, TruckIcon, Puzzle, Bell } from 'lucide-react';
+import { Settings, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart, TruckIcon, Puzzle, Bell, Terminal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
 import { DeliveryConfig } from '@/components/config/DeliveryConfig';
@@ -14,6 +14,7 @@ import CouponsManagement from './CouponsManagement';
 import { OnlineOrdersConfig } from '@/components/config/OnlineOrdersConfig';
 import { IntegrationsConfig } from '@/components/config/IntegrationsConfig';
 import { NotificationsGlobalConfig } from '@/components/config/NotificationsGlobalConfig';
+import { SystemLogConfig } from '@/components/config/SystemLogConfig';
 
 export default function ConfiguracionPage() {
   const { user } = useAuthContext();
@@ -84,6 +85,10 @@ export default function ConfiguracionPage() {
             <Settings className="w-4 h-4" />
             <span>General</span>
           </TabsTrigger>
+          <TabsTrigger value="system" className="w-full justify-start gap-3 px-4 py-2.5">
+            <Terminal className="w-4 h-4" />
+            <span>Sistema y Log</span>
+          </TabsTrigger>
         </TabsList>
 
         <div className="flex-1 min-w-0">
@@ -146,6 +151,10 @@ export default function ConfiguracionPage() {
 
           <TabsContent value="general" className="mt-0 space-y-6">
             <CategoryConfig />
+          </TabsContent>
+
+          <TabsContent value="system" className="mt-0 space-y-6">
+            <SystemLogConfig />
           </TabsContent>
         </div>
       </Tabs>

@@ -17,21 +17,22 @@ interface SessionExpiryModalProps {
   onLogout: () => void;
 }
 
+const COUNTDOWN_SECONDS = 45; // Increased from 15 to 45 seconds
+
 export function SessionExpiryModal({ isOpen, onStayActive, onLogout }: SessionExpiryModalProps) {
-  const [secondsLeft, setSecondsLeft] = useState(15);
+  const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS);
   
   useEffect(() => {
     if (!isOpen) {
-      setSecondsLeft(15); // Reset al cerrar
+      setSecondsLeft(COUNTDOWN_SECONDS);
       return;
     }
     
-    // Countdown timer
     const timer = setInterval(() => {
       setSecondsLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          onLogout(); // Auto-logout
+          onLogout();
           return 0;
         }
         return prev - 1;
@@ -41,7 +42,7 @@ export function SessionExpiryModal({ isOpen, onStayActive, onLogout }: SessionEx
     return () => clearInterval(timer);
   }, [isOpen, onLogout]);
   
-  const progressPercentage = ((15 - secondsLeft) / 15) * 100;
+  const progressPercentage = ((COUNTDOWN_SECONDS - secondsLeft) / COUNTDOWN_SECONDS) * 100;
   
   return (
     <AlertDialog open={isOpen}>
