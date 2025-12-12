@@ -61,16 +61,18 @@ export function useCustomerRunes() {
   };
 
   // Calcular saldo actual de runas de un cliente
+  // Usamos el campo cantidad_runas de customers que se mantiene sincronizado por triggers
   const calculateRunasSaldo = async (customerId: string): Promise<number> => {
     try {
       const { data, error } = await supabase
-        .from('runas_transactions')
-        .select('runas')
-        .eq('customer_id', customerId);
+        .from('customers')
+        .select('cantidad_runas')
+        .eq('id', customerId)
+        .single();
 
       if (error) throw error;
 
-      return data?.reduce((total, transaction) => total + transaction.runas, 0) || 0;
+      return data?.cantidad_runas || 0;
     } catch (error) {
       console.error('Error calculating runas saldo:', error);
       return 0;
