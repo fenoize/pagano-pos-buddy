@@ -23,8 +23,10 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { useCashSession } from '@/hooks/useCashSession';
 import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
+import { useDeliveryCashPending } from '@/hooks/useDeliveryCashPending';
 import { useToast } from '@/hooks/use-toast';
 import { Smartphone, Wallet } from 'lucide-react';
+import { DeliveryCashPreview } from './DeliveryCashPreview';
 
 interface CashSessionModalProps {
   isOpen: boolean;
@@ -53,6 +55,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
   
   const { openSession, closeSession, addCashMovement } = useCashSession();
   const { accounts } = useFinanceAccounts();
+  const { pendingByPerson, loading: pendingLoading } = useDeliveryCashPending();
   const { toast } = useToast();
 
   // Filtrar cuentas activas tipo efectivo/caja
@@ -199,6 +202,11 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
           <DialogTitle>{getTitle()}</DialogTitle>
           <DialogDescription>{getDescription()}</DialogDescription>
         </DialogHeader>
+
+        {/* Preview de efectivo pendiente al abrir turno */}
+        {type === 'open' && (
+          <DeliveryCashPreview pendingByPerson={pendingByPerson} loading={pendingLoading} />
+        )}
 
         {type === 'close' && sessionSummary && (
           <Card className="mb-4">

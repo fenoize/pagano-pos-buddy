@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Lock, Unlock, Plus, Minus, DollarSign, Smartphone } from 'lucide-react';
+import { Lock, Unlock, Plus, Minus, DollarSign, Smartphone, Truck } from 'lucide-react';
 import { useCashSession } from '@/hooks/useCashSession';
+import { useDeliveryCashPending } from '@/hooks/useDeliveryCashPending';
 import { CashSessionModal } from './CashSessionModal';
+import { DeliveryCashHistoryPanel } from './DeliveryCashHistoryPanel';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -31,8 +33,12 @@ export function CashSessionTopBar() {
   const [modalType, setModalType] = useState<'open' | 'close' | 'movement'>('open');
   const [sessionSummary, setSessionSummary] = useState<any>(null);
   const [acceptAppOrders, setAcceptAppOrders] = useState(false);
+  const [showDeliveryCashPanel, setShowDeliveryCashPanel] = useState(false);
+  const { pendingByPerson } = useDeliveryCashPending();
   const { user } = useAuthContext();
   const { toast } = useToast();
+  
+  const totalPendingCash = pendingByPerson.reduce((sum, p) => sum + p.total_pending, 0);
 
   // Sync accept_app_orders with current session
   React.useEffect(() => {
@@ -134,6 +140,24 @@ export function CashSessionTopBar() {
   return (
     <>
       <div className="flex items-center gap-3">
+        {/* Icono de efectivo de delivery con badge */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="relative"
+          onClick={() => setShowDeliveryCashPanel(true)}
+        >
+          <Truck className={`h-5 w-5 ${totalPendingCash > 0 ? 'text-amber-600' : 'text-muted-foreground'}`} />
+          {totalPendingCash > 0 && (
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center"
+            >
+              {pendingByPerson.length}
+            </Badge>
+          )}
+        </Button>
+
         {/* Switch de pedidos desde app */}
         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md">
           <Smartphone className={`h-4 w-4 ${acceptAppOrders ? 'text-green-600' : 'text-muted-foreground'}`} />
@@ -192,6 +216,11 @@ export function CashSessionTopBar() {
         onClose={handleModalClose}
         type={modalType}
         sessionSummary={sessionSummary}
+      />
+
+      <DeliveryCashHistoryPanel
+        open={showDeliveryCashPanel}
+        onOpenChange={setShowDeliveryCashPanel}
       />
     </>
   );
