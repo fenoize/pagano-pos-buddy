@@ -11,6 +11,7 @@ import { Flame, LogOut, ShoppingBag, MapPin, Award, User, UtensilsCrossed, Arrow
 import { Skeleton } from '@/components/ui/skeleton';
 import { PWAInstallPrompt } from '@/components/customer/PWAInstallPrompt';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
+import { CustomerUpdateCard } from '@/components/customer/CustomerUpdateCard';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { toast } from 'sonner';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -360,6 +361,9 @@ export default function CustomerPortal() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Configuración y actualizaciones */}
+        <CustomerUpdateCard />
       </div>
       
       <PWAInstallPrompt />
