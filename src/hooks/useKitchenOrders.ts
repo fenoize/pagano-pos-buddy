@@ -338,6 +338,7 @@ export function useKitchenOrders() {
       if (['En preparación', 'Listo', 'En camino', 'Entregado'].includes(newStatus)) {
         triggerOrderStatusNotification(
           previousOrder.customer_id || null,
+          orderId,
           previousOrder.order_number,
           newStatus,
           previousOrder.fulfillment as 'pickup' | 'delivery'

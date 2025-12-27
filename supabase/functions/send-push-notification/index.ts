@@ -9,6 +9,9 @@ const corsHeaders = {
 
 const ONESIGNAL_API_URL = 'https://onesignal.com/api/v1/notifications';
 
+// Default base URL for customer app - can be overridden by config
+const DEFAULT_APP_BASE_URL = 'https://app.paganosburger.cl';
+
 interface NotificationRequest {
   customer_id?: string;
   user_id?: string;
@@ -33,6 +36,32 @@ interface TestNotificationRequest {
   body: string;
 }
 
+/**
+ * Generate click URL based on notification type and payload
+ */
+function generateClickUrl(type: string, payload: Record<string, any>, baseUrl: string): string | null {
+  switch (type) {
+    case 'order_status':
+    case 'delivery_assigned':
+      // Use order_id (UUID) for tracking page
+      if (payload?.order_id) {
+        return `${baseUrl}/track/${payload.order_id}`;
+      }
+      break;
+    case 'runas_earned':
+      return `${baseUrl}/my-runes`;
+    case 'marketing':
+      // Marketing can have a custom URL in payload, otherwise go to menu
+      return payload?.url || `${baseUrl}/menu`;
+    case 'rider_new_order':
+      // Riders use the POS app, not the customer app
+      return null;
+    default:
+      return baseUrl;
+  }
+  return null;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -49,11 +78,11 @@ serve(async (req) => {
     const body = await req.json();
     const { action = 'single', ...data } = body;
 
-    // Get OneSignal configuration
+    // Get OneSignal configuration and app base URL
     const { data: configRows, error: configError } = await supabase
       .from('config')
       .select('key, value')
-      .in('key', ['onesignal_app_id', 'onesignal_enabled']);
+      .in('key', ['onesignal_app_id', 'onesignal_enabled', 'app_base_url']);
 
     if (configError) {
       console.error('Error fetching OneSignal config:', configError);
@@ -71,6 +100,7 @@ serve(async (req) => {
 
     const oneSignalAppId = config['onesignal_app_id'];
     const oneSignalEnabled = config['onesignal_enabled'] === true || config['onesignal_enabled'] === 'true';
+    const appBaseUrl = config['app_base_url'] || DEFAULT_APP_BASE_URL;
 
     if (!oneSignalEnabled) {
       console.log('OneSignal is disabled, skipping notification');
@@ -95,11 +125,11 @@ serve(async (req) => {
 
     // Handle bulk marketing notifications
     if (action === 'bulk') {
-      return await handleBulkNotification(supabase, data as BulkNotificationRequest, oneSignalAppId, oneSignalRestApiKey);
+      return await handleBulkNotification(supabase, data as BulkNotificationRequest, oneSignalAppId, oneSignalRestApiKey, appBaseUrl);
     }
 
     // Handle single notification
-    return await handleSingleNotification(supabase, data as NotificationRequest, oneSignalAppId, oneSignalRestApiKey);
+    return await handleSingleNotification(supabase, data as NotificationRequest, oneSignalAppId, oneSignalRestApiKey, appBaseUrl);
 
   } catch (error) {
     console.error('Error in send-push-notification:', error);
@@ -177,7 +207,8 @@ async function handleSingleNotification(
   supabase: any,
   data: NotificationRequest,
   appId: string,
-  apiKey: string
+  apiKey: string,
+  appBaseUrl: string
 ) {
   const { customer_id, user_id, type, title, body, payload = {} } = data;
 
@@ -242,9 +273,12 @@ async function handleSingleNotification(
     );
   }
 
+  // Generate click URL for the notification
+  const clickUrl = generateClickUrl(type, payload, appBaseUrl);
+
   // Send notification via OneSignal
   try {
-    const oneSignalPayload = {
+    const oneSignalPayload: any = {
       app_id: appId,
       include_aliases: {
         external_id: [externalUserId]
@@ -254,6 +288,12 @@ async function handleSingleNotification(
       contents: { en: body },
       data: { ...payload, type }
     };
+
+    // Add click URL if available
+    if (clickUrl) {
+      oneSignalPayload.url = clickUrl;
+      oneSignalPayload.web_url = clickUrl;
+    }
 
     console.log('Sending OneSignal notification:', JSON.stringify(oneSignalPayload));
 
@@ -316,7 +356,8 @@ async function handleBulkNotification(
   supabase: any,
   data: BulkNotificationRequest,
   appId: string,
-  apiKey: string
+  apiKey: string,
+  appBaseUrl: string
 ) {
   const { title, body, payload = {}, campaign_id } = data;
 
@@ -358,9 +399,12 @@ async function handleBulkNotification(
     );
   }
 
+  // Generate click URL for marketing notification
+  const clickUrl = generateClickUrl('marketing', payload, appBaseUrl);
+
   // Send to all eligible customers using OneSignal segment
   try {
-    const oneSignalPayload = {
+    const oneSignalPayload: any = {
       app_id: appId,
       include_aliases: {
         external_id: customerIds
@@ -370,6 +414,12 @@ async function handleBulkNotification(
       contents: { en: body },
       data: { ...payload, type: 'marketing', campaign_id }
     };
+
+    // Add click URL if available
+    if (clickUrl) {
+      oneSignalPayload.url = clickUrl;
+      oneSignalPayload.web_url = clickUrl;
+    }
 
     console.log('Sending bulk OneSignal notification to', customerIds.length, 'customers');
 

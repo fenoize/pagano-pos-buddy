@@ -7,6 +7,7 @@ import { ORDER_STATUS_MESSAGES } from '@/types/notifications';
  */
 export async function triggerOrderStatusNotification(
   customerId: string | null,
+  orderId: string,
   orderNumber: number,
   newStatus: string,
   fulfillment: 'pickup' | 'delivery'
@@ -38,7 +39,7 @@ export async function triggerOrderStatusNotification(
         type: 'order_status',
         title: messageConfig.title,
         body,
-        payload: { order_number: orderNumber, status: newStatus }
+        payload: { order_id: orderId, order_number: orderNumber, status: newStatus }
       }
     });
 
@@ -58,6 +59,7 @@ export async function triggerOrderStatusNotification(
  */
 export async function triggerDeliveryAssignedNotification(
   customerId: string | null,
+  orderId: string,
   orderNumber: number,
   deliveryPersonName: string
 ): Promise<void> {
@@ -73,7 +75,7 @@ export async function triggerDeliveryAssignedNotification(
         type: 'delivery_assigned',
         title: '¡Repartidor asignado! 🛵',
         body: `${deliveryPersonName} llevará tu orden #${orderNumber}.`,
-        payload: { order_number: orderNumber, delivery_person: deliveryPersonName }
+        payload: { order_id: orderId, order_number: orderNumber, delivery_person: deliveryPersonName }
       }
     });
 
@@ -93,6 +95,7 @@ export async function triggerDeliveryAssignedNotification(
  */
 export async function triggerRiderNewOrderNotification(
   riderUserId: string,
+  orderId: string,
   orderNumber: number,
   deliveryAddress: string
 ): Promise<void> {
@@ -103,7 +106,7 @@ export async function triggerRiderNewOrderNotification(
         type: 'rider_new_order',
         title: '¡Nuevo pedido asignado! 📦',
         body: `Orden #${orderNumber} - ${deliveryAddress}`,
-        payload: { order_number: orderNumber, address: deliveryAddress }
+        payload: { order_id: orderId, order_number: orderNumber, address: deliveryAddress }
       }
     });
 
