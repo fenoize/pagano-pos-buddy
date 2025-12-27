@@ -54,41 +54,43 @@ export async function validateRunasBalance(
 }
 
 /**
- * Obtiene el valor actual de una runa desde la configuración
+ * Obtiene el valor de redención de una runa desde la configuración
+ * runa_reward_value = cuántos pesos vale 1 runa al canjear (ej: 600)
  */
-async function getRunaValue(): Promise<number> {
+async function getRunaRewardValue(): Promise<number> {
   try {
     const { data, error } = await supabase
       .from('config')
       .select('value')
-      .eq('key', 'runa_value')
+      .eq('key', 'runa_reward_value')
       .single();
 
     if (error) throw error;
-    return (data?.value as number) || 2000;
+    return (data?.value as number) || 600;
   } catch (error) {
-    console.error('Error fetching runa value:', error);
-    return 2000; // Valor por defecto
+    console.error('Error fetching runa reward value:', error);
+    return 600; // Valor por defecto
   }
 }
 
 /**
  * Calcula cuántas runas se necesitan para cubrir un monto
- * Usa la regla: 3 runas = valor de 1 runa en pesos
+ * Fórmula: monto / valor_runa_reward = runas necesarias
+ * Ej: $24,000 / $600 = 40 runas
  */
 export async function calculateRequiredRunas(amount: number): Promise<number> {
-  const runaValue = await getRunaValue();
-  // Fórmula: Para pagar X pesos, necesitas (X * 3) / runaValue runas
-  return Math.ceil((amount * 3) / runaValue);
+  const runaRewardValue = await getRunaRewardValue();
+  return Math.ceil(amount / runaRewardValue);
 }
 
 /**
  * Calcula el descuento en pesos que otorgan X runas
+ * Fórmula: runas * valor_runa_reward = descuento
+ * Ej: 40 runas * $600 = $24,000
  */
 export async function calculateRunasDiscount(runas: number): Promise<number> {
-  const runaValue = await getRunaValue();
-  // Fórmula inversa: runas / 3 * runaValue
-  return Math.floor((runas * runaValue) / 3);
+  const runaRewardValue = await getRunaRewardValue();
+  return runas * runaRewardValue;
 }
 
 /**
@@ -179,14 +181,8 @@ export async function createRunasOrder(
 
     if (transactionError) throw transactionError;
 
-    // 6. Actualizar saldo de runas del cliente
+    // El trigger sync_customer_runas_on_transaction actualiza automáticamente cantidad_runas
     const newBalance = validation.currentBalance - runas_to_use;
-    const { error: updateError } = await supabase
-      .from('customers')
-      .update({ cantidad_runas: newBalance })
-      .eq('id', customer_id);
-
-    if (updateError) throw updateError;
 
     return {
       success: true,
