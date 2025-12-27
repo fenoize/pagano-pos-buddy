@@ -4909,6 +4909,7 @@ export type Database = {
       is_active_user: { Args: { _user_id: string }; Returns: boolean }
       is_cashier_or_admin: { Args: never; Returns: boolean }
       is_current_user_admin: { Args: never; Returns: boolean }
+      is_customer_owner: { Args: { p_customer_id: string }; Returns: boolean }
       is_delivery_courier: { Args: never; Returns: boolean }
       is_staff_admin: { Args: never; Returns: boolean }
       is_user_admin: { Args: { p_user_id: string }; Returns: boolean }
