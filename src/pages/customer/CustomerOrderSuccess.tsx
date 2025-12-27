@@ -153,7 +153,7 @@ export default function CustomerOrderSuccess() {
           <Button
             size="lg"
             className="w-full"
-            onClick={() => navigate(`/order-tracking?order=${orderDetails.order_number}`)}
+            onClick={() => navigate(`/track/${orderDetails.id}`)}
           >
             <ShoppingBag className="h-4 w-4 mr-2" />
             Ver Estado del Pedido

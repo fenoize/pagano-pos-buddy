@@ -121,6 +121,7 @@ export const useDeliveryOrders = () => {
         // Notificar al cliente que se asignó repartidor
         triggerDeliveryAssignedNotification(
           order?.customer_id || null,
+          orderId,
           order?.order_number || 0,
           user.full_name || user.username || 'Repartidor'
         ).catch(err => console.error('[Delivery] Push notification error:', err));
@@ -129,6 +130,7 @@ export const useDeliveryOrders = () => {
       // Notificar cambio de estado "En camino"
       triggerOrderStatusNotification(
         order?.customer_id || null,
+        orderId,
         order?.order_number || 0,
         'En camino',
         'delivery'
@@ -211,6 +213,7 @@ export const useDeliveryOrders = () => {
       // Notificar cambio de estado "Entregado"
       triggerOrderStatusNotification(
         order?.customer_id || null,
+        orderId,
         order?.order_number || 0,
         'Entregado',
         'delivery'
