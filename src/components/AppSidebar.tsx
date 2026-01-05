@@ -119,6 +119,9 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, logout } = useAuthContext();
   const currentPath = location.pathname;
+  const [deliveryOpen, setDeliveryOpen] = useState(
+    currentPath.startsWith("/pos/delivery")
+  );
   const [inventoryOpen, setInventoryOpen] = useState(
     currentPath.startsWith("/pos/inventario")
   );
@@ -182,8 +185,8 @@ export function AppSidebar() {
               {/* Delivery Collapsible Group */}
               {canAccessRoute(['Administrador', 'Reparto'] as AppRole[]) && (
                 <Collapsible
-                  open={currentPath.startsWith("/pos/delivery")}
-                  onOpenChange={() => {}}
+                  open={deliveryOpen}
+                  onOpenChange={setDeliveryOpen}
                   className="group/collapsible"
                 >
                   <SidebarMenuItem>
