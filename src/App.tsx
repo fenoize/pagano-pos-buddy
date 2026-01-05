@@ -17,6 +17,7 @@ import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
 import { Suspense, lazy } from "react";
 import { CartProvider } from "@/contexts/CartContext";
 import { CustomerAppWrapper } from "@/components/customer/CustomerAppWrapper";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 // Guards
 import { CustomerProtectedRoute } from "@/components/guards/CustomerProtectedRoute";
@@ -152,13 +153,19 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
-      <AuthProvider>
-        <CustomerAuthProvider>
-          <CartProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <AuthProvider>
+          <CustomerAuthProvider>
+            <CartProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
                 <SEOHead />
                 <Suspense fallback={<LoadingFallback />}>
                   <Routes>
@@ -582,6 +589,7 @@ const App = () => (
           </CartProvider>
         </CustomerAuthProvider>
       </AuthProvider>
+      </ThemeProvider>
     </HelmetProvider>
   </QueryClientProvider>
 );

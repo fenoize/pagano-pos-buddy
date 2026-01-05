@@ -11,10 +11,12 @@ import {
   Loader2,
   HardDrive,
   Calendar,
-  Code2
+  Code2,
+  Palette
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { APP_VERSION, APP_BUILD_DATE, APP_NAME } from '@/config/version.ts';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 export function SystemLogConfig() {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -97,6 +99,30 @@ export function SystemLogConfig() {
 
   return (
     <div className="space-y-6">
+      {/* Appearance Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Apariencia
+          </CardTitle>
+          <CardDescription>
+            Personaliza el tema visual de la aplicación
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div>
+              <h4 className="font-medium">Tema de la aplicación</h4>
+              <p className="text-sm text-muted-foreground">
+                El tema oscuro reduce la fatiga visual en ambientes con poca luz
+              </p>
+            </div>
+            <ThemeToggle />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* System Information Card */}
       <Card>
         <CardHeader>
