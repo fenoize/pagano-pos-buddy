@@ -44,6 +44,7 @@ export default function Clientes() {
     deleteCustomer,
     deleteCustomerPermanently,
     updateCustomerPassword,
+    updateCustomerInList,
     exportCustomersCSV
   } = useCustomers();
 
@@ -491,7 +492,13 @@ export default function Clientes() {
               </TabsContent>
               
               <TabsContent value="runas" className="space-y-4">
-                <CustomerRunes customerId={selectedCustomer.id} />
+                <CustomerRunes 
+                  customerId={selectedCustomer.id} 
+                  onRunasChange={(newBalance) => {
+                    updateCustomerInList(selectedCustomer.id, { cantidad_runas: newBalance });
+                    setSelectedCustomer(prev => prev ? { ...prev, cantidad_runas: newBalance } : prev);
+                  }}
+                />
               </TabsContent>
               
               <TabsContent value="suscripciones" className="space-y-4">
