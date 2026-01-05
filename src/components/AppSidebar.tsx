@@ -55,6 +55,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const menuItems = [
   { title: "Escritorio", url: "/pos", icon: Home, roles: ['Administrador', 'Cajero'] },
@@ -467,20 +468,23 @@ export function AppSidebar() {
                   <div>{user.role}</div>
                 </div>
               )}
-               <Button 
-                 variant="ghost" 
-                 size="sm" 
-                 onClick={handleLogout}
-                 className="justify-start p-2 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-               >
-                 <LogOut className="h-4 w-4" />
-                 {!isCollapsed && <span className="ml-2">Cerrar Sesión</span>}
-               </Button>
-               {!isCollapsed && (
-                 <div className="text-xs text-muted-foreground text-center border-t pt-2">
-                   v{APP_VERSION}
-                 </div>
-               )}
+              <div className="flex items-center gap-2">
+                <ThemeToggle variant="icon" className="h-8 w-8" />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleLogout}
+                  className="flex-1 justify-start p-2 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {!isCollapsed && <span className="ml-2">Cerrar Sesión</span>}
+                </Button>
+              </div>
+              {!isCollapsed && (
+                <div className="text-xs text-muted-foreground text-center border-t pt-2">
+                  v{APP_VERSION}
+                </div>
+              )}
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
