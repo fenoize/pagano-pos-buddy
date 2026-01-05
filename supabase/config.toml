@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.send-push-notification]
 verify_jwt = false
+
+[functions.process-auto-runas]
+verify_jwt = false
+
+[functions.mercadopago-diagnostics]
+verify_jwt = false

@@ -36,7 +36,9 @@ export default function CustomerRunaSubscriptions({ customerId, customerBirthday
   const [newSubscription, setNewSubscription] = useState({
     type: 'monthly' as SubscriptionType,
     amount: 10,
-    notes: ''
+    notes: '',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: '' as string
   });
 
   const getTypeLabel = (type: SubscriptionType) => {
@@ -67,11 +69,19 @@ export default function CustomerRunaSubscriptions({ customerId, customerBirthday
     const success = await createSubscription(
       newSubscription.type,
       newSubscription.amount,
-      newSubscription.notes
+      newSubscription.notes,
+      newSubscription.startDate || null,
+      newSubscription.endDate || null
     );
     if (success) {
       setIsCreateModalOpen(false);
-      setNewSubscription({ type: 'monthly', amount: 10, notes: '' });
+      setNewSubscription({ 
+        type: 'monthly', 
+        amount: 10, 
+        notes: '', 
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: ''
+      });
     }
   };
 
@@ -200,6 +210,17 @@ export default function CustomerRunaSubscriptions({ customerId, customerBirthday
                           </>
                         )}
                       </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {sub.start_date && (
+                          <span>Desde: {format(new Date(sub.start_date), 'dd/MM/yyyy', { locale: es })}</span>
+                        )}
+                        {sub.end_date && (
+                          <span className="ml-2">· Hasta: {format(new Date(sub.end_date), 'dd/MM/yyyy', { locale: es })}</span>
+                        )}
+                        {!sub.end_date && sub.start_date && (
+                          <span className="ml-2 text-green-600">· Sin fecha de término</span>
+                        )}
+                      </div>
                       {sub.notes && (
                         <p className="text-xs text-muted-foreground mt-1">{sub.notes}</p>
                       )}
@@ -290,6 +311,30 @@ export default function CustomerRunaSubscriptions({ customerId, customerBirthday
                 {newSubscription.type === 'weekly' && 'Se entregarán cada 7 días'}
                 {newSubscription.type === 'birthday' && 'Se entregarán en el cumpleaños del cliente'}
               </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Fecha de Inicio</Label>
+                <Input
+                  type="date"
+                  value={newSubscription.startDate}
+                  onChange={(e) => setNewSubscription({...newSubscription, startDate: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Fecha de Término (opcional)</Label>
+                <Input
+                  type="date"
+                  value={newSubscription.endDate}
+                  onChange={(e) => setNewSubscription({...newSubscription, endDate: e.target.value})}
+                  min={newSubscription.startDate}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Deja vacío para sin término
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">
