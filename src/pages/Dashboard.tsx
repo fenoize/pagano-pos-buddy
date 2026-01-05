@@ -308,120 +308,117 @@ function DefaultDashboard() {
         ))}
       </div>
 
-      {/* Top Products - Compact Widget */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">Top 5 Productos</CardTitle>
-              <Select value={periodFilter} onValueChange={(value: any) => setPeriodFilter(value)}>
-                <SelectTrigger className="w-[130px] h-7 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="this_week">Esta semana</SelectItem>
-                  <SelectItem value="this_month">Este mes</SelectItem>
-                  <SelectItem value="this_year">Este año</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button variant="ghost" size="sm" asChild className="h-7 text-xs">
-              <Link to="/pos/reportes/productos">
-                Ver reporte
-                <ArrowRight className="h-3 w-3 ml-1" />
-              </Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {loading ? (
-            <p className="text-muted-foreground text-sm">Cargando...</p>
-          ) : stats.topProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {stats.topProducts.map((product, index) => {
-                const maxQty = stats.topProducts[0]?.quantity || 1;
-                const barWidth = (product.quantity / maxQty) * 100;
-                
-                return (
-                  <div 
-                    key={index} 
-                    className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors"
-                  >
-                    <span className="text-xs font-bold text-primary w-4">{index + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{product.name}</p>
-                      <div className="w-full bg-muted rounded-full h-1 mt-1">
-                        <div 
-                          className="bg-primary h-1 rounded-full transition-all" 
-                          style={{ width: `${barWidth}%` }}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                      {product.quantity}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-sm">No hay ventas en este período</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Payment Methods */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ventas por Método de Pago</CardTitle>
-          <CardDescription>
-            Desglose detallado de pagos del día (actualizado cada 30 seg)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {paymentMethods.map((method, index) => (
-            <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className={`w-4 h-4 rounded-full ${method.color}`} />
-                <span className="font-medium">{method.name}</span>
-              </div>
-              <span className="font-semibold currency">
-                {loading ? '...' : formatCurrency(method.amount)}
-              </span>
-            </div>
-          ))}
-          
-          {/* Runas - Shown but not in total */}
-          <div className="flex items-center justify-between p-2 rounded-lg border border-dashed">
-            <div className="flex items-center gap-3">
-              <Star className="w-4 h-4 text-amber-500" />
-              <span className="font-medium text-muted-foreground">Runas (no monetario)</span>
-            </div>
-            <span className="font-semibold text-muted-foreground">
-              {loading ? '...' : formatCurrency(stats.runasSales)}
-            </span>
-          </div>
-
-          <div className="border-t pt-3 mt-3">
+      {/* Top Products + Payment Methods - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Top Products - Compact Widget */}
+        <Card>
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <span className="font-medium text-muted-foreground">Subtotal Monetario</span>
-              <span className="font-semibold currency">
-                {loading ? '...' : formatCurrency(totalPayments)}
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base">Top 5 Productos</CardTitle>
+                <Select value={periodFilter} onValueChange={(value: any) => setPeriodFilter(value)}>
+                  <SelectTrigger className="w-[130px] h-7 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="this_week">Esta semana</SelectItem>
+                    <SelectItem value="this_month">Este mes</SelectItem>
+                    <SelectItem value="this_year">Este año</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button variant="ghost" size="sm" asChild className="h-7 text-xs">
+                <Link to="/pos/reportes/productos">
+                  Ver reporte
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {loading ? (
+              <p className="text-muted-foreground text-sm">Cargando...</p>
+            ) : stats.topProducts.length > 0 ? (
+              <div className="space-y-2">
+                {stats.topProducts.map((product, index) => {
+                  const maxQty = stats.topProducts[0]?.quantity || 1;
+                  const barWidth = (product.quantity / maxQty) * 100;
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="text-xs font-bold text-primary w-4">{index + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{product.name}</p>
+                        <div className="w-full bg-muted rounded-full h-1 mt-1">
+                          <div 
+                            className="bg-primary h-1 rounded-full transition-all" 
+                            style={{ width: `${barWidth}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                        {product.quantity}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">No hay ventas en este período</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Payment Methods */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Ventas por Método de Pago</CardTitle>
+            <CardDescription className="text-xs">
+              Desglose del día
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-2">
+            {paymentMethods.map((method, index) => (
+              <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${method.color}`} />
+                  <span className="text-sm font-medium">{method.name}</span>
+                </div>
+                <span className="text-sm font-semibold currency">
+                  {loading ? '...' : formatCurrency(method.amount)}
+                </span>
+              </div>
+            ))}
+            
+            {/* Runas - Shown but not in total */}
+            <div className="flex items-center justify-between p-2 rounded-lg border border-dashed">
+              <div className="flex items-center gap-2">
+                <Star className="w-3 h-3 text-amber-500" />
+                <span className="text-sm font-medium text-muted-foreground">Runas</span>
+              </div>
+              <span className="text-sm font-semibold text-muted-foreground">
+                {loading ? '...' : formatCurrency(stats.runasSales)}
               </span>
             </div>
-            <div className="flex items-center justify-between mt-2 text-lg">
-              <span className="font-bold">Total General</span>
-              <span className="font-bold currency">
-                {loading ? '...' : formatCurrency(stats.totalSales)}
-              </span>
+
+            <div className="border-t pt-2 mt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold">Total</span>
+                <span className="font-bold currency">
+                  {loading ? '...' : formatCurrency(stats.totalSales)}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.salesCount} ventas • {stats.pendingOrders} pendientes
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {stats.salesCount} ventas completadas • {stats.pendingOrders} pendientes
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
