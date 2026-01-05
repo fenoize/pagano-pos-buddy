@@ -1,5 +1,4 @@
-import { Moon, Sun, Monitor } from "lucide-react";
-import { useTheme } from "next-themes";
+import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { usePOSTheme } from "./POSThemeProvider";
 
 interface ThemeToggleProps {
   variant?: "default" | "icon";
@@ -14,7 +14,7 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ variant = "default", className }: ThemeToggleProps) {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = usePOSTheme();
 
   if (variant === "icon") {
     return (
@@ -34,10 +34,6 @@ export function ThemeToggle({ variant = "default", className }: ThemeToggleProps
           <DropdownMenuItem onClick={() => setTheme("dark")}>
             <Moon className="mr-2 h-4 w-4" />
             Oscuro
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("system")}>
-            <Monitor className="mr-2 h-4 w-4" />
-            Sistema
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -63,15 +59,6 @@ export function ThemeToggle({ variant = "default", className }: ThemeToggleProps
       >
         <Moon className="h-4 w-4 mr-1.5" />
         Oscuro
-      </Button>
-      <Button
-        variant={theme === "system" ? "default" : "ghost"}
-        size="sm"
-        onClick={() => setTheme("system")}
-        className="h-8 px-3"
-      >
-        <Monitor className="h-4 w-4 mr-1.5" />
-        Auto
       </Button>
     </div>
   );

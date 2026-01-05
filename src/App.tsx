@@ -18,6 +18,8 @@ import { Suspense, lazy } from "react";
 import { CartProvider } from "@/contexts/CartContext";
 import { CustomerAppWrapper } from "@/components/customer/CustomerAppWrapper";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { POSThemeProvider } from "@/components/theme/POSThemeProvider";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 // Guards
 import { CustomerProtectedRoute } from "@/components/guards/CustomerProtectedRoute";
@@ -111,42 +113,49 @@ const queryClient = new QueryClient();
 function StaffLayout({ children }: { children: React.ReactNode }) {
   const { isExpanded } = useKitchenExpanded();
   const isKitchenRoute = window.location.pathname === '/pos/cocina';
+  const { user } = useAuthContext();
   
   // Activar keep-alive de sesión para staff autenticado
   const { showExpiryModal, handleStayActive, handleForceLogout } = useSessionKeepAlive();
   
   // If on kitchen route and expanded, render without layout
   if (isKitchenRoute && isExpanded) {
-    return <>{children}</>;
+    return (
+      <POSThemeProvider userId={user?.id}>
+        {children}
+      </POSThemeProvider>
+    );
   }
 
   return (
-    <SidebarProvider>
-      {/* Modal de expiración - se renderiza globalmente */}
-      <SessionExpiryModal
-        isOpen={showExpiryModal}
-        onStayActive={handleStayActive}
-        onLogout={handleForceLogout}
-      />
-      
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center justify-between border-b bg-background px-4 md:px-6">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger />
-              <h2 className="font-semibold text-primary">Paganos POS</h2>
-            </div>
-            <CashSessionTopBar />
-          </header>
-          <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
-            {children}
-          </main>
-          <Footer />
+    <POSThemeProvider userId={user?.id}>
+      <SidebarProvider>
+        {/* Modal de expiración - se renderiza globalmente */}
+        <SessionExpiryModal
+          isOpen={showExpiryModal}
+          onStayActive={handleStayActive}
+          onLogout={handleForceLogout}
+        />
+        
+        <div className="min-h-screen flex w-full">
+          <AppSidebar />
+          <div className="flex-1 flex flex-col">
+            <header className="h-14 flex items-center justify-between border-b bg-background px-4 md:px-6">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger />
+                <h2 className="font-semibold text-primary">Paganos POS</h2>
+              </div>
+              <CashSessionTopBar />
+            </header>
+            <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
+              {children}
+            </main>
+            <Footer />
+          </div>
         </div>
-      </div>
-      {!(isKitchenRoute && isExpanded) && <MobileNav />}
-    </SidebarProvider>
+        {!(isKitchenRoute && isExpanded) && <MobileNav />}
+      </SidebarProvider>
+    </POSThemeProvider>
   );
 }
 

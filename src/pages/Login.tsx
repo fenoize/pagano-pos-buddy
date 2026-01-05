@@ -10,8 +10,11 @@ import { Loader2, ChefHat, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal';
 import ResetPasswordModal from '@/components/auth/ResetPasswordModal';
+import { usePOSThemeLogin } from '@/components/theme/POSThemeProvider';
 
 export default function Login() {
+  // Forzar dark mode en login
+  usePOSThemeLogin();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
