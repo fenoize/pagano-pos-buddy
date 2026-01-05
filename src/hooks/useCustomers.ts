@@ -28,6 +28,13 @@ export function useCustomers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+
+  // Actualiza solo un cliente específico en la lista (útil para refrescar runas sin recargar todo)
+  const updateCustomerInList = (customerId: string, updates: Partial<Customer>) => {
+    setCustomers(prev => prev.map(c => 
+      c.id === customerId ? { ...c, ...updates } : c
+    ));
+  };
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -556,6 +563,7 @@ export function useCustomers() {
     getCustomerById,
     createCustomer,
     updateCustomer,
+    updateCustomerInList,
     deleteCustomer,
     deleteCustomerPermanently,
     searchCustomers,

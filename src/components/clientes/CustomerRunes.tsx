@@ -17,11 +17,12 @@ import { es } from 'date-fns/locale';
 
 interface CustomerRunesProps {
   customerId: string;
+  onRunasChange?: (newBalance: number) => void;
 }
 
 type AdjustmentMode = 'add' | 'subtract';
 
-export default function CustomerRunes({ customerId }: CustomerRunesProps) {
+export default function CustomerRunes({ customerId, onRunasChange }: CustomerRunesProps) {
   const [currentSaldo, setCurrentSaldo] = useState(0);
   const [transactions, setTransactions] = useState<RunasTransaction[]>([]);
   const [filters, setFilters] = useState<RunasTransactionFilters>({});
@@ -121,7 +122,12 @@ export default function CustomerRunes({ customerId }: CustomerRunesProps) {
         setAdjustmentData({ runas: 0, motivo: '' });
         setAdjustmentAmount(0);
         setAdjustmentMode('add');
-        loadData();
+        // Recargar datos locales y notificar al padre
+        const newSaldo = await calculateRunasSaldo(customerId);
+        setCurrentSaldo(newSaldo);
+        onRunasChange?.(newSaldo);
+        const { transactions: history } = await getRunasHistory(customerId, filters);
+        setTransactions(history);
       }
     } finally {
       setLoading(false);
