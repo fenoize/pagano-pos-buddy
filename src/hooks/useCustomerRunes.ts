@@ -278,55 +278,54 @@ export function useCustomerRunes() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from('runas_transactions')
-        .insert({
-          customer_id: customerId,
-          type: 'ajuste' as RunaMovementType,
-          runas: adjustmentData.runas,
-          amount: 0, // Los ajustes no tienen valor monetario directo
-          origen: 'Manual' as OrigenMovimiento,
-          motivo: adjustmentData.motivo,
-          responsable_id: user?.id
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Recalcular y actualizar cantidad_runas en customers
-      const newSaldo = await calculateRunasSaldo(customerId);
-      
-      // Intentar primero con RPC (más seguro para RLS)
-      const { error: rpcError } = await supabase.rpc('update_customer_runas', {
-        p_customer_id: customerId,
-        p_cantidad_runas: newSaldo
-      });
+      // Usar RPC (SECURITY DEFINER) para respetar el contexto de staff y evitar errores de RLS
+      const { data: rpcResult, error: rpcError } = await supabase.rpc(
+        'insert_runas_transaction_with_context',
+        {
+          p_user_id: user?.id || null,
+          p_customer_id: customerId,
+          p_order_id: null,
+          p_type: 'ajuste',
+          p_runas: adjustmentData.runas,
+          p_amount: 0,
+          p_origen: 'Manual',
+          p_motivo: adjustmentData.motivo,
+        }
+      );
 
       if (rpcError) {
-        console.warn('RPC update failed, trying direct update:', rpcError.message);
-        // Fallback: update directo
-        const { error: directError } = await supabase
-          .from('customers')
-          .update({ 
-            cantidad_runas: newSaldo,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', customerId);
-        
-        if (directError) {
-          console.error('Direct update also failed:', directError);
-          // Aún así mostramos éxito porque la transacción se registró
-          // El saldo se puede recalcular dinámicamente
-        }
+        console.error('RPC error creating manual adjustment:', rpcError);
+        throw rpcError;
       }
+
+      const result = rpcResult as unknown as {
+        success: boolean;
+        transaction_id?: string;
+        new_balance?: number;
+        error?: string;
+      } | null;
+
+      if (!result?.success) {
+        throw new Error(result?.error || 'Error desconocido');
+      }
+
+      const newSaldo = result.new_balance ?? 0;
 
       toast({
         title: "Éxito",
         description: `Ajuste de ${adjustmentData.runas > 0 ? '+' : ''}${adjustmentData.runas} runas realizado. Nuevo saldo: ${newSaldo}`,
       });
 
-      return data;
+      return {
+        id: result.transaction_id,
+        customer_id: customerId,
+        type: 'ajuste' as RunaMovementType,
+        runas: adjustmentData.runas,
+        amount: 0,
+        origen: 'Manual' as OrigenMovimiento,
+        motivo: adjustmentData.motivo,
+        responsable_id: user?.id,
+      } as RunasTransaction;
     } catch (error) {
       console.error('Error creating manual adjustment:', error);
       toast({
@@ -349,29 +348,48 @@ export function useCustomerRunes() {
   ): Promise<RunasTransaction | null> => {
     try {
       const currentRunaValue = await fetchRunaValue();
-      
-      const { data, error } = await supabase
-        .from('runas_transactions')
-        .insert({
-          customer_id: customerId,
-          type: deltaRunas > 0 ? 'acumulacion' : 'canje',
-          runas: deltaRunas,
-          amount: Math.abs(deltaRunas * currentRunaValue),
-          origen: 'Edición' as OrigenMovimiento,
-          order_id: orderId,
-          responsable_id: user?.id,
-          motivo: reason
-        })
-        .select()
-        .single();
 
-      if (error) throw error;
+      const { data: rpcResult, error: rpcError } = await supabase.rpc(
+        'insert_runas_transaction_with_context',
+        {
+          p_user_id: user?.id || null,
+          p_customer_id: customerId,
+          p_order_id: orderId,
+          p_type: deltaRunas > 0 ? 'acumulacion' : 'canje',
+          p_runas: deltaRunas,
+          p_amount: Math.abs(deltaRunas * currentRunaValue),
+          p_origen: 'Edición',
+          p_motivo: reason,
+        }
+      );
 
-      // Actualizar saldo del cliente
-      const newSaldo = await calculateRunasSaldo(customerId);
-      await updateCustomerRunasBalance(customerId, newSaldo);
+      if (rpcError) {
+        console.error('RPC error creating edit adjustment:', rpcError);
+        throw rpcError;
+      }
 
-      return data;
+      const result = rpcResult as unknown as {
+        success: boolean;
+        transaction_id?: string;
+        new_balance?: number;
+        error?: string;
+      } | null;
+
+      if (!result?.success) {
+        throw new Error(result?.error || 'Error desconocido');
+      }
+
+      return {
+        id: result.transaction_id,
+        customer_id: customerId,
+        type: (deltaRunas > 0 ? 'acumulacion' : 'canje') as RunaMovementType,
+        runas: deltaRunas,
+        amount: Math.abs(deltaRunas * currentRunaValue),
+        origen: 'Edición' as OrigenMovimiento,
+        order_id: orderId,
+        motivo: reason,
+        responsable_id: user?.id,
+      } as RunasTransaction;
     } catch (error) {
       console.error('Error creating edit adjustment transaction:', error);
       return null;
