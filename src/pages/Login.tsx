@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal';
 import ResetPasswordModal from '@/components/auth/ResetPasswordModal';
 import { usePOSThemeLogin } from '@/components/theme/POSThemeProvider';
+import { configuredSupabase } from '@/lib/supabaseClient';
 
 export default function Login() {
   // Forzar dark mode en login
@@ -21,9 +22,31 @@ export default function Login() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetIdentifier, setResetIdentifier] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState(false);
   const { login, loading, error, user } = useAuthContext();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Cargar logo desde PWA config
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const { data } = await configuredSupabase
+          .from('pwa_config')
+          .select('icon_192_url')
+          .eq('app_type', 'pos')
+          .maybeSingle();
+        
+        if (data?.icon_192_url) {
+          setLogoUrl(data.icon_192_url);
+        }
+      } catch (err) {
+        console.error('Error loading logo:', err);
+      }
+    };
+    loadLogo();
+  }, []);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -66,9 +89,18 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="bg-primary text-primary-foreground p-3 rounded-full">
-              <ChefHat className="h-8 w-8" />
-            </div>
+            {logoUrl && !logoError ? (
+              <img 
+                src={logoUrl} 
+                alt="Logo" 
+                className="h-16 w-16 object-contain rounded-full"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <div className="bg-primary text-primary-foreground p-3 rounded-full">
+                <ChefHat className="h-8 w-8" />
+              </div>
+            )}
           </div>
           <CardTitle className="text-2xl font-bold text-primary">
             Paganos POS
