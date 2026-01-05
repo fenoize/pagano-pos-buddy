@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, ShoppingCart, Clock, DollarSign, Calendar, Package, Star, CalendarIcon } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Clock, DollarSign, Calendar, Package, Star, CalendarIcon, ArrowRight } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { CajeroDashboard } from '@/components/dashboard/CajeroDashboard';
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-
+import { Link } from 'react-router-dom';
 interface DashboardStats {
   totalSales: number;
   salesCount: number;
@@ -182,10 +182,10 @@ function DefaultDashboard() {
         });
       });
 
-      // Get top 10 products sorted by quantity
+      // Get top 5 products sorted by quantity (compact widget)
       const topProducts = Array.from(productCounts.values())
         .sort((a, b) => b.quantity - a.quantity)
-        .slice(0, 10);
+        .slice(0, 5);
 
       setStats({
         totalSales,
@@ -308,116 +308,65 @@ function DefaultDashboard() {
         ))}
       </div>
 
-      {/* Top Products */}
+      {/* Top Products - Compact Widget */}
       <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-primary" />
-                Productos Más Vendidos
-              </CardTitle>
-              <CardDescription className="mt-1">
-                {periodFilter === 'this_week' && 'Últimos 7 días'}
-                {periodFilter === 'this_month' && 'Este mes'}
-                {periodFilter === 'this_year' && 'Este año'}
-                {periodFilter === 'custom' && customStartDate && customEndDate && 
-                  `${format(customStartDate, 'dd/MM/yyyy', { locale: es })} - ${format(customEndDate, 'dd/MM/yyyy', { locale: es })}`}
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">Top 5 Productos</CardTitle>
               <Select value={periodFilter} onValueChange={(value: any) => setPeriodFilter(value)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Seleccionar período" />
+                <SelectTrigger className="w-[130px] h-7 text-xs">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="this_week">Última semana</SelectItem>
-                  <SelectItem value="this_month">Último mes</SelectItem>
-                  <SelectItem value="this_year">Último año</SelectItem>
-                  <SelectItem value="custom">Personalizado</SelectItem>
+                  <SelectItem value="this_week">Esta semana</SelectItem>
+                  <SelectItem value="this_month">Este mes</SelectItem>
+                  <SelectItem value="this_year">Este año</SelectItem>
                 </SelectContent>
               </Select>
-              
-              {periodFilter === 'custom' && (
-                <>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "justify-start text-left font-normal",
-                          !customStartDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {customStartDate ? format(customStartDate, 'dd/MM/yyyy', { locale: es }) : 'Desde'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <div className="p-3">
-                        <input
-                          type="date"
-                          className="w-full px-3 py-2 border rounded-md"
-                          value={customStartDate ? customStartDate.toISOString().split('T')[0] : ''}
-                          onChange={(e) => setCustomStartDate(e.target.value ? new Date(e.target.value) : undefined)}
-                        />
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "justify-start text-left font-normal",
-                          !customEndDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {customEndDate ? format(customEndDate, 'dd/MM/yyyy', { locale: es }) : 'Hasta'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <div className="p-3">
-                        <input
-                          type="date"
-                          className="w-full px-3 py-2 border rounded-md"
-                          value={customEndDate ? customEndDate.toISOString().split('T')[0] : ''}
-                          onChange={(e) => setCustomEndDate(e.target.value ? new Date(e.target.value) : undefined)}
-                        />
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </>
-              )}
             </div>
+            <Button variant="ghost" size="sm" asChild className="h-7 text-xs">
+              <Link to="/pos/reportes/productos">
+                Ver reporte
+                <ArrowRight className="h-3 w-3 ml-1" />
+              </Link>
+            </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {loading ? (
-            <p className="text-muted-foreground">Cargando...</p>
+            <p className="text-muted-foreground text-sm">Cargando...</p>
           ) : stats.topProducts.length > 0 ? (
-            <div className="space-y-2">
-              {stats.topProducts.map((product, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-border/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
-                      {index + 1}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {stats.topProducts.map((product, index) => {
+                const maxQty = stats.topProducts[0]?.quantity || 1;
+                const barWidth = (product.quantity / maxQty) * 100;
+                
+                return (
+                  <div 
+                    key={index} 
+                    className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                  >
+                    <span className="text-xs font-bold text-primary w-4">{index + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{product.name}</p>
+                      <div className="w-full bg-muted rounded-full h-1 mt-1">
+                        <div 
+                          className="bg-primary h-1 rounded-full transition-all" 
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
                     </div>
-                    <span className="font-medium">{product.name}</span>
+                    <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                      {product.quantity}
+                    </span>
                   </div>
-                  <Badge variant="secondary" className="px-3 py-1">
-                    {product.quantity} pedidos
-                  </Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            <p className="text-muted-foreground">No hay ventas esta semana</p>
+            <p className="text-muted-foreground text-sm">No hay ventas en este período</p>
           )}
         </CardContent>
       </Card>
