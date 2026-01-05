@@ -1258,12 +1258,14 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_id: string
+          end_date: string | null
           id: string
           is_active: boolean
           last_executed_at: string | null
           next_execution_date: string | null
           notes: string | null
           runas_amount: number
+          start_date: string | null
           subscription_type: string
           updated_at: string
         }
@@ -1271,12 +1273,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id: string
+          end_date?: string | null
           id?: string
           is_active?: boolean
           last_executed_at?: string | null
           next_execution_date?: string | null
           notes?: string | null
           runas_amount?: number
+          start_date?: string | null
           subscription_type: string
           updated_at?: string
         }
@@ -1284,12 +1288,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string
+          end_date?: string | null
           id?: string
           is_active?: boolean
           last_executed_at?: string | null
           next_execution_date?: string | null
           notes?: string | null
           runas_amount?: number
+          start_date?: string | null
           subscription_type?: string
           updated_at?: string
         }

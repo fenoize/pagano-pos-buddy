@@ -16,6 +16,8 @@ export interface RunaSubscription {
   updated_at: string;
   created_by: string | null;
   notes: string | null;
+  start_date: string | null;
+  end_date: string | null;
 }
 
 export interface RunaAutoConfig {
@@ -91,7 +93,9 @@ export function useRunaSubscriptions(customerId?: string) {
   const createSubscription = async (
     type: SubscriptionType,
     runasAmount: number,
-    notes?: string
+    notes?: string,
+    startDate?: string | null,
+    endDate?: string | null
   ): Promise<boolean> => {
     if (!customerId) return false;
 
@@ -122,7 +126,9 @@ export function useRunaSubscriptions(customerId?: string) {
           runas_amount: runasAmount,
           next_execution_date: nextExecutionDate,
           notes: notes || null,
-          is_active: true
+          is_active: true,
+          start_date: startDate || today.toISOString().split('T')[0],
+          end_date: endDate || null
         });
 
       if (error) {
@@ -158,7 +164,7 @@ export function useRunaSubscriptions(customerId?: string) {
 
   const updateSubscription = async (
     subscriptionId: string,
-    updates: Partial<Pick<RunaSubscription, 'runas_amount' | 'is_active' | 'notes'>>
+    updates: Partial<Pick<RunaSubscription, 'runas_amount' | 'is_active' | 'notes' | 'start_date' | 'end_date'>>
   ): Promise<boolean> => {
     try {
       const { error } = await supabase

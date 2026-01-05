@@ -8,8 +8,9 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Star, Save, Loader2, Award } from 'lucide-react';
+import { Star, Save, Loader2, Award, Play, RefreshCw, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FidelizationSettings {
   runa_value: number;
@@ -38,11 +39,15 @@ export function FidelizationConfig() {
   const [levels, setLevels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [processingRunas, setProcessingRunas] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [lastProcessed, setLastProcessed] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     loadSettings();
     loadLevels();
+    loadPendingSubscriptions();
   }, []);
 
   const loadSettings = async () => {
@@ -103,6 +108,62 @@ export function FidelizationConfig() {
       setLevels(data || []);
     } catch (error: any) {
       console.error('Error loading levels:', error);
+    }
+  };
+
+  const loadPendingSubscriptions = async () => {
+    try {
+      // Contar suscripciones pendientes de ejecutar
+      const { count, error } = await supabase
+        .from('customer_runa_subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true)
+        .lte('next_execution_date', new Date().toISOString().split('T')[0]);
+
+      if (error) throw error;
+      setPendingCount(count || 0);
+
+      // Obtener última ejecución
+      const { data: lastExec } = await supabase
+        .from('customer_runa_subscriptions')
+        .select('last_executed_at')
+        .not('last_executed_at', 'is', null)
+        .order('last_executed_at', { ascending: false })
+        .limit(1);
+
+      if (lastExec && lastExec.length > 0) {
+        setLastProcessed(lastExec[0].last_executed_at);
+      }
+    } catch (error) {
+      console.error('Error loading pending subscriptions:', error);
+    }
+  };
+
+  const processAutoRunas = async () => {
+    setProcessingRunas(true);
+    try {
+      const { data, error } = await supabase.rpc('process_auto_runas');
+
+      if (error) throw error;
+
+      const result = data as { processed_count?: number; expired_count?: number } | null;
+      
+      toast({
+        title: "Runas procesadas",
+        description: `Se procesaron ${result?.processed_count || 0} suscripciones. ${result?.expired_count || 0} expiraron.`,
+      });
+
+      // Recargar datos
+      await loadPendingSubscriptions();
+    } catch (error: any) {
+      console.error('Error processing auto runas:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudieron procesar las runas automáticas",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingRunas(false);
     }
   };
 
@@ -168,6 +229,61 @@ export function FidelizationConfig() {
 
   return (
     <div className="space-y-6">
+      {/* Procesamiento Manual de Runas Automáticas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <RefreshCw className="w-5 h-5" />
+            Procesamiento de Runas Automáticas
+          </CardTitle>
+          <CardDescription>
+            Ejecuta manualmente el procesamiento de suscripciones de runas pendientes
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
+                Suscripciones pendientes: <Badge variant={pendingCount > 0 ? "destructive" : "secondary"}>{pendingCount}</Badge>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {lastProcessed 
+                  ? `Último procesamiento: ${new Date(lastProcessed).toLocaleString('es-CL')}`
+                  : 'Nunca se ha ejecutado'
+                }
+              </p>
+            </div>
+            <Button 
+              onClick={processAutoRunas} 
+              disabled={processingRunas}
+              variant={pendingCount > 0 ? "default" : "outline"}
+            >
+              {processingRunas ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Procesar Ahora
+                </>
+              )}
+            </Button>
+          </div>
+          
+          {pendingCount > 0 && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Hay {pendingCount} suscripciones pendientes de entregar runas. 
+                Ejecuta el procesamiento para entregarlas.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
