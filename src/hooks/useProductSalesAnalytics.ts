@@ -81,26 +81,34 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
     switch (periodPreset) {
       case 'today':
         return { start: startOfDay(now), end: endOfDay(now) };
-      case 'yesterday':
+      case 'yesterday': {
         const yesterday = subDays(now, 1);
         return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
-      case 'this_week':
-        return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfDay(now) };
-      case 'last_week':
-        const lastWeekEnd = subDays(startOfWeek(now, { weekStartsOn: 1 }), 1);
-        return { start: startOfWeek(lastWeekEnd, { weekStartsOn: 1 }), end: endOfDay(lastWeekEnd) };
+      }
+      // "Esta semana" lo tratamos como "últimos 7 días" para que siempre haya contexto reciente
+      case 'this_week': {
+        const start = startOfDay(subDays(now, 6));
+        return { start, end: endOfDay(now) };
+      }
+      // "Semana pasada" = 7 días anteriores al rango anterior
+      case 'last_week': {
+        const end = endOfDay(subDays(now, 7));
+        const start = startOfDay(subDays(now, 13));
+        return { start, end };
+      }
       case 'this_month':
         return { start: startOfMonth(now), end: endOfDay(now) };
-      case 'last_month':
+      case 'last_month': {
         const lastMonthEnd = subDays(startOfMonth(now), 1);
         return { start: startOfMonth(lastMonthEnd), end: endOfDay(lastMonthEnd) };
+      }
       case 'custom':
         return {
           start: customDateRange.start ? startOfDay(customDateRange.start) : startOfDay(subDays(now, 7)),
-          end: customDateRange.end ? endOfDay(customDateRange.end) : endOfDay(now)
+          end: customDateRange.end ? endOfDay(customDateRange.end) : endOfDay(now),
         };
       default:
-        return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfDay(now) };
+        return { start: startOfDay(subDays(now, 6)), end: endOfDay(now) };
     }
   }, [periodPreset, customDateRange]);
 
@@ -131,29 +139,38 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
       // Chart data by date
       const chartMap = new Map<string, { quantity: number; revenue: number }>();
 
-      (orders || []).forEach(order => {
-        const items = order.items as any[];
+      (orders || []).forEach((order: any) => {
+        const itemsRaw = order.items;
+        const items: any[] = Array.isArray(itemsRaw) ? itemsRaw : (typeof itemsRaw === 'string' ? JSON.parse(itemsRaw) : []);
         const orderDate = new Date(order.created_at);
-        
-        items.forEach(item => {
-          const key = item.productId || item.productName;
-          const category = item.category || 'Sin categoría';
-          const quantity = item.quantity || 1;
-          const revenue = item.subtotal || (item.unitPrice * quantity) || 0;
-          
+
+        items.forEach((item: any) => {
+          const productId = item.productId || item.product_id || item.id || item.productName || 'unknown';
+          const productName = item.productName || item.product_name || 'Sin nombre';
+
+          const quantity = Number(item.quantity) || 1;
+          const basePrice = Number(item.basePrice ?? item.base_price ?? 0);
+          const extrasPrice = Array.isArray(item.extras)
+            ? item.extras.reduce((sum: number, ext: any) => sum + (Number(ext?.price) || 0), 0)
+            : 0;
+          const unitPrice = basePrice + extrasPrice;
+          const revenue = unitPrice * quantity;
+
+          const category = item.categoryName || item.category || item.category_name || 'Sin categoría';
+
           categorySet.add(category);
           totalRevenue += revenue;
 
-          const existing = productMap.get(key);
+          const existing = productMap.get(String(productId));
           if (existing) {
             existing.quantity += quantity;
             existing.revenue += revenue;
           } else {
-            productMap.set(key, {
-              name: item.productName || 'Sin nombre',
+            productMap.set(String(productId), {
+              name: productName,
               category,
               quantity,
-              revenue
+              revenue,
             });
           }
 
