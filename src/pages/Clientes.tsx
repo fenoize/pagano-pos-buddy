@@ -34,6 +34,7 @@ export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<CustomerFilters>({ estado: 'Activo' });
   const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
   
   const {
     customers,
@@ -54,8 +55,8 @@ export default function Clientes() {
       ...filters,
       search: searchTerm.length >= 3 ? searchTerm : undefined
     };
-    fetchCustomers(searchFilters, currentPage);
-  }, [searchTerm, filters, currentPage]);
+    fetchCustomers(searchFilters, currentPage, pageSize);
+  }, [searchTerm, filters, currentPage, pageSize]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -425,31 +426,53 @@ export default function Clientes() {
       </Card>
 
       {/* Pagination */}
-      {totalCount > 50 && (
-        <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            Mostrando {currentPage * 50 + 1} - {Math.min((currentPage + 1) * 50, totalCount)} de {totalCount} clientes
+            Mostrando {totalCount === 0 ? 0 : currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, totalCount)} de {totalCount} clientes
           </p>
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-              disabled={currentPage === 0}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Por página:</span>
+            <Select 
+              value={pageSize.toString()} 
+              onValueChange={(value) => {
+                setPageSize(parseInt(value));
+                setCurrentPage(0); // Reset to first page when changing page size
+              }}
             >
-              Anterior
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={(currentPage + 1) * 50 >= totalCount}
-            >
-              Siguiente
-            </Button>
+              <SelectTrigger className="w-[80px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      )}
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+            disabled={currentPage === 0}
+          >
+            Anterior
+          </Button>
+          <span className="text-sm text-muted-foreground px-2">
+            Página {currentPage + 1} de {Math.max(1, Math.ceil(totalCount / pageSize))}
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={(currentPage + 1) * pageSize >= totalCount}
+          >
+            Siguiente
+          </Button>
+        </div>
+      </div>
 
       {/* New Customer Modal */}
       <Dialog open={isNewCustomerModalOpen} onOpenChange={setIsNewCustomerModalOpen}>
