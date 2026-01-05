@@ -61,7 +61,7 @@ interface UseProductSalesAnalyticsReturn {
 
 export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
   const [data, setData] = useState<ProductSale[]>([]);
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [ordersRaw, setOrdersRaw] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
@@ -85,12 +85,10 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
         const yesterday = subDays(now, 1);
         return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
       }
-      // "Esta semana" lo tratamos como "últimos 7 días" para que siempre haya contexto reciente
       case 'this_week': {
         const start = startOfDay(subDays(now, 6));
         return { start, end: endOfDay(now) };
       }
-      // "Semana pasada" = 7 días anteriores al rango anterior
       case 'last_week': {
         const end = endOfDay(subDays(now, 7));
         const start = startOfDay(subDays(now, 13));
@@ -121,7 +119,6 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
       const startStr = dateRange.start.toISOString();
       const endStr = dateRange.end.toISOString();
 
-      // Fetch orders in date range
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('items, total, created_at')
@@ -131,18 +128,17 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
 
       if (ordersError) throw ordersError;
 
+      // Store raw orders for chart recalculation
+      setOrdersRaw(orders || []);
+
       // Process orders to aggregate by product
       const productMap = new Map<string, { name: string; category: string; quantity: number; revenue: number }>();
       const categorySet = new Set<string>();
       let totalRevenue = 0;
 
-      // Chart data by date
-      const chartMap = new Map<string, { quantity: number; revenue: number }>();
-
       (orders || []).forEach((order: any) => {
         const itemsRaw = order.items;
         const items: any[] = Array.isArray(itemsRaw) ? itemsRaw : (typeof itemsRaw === 'string' ? JSON.parse(itemsRaw) : []);
-        const orderDate = new Date(order.created_at);
 
         items.forEach((item: any) => {
           const productId = item.productId || item.product_id || item.id || item.productName || 'unknown';
@@ -173,24 +169,6 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
               revenue,
             });
           }
-
-          // Chart aggregation
-          let chartKey: string;
-          if (chartInterval === 'day') {
-            chartKey = format(orderDate, 'yyyy-MM-dd');
-          } else if (chartInterval === 'week') {
-            chartKey = format(startOfWeek(orderDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-          } else {
-            chartKey = format(startOfMonth(orderDate), 'yyyy-MM');
-          }
-
-          const chartExisting = chartMap.get(chartKey);
-          if (chartExisting) {
-            chartExisting.quantity += quantity;
-            chartExisting.revenue += revenue;
-          } else {
-            chartMap.set(chartKey, { quantity, revenue });
-          }
         });
       });
 
@@ -206,44 +184,7 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
         }))
         .sort((a, b) => b.quantity - a.quantity);
 
-      // Generate chart data with all intervals
-      const chartDataArray: ChartDataPoint[] = [];
-      let intervals: Date[];
-
-      if (chartInterval === 'day') {
-        intervals = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
-      } else if (chartInterval === 'week') {
-        intervals = eachWeekOfInterval({ start: dateRange.start, end: dateRange.end }, { weekStartsOn: 1 });
-      } else {
-        intervals = eachMonthOfInterval({ start: dateRange.start, end: dateRange.end });
-      }
-
-      intervals.forEach(date => {
-        let key: string;
-        let label: string;
-        
-        if (chartInterval === 'day') {
-          key = format(date, 'yyyy-MM-dd');
-          label = format(date, 'dd/MM', { locale: es });
-        } else if (chartInterval === 'week') {
-          key = format(date, 'yyyy-MM-dd');
-          label = `Sem ${format(date, 'dd/MM', { locale: es })}`;
-        } else {
-          key = format(date, 'yyyy-MM');
-          label = format(date, 'MMM yyyy', { locale: es });
-        }
-
-        const existing = chartMap.get(key);
-        chartDataArray.push({
-          date: key,
-          label,
-          quantity: existing?.quantity || 0,
-          revenue: existing?.revenue || 0
-        });
-      });
-
       setData(products);
-      setChartData(chartDataArray);
       setCategories(Array.from(categorySet).sort());
     } catch (err) {
       console.error('Error fetching product sales:', err);
@@ -255,7 +196,7 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
 
   useEffect(() => {
     fetchData();
-  }, [dateRange, chartInterval]);
+  }, [dateRange]);
 
   // Filtered data based on search and category
   const filteredData = useMemo(() => {
@@ -282,6 +223,97 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
 
     return result;
   }, [data, searchTerm, categoryFilter, limit]);
+
+  // Chart data filtered by search term and category
+  const chartData = useMemo((): ChartDataPoint[] => {
+    const chartMap = new Map<string, { quantity: number; revenue: number }>();
+
+    ordersRaw.forEach((order: any) => {
+      const itemsRaw = order.items;
+      const items: any[] = Array.isArray(itemsRaw) ? itemsRaw : (typeof itemsRaw === 'string' ? JSON.parse(itemsRaw) : []);
+      const orderDate = new Date(order.created_at);
+
+      items.forEach((item: any) => {
+        const productName = item.productName || item.product_name || 'Sin nombre';
+        const category = item.categoryName || item.category || item.category_name || 'Sin categoría';
+
+        // Apply search filter
+        if (searchTerm.trim()) {
+          const term = searchTerm.toLowerCase();
+          if (!productName.toLowerCase().includes(term) && !category.toLowerCase().includes(term)) {
+            return;
+          }
+        }
+
+        // Apply category filter
+        if (categoryFilter && categoryFilter !== 'all') {
+          if (category !== categoryFilter) {
+            return;
+          }
+        }
+
+        const quantity = Number(item.quantity) || 1;
+        const basePrice = Number(item.basePrice ?? item.base_price ?? 0);
+        const extrasPrice = Array.isArray(item.extras)
+          ? item.extras.reduce((sum: number, ext: any) => sum + (Number(ext?.price) || 0), 0)
+          : 0;
+        const unitPrice = basePrice + extrasPrice;
+        const revenue = unitPrice * quantity;
+
+        // Chart aggregation
+        let chartKey: string;
+        if (chartInterval === 'day') {
+          chartKey = format(orderDate, 'yyyy-MM-dd');
+        } else if (chartInterval === 'week') {
+          chartKey = format(startOfWeek(orderDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+        } else {
+          chartKey = format(startOfMonth(orderDate), 'yyyy-MM');
+        }
+
+        const existing = chartMap.get(chartKey);
+        if (existing) {
+          existing.quantity += quantity;
+          existing.revenue += revenue;
+        } else {
+          chartMap.set(chartKey, { quantity, revenue });
+        }
+      });
+    });
+
+    // Generate chart data with all intervals
+    let intervals: Date[];
+    if (chartInterval === 'day') {
+      intervals = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
+    } else if (chartInterval === 'week') {
+      intervals = eachWeekOfInterval({ start: dateRange.start, end: dateRange.end }, { weekStartsOn: 1 });
+    } else {
+      intervals = eachMonthOfInterval({ start: dateRange.start, end: dateRange.end });
+    }
+
+    return intervals.map(date => {
+      let key: string;
+      let label: string;
+      
+      if (chartInterval === 'day') {
+        key = format(date, 'yyyy-MM-dd');
+        label = format(date, 'dd/MM', { locale: es });
+      } else if (chartInterval === 'week') {
+        key = format(date, 'yyyy-MM-dd');
+        label = `Sem ${format(date, 'dd/MM', { locale: es })}`;
+      } else {
+        key = format(date, 'yyyy-MM');
+        label = format(date, 'MMM yyyy', { locale: es });
+      }
+
+      const existing = chartMap.get(key);
+      return {
+        date: key,
+        label,
+        quantity: existing?.quantity || 0,
+        revenue: existing?.revenue || 0
+      };
+    });
+  }, [ordersRaw, searchTerm, categoryFilter, chartInterval, dateRange]);
 
   // Calculate summary
   const summary = useMemo((): SalesSummary => {
