@@ -44,6 +44,7 @@ import { es } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import PurchaseOrderReceiveModal from '@/components/inventory/PurchaseOrderReceiveModal';
+import { SendPurchaseOrderModal } from '@/components/inventory/SendPurchaseOrderModal';
 
 const statusConfig: Record<POStatus, { label: string; color: string; icon: React.ElementType }> = {
   draft: { label: 'Borrador', color: 'bg-muted text-muted-foreground', icon: FileText },
@@ -66,6 +67,7 @@ export default function PurchaseOrderDetail() {
   const [actionLoading, setActionLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
 
   const loadOrder = async () => {
     if (!id) return;
@@ -199,12 +201,32 @@ export default function PurchaseOrderDetail() {
           )}
 
           {order.status === 'approved' && (
+            <>
+              <Button 
+                variant="outline"
+                onClick={() => setShowSendModal(true)}
+                disabled={actionLoading}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Enviar al Proveedor
+              </Button>
+              <Button 
+                onClick={() => handleStatusChange('sent')}
+                disabled={actionLoading}
+              >
+                {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4 mr-2" />}
+                Marcar como Enviada
+              </Button>
+            </>
+          )}
+
+          {order.status === 'sent' && (
             <Button 
-              onClick={() => handleStatusChange('sent')}
-              disabled={actionLoading}
+              variant="outline"
+              onClick={() => setShowSendModal(true)}
             >
-              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-              Marcar como Enviada
+              <Send className="h-4 w-4 mr-2" />
+              Reenviar
             </Button>
           )}
 
@@ -489,6 +511,13 @@ export default function PurchaseOrderDetail() {
         onOpenChange={setShowReceiveModal}
         order={order}
         onSuccess={loadOrder}
+      />
+
+      {/* Send Modal */}
+      <SendPurchaseOrderModal
+        open={showSendModal}
+        onOpenChange={setShowSendModal}
+        order={order}
       />
     </div>
   );

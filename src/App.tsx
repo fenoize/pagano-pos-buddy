@@ -83,6 +83,9 @@ const StockManagement = lazy(() => import("@/pages/inventory/StockManagement"));
 const PurchaseOrders = lazy(() => import("@/pages/inventory/PurchaseOrders"));
 const PurchaseOrderForm = lazy(() => import("@/pages/inventory/PurchaseOrderForm"));
 const PurchaseOrderDetail = lazy(() => import("@/pages/inventory/PurchaseOrderDetail"));
+const PurchaseRequests = lazy(() => import("@/pages/inventory/PurchaseRequests"));
+const PurchaseRequestForm = lazy(() => import("@/pages/inventory/PurchaseRequestForm"));
+const PurchaseRequestDetail = lazy(() => import("@/pages/inventory/PurchaseRequestDetail"));
 
 // Finance Pages
 const FinanceKPIs = lazy(() => import("@/pages/finance/FinanceKPIs"));
@@ -402,6 +405,30 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <Kardex />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/solicitudes" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <PurchaseRequests />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/solicitudes/nueva" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <PurchaseRequestForm />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/solicitudes/:id" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <PurchaseRequestDetail />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />

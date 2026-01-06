@@ -3416,6 +3416,7 @@ export type Database = {
           notes: string | null
           po_number: string | null
           received_date: string | null
+          request_id: string | null
           sent_at: string | null
           sent_method: string | null
           sent_to_contact_id: string | null
@@ -3437,6 +3438,7 @@ export type Database = {
           notes?: string | null
           po_number?: string | null
           received_date?: string | null
+          request_id?: string | null
           sent_at?: string | null
           sent_method?: string | null
           sent_to_contact_id?: string | null
@@ -3458,6 +3460,7 @@ export type Database = {
           notes?: string | null
           po_number?: string | null
           received_date?: string | null
+          request_id?: string | null
           sent_at?: string | null
           sent_method?: string | null
           sent_to_contact_id?: string | null
@@ -3499,6 +3502,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "purchase_orders_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requests"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "purchase_orders_sent_to_contact_id_fkey"
             columns: ["sent_to_contact_id"]
             isOneToOne: false
@@ -3514,6 +3524,161 @@ export type Database = {
           },
           {
             foreignKeyName: "purchase_orders_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_request_items: {
+        Row: {
+          created_at: string
+          estimated_total: number | null
+          estimated_unit_cost: number
+          id: string
+          notes: string | null
+          qty: number
+          raw_material_id: string
+          request_id: string
+          supplier_id: string
+          uom_id: string
+        }
+        Insert: {
+          created_at?: string
+          estimated_total?: number | null
+          estimated_unit_cost?: number
+          id?: string
+          notes?: string | null
+          qty: number
+          raw_material_id: string
+          request_id: string
+          supplier_id: string
+          uom_id: string
+        }
+        Update: {
+          created_at?: string
+          estimated_total?: number | null
+          estimated_unit_cost?: number
+          id?: string
+          notes?: string | null
+          qty?: number
+          raw_material_id?: string
+          request_id?: string
+          supplier_id?: string
+          uom_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_request_items_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_request_items_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_request_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_request_items_uom_id_fkey"
+            columns: ["uom_id"]
+            isOneToOne: false
+            referencedRelation: "units_of_measure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          pr_number: string
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["purchase_request_status"]
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+          warehouse_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          pr_number: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["purchase_request_status"]
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          warehouse_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          pr_number?: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["purchase_request_status"]
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requests_warehouse_id_fkey"
             columns: ["warehouse_id"]
             isOneToOne: false
             referencedRelation: "warehouses"
@@ -5235,6 +5400,12 @@ export type Database = {
         | "approved"
         | "partial"
         | "cancelled"
+      purchase_request_status:
+        | "draft"
+        | "pending_approval"
+        | "approved"
+        | "rejected"
+        | "cancelled"
       runa_movement_type: "acumulacion" | "canje" | "ajuste" | "promo"
       stock_move_type:
         | "purchase"
@@ -5401,6 +5572,13 @@ export const Constants = {
         "rejected",
         "approved",
         "partial",
+        "cancelled",
+      ],
+      purchase_request_status: [
+        "draft",
+        "pending_approval",
+        "approved",
+        "rejected",
         "cancelled",
       ],
       runa_movement_type: ["acumulacion", "canje", "ajuste", "promo"],

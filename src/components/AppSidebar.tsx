@@ -85,6 +85,7 @@ const inventoryItems = [
   { title: "Almacenes", url: "/pos/inventario/almacenes", icon: Warehouse, roles: ['Administrador'] },
   { title: "Materias Primas", url: "/pos/inventario/materias-primas", icon: Package, roles: ['Administrador'] },
   { title: "Recetas", url: "/pos/inventario/recetas", icon: BookOpen, roles: ['Administrador'] },
+  { title: "Solicitudes de Compra", url: "/pos/inventario/solicitudes", icon: FileText, roles: ['Administrador'] },
   { title: "Órdenes de Compra", url: "/pos/inventario/compras", icon: ShoppingCartIcon, roles: ['Administrador'] },
   { title: "Kardex", url: "/pos/inventario/kardex", icon: History, roles: ['Administrador'] },
   { title: "Ajustes", url: "/pos/inventario/ajustes", icon: SettingsIcon, roles: ['Administrador'] },
