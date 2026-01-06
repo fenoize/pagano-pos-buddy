@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   Plus, 
@@ -26,6 +26,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const statusConfig: Record<POStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -53,55 +61,7 @@ export default function PurchaseOrders() {
   });
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value);
-  };
-
-  const OrderCard = ({ order }: { order: PurchaseOrder }) => {
-    const config = statusConfig[order.status] || statusConfig.draft;
-    const StatusIcon = config.icon;
-
-    return (
-      <Card 
-        className="cursor-pointer hover:shadow-md transition-shadow"
-        onClick={() => navigate(`/pos/inventario/compras/${order.id}`)}
-      >
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h3 className="font-semibold text-lg">{order.po_number}</h3>
-              <p className="text-sm text-muted-foreground">{order.supplier?.name}</p>
-            </div>
-            <Badge className={`${config.color} gap-1`}>
-              <StatusIcon className="h-3 w-3" />
-              {config.label}
-            </Badge>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <span className="text-muted-foreground">Almacén:</span>
-              <p className="font-medium">{order.warehouse?.name}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Total:</span>
-              <p className="font-semibold text-primary">{formatCurrency(order.total || 0)}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mt-3 pt-3 border-t text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {format(new Date(order.created_at), "dd MMM yyyy", { locale: es })}
-            </span>
-            {order.expected_date && (
-              <span>
-                Esperada: {format(new Date(order.expected_date), "dd/MM/yy")}
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(value);
   };
 
   return (
@@ -171,19 +131,36 @@ export default function PurchaseOrders() {
         ))}
       </div>
 
-      {/* Orders List */}
+      {/* Orders Table */}
       {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-4 space-y-3">
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-4 w-24" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>N° Orden</TableHead>
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead>Almacén</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Fecha</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       ) : filteredOrders.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
@@ -203,11 +180,58 @@ export default function PurchaseOrders() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredOrders.map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>N° Orden</TableHead>
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead className="hidden md:table-cell">Almacén</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="hidden sm:table-cell">Fecha</TableHead>
+                  <TableHead className="hidden lg:table-cell">Entrega Esperada</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.map((order) => {
+                  const config = statusConfig[order.status] || statusConfig.draft;
+                  const StatusIcon = config.icon;
+                  return (
+                    <TableRow 
+                      key={order.id} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/pos/inventario/compras/${order.id}`)}
+                    >
+                      <TableCell className="font-medium">{order.po_number}</TableCell>
+                      <TableCell>{order.supplier?.name || '-'}</TableCell>
+                      <TableCell className="hidden md:table-cell">{order.warehouse?.name || '-'}</TableCell>
+                      <TableCell>
+                        <Badge className={`${config.color} gap-1 border-0`}>
+                          <StatusIcon className="h-3 w-3" />
+                          {config.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {formatCurrency(order.total || 0)}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground">
+                        {format(new Date(order.created_at), "dd MMM yyyy", { locale: es })}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-muted-foreground">
+                        {order.expected_date 
+                          ? format(new Date(order.expected_date), "dd/MM/yy") 
+                          : '-'
+                        }
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
