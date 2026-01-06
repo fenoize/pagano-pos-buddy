@@ -25,6 +25,7 @@ import { usePurchaseRequests } from '@/hooks/usePurchaseRequests';
 import { useRawMaterials } from '@/hooks/useRawMaterials';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useToast } from '@/hooks/use-toast';
+import { useUOM } from '@/hooks/useUOM';
 import type { CreatePurchaseRequestItemData } from '@/types/purchaseRequests';
 
 interface FormItem extends CreatePurchaseRequestItemData {
@@ -40,6 +41,7 @@ export default function PurchaseRequestForm() {
   const { createRequest } = usePurchaseRequests();
   const { materials } = useRawMaterials();
   const { suppliers } = useSuppliers();
+  const { uoms } = useUOM();
 
   const [items, setItems] = useState<FormItem[]>([]);
   const [notes, setNotes] = useState('');
@@ -179,207 +181,215 @@ export default function PurchaseRequestForm() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Form */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Items Table */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Items de la Solicitud</CardTitle>
-              <Button onClick={addItem} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar Item
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {items.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No hay items. Haz clic en "Agregar Item" para comenzar.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[200px]">Material</TableHead>
-                        <TableHead className="min-w-[180px]">Proveedor</TableHead>
-                        <TableHead className="w-[100px]">Cantidad</TableHead>
-                        <TableHead className="w-[60px]">Unidad</TableHead>
-                        <TableHead className="w-[120px]">Precio Unit.</TableHead>
-                        <TableHead className="w-[120px] text-right">Total</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {items.map((item) => (
-                        <TableRow key={item.tempId}>
-                          <TableCell>
-                            <Select
-                              value={item.raw_material_id}
-                              onValueChange={(v) => updateItem(item.tempId, 'raw_material_id', v)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar material" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {materials.map((material) => (
-                                  <SelectItem key={material.id} value={material.id}>
-                                    {material.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={item.supplier_id}
-                              onValueChange={(v) => updateItem(item.tempId, 'supplier_id', v)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar proveedor" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {suppliers.map((supplier) => (
-                                  <SelectItem key={supplier.id} value={supplier.id}>
-                                    {supplier.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min={0.01}
-                              step={0.01}
-                              value={item.qty}
-                              onChange={(e) => updateItem(item.tempId, 'qty', parseFloat(e.target.value) || 0)}
-                              className="w-full"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center text-muted-foreground">
-                            {item.uomSymbol || '-'}
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min={0}
-                              step={1}
-                              value={item.estimated_unit_cost}
-                              onChange={(e) => updateItem(item.tempId, 'estimated_unit_cost', parseFloat(e.target.value) || 0)}
-                              className="w-full"
-                            />
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(item.qty * item.estimated_unit_cost)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeItem(item.tempId)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Notes */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Notas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="Notas adicionales para la solicitud..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar - Summary */}
-        <div className="space-y-6">
-          {/* Totals */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumen</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">IVA (19%)</span>
-                <span>{formatCurrency(tax)}</span>
-              </div>
-              <div className="border-t pt-4 flex justify-between font-bold text-lg">
-                <span>Total</span>
-                <span>{formatCurrency(total)}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Items by Supplier Preview */}
-          {Object.keys(itemsBySupplier).length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Órdenes a Generar</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {Object.entries(itemsBySupplier).map(([supplierName, data]) => (
-                  <div key={supplierName} className="flex justify-between items-center text-sm">
-                    <div>
-                      <p className="font-medium">{supplierName}</p>
-                      <p className="text-muted-foreground text-xs">{data.count} items</p>
-                    </div>
-                    <span className="font-medium">{formatCurrency(data.total)}</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+      {/* Items Table - Full Width */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Items de la Solicitud</CardTitle>
+          <Button onClick={addItem} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Agregar Item
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {items.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No hay items. Haz clic en "Agregar Item" para comenzar.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[200px]">Material</TableHead>
+                    <TableHead className="min-w-[180px]">Proveedor</TableHead>
+                    <TableHead className="w-[100px]">Cantidad</TableHead>
+                    <TableHead className="w-[120px]">Unidad</TableHead>
+                    <TableHead className="w-[120px]">Precio Unit.</TableHead>
+                    <TableHead className="w-[120px] text-right">Total</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.tempId}>
+                      <TableCell>
+                        <Select
+                          value={item.raw_material_id}
+                          onValueChange={(v) => updateItem(item.tempId, 'raw_material_id', v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar material" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {materials.map((material) => (
+                              <SelectItem key={material.id} value={material.id}>
+                                {material.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={item.supplier_id}
+                          onValueChange={(v) => updateItem(item.tempId, 'supplier_id', v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar proveedor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {suppliers.map((supplier) => (
+                              <SelectItem key={supplier.id} value={supplier.id}>
+                                {supplier.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          min={0.01}
+                          step={0.01}
+                          value={item.qty}
+                          onChange={(e) => updateItem(item.tempId, 'qty', parseFloat(e.target.value) || 0)}
+                          className="w-full"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={item.uom_id}
+                          onValueChange={(v) => updateItem(item.tempId, 'uom_id', v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Unidad" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {uoms.map((uom) => (
+                              <SelectItem key={uom.id} value={uom.id}>
+                                {uom.abbreviation}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={item.estimated_unit_cost}
+                          onChange={(e) => updateItem(item.tempId, 'estimated_unit_cost', parseFloat(e.target.value) || 0)}
+                          className="w-full"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(item.qty * item.estimated_unit_cost)}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeItem(item.tempId)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
+        </CardContent>
+      </Card>
 
-          {/* Actions */}
-          <Card>
-            <CardContent className="pt-6 space-y-3">
-              <Button
-                className="w-full"
-                variant="outline"
-                onClick={() => handleSave(false)}
-                disabled={saving || items.length === 0}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Guardar Borrador
-              </Button>
-              <Button
-                className="w-full"
-                onClick={() => handleSave(true)}
-                disabled={saving || items.length === 0}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Enviar a Aprobación
-              </Button>
-              <Button
-                className="w-full"
-                variant="ghost"
-                onClick={() => navigate('/pos/inventario/solicitudes')}
-              >
-                Cancelar
-              </Button>
-            </CardContent>
-          </Card>
+      {/* Notes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Notas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder="Notas adicionales para la solicitud..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Orders to generate & Summary - Side by side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Orders to generate - Left */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Órdenes a Generar</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {Object.keys(itemsBySupplier).length > 0 ? (
+              Object.entries(itemsBySupplier).map(([supplierName, data]) => (
+                <div key={supplierName} className="flex justify-between items-center text-sm">
+                  <div>
+                    <p className="font-medium">{supplierName}</p>
+                    <p className="text-muted-foreground text-xs">{data.count} items</p>
+                  </div>
+                  <span className="font-medium">{formatCurrency(data.total)}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-muted-foreground text-sm">Agrega items para ver las órdenes</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Summary - Right */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Resumen</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">IVA (19%)</span>
+              <span>{formatCurrency(tax)}</span>
+            </div>
+            <div className="border-t pt-4 flex justify-between font-bold text-lg">
+              <span>Total</span>
+              <span>{formatCurrency(total)}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Action Buttons - Bottom */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/pos/inventario/solicitudes')}
+        >
+          Cancelar
+        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => handleSave(false)}
+            disabled={saving || items.length === 0}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Guardar Borrador
+          </Button>
+          <Button
+            onClick={() => handleSave(true)}
+            disabled={saving || items.length === 0}
+          >
+            <Send className="h-4 w-4 mr-2" />
+            Enviar a Aprobación
+          </Button>
         </div>
       </div>
     </div>
