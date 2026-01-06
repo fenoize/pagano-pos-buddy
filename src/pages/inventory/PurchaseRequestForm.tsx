@@ -196,29 +196,29 @@ export default function PurchaseRequestForm() {
               <p>No hay items. Haz clic en "Agregar Item" para comenzar.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto border border-border rounded-md">
+              <Table className="border-collapse">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[200px]">Material</TableHead>
-                    <TableHead className="min-w-[180px]">Proveedor</TableHead>
-                    <TableHead className="w-[100px]">Cantidad</TableHead>
-                    <TableHead className="w-[120px]">Unidad</TableHead>
-                    <TableHead className="w-[120px]">Precio Unit.</TableHead>
-                    <TableHead className="w-[120px] text-right">Total</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                  <TableRow className="border-b border-border">
+                    <TableHead className="border-r border-border px-2 py-1.5 h-auto">Material</TableHead>
+                    <TableHead className="border-r border-border px-2 py-1.5 h-auto">Proveedor</TableHead>
+                    <TableHead className="border-r border-border px-2 py-1.5 h-auto w-[90px]">Cantidad</TableHead>
+                    <TableHead className="border-r border-border px-2 py-1.5 h-auto w-[90px]">Unidad</TableHead>
+                    <TableHead className="border-r border-border px-2 py-1.5 h-auto w-[100px]">Precio Unit.</TableHead>
+                    <TableHead className="border-r border-border px-2 py-1.5 h-auto w-[100px] text-right">Total</TableHead>
+                    <TableHead className="px-1 py-1.5 h-auto w-[40px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.tempId}>
-                      <TableCell>
+                  {items.map((item, idx) => (
+                    <TableRow key={item.tempId} className={idx < items.length - 1 ? 'border-b border-border' : ''}>
+                      <TableCell className="border-r border-border p-1">
                         <Select
                           value={item.raw_material_id}
                           onValueChange={(v) => updateItem(item.tempId, 'raw_material_id', v)}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar material" />
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Seleccionar" />
                           </SelectTrigger>
                           <SelectContent>
                             {materials.map((material) => (
@@ -229,13 +229,13 @@ export default function PurchaseRequestForm() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-r border-border p-1">
                         <Select
                           value={item.supplier_id}
                           onValueChange={(v) => updateItem(item.tempId, 'supplier_id', v)}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar proveedor" />
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Seleccionar" />
                           </SelectTrigger>
                           <SelectContent>
                             {suppliers.map((supplier) => (
@@ -246,22 +246,22 @@ export default function PurchaseRequestForm() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-r border-border p-1">
                         <Input
                           type="number"
                           min={0.01}
                           step={0.01}
                           value={item.qty}
                           onChange={(e) => updateItem(item.tempId, 'qty', parseFloat(e.target.value) || 0)}
-                          className="w-full"
+                          className="h-8 text-sm px-2"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-r border-border p-1">
                         <Select
                           value={item.uom_id}
                           onValueChange={(v) => updateItem(item.tempId, 'uom_id', v)}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="h-8 text-sm">
                             <SelectValue placeholder="Unidad" />
                           </SelectTrigger>
                           <SelectContent>
@@ -273,25 +273,25 @@ export default function PurchaseRequestForm() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-r border-border p-1">
                         <Input
                           type="number"
                           min={0}
                           step={1}
                           value={item.estimated_unit_cost}
                           onChange={(e) => updateItem(item.tempId, 'estimated_unit_cost', parseFloat(e.target.value) || 0)}
-                          className="w-full"
+                          className="h-8 text-sm px-2"
                         />
                       </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="border-r border-border p-1 text-right font-medium text-sm">
                         {formatCurrency(item.qty * item.estimated_unit_cost)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="p-1 text-center">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => removeItem(item.tempId)}
-                          className="text-destructive hover:text-destructive"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
