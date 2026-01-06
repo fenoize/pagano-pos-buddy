@@ -71,9 +71,9 @@ export function useDeliveryPayments() {
         .from('delivery_payments')
         .select(`
           *,
-          order:orders!order_id(id, order_number, delivery_fee, delivery_address, created_at),
-          delivery_person:users!delivery_person_id(id, full_name),
-          account:finance_accounts!account_id(id, name)
+          order:orders!delivery_payments_order_id_fkey(id, order_number, delivery_fee, delivery_address, created_at),
+          delivery_person:users!delivery_payments_delivery_person_id_fkey(id, full_name),
+          account:finance_accounts!delivery_payments_account_id_fkey(id, name)
         `)
         .order('created_at', { ascending: false });
 
