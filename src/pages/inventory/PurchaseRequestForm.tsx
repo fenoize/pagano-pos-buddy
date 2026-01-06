@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Save, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,9 +36,11 @@ interface FormItem extends CreatePurchaseRequestItemData {
 }
 
 export default function PurchaseRequestForm() {
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = !!id;
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { createRequest } = usePurchaseRequests();
+  const { createRequest, getRequestById, updateRequest, submitForApproval: submitRequestForApproval } = usePurchaseRequests();
   const { materials } = useRawMaterials();
   const { suppliers } = useSuppliers();
   const { uoms } = useUOM();
@@ -46,6 +48,36 @@ export default function PurchaseRequestForm() {
   const [items, setItems] = useState<FormItem[]>([]);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(isEditMode);
+
+  // Load existing request data in edit mode
+  useEffect(() => {
+    const loadRequest = async () => {
+      if (!id) return;
+      setLoading(true);
+      const request = await getRequestById(id);
+      if (request) {
+        setNotes(request.notes || '');
+        setItems(
+          (request.items || []).map(item => ({
+            tempId: item.id || crypto.randomUUID(),
+            raw_material_id: item.raw_material_id,
+            supplier_id: item.supplier_id,
+            qty: item.qty,
+            uom_id: item.uom_id || '',
+            estimated_unit_cost: item.estimated_unit_cost,
+            materialName: item.raw_material?.name,
+            supplierName: item.supplier?.name,
+            uomSymbol: item.uom?.abbreviation,
+          }))
+        );
+      } else {
+        navigate('/pos/inventario/solicitudes');
+      }
+      setLoading(false);
+    };
+    loadRequest();
+  }, [id]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -148,36 +180,66 @@ export default function PurchaseRequestForm() {
 
     setSaving(true);
     try {
-      const requestId = await createRequest({
-        notes: notes || undefined,
-        items: items.map(item => ({
-          raw_material_id: item.raw_material_id,
-          supplier_id: item.supplier_id,
-          qty: item.qty,
-          uom_id: item.uom_id,
-          estimated_unit_cost: item.estimated_unit_cost,
-        })),
-        submit_for_approval: submitForApproval,
-      });
+      const itemsData = items.map(item => ({
+        raw_material_id: item.raw_material_id,
+        supplier_id: item.supplier_id,
+        qty: item.qty,
+        uom_id: item.uom_id,
+        estimated_unit_cost: item.estimated_unit_cost,
+      }));
 
-      if (requestId) {
-        navigate(`/pos/inventario/solicitudes/${requestId}`);
+      if (isEditMode && id) {
+        // Update existing request
+        const success = await updateRequest(id, {
+          notes: notes || undefined,
+          items: itemsData,
+        });
+        if (success) {
+          if (submitForApproval) {
+            // After update, submit for approval
+            await submitRequestForApproval(id);
+          }
+          navigate(`/pos/inventario/solicitudes/${id}`);
+        }
+      } else {
+        // Create new request
+        const requestId = await createRequest({
+          notes: notes || undefined,
+          items: itemsData,
+          submit_for_approval: submitForApproval,
+        });
+
+        if (requestId) {
+          navigate(`/pos/inventario/solicitudes/${requestId}`);
+        }
       }
     } finally {
       setSaving(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/pos/inventario/solicitudes')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(isEditMode ? `/pos/inventario/solicitudes/${id}` : '/pos/inventario/solicitudes')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Nueva Solicitud de Compra</h1>
-          <p className="text-muted-foreground">Agrega los materiales que necesitas comprar</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isEditMode ? 'Editar Solicitud de Compra' : 'Nueva Solicitud de Compra'}
+          </h1>
+          <p className="text-muted-foreground">
+            {isEditMode ? 'Modifica los materiales de la solicitud' : 'Agrega los materiales que necesitas comprar'}
+          </p>
         </div>
       </div>
 
