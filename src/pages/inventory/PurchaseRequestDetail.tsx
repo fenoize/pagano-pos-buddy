@@ -303,13 +303,13 @@ export default function PurchaseRequestDetail() {
                         <TableCell>
                           <div>
                             <p className="font-medium">{item.raw_material?.name}</p>
-                            {item.raw_material?.sku && (
-                              <p className="text-xs text-muted-foreground">{item.raw_material.sku}</p>
+                            {item.raw_material?.code && (
+                              <p className="text-xs text-muted-foreground">{item.raw_material.code}</p>
                             )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          {item.qty} {item.uom?.symbol}
+                          {item.qty} {item.uom?.abbreviation}
                         </TableCell>
                         <TableCell className="text-right">
                           {formatCurrency(item.estimated_unit_cost)}

@@ -17,13 +17,13 @@ export interface PurchaseRequestItem {
   raw_material?: {
     id: string;
     name: string;
-    sku: string | null;
+    code: string | null;
     last_cost: number | null;
     base_uom_id: string;
     base_uom?: {
       id: string;
       name: string;
-      symbol: string;
+      abbreviation: string;
     };
   };
   supplier?: {
@@ -35,7 +35,7 @@ export interface PurchaseRequestItem {
   uom?: {
     id: string;
     name: string;
-    symbol: string;
+    abbreviation: string;
   };
 }
 
