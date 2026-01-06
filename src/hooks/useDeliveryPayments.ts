@@ -31,6 +31,7 @@ export interface DeliveryPayment {
     delivery_fee: number;
     delivery_address?: string;
     created_at: string;
+    delivery_delivered_at?: string;
   };
   delivery_person?: {
     id: string;
@@ -71,7 +72,14 @@ export function useDeliveryPayments() {
         .from('delivery_payments')
         .select(`
           *,
-          order:orders!delivery_payments_order_id_fkey(id, order_number, delivery_fee, delivery_address, created_at),
+          order:orders!delivery_payments_order_id_fkey(
+            id,
+            order_number,
+            delivery_fee,
+            delivery_address,
+            created_at,
+            delivery_delivered_at
+          ),
           delivery_person:users!delivery_payments_delivery_person_id_fkey(id, full_name),
           account:finance_accounts!delivery_payments_account_id_fkey(id, name)
         `)
@@ -85,19 +93,28 @@ export function useDeliveryPayments() {
         query = query.eq('delivery_person_id', filters.delivery_person_id);
       }
 
-      if (filters?.date_start) {
-        query = query.gte('created_at', filters.date_start);
-      }
-
-      if (filters?.date_end) {
-        query = query.lte('created_at', filters.date_end);
-      }
-
       const { data, error } = await query;
-
       if (error) throw error;
 
-      setPayments((data || []) as unknown as DeliveryPayment[]);
+      const rows = (data || []) as unknown as DeliveryPayment[];
+
+      // Filtrar por fecha usando la fecha efectiva de la orden (más confiable que created_at del pago)
+      const filtered = rows.filter((p) => {
+        const effectiveDateStr = p.order?.delivery_delivered_at ?? p.order?.created_at ?? p.created_at;
+        const t = new Date(effectiveDateStr).getTime();
+
+        if (filters?.date_start) {
+          const start = new Date(filters.date_start).getTime();
+          if (t < start) return false;
+        }
+        if (filters?.date_end) {
+          const end = new Date(filters.date_end).getTime();
+          if (t > end) return false;
+        }
+        return true;
+      });
+
+      setPayments(filtered);
     } catch (error) {
       console.error('Error fetching delivery payments:', error);
       toast.error('Error cargando pagos de delivery');
