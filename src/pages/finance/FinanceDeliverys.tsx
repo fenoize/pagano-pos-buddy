@@ -137,17 +137,20 @@ export default function FinanceDeliverys() {
     const headers = ['Fecha', 'Orden', 'Repartidor', 'Monto Base', 'Turno', 'Impuesto', 'Neto', 'Estado', 'Fecha Pago'];
     const csvContent = [
       headers.join(','),
-      ...payments.map(p => [
-        format(new Date(p.created_at), 'dd/MM/yyyy HH:mm'),
-        p.order?.order_number || '',
-        p.delivery_person?.full_name || '',
-        p.base_amount,
-        p.shift_bonus,
-        p.tax_amount,
-        p.net_amount,
-        p.status === 'paid' ? 'Pagado' : 'Pendiente',
-        p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yyyy') : ''
-      ].join(','))
+      ...payments.map(p => {
+        const effectiveDate = p.order?.created_at ?? p.created_at;
+        return [
+          format(new Date(effectiveDate), 'dd/MM/yyyy HH:mm'),
+          p.order?.order_number || '',
+          p.delivery_person?.full_name || '',
+          p.base_amount,
+          p.shift_bonus,
+          p.tax_amount,
+          p.net_amount,
+          p.status === 'paid' ? 'Pagado' : 'Pendiente',
+          p.payment_date ? format(new Date(p.payment_date), 'dd/MM/yyyy') : ''
+        ].join(',');
+      })
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -445,7 +448,15 @@ export default function FinanceDeliverys() {
                       />
                     </TableCell>
                     <TableCell>
-                      {format(new Date(payment.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                      {format(
+                        new Date(
+                          payment.order?.delivery_delivered_at ??
+                          payment.order?.created_at ??
+                          payment.created_at
+                        ),
+                        'dd/MM/yyyy HH:mm',
+                        { locale: es }
+                      )}
                     </TableCell>
                     <TableCell className="font-mono">
                       #{payment.order?.order_number}

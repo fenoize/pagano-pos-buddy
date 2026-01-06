@@ -27,11 +27,12 @@ export default function DeliveryPayments() {
 
   const stats = getPaymentStats();
 
-  // Calculate today's earnings
+  // Calculate today's earnings (usando la fecha real de la orden cuando existe)
   const today = new Date().toISOString().split('T')[0];
-  const todayPayments = payments.filter(p => 
-    p.created_at.startsWith(today)
-  );
+  const todayPayments = payments.filter(p => {
+    const effectiveDate = (p.order?.delivery_delivered_at ?? p.order?.created_at ?? p.created_at);
+    return effectiveDate.startsWith(today);
+  });
   const todayEarnings = todayPayments.reduce((sum, p) => sum + p.base_amount, 0);
 
   const handleRefresh = () => {
@@ -153,7 +154,15 @@ export default function DeliveryPayments() {
                 {payments.map((payment) => (
                   <TableRow key={payment.id}>
                     <TableCell>
-                      {format(new Date(payment.created_at), 'dd MMM HH:mm', { locale: es })}
+                      {format(
+                        new Date(
+                          payment.order?.delivery_delivered_at ??
+                          payment.order?.created_at ??
+                          payment.created_at
+                        ),
+                        'dd MMM HH:mm',
+                        { locale: es }
+                      )}
                     </TableCell>
                     <TableCell className="font-mono">
                       #{payment.order?.order_number}
