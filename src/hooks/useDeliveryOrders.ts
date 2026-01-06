@@ -11,6 +11,7 @@ export interface DeliveryOrder extends Omit<Order, 'customer'> {
   customer_phone?: string;
   minutes_since_created?: number;
   customer?: { name?: string; phone?: string };
+  delivery_payment_amount?: number;
 }
 
 export const useDeliveryOrders = () => {
@@ -207,6 +208,29 @@ export const useDeliveryOrders = () => {
           // No bloquear la entrega por este error
         } else {
           console.log(`[Delivery] Efectivo pendiente registrado: $${cashAmount} para repartidor ${deliveryPersonId}`);
+        }
+      }
+
+      // Crear registro de pago pendiente para el repartidor
+      // El monto base es delivery_payment_amount (configurado por zona) o delivery_fee si no está configurado
+      const basePaymentAmount = order?.delivery_payment_amount || order?.delivery_fee || 0;
+      if (basePaymentAmount > 0) {
+        const { error: paymentError } = await supabase
+          .from('delivery_payments')
+          .insert({
+            order_id: orderId,
+            delivery_person_id: deliveryPersonId,
+            base_amount: basePaymentAmount,
+            gross_amount: basePaymentAmount,
+            net_amount: basePaymentAmount,
+            status: 'pending'
+          });
+
+        if (paymentError) {
+          console.error('Error creating delivery payment record:', paymentError);
+          // No bloquear la entrega por este error
+        } else {
+          console.log(`[Delivery] Pago pendiente registrado: $${basePaymentAmount} para repartidor ${deliveryPersonId}`);
         }
       }
 
