@@ -9,8 +9,10 @@ import {
   Send, 
   RotateCcw,
   FileText,
-  ExternalLink
+  ExternalLink,
+  Download
 } from 'lucide-react';
+import { exportPurchaseRequestToPDF } from '@/lib/purchaseRequestExport';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -195,6 +197,12 @@ export default function PurchaseRequestDetail() {
 
         {/* Actions based on status */}
         <div className="flex gap-2 flex-wrap">
+          {/* PDF Download - always available */}
+          <Button variant="outline" onClick={() => exportPurchaseRequestToPDF(request)}>
+            <Download className="h-4 w-4 mr-2" />
+            Descargar PDF
+          </Button>
+
           {request.status === 'draft' && (
             <>
               <Button variant="outline" onClick={() => navigate(`/pos/inventario/solicitudes/${id}/editar`)}>
