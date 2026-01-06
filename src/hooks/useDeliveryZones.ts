@@ -12,6 +12,11 @@ export interface DeliveryZone {
   price_per_km?: number;
   min_fee?: number;
   calculation_mode?: 'fixed' | 'distance';
+  // Campos de pago al repartidor
+  driver_payment_mode?: 'fixed' | 'percentage' | 'per_km';
+  driver_payment_amount?: number;
+  driver_payment_percentage?: number;
+  driver_payment_per_km?: number;
   created_at: string;
   updated_at: string;
 }
@@ -21,6 +26,14 @@ export interface CreateDeliveryZoneData {
   description?: string;
   delivery_fee: number;
   active?: boolean;
+  polygon?: any;
+  calculation_mode?: 'fixed' | 'distance';
+  price_per_km?: number;
+  min_fee?: number;
+  driver_payment_mode?: 'fixed' | 'percentage' | 'per_km';
+  driver_payment_amount?: number;
+  driver_payment_percentage?: number;
+  driver_payment_per_km?: number;
 }
 
 export interface UpdateDeliveryZoneData {
@@ -28,6 +41,14 @@ export interface UpdateDeliveryZoneData {
   description?: string;
   delivery_fee?: number;
   active?: boolean;
+  polygon?: any;
+  calculation_mode?: 'fixed' | 'distance';
+  price_per_km?: number;
+  min_fee?: number;
+  driver_payment_mode?: 'fixed' | 'percentage' | 'per_km';
+  driver_payment_amount?: number;
+  driver_payment_percentage?: number;
+  driver_payment_per_km?: number;
 }
 
 export function useDeliveryZones() {
@@ -57,7 +78,8 @@ export function useDeliveryZones() {
 
       setZones((data || []).map(z => ({
         ...z,
-        calculation_mode: z.calculation_mode as 'fixed' | 'distance' | undefined
+        calculation_mode: z.calculation_mode as 'fixed' | 'distance' | undefined,
+        driver_payment_mode: z.driver_payment_mode as 'fixed' | 'percentage' | 'per_km' | undefined
       })));
     } catch (error) {
       console.error('Error fetching delivery zones:', error);
