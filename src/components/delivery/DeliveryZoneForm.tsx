@@ -28,7 +28,12 @@ export function DeliveryZoneForm({ isOpen, onClose, onSubmit, zone, mode }: Deli
     calculation_mode: 'fixed' as 'fixed' | 'distance',
     price_per_km: 1000,
     min_fee: 2000,
-    polygon: null as any
+    polygon: null as any,
+    // Campos de pago al repartidor
+    driver_payment_mode: 'fixed' as 'fixed' | 'percentage' | 'per_km',
+    driver_payment_amount: 0,
+    driver_payment_percentage: 0,
+    driver_payment_per_km: 0
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,7 +47,11 @@ export function DeliveryZoneForm({ isOpen, onClose, onSubmit, zone, mode }: Deli
         calculation_mode: (zone as any).calculation_mode || 'fixed',
         price_per_km: (zone as any).price_per_km || 1000,
         min_fee: (zone as any).min_fee || 2000,
-        polygon: (zone as any).polygon || null
+        polygon: (zone as any).polygon || null,
+        driver_payment_mode: zone.driver_payment_mode || 'fixed',
+        driver_payment_amount: zone.driver_payment_amount || 0,
+        driver_payment_percentage: zone.driver_payment_percentage || 0,
+        driver_payment_per_km: zone.driver_payment_per_km || 0
       });
     } else {
       setFormData({
@@ -53,7 +62,11 @@ export function DeliveryZoneForm({ isOpen, onClose, onSubmit, zone, mode }: Deli
         calculation_mode: 'fixed',
         price_per_km: 1000,
         min_fee: 2000,
-        polygon: null
+        polygon: null,
+        driver_payment_mode: 'fixed',
+        driver_payment_amount: 0,
+        driver_payment_percentage: 0,
+        driver_payment_per_km: 0
       });
     }
   }, [mode, zone, isOpen]);
@@ -212,6 +225,108 @@ export function DeliveryZoneForm({ isOpen, onClose, onSubmit, zone, mode }: Deli
                   placeholder="2000"
                 />
               </div>
+            </div>
+          )}
+
+          {/* Separator */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold mb-3 text-primary">Pago al Repartidor</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Configura cuánto se le pagará al repartidor por entregar en esta zona
+            </p>
+          </div>
+
+          {/* Driver Payment Mode */}
+          <div className="space-y-2">
+            <Label>Modo de Pago al Repartidor</Label>
+            <Select
+              value={formData.driver_payment_mode}
+              onValueChange={(value: 'fixed' | 'percentage' | 'per_km') => 
+                setFormData(prev => ({ ...prev, driver_payment_mode: value }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">Monto Fijo</span>
+                    <span className="text-xs text-muted-foreground">
+                      Mismo pago para toda la zona
+                    </span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="percentage">
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">Porcentaje</span>
+                    <span className="text-xs text-muted-foreground">
+                      % del cobro al cliente
+                    </span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="per_km">
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">Por Kilómetro</span>
+                    <span className="text-xs text-muted-foreground">
+                      Pago según distancia recorrida
+                    </span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Driver Payment Fixed */}
+          {formData.driver_payment_mode === 'fixed' && (
+            <div className="space-y-2">
+              <Label htmlFor="driver_payment_amount">Pago Fijo al Repartidor (CLP)</Label>
+              <Input
+                id="driver_payment_amount"
+                type="number"
+                min="0"
+                step="100"
+                value={formData.driver_payment_amount}
+                onChange={(e) => setFormData(prev => ({ ...prev, driver_payment_amount: parseInt(e.target.value) || 0 }))}
+                placeholder="1000"
+              />
+            </div>
+          )}
+
+          {/* Driver Payment Percentage */}
+          {formData.driver_payment_mode === 'percentage' && (
+            <div className="space-y-2">
+              <Label htmlFor="driver_payment_percentage">Porcentaje del Cobro (%)</Label>
+              <Input
+                id="driver_payment_percentage"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={formData.driver_payment_percentage}
+                onChange={(e) => setFormData(prev => ({ ...prev, driver_payment_percentage: parseFloat(e.target.value) || 0 }))}
+                placeholder="50"
+              />
+              <p className="text-xs text-muted-foreground">
+                Si el cobro al cliente es ${formData.delivery_fee.toLocaleString('es-CL')}, 
+                el repartidor recibirá ${Math.round(formData.delivery_fee * formData.driver_payment_percentage / 100).toLocaleString('es-CL')}
+              </p>
+            </div>
+          )}
+
+          {/* Driver Payment Per KM */}
+          {formData.driver_payment_mode === 'per_km' && (
+            <div className="space-y-2">
+              <Label htmlFor="driver_payment_per_km">Pago por Kilómetro (CLP)</Label>
+              <Input
+                id="driver_payment_per_km"
+                type="number"
+                min="0"
+                step="100"
+                value={formData.driver_payment_per_km}
+                onChange={(e) => setFormData(prev => ({ ...prev, driver_payment_per_km: parseFloat(e.target.value) || 0 }))}
+                placeholder="500"
+              />
             </div>
           )}
 

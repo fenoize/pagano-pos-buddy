@@ -68,6 +68,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 // Delivery Pages
 const DeliveryDashboard = lazy(() => import("@/pages/delivery/DeliveryDashboard"));
 const DeliveryHistory = lazy(() => import("@/pages/delivery/DeliveryHistory"));
+const DeliveryPayments = lazy(() => import("@/pages/delivery/DeliveryPayments"));
 
 // Inventory Pages
 const InventoryHub = lazy(() => import("@/pages/inventory/InventoryHub"));
@@ -87,6 +88,7 @@ const PurchaseOrderDetail = lazy(() => import("@/pages/inventory/PurchaseOrderDe
 const FinanceKPIs = lazy(() => import("@/pages/finance/FinanceKPIs"));
 const FinanceCierres = lazy(() => import("@/pages/finance/FinanceCierres"));
 const FinanceExport = lazy(() => import("@/pages/finance/FinanceExport"));
+const FinanceDeliverys = lazy(() => import("@/pages/finance/FinanceDeliverys"));
 const FinanceAccounts = lazy(() => import("@/pages/finance/FinanceAccounts"));
 const FinanceExpenses = lazy(() => import("@/pages/finance/FinanceExpenses"));
 const FixedExpenses = lazy(() => import("@/pages/finance/FixedExpenses"));
@@ -494,6 +496,14 @@ const App = () => (
                 </StaffProtectedRoute>
               } />
               
+              <Route path="/pos/finanzas/deliverys" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <FinanceDeliverys />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
               <Route path="/pos/clientes" element={
                 <StaffProtectedRoute>
                   <StaffLayout>
@@ -572,6 +582,14 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <DeliveryHistory />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/delivery/pagos" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <DeliveryPayments />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />

@@ -1461,6 +1461,132 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_payments: {
+        Row: {
+          account_id: string | null
+          base_amount: number
+          company_pays_tax: boolean
+          created_at: string
+          delivery_person_id: string
+          expense_id: string | null
+          gross_amount: number
+          has_invoice: boolean
+          id: string
+          net_amount: number
+          notes: string | null
+          order_id: string
+          paid_by: string | null
+          payment_date: string | null
+          shift_bonus: number
+          status: string
+          tax_amount: number
+          tax_expense_id: string | null
+          tax_percentage: number
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          base_amount?: number
+          company_pays_tax?: boolean
+          created_at?: string
+          delivery_person_id: string
+          expense_id?: string | null
+          gross_amount?: number
+          has_invoice?: boolean
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          order_id: string
+          paid_by?: string | null
+          payment_date?: string | null
+          shift_bonus?: number
+          status?: string
+          tax_amount?: number
+          tax_expense_id?: string | null
+          tax_percentage?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          base_amount?: number
+          company_pays_tax?: boolean
+          created_at?: string
+          delivery_person_id?: string
+          expense_id?: string | null
+          gross_amount?: number
+          has_invoice?: boolean
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          order_id?: string
+          paid_by?: string | null
+          payment_date?: string | null
+          shift_bonus?: number
+          status?: string
+          tax_amount?: number
+          tax_expense_id?: string | null
+          tax_percentage?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_payments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_payments_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "finance_expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "delivery_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_payments_tax_expense_id_fkey"
+            columns: ["tax_expense_id"]
+            isOneToOne: false
+            referencedRelation: "finance_expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_settings: {
         Row: {
           assignment_mode: string
@@ -1507,6 +1633,10 @@ export type Database = {
           created_at: string
           delivery_fee: number
           description: string | null
+          driver_payment_amount: number | null
+          driver_payment_mode: string | null
+          driver_payment_per_km: number | null
+          driver_payment_percentage: number | null
           id: string
           min_fee: number | null
           name: string
@@ -1520,6 +1650,10 @@ export type Database = {
           created_at?: string
           delivery_fee?: number
           description?: string | null
+          driver_payment_amount?: number | null
+          driver_payment_mode?: string | null
+          driver_payment_per_km?: number | null
+          driver_payment_percentage?: number | null
           id?: string
           min_fee?: number | null
           name: string
@@ -1533,6 +1667,10 @@ export type Database = {
           created_at?: string
           delivery_fee?: number
           description?: string | null
+          driver_payment_amount?: number | null
+          driver_payment_mode?: string | null
+          driver_payment_per_km?: number | null
+          driver_payment_percentage?: number | null
           id?: string
           min_fee?: number | null
           name?: string
@@ -2607,6 +2745,7 @@ export type Database = {
           delivery_distance: number | null
           delivery_fee: number | null
           delivery_number: string | null
+          delivery_payment_amount: number | null
           delivery_person_id: string | null
           delivery_person_name: string | null
           delivery_reference: string | null
@@ -2645,6 +2784,7 @@ export type Database = {
           delivery_distance?: number | null
           delivery_fee?: number | null
           delivery_number?: string | null
+          delivery_payment_amount?: number | null
           delivery_person_id?: string | null
           delivery_person_name?: string | null
           delivery_reference?: string | null
@@ -2683,6 +2823,7 @@ export type Database = {
           delivery_distance?: number | null
           delivery_fee?: number | null
           delivery_number?: string | null
+          delivery_payment_amount?: number | null
           delivery_person_id?: string | null
           delivery_person_name?: string | null
           delivery_reference?: string | null

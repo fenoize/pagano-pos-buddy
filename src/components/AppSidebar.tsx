@@ -76,6 +76,7 @@ const menuItems = [
 const deliveryItems = [
   { title: "Pedidos en Curso", url: "/pos/delivery", icon: TruckIcon, roles: ['Administrador', 'Reparto'] },
   { title: "Mis Deliverys", url: "/pos/delivery/historial", icon: History, roles: ['Administrador', 'Reparto'] },
+  { title: "Mis Pagos", url: "/pos/delivery/pagos", icon: DollarSign, roles: ['Administrador', 'Reparto'] },
 ];
 
 const inventoryItems = [
@@ -99,7 +100,7 @@ const financeItems = [
   { title: "Gastos Fijos", url: "/pos/finanzas/gastos-fijos", icon: Building2, roles: ['Administrador'] },
   { title: "Egresos", url: "/pos/finanzas/egresos", icon: FileTextIcon, roles: ['Administrador', 'Cajero'] },
   { title: "Cierres Financieros", url: "/pos/finanzas/cierres", icon: FileText, roles: ['Administrador'] },
-  { title: "Exportaciones", url: "/pos/finanzas/exportaciones", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
+  { title: "Deliverys", url: "/pos/finanzas/deliverys", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
   { title: "Configuración", url: "/pos/finanzas/configuracion", icon: SettingsIcon, roles: ['Administrador'] },
 ];
 
