@@ -63,9 +63,9 @@ export const usePurchaseRequests = () => {
         .from('purchase_request_items')
         .select(`
           *,
-          raw_material:raw_materials(id, name, sku, last_cost, base_uom_id, base_uom:units_of_measure(id, name, symbol)),
+          raw_material:raw_materials(id, name, sku, last_cost, base_uom_id, base_uom:units_of_measure(id, name, abbreviation)),
           supplier:suppliers(id, name, phone, email),
-          uom:units_of_measure(id, name, symbol)
+          uom:units_of_measure(id, name, abbreviation)
         `)
         .eq('request_id', id)
         .order('created_at', { ascending: true });
