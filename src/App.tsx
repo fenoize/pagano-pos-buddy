@@ -101,13 +101,24 @@ const FinanceConfig = lazy(() => import("@/pages/finance/FinanceConfig"));
 // Report Pages
 const ProductSalesReport = lazy(() => import("@/pages/reports/ProductSalesReport"));
 
-// Loading component para Suspense
+// Loading component para Suspense - siempre dark para consistencia con el tema POS
 function LoadingFallback() {
+  // Detectar si es ruta POS para usar tema oscuro
+  const isPosRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/pos');
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div 
+      className="min-h-screen flex items-center justify-center"
+      style={{ backgroundColor: isPosRoute ? 'hsl(220 13% 10%)' : 'hsl(var(--background))' }}
+    >
       <div className="text-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="text-muted-foreground">Cargando...</p>
+        <div 
+          className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto"
+          style={{ borderColor: '#cc2525' }}
+        />
+        <p style={{ color: isPosRoute ? 'hsl(220 9% 70%)' : 'hsl(var(--muted-foreground))' }}>
+          Cargando...
+        </p>
       </div>
     </div>
   );
