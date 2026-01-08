@@ -36,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, MoreVertical, Pencil, Trash2, Image, Video, Eye, ExternalLink, Tv, Copy } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Trash2, Image, Video, Eye, ExternalLink, Tv, Copy, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useTVScreenConfigs } from '@/hooks/useTVScreenConfigs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -195,6 +195,10 @@ export default function MarketingTVContent() {
     end_date: '',
   });
 
+  // Preview states
+  const [imageStatus, setImageStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [videoStatus, setVideoStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
   const handleCreate = () => {
     setEditingContent(null);
     setFormData({
@@ -207,6 +211,8 @@ export default function MarketingTVContent() {
       start_date: '',
       end_date: '',
     });
+    setImageStatus('idle');
+    setVideoStatus('idle');
     setModalOpen(true);
   };
 
@@ -222,6 +228,8 @@ export default function MarketingTVContent() {
       start_date: content.start_date || '',
       end_date: content.end_date || '',
     });
+    setImageStatus(content.image_url ? 'loading' : 'idle');
+    setVideoStatus(content.video_url ? 'loading' : 'idle');
     setModalOpen(true);
   };
 
@@ -466,26 +474,86 @@ export default function MarketingTVContent() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="image_url">URL de Imagen</Label>
+              <Label htmlFor="image_url" className="flex items-center gap-2">
+                URL de Imagen
+                {imageStatus === 'loading' && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                {imageStatus === 'success' && <CheckCircle2 className="h-3 w-3 text-green-500" />}
+                {imageStatus === 'error' && <XCircle className="h-3 w-3 text-destructive" />}
+              </Label>
               <Input
                 id="image_url"
                 value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://..."
+                onChange={(e) => {
+                  setFormData({ ...formData, image_url: e.target.value });
+                  setImageStatus(e.target.value ? 'loading' : 'idle');
+                }}
+                placeholder="https://tudominio.com/media/promo.jpg"
               />
-              <p className="text-xs text-muted-foreground">Se usa si no hay video</p>
+              <p className="text-xs text-muted-foreground">
+                URL directa de la imagen. Se usa si no hay video.
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="video_url">URL de Video</Label>
+              <Label htmlFor="video_url" className="flex items-center gap-2">
+                URL de Video
+                {videoStatus === 'loading' && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                {videoStatus === 'success' && <CheckCircle2 className="h-3 w-3 text-green-500" />}
+                {videoStatus === 'error' && <XCircle className="h-3 w-3 text-destructive" />}
+              </Label>
               <Input
                 id="video_url"
                 value={formData.video_url}
-                onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                placeholder="https://..."
+                onChange={(e) => {
+                  setFormData({ ...formData, video_url: e.target.value });
+                  setVideoStatus(e.target.value ? 'loading' : 'idle');
+                }}
+                placeholder="https://tudominio.com/media/video.mp4"
               />
-              <p className="text-xs text-muted-foreground">MP4 recomendado. Tiene prioridad sobre imagen.</p>
+              <p className="text-xs text-muted-foreground">
+                URL directa del video MP4. Tiene prioridad sobre imagen.
+              </p>
             </div>
+
+            {/* Vista previa en tiempo real */}
+            {(formData.image_url || formData.video_url) && (
+              <div className="space-y-2">
+                <Label>Vista previa</Label>
+                <div className="aspect-video bg-muted rounded-lg overflow-hidden relative">
+                  {formData.video_url ? (
+                    <video 
+                      key={formData.video_url}
+                      src={formData.video_url} 
+                      className="w-full h-full object-cover"
+                      controls
+                      onLoadedData={() => setVideoStatus('success')}
+                      onError={() => setVideoStatus('error')}
+                    />
+                  ) : formData.image_url ? (
+                    <img 
+                      key={formData.image_url}
+                      src={formData.image_url}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                      onLoad={() => setImageStatus('success')}
+                      onError={() => setImageStatus('error')}
+                    />
+                  ) : null}
+                  
+                  {/* Overlay de error */}
+                  {((formData.video_url && videoStatus === 'error') || 
+                    (!formData.video_url && formData.image_url && imageStatus === 'error')) && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                      <div className="text-center text-muted-foreground">
+                        <XCircle className="h-8 w-8 mx-auto mb-2 text-destructive" />
+                        <p className="text-sm">No se pudo cargar el contenido</p>
+                        <p className="text-xs">Verifica que la URL sea correcta y accesible</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
