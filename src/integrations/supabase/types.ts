@@ -2245,6 +2245,7 @@ export type Database = {
           subtitle: string | null
           title: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           created_at?: string
@@ -2263,6 +2264,7 @@ export type Database = {
           subtitle?: string | null
           title: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           created_at?: string
@@ -2281,6 +2283,7 @@ export type Database = {
           subtitle?: string | null
           title?: string
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -4526,6 +4529,45 @@ export type Database = {
           razon_social?: string | null
           rut?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tv_screen_configs: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          show_clock: boolean
+          show_logo: boolean
+          slider_interval_seconds: number
+          sound_enabled: boolean
+          template: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          show_clock?: boolean
+          show_logo?: boolean
+          slider_interval_seconds?: number
+          sound_enabled?: boolean
+          template?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          show_clock?: boolean
+          show_logo?: boolean
+          slider_interval_seconds?: number
+          sound_enabled?: boolean
+          template?: string
+          updated_at?: string
         }
         Relationships: []
       }

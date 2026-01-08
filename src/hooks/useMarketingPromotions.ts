@@ -14,6 +14,7 @@ export interface MarketingPromotion {
   cta_url: string | null;
   product_id?: string | null;
   image_url: string | null;
+  video_url: string | null;
   is_active: boolean;
   priority: number;
   start_date: string | null;

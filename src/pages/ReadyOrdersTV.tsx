@@ -1,16 +1,42 @@
 import { useState, useEffect, useCallback } from "react";
-import { Maximize, Volume2, VolumeX, RefreshCw } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Maximize, Volume2, VolumeX, RefreshCw, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReadyOrders } from "@/hooks/useReadyOrders";
-import { ReadyOrderCard } from "@/components/tv/ReadyOrderCard";
+import { useTVScreenConfig, TVScreenConfig } from "@/hooks/useTVScreenConfigs";
 import { ReadyOrdersSounds } from "@/components/tv/ReadyOrdersSounds";
+import { TVLayoutFull } from "@/components/tv/TVLayoutFull";
+import { TVLayoutSplitHorizontal } from "@/components/tv/TVLayoutSplitHorizontal";
+import { TVLayoutSplitVertical } from "@/components/tv/TVLayoutSplitVertical";
+import { TVConfigModal } from "@/components/tv/TVConfigModal";
 
 export default function ReadyOrdersTV() {
+  const [searchParams] = useSearchParams();
+  const screenId = searchParams.get('screen') || undefined;
+  
   const { readyOrders, loading, refetch } = useReadyOrders();
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const { data: savedConfig } = useTVScreenConfig(screenId);
+  
+  // Local config state (can be modified via modal)
+  const [localConfig, setLocalConfig] = useState<Partial<TVScreenConfig>>({
+    template: 'full',
+    slider_interval_seconds: 8,
+    show_logo: true,
+    show_clock: true,
+    sound_enabled: true,
+  });
+  
   const [recentlyReady, setRecentlyReady] = useState<Set<string>>(new Set());
   const [currentTime, setCurrentTime] = useState(new Date());
   const [cursorVisible, setCursorVisible] = useState(true);
+  const [configModalOpen, setConfigModalOpen] = useState(false);
+
+  // Load saved config when available
+  useEffect(() => {
+    if (savedConfig) {
+      setLocalConfig(savedConfig);
+    }
+  }, [savedConfig]);
 
   // Update clock every second
   useEffect(() => {
@@ -70,9 +96,51 @@ export default function ReadyOrdersTV() {
     });
   };
 
+  const soundEnabled = localConfig.sound_enabled ?? true;
+  const showLogo = localConfig.show_logo ?? true;
+  const showClock = localConfig.show_clock ?? true;
+  const template = localConfig.template || 'full';
+  const sliderInterval = (localConfig.slider_interval_seconds || 8) * 1000;
+
+  const renderLayout = () => {
+    if (loading) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
+    switch (template) {
+      case 'split_horizontal':
+        return (
+          <TVLayoutSplitHorizontal
+            orders={readyOrders}
+            recentlyReady={recentlyReady}
+            sliderInterval={sliderInterval}
+          />
+        );
+      case 'split_vertical':
+        return (
+          <TVLayoutSplitVertical
+            orders={readyOrders}
+            recentlyReady={recentlyReady}
+            sliderInterval={sliderInterval}
+          />
+        );
+      default:
+        return (
+          <TVLayoutFull
+            orders={readyOrders}
+            recentlyReady={recentlyReady}
+          />
+        );
+    }
+  };
+
   return (
     <div 
-      className="fixed inset-0 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-background dark:to-muted overflow-hidden"
+      className="fixed inset-0 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-background dark:to-muted flex flex-col overflow-hidden"
       style={{ cursor: cursorVisible ? 'default' : 'none' }}
     >
       {/* Sound component */}
@@ -82,19 +150,31 @@ export default function ReadyOrdersTV() {
         onNewReady={handleNewReady}
       />
 
+      {/* Config Modal */}
+      <TVConfigModal
+        open={configModalOpen}
+        onOpenChange={setConfigModalOpen}
+        currentConfig={localConfig}
+        onConfigChange={setLocalConfig}
+      />
+
       {/* Header */}
-      <header className="px-6 py-4 flex justify-between items-center bg-white/50 dark:bg-card/50 backdrop-blur-sm border-b">
+      <header className="px-6 py-4 flex justify-between items-center bg-white/50 dark:bg-card/50 backdrop-blur-sm border-b shrink-0">
         {/* Logo */}
-        <div className="flex items-center gap-3">
-          <img 
-            src="/icons/paganos-192.png" 
-            alt="Paganos" 
-            className="h-12 w-12 rounded-lg"
-          />
-          <span className="text-xl font-bold text-foreground hidden sm:inline">
-            Paganos
-          </span>
-        </div>
+        {showLogo ? (
+          <div className="flex items-center gap-3">
+            <img 
+              src="/icons/paganos-192.png" 
+              alt="Paganos" 
+              className="h-12 w-12 rounded-lg"
+            />
+            <span className="text-xl font-bold text-foreground hidden sm:inline">
+              Paganos
+            </span>
+          </div>
+        ) : (
+          <div />
+        )}
 
         {/* Title */}
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
@@ -103,9 +183,11 @@ export default function ReadyOrdersTV() {
 
         {/* Controls */}
         <div className="flex items-center gap-2">
-          <span className="text-lg font-mono text-muted-foreground hidden md:inline">
-            {formatTime(currentTime)}
-          </span>
+          {showClock && (
+            <span className="text-lg font-mono text-muted-foreground hidden md:inline">
+              {formatTime(currentTime)}
+            </span>
+          )}
           
           <Button
             variant="ghost"
@@ -119,7 +201,7 @@ export default function ReadyOrdersTV() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setSoundEnabled(!soundEnabled)}
+            onClick={() => setLocalConfig(prev => ({ ...prev, sound_enabled: !soundEnabled }))}
             title={soundEnabled ? "Silenciar" : "Activar sonido"}
           >
             {soundEnabled ? (
@@ -137,43 +219,20 @@ export default function ReadyOrdersTV() {
           >
             <Maximize className="h-5 w-5" />
           </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setConfigModalOpen(true)}
+            title="Configuración"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="p-4 md:p-6 h-[calc(100vh-80px)] overflow-auto">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        ) : readyOrders.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
-            {readyOrders.map(order => (
-              <ReadyOrderCard 
-                key={order.id} 
-                order={order}
-                isRecent={recentlyReady.has(order.id)}
-              />
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <div className="text-8xl mb-6">🍔</div>
-      <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-        ¡Todo entregado!
-      </h2>
-      <p className="text-xl text-muted-foreground max-w-md">
-        Los pedidos listos aparecerán aquí automáticamente
-      </p>
+      {/* Main content - renders appropriate layout */}
+      {renderLayout()}
     </div>
   );
 }
