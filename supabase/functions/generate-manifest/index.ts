@@ -50,11 +50,11 @@ Deno.serve(async (req) => {
 
     // Build manifest based on app type
     const manifest: any = {
-      name: config.app_name,
-      short_name: config.app_short_name,
-      description: config.app_description,
-      theme_color: config.theme_color,
-      background_color: config.background_color,
+      name: config.app_name || (appType === 'pos' ? 'Paganos Burger POS' : 'Paganos Burger App'),
+      short_name: config.app_short_name || (appType === 'pos' ? 'Paganos POS' : 'Paganos'),
+      description: config.app_description || 'Paganos Burger - Smash Burger',
+      theme_color: config.theme_color || '#cc0000',
+      background_color: config.background_color || '#0a0a0a',
       lang: 'es',
     };
 

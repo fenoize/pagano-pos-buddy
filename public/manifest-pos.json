@@ -1,5 +1,5 @@
 {
-  "name": "Paganos — Punto de Venta",
+  "name": "Paganos Burger POS",
   "short_name": "Paganos POS",
   "description": "Sistema de punto de venta para Paganos Burger (solo navegador)",
   "start_url": "/pos",

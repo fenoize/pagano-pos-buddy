@@ -1,6 +1,6 @@
 {
-  "name": "Paganos — Punto de Venta",
-  "short_name": "Paganos POS",
+  "name": "Paganos Burger App",
+  "short_name": "Paganos",
   "description": "Sistema de punto de venta para Paganos Burger",
   "start_url": "/",
   "scope": "/",
