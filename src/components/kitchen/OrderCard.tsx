@@ -3,7 +3,7 @@ import { Order, OrderStatus } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2 } from 'lucide-react';
+import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2, UtensilsCrossed, ShoppingBag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -117,7 +117,23 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
             {order.fulfillment === 'delivery' && (
               <MapPin className={`text-muted-foreground ${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
             )}
-            {order.fulfillment === 'retiro' && (
+            {order.fulfillment === 'retiro' && order.pickup_mode === 'servir' && (
+              <div className="flex items-center gap-1">
+                <UtensilsCrossed className={`text-blue-600 ${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
+                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+                  Servir
+                </Badge>
+              </div>
+            )}
+            {order.fulfillment === 'retiro' && order.pickup_mode === 'llevar' && (
+              <div className="flex items-center gap-1">
+                <ShoppingBag className={`text-orange-600 ${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
+                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300">
+                  Llevar
+                </Badge>
+              </div>
+            )}
+            {order.fulfillment === 'retiro' && !order.pickup_mode && (
               <Package className={`text-muted-foreground ${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
             )}
           </div>

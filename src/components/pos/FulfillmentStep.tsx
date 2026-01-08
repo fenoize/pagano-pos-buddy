@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FulfillmentType, Customer, Address, DeliveryZone, User } from '@/types';
+import { FulfillmentType, Customer, Address, DeliveryZone, User, PickupMode } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Store, Truck, MapPin, Edit2, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Store, Truck, MapPin, Edit2, Check, AlertCircle, Loader2, UtensilsCrossed, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useComunas } from '@/hooks/useComunas';
 import { useCustomerAddresses } from '@/hooks/useCustomerAddresses';
@@ -34,14 +34,16 @@ export interface DeliveryData {
 
 interface FulfillmentStepProps {
   fulfillment: FulfillmentType;
+  pickupMode?: PickupMode;
   customer?: Partial<Customer>;
   initialDeliveryData?: DeliveryData | null;
   onFulfillmentChange: (fulfillment: FulfillmentType, deliveryFee?: number, deliveryZoneId?: string) => void;
+  onPickupModeChange?: (mode: PickupMode) => void;
   onDeliveryDataChange?: (data: DeliveryData) => void;
   onNext: () => void;
 }
 
-export default function FulfillmentStep({ fulfillment, customer, initialDeliveryData, onFulfillmentChange, onDeliveryDataChange, onNext }: FulfillmentStepProps) {
+export default function FulfillmentStep({ fulfillment, pickupMode, customer, initialDeliveryData, onFulfillmentChange, onPickupModeChange, onDeliveryDataChange, onNext }: FulfillmentStepProps) {
   const [selectedZoneId, setSelectedZoneId] = useState<string>('');
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
@@ -214,8 +216,13 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
       onFulfillmentChange(type);
     } else {
       onFulfillmentChange(type, 0);
-      onNext();
+      // Don't auto-advance for retiro - let user select pickup mode first
     }
+  };
+
+  const handlePickupModeSelect = (mode: PickupMode) => {
+    onPickupModeChange?.(mode);
+    onNext();
   };
 
   // Handle address selection from autocomplete
@@ -435,6 +442,42 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
           </div>
         </CardContent>
       </Card>
+
+      {/* Pickup Mode Selection - Only show when retiro is selected */}
+      {fulfillment === 'retiro' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>¿Para servir o para llevar?</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                variant={pickupMode === 'servir' ? 'default' : 'outline'}
+                className="h-24 flex flex-col gap-2"
+                onClick={() => handlePickupModeSelect('servir')}
+              >
+                <UtensilsCrossed className="w-8 h-8" />
+                <div className="text-center">
+                  <div className="font-medium">Para Servir</div>
+                  <div className="text-sm opacity-80">Comer en local</div>
+                </div>
+              </Button>
+
+              <Button
+                variant={pickupMode === 'llevar' ? 'default' : 'outline'}
+                className="h-24 flex flex-col gap-2"
+                onClick={() => handlePickupModeSelect('llevar')}
+              >
+                <ShoppingBag className="w-8 h-8" />
+                <div className="text-center">
+                  <div className="font-medium">Para Llevar</div>
+                  <div className="text-sm opacity-80">Take away</div>
+                </div>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Delivery Address Section */}
       {fulfillment === 'delivery' && (
@@ -679,8 +722,8 @@ export default function FulfillmentStep({ fulfillment, customer, initialDelivery
         </>
       )}
 
-      {/* Continue Button */}
-      {fulfillment === 'retiro' && (
+      {/* Continue Button - only for delivery now, retiro advances on pickup mode selection */}
+      {fulfillment === 'delivery' && ((selectedZone && fullAddress) || isExceptionMode) && (
         <Button onClick={handleContinue} className="w-full" size="lg">
           Continuar a Cliente
         </Button>

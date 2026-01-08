@@ -2792,6 +2792,7 @@ export type Database = {
           payment_mp: number | null
           payment_pos: number | null
           payment_runas: number | null
+          pickup_mode: string | null
           source: string | null
           status: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
@@ -2831,6 +2832,7 @@ export type Database = {
           payment_mp?: number | null
           payment_pos?: number | null
           payment_runas?: number | null
+          pickup_mode?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
@@ -2870,6 +2872,7 @@ export type Database = {
           payment_mp?: number | null
           payment_pos?: number | null
           payment_runas?: number | null
+          pickup_mode?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal?: number
