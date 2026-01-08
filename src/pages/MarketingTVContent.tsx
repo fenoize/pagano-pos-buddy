@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
@@ -37,20 +36,150 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, MoreVertical, Pencil, Trash2, Image, Video, Eye, ExternalLink, Tv } from 'lucide-react';
-import { useMarketingPromotions, MarketingPromotion, MarketingPromotionInput } from '@/hooks/useMarketingPromotions';
+import { Plus, MoreVertical, Pencil, Trash2, Image, Video, Eye, ExternalLink, Tv, Copy } from 'lucide-react';
 import { useTVScreenConfigs } from '@/hooks/useTVScreenConfigs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { configuredSupabase } from '@/lib/supabaseClient';
+import { setStaffContext } from '@/lib/dbContext';
+import { useAuth } from '@/hooks/useAuth';
 
-export function TVContentTab() {
-  const { promotions, isLoading, createPromotion, updatePromotion, deletePromotion, toggleActive } = useMarketingPromotions();
+interface TVContent {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  image_url: string | null;
+  video_url: string | null;
+  is_active: boolean;
+  priority: number;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Hook específico para contenido TV (filtra solo los que tienen media y cta_type = 'none')
+function useTVContent() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  const { data: contents = [], isLoading } = useQuery({
+    queryKey: ['tv-content'],
+    queryFn: async () => {
+      const { data, error } = await configuredSupabase
+        .from('marketing_app_promotions')
+        .select('*')
+        .eq('cta_type', 'none')
+        .order('priority', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as TVContent[];
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (content: Omit<TVContent, 'id' | 'created_at' | 'updated_at'>) => {
+      if (user?.id) await setStaffContext(user.id);
+      
+      const { data, error } = await configuredSupabase
+        .from('marketing_app_promotions')
+        .insert([{ ...content, cta_type: 'none', cta_label: null, cta_url: null, description: null }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tv-content'] });
+      queryClient.invalidateQueries({ queryKey: ['active-promotions'] });
+      toast.success('Contenido creado');
+    },
+    onError: (error: Error) => {
+      toast.error('Error: ' + error.message);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...content }: Partial<TVContent> & { id: string }) => {
+      if (user?.id) await setStaffContext(user.id);
+      
+      const { data, error } = await configuredSupabase
+        .from('marketing_app_promotions')
+        .update({ ...content, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tv-content'] });
+      queryClient.invalidateQueries({ queryKey: ['active-promotions'] });
+      toast.success('Contenido actualizado');
+    },
+    onError: (error: Error) => {
+      toast.error('Error: ' + error.message);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      if (user?.id) await setStaffContext(user.id);
+      
+      const { error } = await configuredSupabase
+        .from('marketing_app_promotions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tv-content'] });
+      queryClient.invalidateQueries({ queryKey: ['active-promotions'] });
+      toast.success('Contenido eliminado');
+    },
+    onError: (error: Error) => {
+      toast.error('Error: ' + error.message);
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      if (user?.id) await setStaffContext(user.id);
+      
+      const { error } = await configuredSupabase
+        .from('marketing_app_promotions')
+        .update({ is_active, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tv-content'] });
+      queryClient.invalidateQueries({ queryKey: ['active-promotions'] });
+    },
+  });
+
+  return {
+    contents,
+    isLoading,
+    createContent: createMutation.mutateAsync,
+    updateContent: updateMutation.mutateAsync,
+    deleteContent: deleteMutation.mutateAsync,
+    toggleActive: toggleActiveMutation.mutateAsync,
+  };
+}
+
+export default function MarketingTVContent() {
+  const { contents, isLoading, createContent, updateContent, deleteContent, toggleActive } = useTVContent();
   const { configs } = useTVScreenConfigs();
   
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingPromo, setEditingPromo] = useState<MarketingPromotion | null>(null);
+  const [editingContent, setEditingContent] = useState<TVContent | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -67,7 +196,7 @@ export function TVContentTab() {
   });
 
   const handleCreate = () => {
-    setEditingPromo(null);
+    setEditingContent(null);
     setFormData({
       title: '',
       subtitle: '',
@@ -81,17 +210,17 @@ export function TVContentTab() {
     setModalOpen(true);
   };
 
-  const handleEdit = (promo: MarketingPromotion) => {
-    setEditingPromo(promo);
+  const handleEdit = (content: TVContent) => {
+    setEditingContent(content);
     setFormData({
-      title: promo.title,
-      subtitle: promo.subtitle || '',
-      image_url: promo.image_url || '',
-      video_url: promo.video_url || '',
-      is_active: promo.is_active,
-      priority: promo.priority,
-      start_date: promo.start_date || '',
-      end_date: promo.end_date || '',
+      title: content.title,
+      subtitle: content.subtitle || '',
+      image_url: content.image_url || '',
+      video_url: content.video_url || '',
+      is_active: content.is_active,
+      priority: content.priority,
+      start_date: content.start_date || '',
+      end_date: content.end_date || '',
     });
     setModalOpen(true);
   };
@@ -107,13 +236,9 @@ export function TVContentTab() {
       return;
     }
 
-    const promoData: MarketingPromotionInput = {
+    const contentData = {
       title: formData.title,
       subtitle: formData.subtitle || null,
-      description: null,
-      cta_label: null,
-      cta_type: 'none',
-      cta_url: null,
       image_url: formData.image_url || null,
       video_url: formData.video_url || null,
       is_active: formData.is_active,
@@ -122,17 +247,17 @@ export function TVContentTab() {
       end_date: formData.end_date || null,
     };
 
-    if (editingPromo) {
-      await updatePromotion({ id: editingPromo.id, ...promoData });
+    if (editingContent) {
+      await updateContent({ id: editingContent.id, ...contentData });
     } else {
-      await createPromotion(promoData);
+      await createContent(contentData);
     }
     setModalOpen(false);
   };
 
   const handleDelete = async () => {
     if (deletingId) {
-      await deletePromotion(deletingId);
+      await deleteContent(deletingId);
       setDeletingId(null);
     }
   };
@@ -145,23 +270,30 @@ export function TVContentTab() {
     toast.success('URL copiada al portapapeles');
   };
 
-  const getMediaType = (promo: MarketingPromotion) => {
-    if (promo.video_url) return 'video';
-    if (promo.image_url) return 'imagen';
-    return 'sin media';
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Tv className="h-8 w-8" />
+            Contenido TV
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Gestiona imágenes y videos para las pantallas de pedidos listos
+          </p>
+        </div>
+        <Button onClick={handleCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          Agregar Contenido
+        </Button>
+      </div>
+
       {/* Quick access to TV screens */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Tv className="h-5 w-5" />
-            Pantallas TV Configuradas
-          </CardTitle>
+          <CardTitle className="text-lg">Pantallas TV Configuradas</CardTitle>
           <CardDescription>
-            Acceso rápido a las pantallas TV. El contenido de abajo se mostrará en los templates divididos.
+            Click para copiar la URL de cada pantalla. Abre la URL en una TV para mostrar pedidos + promociones.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -177,31 +309,22 @@ export function TVContentTab() {
                 size="sm"
                 onClick={() => copyScreenUrl(config.id)}
               >
-                <ExternalLink className="mr-2 h-4 w-4" />
+                <Copy className="mr-2 h-4 w-4" />
                 {config.name}
                 {config.is_default && <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>}
               </Button>
             ))}
           </div>
-          <p className="text-sm text-muted-foreground mt-3">
-            Click en una pantalla para copiar su URL. Abre la URL en una TV para mostrar los pedidos listos con promociones.
-          </p>
         </CardContent>
       </Card>
 
       {/* Content management */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Contenido para TV</CardTitle>
-            <CardDescription>
-              Imágenes y videos que se mostrarán en el slider de las pantallas TV con template dividido.
-            </CardDescription>
-          </div>
-          <Button onClick={handleCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            Agregar Contenido
-          </Button>
+        <CardHeader>
+          <CardTitle>Contenido del Slider</CardTitle>
+          <CardDescription>
+            Este contenido se muestra en los templates divididos (horizontal/vertical) de la pantalla TV.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -210,8 +333,9 @@ export function TVContentTab() {
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
-          ) : promotions.length === 0 ? (
+          ) : contents.length === 0 ? (
             <div className="text-center py-12">
+              <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground mb-4">No hay contenido para TV</p>
               <Button onClick={handleCreate}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -231,19 +355,19 @@ export function TVContentTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {promotions.map((promo) => (
-                  <TableRow key={promo.id}>
+                {contents.map((content) => (
+                  <TableRow key={content.id}>
                     <TableCell>
                       <div 
                         className="w-20 h-12 rounded overflow-hidden bg-muted cursor-pointer flex items-center justify-center"
-                        onClick={() => setPreviewUrl(promo.video_url || promo.image_url)}
+                        onClick={() => setPreviewUrl(content.video_url || content.image_url)}
                       >
-                        {promo.video_url ? (
+                        {content.video_url ? (
                           <Video className="h-6 w-6 text-muted-foreground" />
-                        ) : promo.image_url ? (
+                        ) : content.image_url ? (
                           <img 
-                            src={promo.image_url} 
-                            alt={promo.title}
+                            src={content.image_url} 
+                            alt={content.title}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -253,15 +377,15 @@ export function TVContentTab() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{promo.title}</div>
-                        {promo.subtitle && (
-                          <div className="text-sm text-muted-foreground">{promo.subtitle}</div>
+                        <div className="font-medium">{content.title}</div>
+                        {content.subtitle && (
+                          <div className="text-sm text-muted-foreground">{content.subtitle}</div>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="capitalize">
-                        {promo.video_url ? (
+                        {content.video_url ? (
                           <><Video className="mr-1 h-3 w-3" /> Video</>
                         ) : (
                           <><Image className="mr-1 h-3 w-3" /> Imagen</>
@@ -269,11 +393,11 @@ export function TVContentTab() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="secondary">{promo.priority}</Badge>
+                      <Badge variant="secondary">{content.priority}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={promo.is_active ? 'default' : 'secondary'}>
-                        {promo.is_active ? 'Activo' : 'Inactivo'}
+                      <Badge variant={content.is_active ? 'default' : 'secondary'}>
+                        {content.is_active ? 'Activo' : 'Inactivo'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -284,19 +408,19 @@ export function TVContentTab() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setPreviewUrl(promo.video_url || promo.image_url)}>
+                          <DropdownMenuItem onClick={() => setPreviewUrl(content.video_url || content.image_url)}>
                             <Eye className="mr-2 h-4 w-4" />
                             Ver preview
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(promo)}>
+                          <DropdownMenuItem onClick={() => handleEdit(content)}>
                             <Pencil className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toggleActive({ id: promo.id, is_active: !promo.is_active })}>
-                            {promo.is_active ? 'Desactivar' : 'Activar'}
+                          <DropdownMenuItem onClick={() => toggleActive({ id: content.id, is_active: !content.is_active })}>
+                            {content.is_active ? 'Desactivar' : 'Activar'}
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => setDeletingId(promo.id)}
+                            onClick={() => setDeletingId(content.id)}
                             className="text-destructive"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -317,7 +441,7 @@ export function TVContentTab() {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingPromo ? 'Editar Contenido' : 'Agregar Contenido TV'}</DialogTitle>
+            <DialogTitle>{editingContent ? 'Editar Contenido' : 'Agregar Contenido TV'}</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
@@ -413,7 +537,7 @@ export function TVContentTab() {
               Cancelar
             </Button>
             <Button onClick={handleSave}>
-              {editingPromo ? 'Guardar Cambios' : 'Agregar'}
+              {editingContent ? 'Guardar Cambios' : 'Agregar'}
             </Button>
           </DialogFooter>
         </DialogContent>

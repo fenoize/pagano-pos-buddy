@@ -30,7 +30,8 @@ import {
   Megaphone,
   Bell,
   TruckIcon,
-  BarChart3
+  BarChart3,
+  Tv
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -109,6 +110,7 @@ const financeItems = [
 const marketingItems = [
   { title: "Promos App", url: "/pos/marketing/promos-app", icon: Megaphone, roles: ['Administrador'] },
   { title: "Notificaciones", url: "/pos/marketing/notificaciones", icon: Bell, roles: ['Administrador'] },
+  { title: "Contenido TV", url: "/pos/marketing/contenido-tv", icon: Tv, roles: ['Administrador'] },
 ];
 
 // Reports menu items
