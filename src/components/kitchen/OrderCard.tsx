@@ -324,12 +324,28 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
           </div>
         )}
 
-        {/* Timestamp */}
-        <div className={`text-muted-foreground text-right pt-2 border-t ${compact ? 'text-xs' : 'text-xs'}`}>
-          Creado {formatDistanceToNow(new Date(order.created_at), { 
-            addSuffix: true, 
-            locale: es 
-          })}
+        {/* Timestamp + Pickup Mode Badge */}
+        <div className={`flex items-center justify-between pt-2 border-t ${compact ? 'text-xs' : 'text-xs'}`}>
+          <div>
+            {order.fulfillment === 'retiro' && order.pickup_mode && (
+              <Badge 
+                variant="outline" 
+                className={
+                  order.pickup_mode === 'servir' 
+                    ? "bg-blue-50 text-blue-700 border-blue-300" 
+                    : "bg-orange-50 text-orange-700 border-orange-300"
+                }
+              >
+                {order.pickup_mode === 'servir' ? 'SERVIR' : 'LLEVAR'}
+              </Badge>
+            )}
+          </div>
+          <div className="text-muted-foreground">
+            Creado {formatDistanceToNow(new Date(order.created_at), { 
+              addSuffix: true, 
+              locale: es 
+            })}
+          </div>
         </div>
       </CardContent>
     </Card>
