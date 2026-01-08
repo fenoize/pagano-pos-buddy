@@ -7,6 +7,19 @@ interface PromoSliderProps {
   className?: string;
 }
 
+interface PromoConfig {
+  show_title?: boolean;
+}
+
+function parsePromoConfig(description: string | null | undefined): PromoConfig {
+  if (!description) return { show_title: true };
+  try {
+    return JSON.parse(description);
+  } catch {
+    return { show_title: true };
+  }
+}
+
 export function PromoSlider({ interval = 8000, className }: PromoSliderProps) {
   const { data: promotions = [] } = useActivePromotions();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -49,6 +62,8 @@ export function PromoSlider({ interval = 8000, className }: PromoSliderProps) {
   const currentPromo = promotions[currentIndex];
   const hasVideo = !!currentPromo?.video_url;
   const hasImage = !!currentPromo?.image_url;
+  const config = parsePromoConfig(currentPromo?.description);
+  const showTitle = config.show_title !== false;
 
   return (
     <div className={cn("relative overflow-hidden bg-black", className)}>
@@ -80,27 +95,28 @@ export function PromoSlider({ interval = 8000, className }: PromoSliderProps) {
         )}
       </div>
 
-      {/* Overlay gradient for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-
-      {/* Content overlay */}
-      <div 
-        className={cn(
-          "absolute bottom-0 left-0 right-0 p-6 text-white transition-all duration-300",
-          isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
-        )}
-      >
-        {currentPromo.title && (
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 drop-shadow-lg">
-            {currentPromo.title}
-          </h2>
-        )}
-        {currentPromo.subtitle && (
-          <p className="text-xl md:text-2xl text-white/90 drop-shadow">
-            {currentPromo.subtitle}
-          </p>
-        )}
-      </div>
+      {/* Content overlay - only show if showTitle is true */}
+      {showTitle && (
+        <div 
+          className={cn(
+            "absolute bottom-0 left-0 right-0 p-6 text-white transition-all duration-300",
+            isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
+          )}
+        >
+          {/* Overlay gradient for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent -z-10" />
+          {currentPromo.title && (
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 drop-shadow-lg">
+              {currentPromo.title}
+            </h2>
+          )}
+          {currentPromo.subtitle && (
+            <p className="text-xl md:text-2xl text-white/90 drop-shadow">
+              {currentPromo.subtitle}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Slide indicators */}
       {promotions.length > 1 && (
