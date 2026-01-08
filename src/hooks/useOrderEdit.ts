@@ -11,6 +11,7 @@ export interface OrderEditData {
   items: OrderItem[];
   delivery_fee: number;
   fulfillment?: 'retiro' | 'delivery';
+  pickup_mode?: 'servir' | 'llevar';
   payment_method: PaymentMethod;
   payment_efectivo: number;
   payment_mp: number;
@@ -25,6 +26,8 @@ export interface OrderEditData {
   delivery_comuna_id?: string;
   delivery_reference?: string;
   delivery_person_id?: string | null;
+  customer_id?: string;
+  nombre_resumen?: string;
 }
 
 export interface OrderEditAction {
@@ -229,6 +232,7 @@ export function useOrderEdit() {
           discount: editData.discount,
           delivery_fee: editData.delivery_fee,
           fulfillment: editData.fulfillment || orderData.fulfillment,
+          pickup_mode: editData.pickup_mode || null,
           total: editData.total,
           payment_method: editData.payment_method as any,
           payment_efectivo: editData.payment_efectivo,
@@ -243,6 +247,8 @@ export function useOrderEdit() {
           delivery_reference: editData.delivery_reference || null,
           delivery_person_id: editData.delivery_person_id === '' ? null : editData.delivery_person_id,
           delivery_person_name: deliveryPersonName,
+          customer_id: editData.customer_id !== undefined ? (editData.customer_id || null) : orderData.customer_id,
+          nombre_resumen: editData.nombre_resumen !== undefined ? editData.nombre_resumen : orderData.nombre_resumen,
           updated_at: new Date().toISOString()
         })
         .eq('id', orderId)

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Order, OrderItem, Comuna } from '@/types';
+import { Order, OrderItem, Comuna, Customer } from '@/types';
 import { useOrderEdit, OrderEditData } from '@/hooks/useOrderEdit';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useComunas } from '@/hooks/useComunas';
@@ -25,7 +25,7 @@ import { OrderHistoryModal } from './OrderHistoryModal';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet, AlertTriangle } from 'lucide-react';
+import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet, AlertTriangle, Search, UtensilsCrossed, ShoppingBag } from 'lucide-react';
 
 interface OrderEditModalProps {
   order: Order | null;
@@ -45,6 +45,8 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const [valorRunaActual, setValorRunaActual] = useState(0);
   const [belongsToClosedSession, setBelongsToClosedSession] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<any>(null);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerResults, setCustomerResults] = useState<Customer[]>([]);
   
   const { updateOrder, calculateTotals, isLoading } = useOrderEdit();
   const { customers } = useCustomers();
@@ -130,6 +132,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         items: [...(Array.isArray(order.items) ? order.items : [])],
         delivery_fee: order.delivery_fee || 0,
         fulfillment: order.fulfillment,
+        pickup_mode: order.pickup_mode as 'servir' | 'llevar' | undefined,
         payment_method: order.payment_method,
         payment_efectivo: order.payment_efectivo || 0,
         payment_mp: order.payment_mp || 0,
@@ -143,9 +146,13 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         delivery_number: order.delivery_number || '',
         delivery_comuna_id: order.delivery_comuna_id || '',
         delivery_reference: order.delivery_reference || '',
-        delivery_person_id: order.delivery_person_id || null
+        delivery_person_id: order.delivery_person_id || null,
+        customer_id: order.customer_id || undefined,
+        nombre_resumen: order.nombre_resumen || ''
       });
       setRunasEditadas(order.payment_runas || 0);
+      setCustomerSearch('');
+      setCustomerResults([]);
       
       console.log('[OrderEditModal] Edit data initialized:', {
         items_count: Array.isArray(order.items) ? order.items.length : 0
@@ -232,7 +239,39 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       ...editData,
       items: [...editData.items, item]
     });
-    setShowProductSelector(false);
+    // No cerrar el modal, permitir agregar múltiples productos
+  };
+
+  const handleCustomerSearch = async (term: string) => {
+    setCustomerSearch(term);
+    if (term.length < 2) { 
+      setCustomerResults([]); 
+      return; 
+    }
+    const { data } = await supabase
+      .from('customers')
+      .select('*')
+      .or(`name.ilike.%${term}%,phone.ilike.%${term}%,rut.ilike.%${term}%,apellido.ilike.%${term}%`)
+      .limit(5);
+    setCustomerResults((data || []) as Customer[]);
+  };
+
+  const selectCustomerForOrder = (c: Customer) => {
+    setEditData(prev => prev ? { 
+      ...prev, 
+      customer_id: c.id, 
+      nombre_resumen: `${c.name || ''} ${c.apellido || ''}`.trim() 
+    } : null);
+    setCustomerSearch('');
+    setCustomerResults([]);
+  };
+
+  const clearCustomer = () => {
+    setEditData(prev => prev ? { 
+      ...prev, 
+      customer_id: undefined, 
+      nombre_resumen: '' 
+    } : null);
   };
 
   const handlePaymentUpdate = (field: string, value: number) => {
@@ -396,32 +435,114 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                   </div>
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">Cliente:</Label>
-                    <div>
-                      {order.customer_id ? (
-                        (() => {
-                          // Cliente registrado - buscar en BD
-                          const customer = customers.find(c => c.id === order.customer_id);
-                          if (customer) {
-                            return (
-                              <button
-                                className="text-primary hover:underline text-left"
-                                onClick={() => {
-                                  // TODO: Implementar modal de información de cliente
-                                  console.log('Ver cliente:', customer.id);
-                                }}
+                    {isEditMode ? (
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Buscar cliente por nombre, RUT, teléfono..."
+                            value={customerSearch}
+                            onChange={(e) => handleCustomerSearch(e.target.value)}
+                            className="pl-9"
+                          />
+                        </div>
+                        {customerResults.length > 0 && (
+                          <div className="border rounded-md p-2 space-y-1 bg-background shadow-md max-h-40 overflow-y-auto">
+                            {customerResults.map(c => (
+                              <div 
+                                key={c.id} 
+                                className="p-2 hover:bg-muted cursor-pointer rounded text-sm"
+                                onClick={() => selectCustomerForOrder(c)}
                               >
-                                {`${customer.name} ${customer.apellido || ''}`.trim()}
-                              </button>
-                            );
+                                <span className="font-medium">{c.name} {c.apellido || ''}</span>
+                                {c.phone && <span className="text-muted-foreground ml-2">· {c.phone}</span>}
+                                {c.rut && <span className="text-muted-foreground ml-2">· {c.rut}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {editData?.customer_id && (
+                          <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                            <User className="w-3 h-3" />
+                            {editData.nombre_resumen || 'Cliente seleccionado'}
+                            <X 
+                              className="w-3 h-3 ml-1 cursor-pointer hover:text-destructive" 
+                              onClick={clearCustomer} 
+                            />
+                          </Badge>
+                        )}
+                        {!editData?.customer_id && (
+                          <Input
+                            placeholder="O escribe nombre sin registrar..."
+                            value={editData?.nombre_resumen || ''}
+                            onChange={(e) => setEditData(prev => prev ? { ...prev, nombre_resumen: e.target.value } : null)}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        {order.customer_id ? (
+                          (() => {
+                            const customer = customers.find(c => c.id === order.customer_id);
+                            if (customer) {
+                              return (
+                                <button
+                                  className="text-primary hover:underline text-left"
+                                  onClick={() => console.log('Ver cliente:', customer.id)}
+                                >
+                                  {`${customer.name} ${customer.apellido || ''}`.trim()}
+                                </button>
+                              );
+                            }
+                            return <span className="text-muted-foreground">{order.nombre_resumen || 'Cliente'}</span>;
+                          })()
+                        ) : (
+                          <span className="text-muted-foreground">{order.nombre_resumen || 'Sin cliente'}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Pickup Mode - Solo para retiro */}
+                  {((isEditMode ? editData?.fulfillment : order.fulfillment) === 'retiro') && (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Modalidad de Retiro:</Label>
+                      {isEditMode ? (
+                        <Select
+                          value={editData?.pickup_mode || order.pickup_mode || ''}
+                          onValueChange={(value: 'servir' | 'llevar') => 
+                            setEditData(prev => prev ? { ...prev, pickup_mode: value } : null)
                           }
-                          return <span className="text-muted-foreground">{order.nombre_resumen || 'Cliente'}</span>;
-                        })()
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar modalidad" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="servir">
+                              <div className="flex items-center gap-2">
+                                <UtensilsCrossed className="w-4 h-4" />
+                                Para Servir (comer en local)
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="llevar">
+                              <div className="flex items-center gap-2">
+                                <ShoppingBag className="w-4 h-4" />
+                                Para Llevar (take away)
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       ) : (
-                        // Cliente no registrado - usar nombre_resumen
-                        <span className="text-muted-foreground">{order.nombre_resumen || 'Cliente'}</span>
+                        <Badge variant={order.pickup_mode === 'servir' ? 'default' : 'secondary'}>
+                          {order.pickup_mode === 'servir' ? (
+                            <span className="flex items-center gap-1"><UtensilsCrossed className="w-3 h-3" /> SERVIR</span>
+                          ) : order.pickup_mode === 'llevar' ? (
+                            <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3" /> LLEVAR</span>
+                          ) : 'Sin definir'}
+                        </Badge>
                       )}
                     </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -680,12 +801,23 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                           <SelectValue placeholder="Seleccionar método" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="efectivo">Efectivo</SelectItem>
-                          <SelectItem value="mp">Transferencia</SelectItem>
-                          <SelectItem value="pos">POS</SelectItem>
-                          <SelectItem value="aplicacion">Aplicación</SelectItem>
-                          <SelectItem value="runas">Runas</SelectItem>
-                          <SelectItem value="mixto">Mixto</SelectItem>
+                          {paymentMethods.filter(m => m.is_active).map((method) => {
+                            const Icon = getIconComponent(method.icon);
+                            return (
+                              <SelectItem key={method.id} value={method.name}>
+                                <div className="flex items-center gap-2">
+                                  <Icon className="w-4 h-4" />
+                                  {method.display_name}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                          <SelectItem value="mixto">
+                            <div className="flex items-center gap-2">
+                              <Wallet className="w-4 h-4" />
+                              Mixto
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
