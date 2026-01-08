@@ -45,10 +45,15 @@ import { configuredSupabase } from '@/lib/supabaseClient';
 import { setStaffContext } from '@/lib/dbContext';
 import { useAuth } from '@/hooks/useAuth';
 
+interface TVContentConfig {
+  show_title?: boolean;
+}
+
 interface TVContent {
   id: string;
   title: string;
   subtitle: string | null;
+  description: string | null; // JSON config
   image_url: string | null;
   video_url: string | null;
   is_active: boolean;
@@ -85,7 +90,7 @@ function useTVContent() {
       
       const { data, error } = await configuredSupabase
         .from('marketing_app_promotions')
-        .insert([{ ...content, cta_type: 'none', cta_label: null, cta_url: null, description: null }])
+        .insert([{ ...content, cta_type: 'none', cta_label: null, cta_url: null }])
         .select()
         .single();
 
@@ -193,6 +198,7 @@ export default function MarketingTVContent() {
     priority: 1,
     start_date: '',
     end_date: '',
+    show_title: true,
   });
 
   // Preview states
@@ -210,14 +216,25 @@ export default function MarketingTVContent() {
       priority: 1,
       start_date: '',
       end_date: '',
+      show_title: true,
     });
     setImageStatus('idle');
     setVideoStatus('idle');
     setModalOpen(true);
   };
 
+  const parseConfig = (description: string | null): TVContentConfig => {
+    if (!description) return { show_title: true };
+    try {
+      return JSON.parse(description);
+    } catch {
+      return { show_title: true };
+    }
+  };
+
   const handleEdit = (content: TVContent) => {
     setEditingContent(content);
+    const config = parseConfig(content.description);
     setFormData({
       title: content.title,
       subtitle: content.subtitle || '',
@@ -227,6 +244,7 @@ export default function MarketingTVContent() {
       priority: content.priority,
       start_date: content.start_date || '',
       end_date: content.end_date || '',
+      show_title: config.show_title !== false,
     });
     setImageStatus(content.image_url ? 'loading' : 'idle');
     setVideoStatus(content.video_url ? 'loading' : 'idle');
@@ -244,9 +262,11 @@ export default function MarketingTVContent() {
       return;
     }
 
+    const configJson: TVContentConfig = { show_title: formData.show_title };
     const contentData = {
       title: formData.title,
       subtitle: formData.subtitle || null,
+      description: JSON.stringify(configJson),
       image_url: formData.image_url || null,
       video_url: formData.video_url || null,
       is_active: formData.is_active,
@@ -463,6 +483,20 @@ export default function MarketingTVContent() {
               />
             </div>
 
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="show_title">Mostrar título en pantalla</Label>
+                <p className="text-xs text-muted-foreground">
+                  Si está desactivado, solo se mostrará la imagen/video
+                </p>
+              </div>
+              <Switch
+                id="show_title"
+                checked={formData.show_title}
+                onCheckedChange={(checked) => setFormData({ ...formData, show_title: checked })}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="subtitle">Subtítulo</Label>
               <Input
@@ -470,6 +504,7 @@ export default function MarketingTVContent() {
                 value={formData.subtitle}
                 onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
                 placeholder="Ej: ¡Pruébala ahora!"
+                disabled={!formData.show_title}
               />
             </div>
 
