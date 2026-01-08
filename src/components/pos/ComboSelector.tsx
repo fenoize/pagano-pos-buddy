@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import VariantSelector from './VariantSelector';
+import { ExtrasModal } from './ExtrasModal';
 
 interface ComboSelectorProps {
   product: Product;
@@ -45,6 +46,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const [productModifiers, setProductModifiers] = useState<Record<string, any[]>>({});
   const [selections, setSelections] = useState<ComboItemSelection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [extrasModalSlotIndex, setExtrasModalSlotIndex] = useState<number | null>(null);
   const { toast } = useToast();
 
   // Track initialization to prevent re-fetching
@@ -730,44 +732,56 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                   </div>
                 )}
 
-                {/* Extras */}
+                {/* Extras - Botón compacto que abre panel lateral */}
                 {availableExtras.length > 0 && (
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-2 block">
                       Extras
                     </label>
-                    <div className="space-y-2">
-                      {availableExtras.map((extra) => (
-                        <div key={extra.id} className="flex items-center justify-between p-2 border rounded">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{extra.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatPrice(extra.price)}
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleExtraChange(index, extra.id, -1)}
-                              disabled={((selection.extras || {})[extra.id] || 0) === 0}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-6 text-center text-sm">
-                              {(selection.extras || {})[extra.id] || 0}
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between h-auto py-3"
+                      onClick={() => setExtrasModalSlotIndex(index)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        <span>Agregar Extras</span>
+                        {Object.keys(selection.extras || {}).length > 0 && (
+                          <Badge variant="secondary">
+                            {Object.keys(selection.extras || {}).length}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const extrasTotal = Object.entries(selection.extras || {}).reduce((total, [extraId, qty]) => {
+                            const extra = availableExtras.find(e => e.id === extraId);
+                            return total + (extra ? extra.price * qty : 0);
+                          }, 0);
+                          return extrasTotal > 0 ? (
+                            <span className="text-sm font-semibold">
+                              +{formatPrice(extrasTotal)}
                             </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleExtraChange(index, extra.id, 1)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                          ) : null;
+                        })()}
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
+                    </Button>
+                    
+                    {/* Mostrar resumen de extras seleccionados */}
+                    {Object.keys(selection.extras || {}).length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {Object.entries(selection.extras || {}).map(([extraId, qty]) => {
+                          const extra = availableExtras.find(e => e.id === extraId);
+                          if (!extra) return null;
+                          return (
+                            <Badge key={extraId} variant="outline" className="text-xs">
+                              {extra.name} x{qty}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -822,6 +836,20 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           <span className="text-lg">{formatPrice(calculateComboTotal())}</span>
         </div>
       </CardContent>
+
+      {/* Modal de Extras para el slot activo */}
+      {extrasModalSlotIndex !== null && selections[extrasModalSlotIndex] && (
+        <ExtrasModal
+          isOpen={true}
+          onClose={() => setExtrasModalSlotIndex(null)}
+          extras={productExtras[selections[extrasModalSlotIndex].comboSlot.category_id] || []}
+          selectedExtras={selections[extrasModalSlotIndex].extras || {}}
+          onExtrasChange={(newExtras) => {
+            updateSelection(extrasModalSlotIndex, { extras: newExtras });
+            setExtrasModalSlotIndex(null);
+          }}
+        />
+      )}
     </Card>
   );
 };
