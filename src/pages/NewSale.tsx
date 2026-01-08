@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product, Customer, OrderItem, FulfillmentType, CouponApplication, PickupMode } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +35,7 @@ export default function NewSale() {
   const [orderName, setOrderName] = useState('');
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
   const [pickupMode, setPickupMode] = useState<PickupMode | undefined>(undefined);
+  const pickupModeRef = useRef<PickupMode | undefined>(undefined);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryZone, setDeliveryZone] = useState<string>('');
   const [deliveryData, setDeliveryData] = useState<DeliveryData | null>(null);
@@ -143,13 +144,15 @@ export default function NewSale() {
     setDeliveryZone(zone);
     // Reset pickup mode when changing fulfillment type
     if (type === 'delivery') {
+      pickupModeRef.current = undefined;
       setPickupMode(undefined);
     }
   };
 
   const handlePickupModeChange = (mode: PickupMode) => {
+    // Use a ref so we never lose the selection due to React state timing.
+    pickupModeRef.current = mode;
     setPickupMode(mode);
-    // Advance to next step after setting pickup mode
     setCurrentStep(3);
   };
 
@@ -329,7 +332,7 @@ export default function NewSale() {
       customer: { ...customer },
       orderName: orderName.trim() || null,
       fulfillment,
-      pickupMode: fulfillment === 'retiro' ? pickupMode : undefined,
+      pickupMode: fulfillment === 'retiro' ? (pickupModeRef.current ?? pickupMode) : undefined,
       deliveryData: deliveryData ? { ...deliveryData } : null,
       deliveryFee,
       deliveryZone,
@@ -351,6 +354,7 @@ export default function NewSale() {
     setOrderName('');
     setUsedRunas(0);
     setFulfillment('retiro');
+    pickupModeRef.current = undefined;
     setPickupMode(undefined);
     setDeliveryFee(0);
     setDeliveryZone('');
