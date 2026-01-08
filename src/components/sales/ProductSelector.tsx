@@ -63,14 +63,12 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
     }
   };
 
-  const handleProductSelect = (product: Product, size: 'simple' | 'doble' | 'triple', priceKind: 'combo' | 'only') => {
-    const price = product.prices[priceKind]?.[size] || 0;
-    
+  const handleProductSelect = (product: Product, size: 'simple' | 'doble' | 'triple' | 'unico', priceKind: 'combo' | 'only' | 'base', price: number) => {
     const orderItem: OrderItem = {
       productId: product.id,
       productName: product.name,
-      size,
-      priceKind,
+      size: size === 'unico' ? 'simple' : size,
+      priceKind: priceKind === 'base' ? 'only' : priceKind,
       basePrice: price,
       quantity: 1,
       extras: [],
@@ -83,9 +81,31 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
     // Show success toast
     toast({
       title: "Producto agregado",
-      description: `${product.name} (${size}, ${priceKind === 'combo' ? 'Combo' : 'Solo'})`,
+      description: `${product.name}${size !== 'unico' ? ` (${size}, ${priceKind === 'combo' ? 'Combo' : 'Solo'})` : ''}`,
       duration: 2000,
     });
+  };
+
+  // Check if product has combo/only prices with sizes
+  const hasComboSizes = (product: Product) => {
+    return product.prices?.combo && (product.prices.combo.simple || product.prices.combo.doble || product.prices.combo.triple);
+  };
+
+  const hasOnlySizes = (product: Product) => {
+    return product.prices?.only && (product.prices.only.simple || product.prices.only.doble || product.prices.only.triple);
+  };
+
+  // Get base/simple price for products without size structure
+  const getBasePrice = (product: Product): number | null => {
+    // Direct price at root level
+    if (typeof product.prices === 'number') return product.prices;
+    // Base price field
+    if (product.prices?.base) return product.prices.base;
+    // Price field  
+    if (product.prices?.price) return product.prices.price;
+    // Simple price without combo/only structure
+    if (product.prices?.simple && typeof product.prices.simple === 'number') return product.prices.simple;
+    return null;
   };
 
   const filteredProducts = products.filter(product =>
@@ -141,7 +161,7 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
                       </div>
 
                       {/* Combo Prices */}
-                      {product.prices.combo && (
+                      {hasComboSizes(product) && (
                         <div className="space-y-2">
                           <h5 className="text-sm font-medium text-primary">Combo</h5>
                           <div className="grid grid-cols-3 gap-2">
@@ -155,7 +175,7 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
                                   variant="outline"
                                   size="sm"
                                   className="flex flex-col h-auto p-2"
-                                  onClick={() => handleProductSelect(product, size, 'combo')}
+                                  onClick={() => handleProductSelect(product, size, 'combo', price)}
                                 >
                                   <span className="capitalize text-xs">{size}</span>
                                   <span className="font-medium">{formatPrice(price)}</span>
@@ -167,7 +187,7 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
                       )}
 
                       {/* Only Prices */}
-                      {product.prices.only && (
+                      {hasOnlySizes(product) && (
                         <div className="space-y-2">
                           <h5 className="text-sm font-medium text-secondary">Solo</h5>
                           <div className="grid grid-cols-3 gap-2">
@@ -181,7 +201,7 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
                                   variant="outline"
                                   size="sm"
                                   className="flex flex-col h-auto p-2"
-                                  onClick={() => handleProductSelect(product, size, 'only')}
+                                  onClick={() => handleProductSelect(product, size, 'only', price)}
                                 >
                                   <span className="capitalize text-xs">{size}</span>
                                   <span className="font-medium">{formatPrice(price)}</span>
@@ -189,6 +209,26 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
                               );
                             })}
                           </div>
+                        </div>
+                      )}
+
+                      {/* Base/Single Price - for products without combo/only structure */}
+                      {!hasComboSizes(product) && !hasOnlySizes(product) && (
+                        <div className="space-y-2">
+                          {getBasePrice(product) !== null ? (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="w-full h-auto p-3"
+                              onClick={() => handleProductSelect(product, 'unico', 'base', getBasePrice(product)!)}
+                            >
+                              <span className="font-medium">Agregar - {formatPrice(getBasePrice(product)!)}</span>
+                            </Button>
+                          ) : (
+                            <p className="text-xs text-muted-foreground text-center py-2">
+                              Producto sin precio configurado
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
