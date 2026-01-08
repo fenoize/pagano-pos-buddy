@@ -47,15 +47,15 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
   }
 
   const getCardColor = () => {
-    if (order.status === 'Listo') return 'bg-green-100 border-green-300';
-    if (order.status === 'En pausa') return 'bg-yellow-100 border-yellow-300';
+    if (order.status === 'Listo') return 'bg-green-100 border-green-300 dark:bg-green-900/40 dark:border-green-700';
+    if (order.status === 'En pausa') return 'bg-yellow-100 border-yellow-300 dark:bg-yellow-900/40 dark:border-yellow-600';
     
     if (elapsedMinutes <= config.timeGreen) {
-      return 'bg-green-50 border-green-200';
+      return 'bg-green-50 border-green-200 dark:bg-green-950/50 dark:border-green-800';
     } else if (elapsedMinutes <= config.timeYellow) {
-      return 'bg-yellow-50 border-yellow-200';
+      return 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/50 dark:border-yellow-700';
     } else {
-      return 'bg-red-50 border-red-200';
+      return 'bg-red-50 border-red-200 dark:bg-red-950/50 dark:border-red-800';
     }
   };
 
@@ -332,8 +332,8 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
                 variant="outline" 
                 className={
                   order.pickup_mode === 'servir' 
-                    ? "bg-blue-50 text-blue-700 border-blue-300" 
-                    : "bg-orange-50 text-orange-700 border-orange-300"
+                    ? "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-600" 
+                    : "bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-200 dark:border-orange-600"
                 }
               >
                 {order.pickup_mode === 'servir' ? 'SERVIR' : 'LLEVAR'}
