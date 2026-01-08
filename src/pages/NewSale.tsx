@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Product, Customer, OrderItem, FulfillmentType, CouponApplication } from '@/types';
+import { Product, Customer, OrderItem, FulfillmentType, CouponApplication, PickupMode } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +34,7 @@ export default function NewSale() {
   const [customer, setCustomer] = useState<Partial<Customer>>({});
   const [orderName, setOrderName] = useState('');
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
+  const [pickupMode, setPickupMode] = useState<PickupMode | undefined>(undefined);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryZone, setDeliveryZone] = useState<string>('');
   const [deliveryData, setDeliveryData] = useState<DeliveryData | null>(null);
@@ -140,6 +141,14 @@ export default function NewSale() {
     setFulfillment(type);
     setDeliveryFee(fee);
     setDeliveryZone(zone);
+    // Reset pickup mode when changing fulfillment type
+    if (type === 'delivery') {
+      setPickupMode(undefined);
+    }
+  };
+
+  const handlePickupModeChange = (mode: PickupMode) => {
+    setPickupMode(mode);
   };
 
   const handleDeliveryDataChange = (data: DeliveryData) => {
@@ -318,6 +327,7 @@ export default function NewSale() {
       customer: { ...customer },
       orderName: orderName.trim() || null,
       fulfillment,
+      pickupMode: fulfillment === 'retiro' ? pickupMode : undefined,
       deliveryData: deliveryData ? { ...deliveryData } : null,
       deliveryFee,
       deliveryZone,
@@ -339,6 +349,7 @@ export default function NewSale() {
     setOrderName('');
     setUsedRunas(0);
     setFulfillment('retiro');
+    setPickupMode(undefined);
     setDeliveryFee(0);
     setDeliveryZone('');
     setDeliveryData(null);
@@ -469,6 +480,7 @@ export default function NewSale() {
         created_by_user_id: validUserId,
         nombre_resumen: orderSnapshot.orderName,
         fulfillment: orderSnapshot.fulfillment,
+        pickup_mode: orderSnapshot.pickupMode || null,
         items: orderSnapshot.cartItems as any,
         subtotal: orderSnapshot.subtotal,
         delivery_fee: orderSnapshot.deliveryFee,
@@ -793,9 +805,11 @@ export default function NewSale() {
             
             <FulfillmentStep
               fulfillment={fulfillment}
+              pickupMode={pickupMode}
               customer={customer}
               initialDeliveryData={deliveryData}
               onFulfillmentChange={handleFulfillmentChange}
+              onPickupModeChange={handlePickupModeChange}
               onDeliveryDataChange={handleDeliveryDataChange}
               onNext={handleFulfillmentNext}
             />

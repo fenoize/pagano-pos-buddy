@@ -4,6 +4,8 @@ export type OrderStatus = 'PendientePago' | 'Pendiente' | 'En preparación' | 'E
 
 export type FulfillmentType = 'retiro' | 'delivery';
 
+export type PickupMode = 'servir' | 'llevar' | null;
+
 export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'aplicacion' | 'runas' | 'mixto';
 
 export type CashMovementType = 'ingreso' | 'egreso';
@@ -307,6 +309,7 @@ export interface Order {
   customer_id?: string;
   customer?: Customer;
   fulfillment: FulfillmentType;
+  pickup_mode?: PickupMode | string | null; // 'servir' = para servir en local, 'llevar' = para llevar
   delivery_zone_id?: string;
   delivery_zone_name?: string;
   delivery_address?: string;
