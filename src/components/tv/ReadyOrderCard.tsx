@@ -7,32 +7,40 @@ import type { Order } from "@/types";
 interface ReadyOrderCardProps {
   order: Order;
   isRecent?: boolean;
+  compact?: boolean;
 }
 
-export function ReadyOrderCard({ order, isRecent = false }: ReadyOrderCardProps) {
+export function ReadyOrderCard({ order, isRecent = false, compact = false }: ReadyOrderCardProps) {
   const customerName = order.customer?.name || order.nombre_resumen || null;
   
   return (
     <Card className={cn(
-      "min-h-[220px] flex flex-col items-center justify-center p-6 transition-all duration-300",
+      "flex flex-col items-center justify-center transition-all duration-300",
       "bg-card border-2",
+      compact ? "min-h-[160px] p-4" : "min-h-[220px] p-6",
       isRecent && "animate-pulse ring-4 ring-green-500 ring-opacity-75 border-green-500"
     )}>
       {/* Order number - very prominent */}
-      <div className="text-6xl md:text-7xl font-black text-primary">
+      <div className={cn(
+        "font-black text-primary",
+        compact ? "text-4xl md:text-5xl" : "text-6xl md:text-7xl"
+      )}>
         #{order.order_number}
       </div>
       
       {/* Fulfillment type */}
-      <div className="mt-4 flex items-center gap-2 text-xl md:text-2xl font-medium text-foreground">
+      <div className={cn(
+        "mt-3 flex items-center gap-2 font-medium text-foreground",
+        compact ? "text-base md:text-lg" : "text-xl md:text-2xl"
+      )}>
         {order.fulfillment === 'delivery' ? (
           <>
-            <Truck className="w-7 h-7 md:w-8 md:h-8 text-orange-500" />
+            <Truck className={cn(compact ? "w-5 h-5" : "w-7 h-7 md:w-8 md:h-8", "text-orange-500")} />
             <span>Delivery</span>
           </>
         ) : (
           <>
-            <Store className="w-7 h-7 md:w-8 md:h-8 text-blue-500" />
+            <Store className={cn(compact ? "w-5 h-5" : "w-7 h-7 md:w-8 md:h-8", "text-blue-500")} />
             <span>Retiro</span>
           </>
         )}
