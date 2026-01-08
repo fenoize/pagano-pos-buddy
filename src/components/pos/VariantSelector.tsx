@@ -90,9 +90,11 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                       </Badge>
                     )}
                   </div>
-                  <div className="text-primary font-semibold">
-                    {showExtraCost && isDefault ? "Incluido" : formatPrice(variant.price)}
-                  </div>
+                  {!hasExtraCost && (
+                    <div className="text-primary font-semibold">
+                      {showExtraCost && isDefault ? "Incluido" : formatPrice(variant.price)}
+                    </div>
+                  )}
                   {variant.stock !== undefined && (
                     variant.stock <= 0 ? (
                       !hideOutOfStockBadge && (
