@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Order, OrderItem, Comuna, Customer } from '@/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Order, OrderItem, Comuna, Customer, Product, ProductVariantOption } from '@/types';
 import { useOrderEdit, OrderEditData } from '@/hooks/useOrderEdit';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useComunas } from '@/hooks/useComunas';
@@ -17,10 +18,12 @@ import { useUsers } from '@/hooks/useUsers';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { useCustomerRunes } from '@/hooks/useCustomerRunes';
 import { useCashSession } from '@/hooks/useCashSession';
+import { useToast } from '@/hooks/use-toast';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { formatCurrency } from '@/lib/utils';
 import { OrderItemEditRow } from './OrderItemEditRow';
-import { ProductSelector } from './ProductSelector';
+import ProductGrid from '@/components/pos/ProductGrid';
+import { ProductCustomizationModalEnhanced } from '@/components/pos/ProductCustomizationModalEnhanced';
 import { OrderHistoryModal } from './OrderHistoryModal';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -45,6 +48,17 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const [valorRunaActual, setValorRunaActual] = useState(0);
   const [belongsToClosedSession, setBelongsToClosedSession] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<any>(null);
+  
+  // Product selection states
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showCustomizationModal, setShowCustomizationModal] = useState(false);
+  const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+  const [preloadedData, setPreloadedData] = useState<{
+    variants: Record<string, ProductVariantOption[]>;
+    extras: any[];
+    modifiers: any[];
+    combos: Record<string, any>;
+  }>({ variants: {}, extras: [], modifiers: [], combos: {} });
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerResults, setCustomerResults] = useState<Customer[]>([]);
   
@@ -55,6 +69,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const { paymentMethods } = usePaymentMethods();
   const { getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
   const { checkActiveSession } = useCashSession();
+  const { toast } = useToast();
   
   const repartidores = users.filter(u => u.can_do_delivery && u.active);
 
@@ -63,6 +78,40 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet
     };
     return icons[iconName] || DollarSign;
+  };
+
+  // Cargar productos para el selector
+  const loadProductsForSelector = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          product_categories(
+            categories(
+              id,
+              name
+            )
+          )
+        `)
+        .eq('active', true)
+        .eq('show_in_pos', true);
+      
+      if (error) throw error;
+      
+      setAvailableProducts((data || []).map(p => ({
+        ...p,
+        prices: p.prices as any,
+        categories: p.product_categories?.map((pc: any) => pc.categories) || []
+      })) as Product[]);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los productos",
+        variant: "destructive"
+      });
+    }
   };
 
   // Cargar datos cuando se abre el modal
@@ -88,6 +137,13 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       }
     }
   }, [isOpen, order]);
+
+  // Cargar productos cuando se abre el selector
+  useEffect(() => {
+    if (showProductSelector && availableProducts.length === 0) {
+      loadProductsForSelector();
+    }
+  }, [showProductSelector]);
 
   const checkIfClosedSession = async () => {
     if (!order?.id) return;
@@ -941,11 +997,51 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         </DialogContent>
       </Dialog>
 
-      <ProductSelector
-        isOpen={showProductSelector}
-        onClose={() => setShowProductSelector(false)}
-        onProductSelected={handleAddProduct}
-      />
+      <Dialog open={showProductSelector} onOpenChange={setShowProductSelector}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Agregar Producto</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[70vh]">
+            <ProductGrid
+              products={availableProducts}
+              onProductClick={(product) => {
+                setSelectedProduct(product);
+                setShowCustomizationModal(true);
+              }}
+              onDataPreloaded={setPreloadedData}
+            />
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {selectedProduct && (
+        <ProductCustomizationModalEnhanced
+          isOpen={showCustomizationModal}
+          onClose={() => {
+            setShowCustomizationModal(false);
+            setSelectedProduct(null);
+          }}
+          product={selectedProduct}
+          onAddToCart={(item) => {
+            handleAddProduct({
+              ...item,
+              productId: selectedProduct.id,
+              productName: selectedProduct.name,
+            });
+            setShowCustomizationModal(false);
+            setSelectedProduct(null);
+          }}
+          preloadedVariants={preloadedData.variants[selectedProduct.id] || []}
+          preloadedExtras={preloadedData.extras.filter((e: any) => 
+            (selectedProduct as any).product_categories?.some((pc: any) => pc.categories?.id === e.category_id)
+          )}
+          preloadedModifiers={preloadedData.modifiers.filter((m: any) => 
+            m.product_id === selectedProduct.id
+          )}
+          preloadedComboData={preloadedData.combos[selectedProduct.id]}
+        />
+      )}
 
       <OrderHistoryModal
         orderId={order.id}
