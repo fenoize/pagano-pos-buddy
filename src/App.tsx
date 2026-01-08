@@ -53,6 +53,7 @@ const Clientes = lazy(() => import("@/pages/Clientes"));
 const NewSale = lazy(() => import("@/pages/NewSale"));
 const Sales = lazy(() => import("@/pages/Sales"));
 const Kitchen = lazy(() => import("@/pages/Kitchen"));
+const ReadyOrdersTV = lazy(() => import("@/pages/ReadyOrdersTV"));
 const Users = lazy(() => import("@/pages/Users"));
 const Products = lazy(() => import("@/pages/Products"));
 const Categorias = lazy(() => import("@/pages/Categorias"));
@@ -346,9 +347,7 @@ const App = () => (
               
               <Route path="/pos/pedido-listo" element={
                 <StaffProtectedRoute>
-                  <StaffLayout>
-                    <div>Pedido Listo TV - En desarrollo</div>
-                  </StaffLayout>
+                  <ReadyOrdersTV />
                 </StaffProtectedRoute>
               } />
               
