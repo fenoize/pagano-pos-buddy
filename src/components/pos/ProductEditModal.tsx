@@ -96,9 +96,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSave = async () => {
     if (selectedCategories.length === 0) {
       toast({
         title: "Error",
@@ -237,7 +235,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             <TabsTrigger value="modifiers">Modificadores</TabsTrigger>
           </TabsList>
 
-          <form onSubmit={handleSubmit}>
+          <div>
             <TabsContent value="general" className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre del Producto</Label>
@@ -370,14 +368,14 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             </TabsContent>
 
             <div className="flex gap-2 mt-6">
-              <Button type="submit">
+              <Button type="button" onClick={handleSave}>
                 {product ? 'Actualizar' : 'Crear'}
               </Button>
               <Button type="button" variant="outline" onClick={handleClose}>
                 Cancelar
               </Button>
             </div>
-          </form>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>
