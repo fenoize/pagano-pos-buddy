@@ -21,7 +21,7 @@
     <link rel="apple-touch-icon" id="apple-touch-icon-192" sizes="192x192" href="/icons/paganos-192.png">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://storage.googleapis.com/gpt-engineer-file-uploads/wVTlZ7C69hTXueuwzCN66OIBujU2/uploads/1767907222968-nuevo_favicon.png">
+    <link rel="icon" id="favicon-link" type="image/png" href="/favicon.png">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -43,7 +43,7 @@
         
         // Configurar manifest desde edge function
         manifestLink.href = SUPABASE_URL + '/functions/v1/generate-manifest?type=' + appType;
-        document.title = appType === 'pos' ? 'Paganos POS' : 'Paganos Burger';
+        document.title = appType === 'pos' ? 'Paganos Burger POS' : 'Paganos Burger App';
         
         // Cargar íconos desde la configuración PWA en Supabase
         fetch(SUPABASE_URL + '/rest/v1/pwa_config?app_type=eq.' + appType + '&select=icon_192_url,icon_512_url', {
