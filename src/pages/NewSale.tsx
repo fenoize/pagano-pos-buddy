@@ -149,6 +149,8 @@ export default function NewSale() {
 
   const handlePickupModeChange = (mode: PickupMode) => {
     setPickupMode(mode);
+    // Advance to next step after setting pickup mode
+    setCurrentStep(3);
   };
 
   const handleDeliveryDataChange = (data: DeliveryData) => {

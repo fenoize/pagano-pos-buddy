@@ -221,8 +221,8 @@ export default function FulfillmentStep({ fulfillment, pickupMode, customer, ini
   };
 
   const handlePickupModeSelect = (mode: PickupMode) => {
+    // Call pickup mode change - parent will handle advancing to next step
     onPickupModeChange?.(mode);
-    onNext();
   };
 
   // Handle address selection from autocomplete
