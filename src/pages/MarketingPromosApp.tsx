@@ -17,10 +17,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreVertical, Pencil, Copy, Trash2, BarChart3 } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Copy, Trash2, BarChart3, Tv } from 'lucide-react';
 import { useMarketingPromotions, MarketingPromotion } from '@/hooks/useMarketingPromotions';
 import { PromoFormModal } from '@/components/marketing/PromoFormModal';
 import { PromoAnalyticsDashboard } from '@/components/marketing/PromoAnalyticsDashboard';
+import { TVContentTab } from '@/components/marketing/TVContentTab';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -121,7 +122,11 @@ export default function MarketingPromosApp() {
 
       <Tabs defaultValue="promotions" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="promotions">Promociones</TabsTrigger>
+          <TabsTrigger value="promotions">Promociones App</TabsTrigger>
+          <TabsTrigger value="tv">
+            <Tv className="mr-2 h-4 w-4" />
+            Contenido TV
+          </TabsTrigger>
           <TabsTrigger value="analytics">
             <BarChart3 className="mr-2 h-4 w-4" />
             Analytics
@@ -232,6 +237,10 @@ export default function MarketingPromosApp() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="tv">
+          <TVContentTab />
         </TabsContent>
 
         <TabsContent value="analytics">
