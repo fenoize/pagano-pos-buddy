@@ -137,18 +137,12 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
               <Package className={`text-muted-foreground ${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Badge 
-              variant={getStatusColor(order.status)}
-              className={compact ? "text-xs px-2 py-0.5" : ""}
-            >
-              {order.status}
-            </Badge>
-            <div className={`flex items-center gap-1 text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
-              <Clock className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
-              <span className="font-mono">{formatElapsedTime()}</span>
-            </div>
-          </div>
+          <Badge 
+            variant={getStatusColor(order.status)}
+            className={compact ? "text-xs px-2 py-0.5" : ""}
+          >
+            {order.status}
+          </Badge>
         </div>
       </CardHeader>
 
