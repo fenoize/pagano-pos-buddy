@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useActivePromotions } from '@/hooks/useMarketingPromotions';
+import { useActiveTVContent } from '@/hooks/useMarketingPromotions';
 import { cn } from '@/lib/utils';
 
 interface PromoSliderProps {
@@ -21,7 +21,7 @@ function parsePromoConfig(description: string | null | undefined): PromoConfig {
 }
 
 export function PromoSlider({ interval = 8000, className }: PromoSliderProps) {
-  const { data: promotions = [] } = useActivePromotions();
+  const { data: promotions = [] } = useActiveTVContent();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
