@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 
@@ -18,6 +18,25 @@ export const getConfiguredSupabase = () => {
       storage: localStorage,
       persistSession: true,
       autoRefreshToken: true,
+    }
+  });
+};
+
+/**
+ * Creates a Supabase client with staff authorization header.
+ * Use this for operations that require staff RLS policies.
+ */
+export const getStaffSupabaseClient = (): SupabaseClient<Database> => {
+  const token = getStaffToken();
+  
+  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      storage: localStorage,
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+    global: {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
     }
   });
 };

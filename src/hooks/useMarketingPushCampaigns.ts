@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { getStaffSupabaseClient } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 import type { MarketingPushCampaign } from '@/types/notifications';
 
@@ -11,6 +11,7 @@ export function useMarketingPushCampaigns() {
   const fetchCampaigns = useCallback(async () => {
     try {
       setLoading(true);
+      const supabase = getStaffSupabaseClient();
       const { data, error } = await supabase
         .from('marketing_push_campaigns')
         .select('*')
@@ -31,6 +32,7 @@ export function useMarketingPushCampaigns() {
 
   const createCampaign = async (campaign: Pick<MarketingPushCampaign, 'title' | 'message' | 'segment' | 'send_type' | 'scheduled_at'>) => {
     try {
+      const supabase = getStaffSupabaseClient();
       const { data, error } = await supabase
         .from('marketing_push_campaigns')
         .insert({
@@ -67,6 +69,7 @@ export function useMarketingPushCampaigns() {
     try {
       setSending(campaignId);
       
+      const supabase = getStaffSupabaseClient();
       const { data, error } = await supabase.functions.invoke('send-push-notification', {
         body: {
           action: 'bulk',
@@ -96,6 +99,7 @@ export function useMarketingPushCampaigns() {
 
   const deleteCampaign = async (id: string) => {
     try {
+      const supabase = getStaffSupabaseClient();
       const { error } = await supabase
         .from('marketing_push_campaigns')
         .delete()
