@@ -289,9 +289,8 @@ async function handleSingleNotification(
       data: { ...payload, type }
     };
 
-    // Add click URL if available
+    // Add click URL - only use web_url for web push (not both)
     if (clickUrl) {
-      oneSignalPayload.url = clickUrl;
       oneSignalPayload.web_url = clickUrl;
     }
 
@@ -417,9 +416,8 @@ async function handleBulkNotification(
       data: { ...payload, type: 'marketing', campaign_id }
     };
 
-    // Add click URL if available
+    // Add click URL - only use web_url for web push (not both url and web_url)
     if (clickUrl) {
-      oneSignalPayload.url = clickUrl;
       oneSignalPayload.web_url = clickUrl;
     }
 
