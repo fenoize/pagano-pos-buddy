@@ -6,13 +6,13 @@ import { cn } from '@/lib/utils';
 interface TVLayoutSplitHorizontalProps {
   orders: Order[];
   recentlyReady: Set<string>;
+  recentlyDelivered?: Set<string>;
   sliderInterval: number;
   columns?: number;
   fontSize?: 'small' | 'medium' | 'large';
 }
 
 const getGridCols = (columns: number) => {
-  // For split layout, we have less space so reduce columns
   const effectiveCols = Math.max(2, columns - 1);
   switch (effectiveCols) {
     case 2: return 'grid-cols-1 md:grid-cols-2';
@@ -25,6 +25,7 @@ const getGridCols = (columns: number) => {
 export function TVLayoutSplitHorizontal({ 
   orders, 
   recentlyReady, 
+  recentlyDelivered = new Set(),
   sliderInterval,
   columns = 4,
   fontSize = 'medium'
@@ -46,7 +47,7 @@ export function TVLayoutSplitHorizontal({
               <ReadyOrderCard 
                 key={order.id} 
                 order={order}
-                isRecent={recentlyReady.has(order.id)}
+                isRecent={recentlyReady.has(order.id) || recentlyDelivered.has(order.id)}
                 compact
                 fontSize={fontSize}
               />

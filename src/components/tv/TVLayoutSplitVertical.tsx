@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 interface TVLayoutSplitVerticalProps {
   orders: Order[];
   recentlyReady: Set<string>;
+  recentlyDelivered?: Set<string>;
   sliderInterval: number;
   columns?: number;
   fontSize?: 'small' | 'medium' | 'large';
@@ -24,6 +25,7 @@ const getGridCols = (columns: number) => {
 export function TVLayoutSplitVertical({ 
   orders, 
   recentlyReady, 
+  recentlyDelivered = new Set(),
   sliderInterval,
   columns = 4,
   fontSize = 'medium'
@@ -50,7 +52,7 @@ export function TVLayoutSplitVertical({
               <ReadyOrderCard 
                 key={order.id} 
                 order={order}
-                isRecent={recentlyReady.has(order.id)}
+                isRecent={recentlyReady.has(order.id) || recentlyDelivered.has(order.id)}
                 compact
                 fontSize={fontSize}
               />

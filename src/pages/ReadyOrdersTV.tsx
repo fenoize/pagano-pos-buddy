@@ -16,7 +16,6 @@ export default function ReadyOrdersTV() {
   const navigate = useNavigate();
   const screenId = searchParams.get('screen') || undefined;
   
-  const { readyOrders, loading, refetch } = useReadyOrders();
   const { data: savedConfig } = useTVScreenConfig(screenId);
   
   // Local config state (can be modified via modal)
@@ -30,9 +29,15 @@ export default function ReadyOrdersTV() {
     font_size: 'medium',
     theme: 'light',
     hide_header_fullscreen: false,
+    visible_statuses: ['En preparación', 'Listo', 'Entregado'],
   });
+
+  // Usar estados visibles de la configuración
+  const visibleStatuses = localConfig.visible_statuses || ['En preparación', 'Listo', 'Entregado'];
+  const { readyOrders, loading, refetch } = useReadyOrders({ visibleStatuses });
   
   const [recentlyReady, setRecentlyReady] = useState<Set<string>>(new Set());
+  const [recentlyDelivered, setRecentlyDelivered] = useState<Set<string>>(new Set());
   const [currentTime, setCurrentTime] = useState(new Date());
   const [cursorVisible, setCursorVisible] = useState(true);
   const [configModalOpen, setConfigModalOpen] = useState(false);
@@ -83,8 +88,8 @@ export default function ReadyOrdersTV() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Handle new ready orders - mark as recent for animation
-  const handleNewReady = useCallback((orderId: string) => {
+  // Handle new orders - mark as recent for animation
+  const handleNewOrder = useCallback((orderId: string) => {
     setRecentlyReady(prev => new Set(prev).add(orderId));
     
     // Remove from "recent" after 10 seconds
@@ -95,6 +100,20 @@ export default function ReadyOrdersTV() {
         return next;
       });
     }, 10000);
+  }, []);
+
+  // Handle delivered orders - mark for green highlight
+  const handleDelivered = useCallback((orderId: string) => {
+    setRecentlyDelivered(prev => new Set(prev).add(orderId));
+    
+    // Remove from "recently delivered" after 15 seconds
+    setTimeout(() => {
+      setRecentlyDelivered(prev => {
+        const next = new Set(prev);
+        next.delete(orderId);
+        return next;
+      });
+    }, 15000);
   }, []);
 
   // Toggle fullscreen
@@ -139,6 +158,7 @@ export default function ReadyOrdersTV() {
     const layoutProps = {
       orders: readyOrders,
       recentlyReady,
+      recentlyDelivered,
       columns,
       fontSize,
     };
@@ -182,7 +202,8 @@ export default function ReadyOrdersTV() {
       <ReadyOrdersSounds 
         orders={readyOrders} 
         soundEnabled={soundEnabled}
-        onNewReady={handleNewReady}
+        onNewOrder={handleNewOrder}
+        onDelivered={handleDelivered}
       />
 
       {/* Config Modal */}
