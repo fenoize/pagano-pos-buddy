@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
-import { useActiveTVContent } from '@/hooks/useMarketingPromotions';
+import { useActiveTVScreenContent } from '@/hooks/useTVScreenContent';
 import { cn } from '@/lib/utils';
 
 interface PromoSliderProps {
   interval?: number; // ms
   className?: string;
+  screenConfigId?: string;
 }
 
 interface PromoConfig {
@@ -20,8 +21,8 @@ function parsePromoConfig(description: string | null | undefined): PromoConfig {
   }
 }
 
-export function PromoSlider({ interval = 8000, className }: PromoSliderProps) {
-  const { data: promotions = [] } = useActiveTVContent();
+export function PromoSlider({ interval = 8000, className, screenConfigId }: PromoSliderProps) {
+  const { data: promotions = [] } = useActiveTVScreenContent(screenConfigId);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -53,7 +54,7 @@ export function PromoSlider({ interval = 8000, className }: PromoSliderProps) {
     return (
       <div className={cn("flex items-center justify-center bg-gradient-to-br from-orange-100 to-amber-100", className)}>
         <div className="text-center text-muted-foreground">
-          <p className="text-xl">Sin promociones activas</p>
+          <p className="text-xl">Sin contenido activo</p>
         </div>
       </div>
     );

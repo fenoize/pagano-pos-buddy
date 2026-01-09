@@ -8,6 +8,7 @@ interface TVLayoutFullProps {
   recentlyDelivered?: Set<string>;
   columns?: number;
   fontSize?: 'small' | 'medium' | 'large';
+  screenConfigId?: string;
 }
 
 const getGridCols = (columns: number) => {

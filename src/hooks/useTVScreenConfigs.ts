@@ -25,6 +25,7 @@ export interface TVScreenConfig {
   theme: 'light' | 'dark';
   hide_header_fullscreen: boolean;
   visible_statuses: string[];
+  idle_screen_config_id: string | null;
   created_at: string;
   updated_at: string;
 }
