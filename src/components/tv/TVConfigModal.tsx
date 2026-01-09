@@ -8,10 +8,11 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useTVScreenConfigs, TVScreenConfig, TVScreenConfigInput } from '@/hooks/useTVScreenConfigs';
+import { useTVScreenConfigs, TVScreenConfig, TVScreenConfigInput, TV_STATUS_OPTIONS } from '@/hooks/useTVScreenConfigs';
 import { Trash2, Plus, Star, Copy, Monitor, SplitSquareHorizontal, SplitSquareVertical, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface TVConfigModalProps {
   open: boolean;
@@ -75,6 +76,14 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
     onConfigChange({ ...currentConfig, [key]: value });
   };
 
+  const handleStatusToggle = (status: string, checked: boolean) => {
+    const current = currentConfig?.visible_statuses || ['En preparación', 'Listo', 'Entregado'];
+    const updated = checked 
+      ? [...current, status]
+      : current.filter(s => s !== status);
+    onConfigChange({ ...currentConfig, visible_statuses: updated });
+  };
+
   const handleSaveNew = async () => {
     if (!newConfigName.trim()) {
       toast.error('Ingresa un nombre para la configuración');
@@ -94,6 +103,7 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
         font_size: currentConfig?.font_size || 'medium',
         theme: currentConfig?.theme || 'light',
         hide_header_fullscreen: currentConfig?.hide_header_fullscreen ?? false,
+        visible_statuses: currentConfig?.visible_statuses || ['En preparación', 'Listo', 'Entregado'],
         is_default: false,
       };
       await createConfig(newConfig);
@@ -256,6 +266,34 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
               </div>
             )}
 
+            {/* Estados visibles */}
+            <div className="space-y-3">
+              <div>
+                <Label className="text-base font-medium">Estados visibles en pantalla</Label>
+                <p className="text-sm text-muted-foreground">Selecciona qué estados de pedidos mostrar</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                {TV_STATUS_OPTIONS.map(({ value, label }) => {
+                  const isChecked = (currentConfig?.visible_statuses || ['En preparación', 'Listo', 'Entregado']).includes(value);
+                  return (
+                    <div key={value} className="flex items-center space-x-3">
+                      <Checkbox
+                        id={`status-${value}`}
+                        checked={isChecked}
+                        onCheckedChange={(checked) => handleStatusToggle(value, !!checked)}
+                      />
+                      <label 
+                        htmlFor={`status-${value}`} 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {label}
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Toggles */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -283,7 +321,7 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Sonido habilitado</Label>
-                  <p className="text-sm text-muted-foreground">Sonido al recibir pedidos listos</p>
+                  <p className="text-sm text-muted-foreground">Sonido al recibir pedidos o al cambiar a Entregado</p>
                 </div>
                 <Switch
                   checked={currentConfig?.sound_enabled ?? true}

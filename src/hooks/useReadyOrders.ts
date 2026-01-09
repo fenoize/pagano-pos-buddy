@@ -1,16 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Order, OrderItem } from '@/types';
+import type { Order, OrderItem, OrderStatus } from '@/types';
 
-export function useReadyOrders() {
+interface UseReadyOrdersOptions {
+  visibleStatuses?: string[];
+}
+
+const DEFAULT_STATUSES: OrderStatus[] = ['En preparación', 'Listo', 'Entregado'];
+
+export function useReadyOrders(options: UseReadyOrdersOptions = {}) {
+  const { visibleStatuses = DEFAULT_STATUSES } = options;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchReadyOrders = useCallback(async () => {
+    // Filtrar solo estados válidos
+    const statusesToFetch = visibleStatuses.length > 0 ? visibleStatuses : DEFAULT_STATUSES;
+    
     const { data, error } = await supabase
       .from('orders')
       .select('*, customer:customers(*)')
-      .eq('status', 'Listo')
+      .in('status', statusesToFetch as OrderStatus[])
+      .eq('fulfillment', 'retiro') // Solo pedidos de retiro, NO delivery
       .order('updated_at', { ascending: false });
     
     if (error) {
@@ -27,7 +38,7 @@ export function useReadyOrders() {
       setOrders(mappedOrders);
     }
     setLoading(false);
-  }, []);
+  }, [visibleStatuses]);
 
   useEffect(() => {
     fetchReadyOrders();

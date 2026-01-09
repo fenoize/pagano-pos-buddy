@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 interface TVLayoutFullProps {
   orders: Order[];
   recentlyReady: Set<string>;
+  recentlyDelivered?: Set<string>;
   columns?: number;
   fontSize?: 'small' | 'medium' | 'large';
 }
@@ -19,14 +20,14 @@ const getGridCols = (columns: number) => {
   }
 };
 
-export function TVLayoutFull({ orders, recentlyReady, columns = 4, fontSize = 'medium' }: TVLayoutFullProps) {
+export function TVLayoutFull({ orders, recentlyReady, recentlyDelivered = new Set(), columns = 4, fontSize = 'medium' }: TVLayoutFullProps) {
   if (orders.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center text-muted-foreground">
           <p className="text-4xl mb-2">🍔</p>
-          <p className="text-2xl font-medium">No hay pedidos listos</p>
-          <p className="text-lg">Los pedidos aparecerán aquí cuando estén listos</p>
+          <p className="text-2xl font-medium">No hay pedidos</p>
+          <p className="text-lg">Los pedidos aparecerán aquí según los estados configurados</p>
         </div>
       </div>
     );
@@ -39,7 +40,7 @@ export function TVLayoutFull({ orders, recentlyReady, columns = 4, fontSize = 'm
           <ReadyOrderCard 
             key={order.id} 
             order={order}
-            isRecent={recentlyReady.has(order.id)}
+            isRecent={recentlyReady.has(order.id) || recentlyDelivered.has(order.id)}
             fontSize={fontSize}
           />
         ))}

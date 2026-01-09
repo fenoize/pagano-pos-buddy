@@ -4548,6 +4548,7 @@ export type Database = {
           template: string
           theme: string | null
           updated_at: string
+          visible_statuses: string[] | null
         }
         Insert: {
           columns?: number | null
@@ -4564,6 +4565,7 @@ export type Database = {
           template?: string
           theme?: string | null
           updated_at?: string
+          visible_statuses?: string[] | null
         }
         Update: {
           columns?: number | null
@@ -4580,6 +4582,7 @@ export type Database = {
           template?: string
           theme?: string | null
           updated_at?: string
+          visible_statuses?: string[] | null
         }
         Relationships: []
       }

@@ -4,6 +4,13 @@ import { toast } from 'sonner';
 import { setStaffContext } from '@/lib/dbContext';
 import { useAuth } from '@/hooks/useAuth';
 
+// Estados disponibles para mostrar en TV
+export const TV_STATUS_OPTIONS = [
+  { value: 'En preparación', label: 'En preparación' },
+  { value: 'Listo', label: 'Listo' },
+  { value: 'Entregado', label: 'Entregado' },
+] as const;
+
 export interface TVScreenConfig {
   id: string;
   name: string;
@@ -17,6 +24,7 @@ export interface TVScreenConfig {
   font_size: 'small' | 'medium' | 'large';
   theme: 'light' | 'dark';
   hide_header_fullscreen: boolean;
+  visible_statuses: string[];
   created_at: string;
   updated_at: string;
 }
