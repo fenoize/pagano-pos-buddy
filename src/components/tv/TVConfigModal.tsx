@@ -127,8 +127,40 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
         idle_screen_config_id: currentConfig?.idle_screen_config_id || null,
         is_default: false,
       };
-      await createConfig(newConfig);
+      const created = await createConfig(newConfig);
       setNewConfigName('');
+      // Cargar la config recién creada
+      onConfigChange(created as TVScreenConfig);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Actualizar configuración existente
+  const handleUpdateCurrent = async () => {
+    if (!currentConfig?.id) {
+      toast.error('Primero carga una configuración');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateConfig({
+        id: currentConfig.id,
+        name: currentConfig.name,
+        template: currentConfig.template,
+        slider_interval_seconds: currentConfig.slider_interval_seconds,
+        show_logo: currentConfig.show_logo,
+        show_clock: currentConfig.show_clock,
+        sound_enabled: currentConfig.sound_enabled,
+        columns: currentConfig.columns,
+        font_size: currentConfig.font_size,
+        theme: currentConfig.theme,
+        hide_header_fullscreen: currentConfig.hide_header_fullscreen,
+        visible_statuses: currentConfig.visible_statuses,
+        idle_screen_config_id: currentConfig.idle_screen_config_id,
+      });
+      toast.success('Configuración actualizada');
     } finally {
       setSaving(false);
     }
@@ -409,6 +441,19 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
                 />
               </div>
             </div>
+
+            {/* Botón para actualizar configuración existente */}
+            {currentConfig?.id && (
+              <div className="pt-4 border-t">
+                <Button 
+                  onClick={handleUpdateCurrent} 
+                  disabled={saving}
+                  className="w-full"
+                >
+                  Guardar cambios en "{currentConfig.name}"
+                </Button>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="content" className="space-y-4 mt-4">
