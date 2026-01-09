@@ -217,7 +217,9 @@ export const PushCampaignsTab: React.FC = () => {
         const errorMsg = data?.error || 'Error desconocido';
         // Provide helpful message for common errors
         if (errorMsg.includes('not subscribed') || errorMsg.includes('All included players')) {
-          setTestError(`El destinatario (${targetDescription}) no tiene una suscripción push activa en OneSignal. Esto puede pasar si:\n• No aceptó notificaciones en la app de cliente\n• Usó un navegador diferente\n• Necesita volver a aceptar notificaciones desde la app`);
+          setTestError(`El destinatario (${targetDescription}) no tiene una suscripción push activa en OneSignal.\n\nEsto puede pasar si:\n• El usuario borró los datos/cookies del navegador\n• Está usando un navegador o dispositivo diferente\n• Bloqueó las notificaciones después de aceptarlas\n\n👉 El usuario debe volver a abrir la app de clientes y aceptar notificaciones nuevamente.`);
+        } else if (errorMsg.includes('invalid_aliases')) {
+          setTestError(`El usuario no está registrado en OneSignal. Debe abrir la app de clientes, iniciar sesión y aceptar notificaciones.`);
         } else {
           setTestError(`Error: ${errorMsg}`);
         }
