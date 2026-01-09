@@ -161,6 +161,29 @@ export const useActivePromotions = () => {
         .from('marketing_app_promotions')
         .select('*')
         .eq('is_active', true)
+        .neq('cta_type', 'none') // Excluir contenido de TV
+        .or(`start_date.is.null,start_date.lte.${new Date().toISOString().split('T')[0]}`)
+        .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split('T')[0]}`)
+        .order('priority', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data as MarketingPromotion[]) || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+};
+
+// Hook para obtener contenido exclusivo de TV (cta_type = 'none')
+export const useActiveTVContent = () => {
+  return useQuery({
+    queryKey: ['active-tv-content'],
+    queryFn: async () => {
+      const { data, error } = await configuredSupabase
+        .from('marketing_app_promotions')
+        .select('*')
+        .eq('is_active', true)
+        .eq('cta_type', 'none') // Solo contenido de TV
         .or(`start_date.is.null,start_date.lte.${new Date().toISOString().split('T')[0]}`)
         .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split('T')[0]}`)
         .order('priority', { ascending: true })
