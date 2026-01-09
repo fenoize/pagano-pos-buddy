@@ -1,14 +1,33 @@
 import { ReadyOrderCard } from './ReadyOrderCard';
 import { PromoSlider } from './PromoSlider';
 import type { Order } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface TVLayoutSplitVerticalProps {
   orders: Order[];
   recentlyReady: Set<string>;
   sliderInterval: number;
+  columns?: number;
+  fontSize?: 'small' | 'medium' | 'large';
 }
 
-export function TVLayoutSplitVertical({ orders, recentlyReady, sliderInterval }: TVLayoutSplitVerticalProps) {
+const getGridCols = (columns: number) => {
+  switch (columns) {
+    case 2: return 'grid-cols-2';
+    case 3: return 'grid-cols-2 md:grid-cols-3';
+    case 4: return 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+    case 5: return 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
+    default: return 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+  }
+};
+
+export function TVLayoutSplitVertical({ 
+  orders, 
+  recentlyReady, 
+  sliderInterval,
+  columns = 4,
+  fontSize = 'medium'
+}: TVLayoutSplitVerticalProps) {
   return (
     <div className="flex-1 flex flex-col">
       {/* Top: Promotions */}
@@ -26,13 +45,14 @@ export function TVLayoutSplitVertical({ orders, recentlyReady, sliderInterval }:
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+          <div className={cn("grid gap-4", getGridCols(columns))}>
             {orders.map(order => (
               <ReadyOrderCard 
                 key={order.id} 
                 order={order}
                 isRecent={recentlyReady.has(order.id)}
                 compact
+                fontSize={fontSize}
               />
             ))}
           </div>

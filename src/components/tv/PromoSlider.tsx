@@ -82,13 +82,13 @@ export function PromoSlider({ interval = 8000, className }: PromoSliderProps) {
             muted
             loop
             playsInline
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         ) : hasImage ? (
           <img
             src={currentPromo.image_url!}
             alt={currentPromo.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40" />

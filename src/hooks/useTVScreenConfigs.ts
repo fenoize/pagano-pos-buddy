@@ -13,6 +13,10 @@ export interface TVScreenConfig {
   show_clock: boolean;
   sound_enabled: boolean;
   is_default: boolean;
+  columns: number;
+  font_size: 'small' | 'medium' | 'large';
+  theme: 'light' | 'dark';
+  hide_header_fullscreen: boolean;
   created_at: string;
   updated_at: string;
 }
