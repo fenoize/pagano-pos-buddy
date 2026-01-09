@@ -8,6 +8,7 @@ import { ReadyOrdersSounds } from "@/components/tv/ReadyOrdersSounds";
 import { TVLayoutFull } from "@/components/tv/TVLayoutFull";
 import { TVLayoutSplitHorizontal } from "@/components/tv/TVLayoutSplitHorizontal";
 import { TVLayoutSplitVertical } from "@/components/tv/TVLayoutSplitVertical";
+import { TVLayoutPromoOnly } from "@/components/tv/TVLayoutPromoOnly";
 import { TVConfigModal } from "@/components/tv/TVConfigModal";
 import { cn } from "@/lib/utils";
 
@@ -171,6 +172,13 @@ export default function ReadyOrdersTV() {
     };
 
     switch (template) {
+      case 'promo_only':
+        return (
+          <TVLayoutPromoOnly
+            sliderInterval={sliderInterval}
+            screenConfigId={activeScreenId}
+          />
+        );
       case 'split_horizontal':
         return (
           <TVLayoutSplitHorizontal
