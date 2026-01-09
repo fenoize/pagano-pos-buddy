@@ -23,12 +23,12 @@ export const getConfiguredSupabase = () => {
 };
 
 /**
- * Creates a Supabase client with staff authorization header.
- * Use this for operations that require staff RLS policies.
+ * Creates a Supabase client that sends the staff session token via a custom header.
+ * IMPORTANT: We must NOT use the Authorization header because PostgREST expects a JWT there.
  */
 export const getStaffSupabaseClient = (): SupabaseClient<Database> => {
   const token = getStaffToken();
-  
+
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: localStorage,
@@ -36,7 +36,7 @@ export const getStaffSupabaseClient = (): SupabaseClient<Database> => {
       autoRefreshToken: false,
     },
     global: {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
+      headers: token ? { 'x-staff-token': token } : {}
     }
   });
 };
