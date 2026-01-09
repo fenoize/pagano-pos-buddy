@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Maximize, Minimize, Volume2, VolumeX, RefreshCw, Settings } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { Maximize, Minimize, Volume2, VolumeX, RefreshCw, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReadyOrders } from "@/hooks/useReadyOrders";
 import { useTVScreenConfig, TVScreenConfig } from "@/hooks/useTVScreenConfigs";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 export default function ReadyOrdersTV() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const screenId = searchParams.get('screen') || undefined;
   
   const { readyOrders, loading, refetch } = useReadyOrders();
@@ -36,6 +37,7 @@ export default function ReadyOrdersTV() {
   const [cursorVisible, setCursorVisible] = useState(true);
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showTopBar, setShowTopBar] = useState(false);
 
   // Load saved config when available
   useEffect(() => {
@@ -284,30 +286,74 @@ export default function ReadyOrdersTV() {
             >
               <Settings className="h-5 w-5" />
             </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/pos')}
+              title="Salir"
+              className={cn(
+                theme === 'dark' ? "text-white hover:bg-gray-700" : "",
+                "text-destructive hover:text-destructive"
+              )}
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
           </div>
         </header>
       )}
 
-      {/* Floating controls when header is hidden */}
+      {/* Invisible hover zone at top to show controls when header is hidden */}
       {!showHeader && (
-        <div className="absolute top-4 right-4 z-50 flex gap-2 opacity-0 hover:opacity-100 transition-opacity">
+        <div 
+          className="absolute top-0 left-0 right-0 h-16 z-40"
+          onMouseEnter={() => setShowTopBar(true)}
+          onMouseLeave={() => setShowTopBar(false)}
+        />
+      )}
+
+      {/* Floating controls when header is hidden - shows on hover at top */}
+      {!showHeader && (
+        <div 
+          className={cn(
+            "absolute top-0 left-0 right-0 z-50 flex justify-center gap-2 py-3 px-4 transition-all duration-300",
+            "bg-black/70 backdrop-blur-sm",
+            showTopBar ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-full pointer-events-none"
+          )}
+          onMouseEnter={() => setShowTopBar(true)}
+          onMouseLeave={() => setShowTopBar(false)}
+        >
           <Button
             variant="secondary"
-            size="icon"
+            size="sm"
             onClick={toggleFullscreen}
-            title="Salir de pantalla completa"
-            className="bg-black/50 hover:bg-black/70 text-white"
+            className="bg-white/20 hover:bg-white/30 text-white"
           >
-            <Minimize className="h-5 w-5" />
+            <Minimize className="h-4 w-4 mr-2" />
+            Salir de pantalla completa
           </Button>
           <Button
             variant="secondary"
-            size="icon"
+            size="sm"
             onClick={() => setConfigModalOpen(true)}
-            title="Configuración"
-            className="bg-black/50 hover:bg-black/70 text-white"
+            className="bg-white/20 hover:bg-white/30 text-white"
           >
-            <Settings className="h-5 w-5" />
+            <Settings className="h-4 w-4 mr-2" />
+            Configuración
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              if (document.fullscreenElement) {
+                document.exitFullscreen().catch(console.error);
+              }
+              navigate('/pos');
+            }}
+            className="bg-red-500/80 hover:bg-red-500 text-white"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Salir
           </Button>
         </div>
       )}
