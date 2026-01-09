@@ -4539,6 +4539,7 @@ export type Database = {
           font_size: string | null
           hide_header_fullscreen: boolean | null
           id: string
+          idle_screen_config_id: string | null
           is_default: boolean
           name: string
           show_clock: boolean
@@ -4556,6 +4557,7 @@ export type Database = {
           font_size?: string | null
           hide_header_fullscreen?: boolean | null
           id?: string
+          idle_screen_config_id?: string | null
           is_default?: boolean
           name: string
           show_clock?: boolean
@@ -4573,6 +4575,7 @@ export type Database = {
           font_size?: string | null
           hide_header_fullscreen?: boolean | null
           id?: string
+          idle_screen_config_id?: string | null
           is_default?: boolean
           name?: string
           show_clock?: boolean
@@ -4584,7 +4587,61 @@ export type Database = {
           updated_at?: string
           visible_statuses?: string[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tv_screen_configs_idle_screen_config_id_fkey"
+            columns: ["idle_screen_config_id"]
+            isOneToOne: false
+            referencedRelation: "tv_screen_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tv_screen_content: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          promotion_id: string
+          tv_screen_config_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          promotion_id: string
+          tv_screen_config_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          promotion_id?: string
+          tv_screen_config_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tv_screen_content_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_app_promotions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tv_screen_content_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_promo_metrics"
+            referencedColumns: ["promo_id"]
+          },
+          {
+            foreignKeyName: "tv_screen_content_tv_screen_config_id_fkey"
+            columns: ["tv_screen_config_id"]
+            isOneToOne: false
+            referencedRelation: "tv_screen_configs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       unit_of_measures: {
         Row: {

@@ -146,6 +146,12 @@ export default function ReadyOrdersTV() {
   // Determine if header should be shown
   const showHeader = !(isFullscreen && hideHeaderFullscreen);
 
+  // Determine active screen config (use idle screen if no orders)
+  const hasOrders = readyOrders.length > 0;
+  const activeScreenId = hasOrders 
+    ? localConfig.id 
+    : (localConfig.idle_screen_config_id || localConfig.id);
+
   const renderLayout = () => {
     if (loading) {
       return (
@@ -161,6 +167,7 @@ export default function ReadyOrdersTV() {
       recentlyDelivered,
       columns,
       fontSize,
+      screenConfigId: activeScreenId,
     };
 
     switch (template) {

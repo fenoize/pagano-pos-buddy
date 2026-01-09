@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTVScreenConfigs, TVScreenConfig, TVScreenConfigInput, TV_STATUS_OPTIONS } from '@/hooks/useTVScreenConfigs';
-import { Trash2, Plus, Star, Copy, Monitor, SplitSquareHorizontal, SplitSquareVertical, Sun, Moon } from 'lucide-react';
+import { useTVScreenContent } from '@/hooks/useTVScreenContent';
+import { Trash2, Plus, Star, Copy, Monitor, SplitSquareHorizontal, SplitSquareVertical, Sun, Moon, Image, Video, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TVConfigModalProps {
   open: boolean;
@@ -52,6 +54,16 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
   const [newConfigName, setNewConfigName] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Content management for selected config
+  const selectedConfigId = currentConfig?.id;
+  const { 
+    content, 
+    availablePromotions, 
+    addContent, 
+    removeContent,
+    isLoading: contentLoading 
+  } = useTVScreenContent(selectedConfigId);
+
   const handleTemplateChange = (template: TVScreenConfig['template']) => {
     onConfigChange({ ...currentConfig, template });
   };
@@ -84,6 +96,13 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
     onConfigChange({ ...currentConfig, visible_statuses: updated });
   };
 
+  const handleIdleScreenChange = (value: string) => {
+    onConfigChange({ 
+      ...currentConfig, 
+      idle_screen_config_id: value === 'none' ? null : value 
+    });
+  };
+
   const handleSaveNew = async () => {
     if (!newConfigName.trim()) {
       toast.error('Ingresa un nombre para la configuración');
@@ -104,6 +123,7 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
         theme: currentConfig?.theme || 'light',
         hide_header_fullscreen: currentConfig?.hide_header_fullscreen ?? false,
         visible_statuses: currentConfig?.visible_statuses || ['En preparación', 'Listo', 'Entregado'],
+        idle_screen_config_id: currentConfig?.idle_screen_config_id || null,
         is_default: false,
       };
       await createConfig(newConfig);
@@ -134,7 +154,28 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
     toast.success('URL copiada al portapapeles');
   };
 
+  const handleAddContent = async (promotionId: string) => {
+    if (!selectedConfigId) {
+      toast.error('Primero guarda la configuración');
+      return;
+    }
+    await addContent({ promotionId });
+  };
+
+  const handleRemoveContent = async (contentId: string) => {
+    await removeContent(contentId);
+  };
+
   const currentTheme = currentConfig?.theme || 'light';
+
+  // Filtrar pantallas disponibles para modo espera (excluir la actual)
+  const idleScreenOptions = configs.filter(c => c.id !== currentConfig?.id);
+
+  // Contenido ya asignado (IDs)
+  const assignedPromotionIds = new Set(content.map(c => c.promotion_id));
+
+  // Promociones disponibles para agregar
+  const unassignedPromotions = availablePromotions.filter(p => !assignedPromotionIds.has(p.id));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -144,9 +185,10 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
         </DialogHeader>
 
         <Tabs defaultValue="config" className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="config">Configuración</TabsTrigger>
-            <TabsTrigger value="screens">Pantallas guardadas</TabsTrigger>
+            <TabsTrigger value="content">Contenido</TabsTrigger>
+            <TabsTrigger value="screens">Pantallas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="config" className="space-y-6 mt-4">
@@ -294,6 +336,32 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
               </div>
             </div>
 
+            {/* Pantalla de espera */}
+            <div className="space-y-2">
+              <div>
+                <Label className="text-base font-medium">Pantalla de espera (sin pedidos)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Cuando no hay pedidos, mostrar el contenido de otra pantalla
+                </p>
+              </div>
+              <Select
+                value={currentConfig?.idle_screen_config_id || 'none'}
+                onValueChange={handleIdleScreenChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin pantalla de espera" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin pantalla de espera</SelectItem>
+                  {idleScreenOptions.map((config) => (
+                    <SelectItem key={config.id} value={config.id}>
+                      {config.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Toggles */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -340,6 +408,102 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
                 />
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="content" className="space-y-4 mt-4">
+            {!selectedConfigId ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Primero carga o guarda una configuración de pantalla</p>
+                <p className="text-sm">para poder asignarle contenido</p>
+              </div>
+            ) : (
+              <>
+                {/* Contenido asignado */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Contenido asignado a esta pantalla</Label>
+                  {contentLoading ? (
+                    <p className="text-muted-foreground text-sm">Cargando...</p>
+                  ) : content.length === 0 ? (
+                    <Card className="p-4">
+                      <p className="text-muted-foreground text-center text-sm">
+                        Sin contenido asignado. Se mostrará todo el contenido TV activo.
+                      </p>
+                    </Card>
+                  ) : (
+                    <ScrollArea className="h-[200px]">
+                      <div className="space-y-2 pr-4">
+                        {content.map((item) => (
+                          <Card key={item.id} className="p-3">
+                            <div className="flex items-center gap-3">
+                              <GripVertical className="w-4 h-4 text-muted-foreground" />
+                              <div className="flex-1 flex items-center gap-2">
+                                {item.promotion?.video_url ? (
+                                  <Video className="w-4 h-4 text-blue-500" />
+                                ) : (
+                                  <Image className="w-4 h-4 text-green-500" />
+                                )}
+                                <span className="font-medium truncate">
+                                  {item.promotion?.title || 'Sin título'}
+                                </span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveContent(item.id)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
+
+                {/* Agregar contenido */}
+                {unassignedPromotions.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-base font-medium">Agregar contenido</Label>
+                    <ScrollArea className="h-[200px]">
+                      <div className="space-y-2 pr-4">
+                        {unassignedPromotions.map((promo) => (
+                          <Card key={promo.id} className="p-3">
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 flex items-center gap-2">
+                                {promo.video_url ? (
+                                  <Video className="w-4 h-4 text-blue-500" />
+                                ) : (
+                                  <Image className="w-4 h-4 text-green-500" />
+                                )}
+                                <span className="font-medium truncate">{promo.title}</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleAddContent(promo.id)}
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                Agregar
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+
+                {availablePromotions.length === 0 && (
+                  <Card className="p-4">
+                    <p className="text-muted-foreground text-center text-sm">
+                      No hay contenido TV disponible. Crea contenido en Marketing → Contenido TV.
+                    </p>
+                  </Card>
+                )}
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="screens" className="space-y-4 mt-4">

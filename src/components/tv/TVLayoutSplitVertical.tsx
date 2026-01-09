@@ -10,6 +10,7 @@ interface TVLayoutSplitVerticalProps {
   sliderInterval: number;
   columns?: number;
   fontSize?: 'small' | 'medium' | 'large';
+  screenConfigId?: string;
 }
 
 const getGridCols = (columns: number) => {
@@ -28,13 +29,18 @@ export function TVLayoutSplitVertical({
   recentlyDelivered = new Set(),
   sliderInterval,
   columns = 4,
-  fontSize = 'medium'
+  fontSize = 'medium',
+  screenConfigId
 }: TVLayoutSplitVerticalProps) {
   return (
     <div className="flex-1 flex flex-col">
       {/* Top: Promotions */}
       <div className="h-2/5">
-        <PromoSlider interval={sliderInterval} className="h-full" />
+        <PromoSlider 
+          interval={sliderInterval} 
+          className="h-full" 
+          screenConfigId={screenConfigId}
+        />
       </div>
 
       {/* Bottom: Orders */}

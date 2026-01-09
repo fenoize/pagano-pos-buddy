@@ -10,6 +10,7 @@ interface TVLayoutSplitHorizontalProps {
   sliderInterval: number;
   columns?: number;
   fontSize?: 'small' | 'medium' | 'large';
+  screenConfigId?: string;
 }
 
 const getGridCols = (columns: number) => {
@@ -28,7 +29,8 @@ export function TVLayoutSplitHorizontal({
   recentlyDelivered = new Set(),
   sliderInterval,
   columns = 4,
-  fontSize = 'medium'
+  fontSize = 'medium',
+  screenConfigId
 }: TVLayoutSplitHorizontalProps) {
   return (
     <div className="flex-1 flex">
@@ -58,7 +60,11 @@ export function TVLayoutSplitHorizontal({
 
       {/* Right side: Promotions */}
       <div className="w-1/2">
-        <PromoSlider interval={sliderInterval} className="h-full" />
+        <PromoSlider 
+          interval={sliderInterval} 
+          className="h-full" 
+          screenConfigId={screenConfigId}
+        />
       </div>
     </div>
   );
