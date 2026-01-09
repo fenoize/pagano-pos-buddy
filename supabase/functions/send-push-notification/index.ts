@@ -361,11 +361,12 @@ async function handleBulkNotification(
 ) {
   const { title, body, payload = {}, campaign_id } = data;
 
-  // Get all customers with marketing enabled
+  // Get all customers with marketing enabled AND onesignal subscribed
   const { data: customers, error: customersError } = await supabase
     .from('notification_preferences')
     .select('customer_id')
-    .eq('marketing_push_enabled', true);
+    .eq('marketing_push_enabled', true)
+    .eq('onesignal_subscribed', true);
 
   if (customersError) {
     console.error('Error fetching customers:', customersError);
@@ -373,6 +374,7 @@ async function handleBulkNotification(
   }
 
   const customerIds = customers?.map((c: any) => c.customer_id) || [];
+  console.log(`Found ${customerIds.length} customers subscribed to push notifications`);
   
   // Update campaign with recipient count
   await supabase
