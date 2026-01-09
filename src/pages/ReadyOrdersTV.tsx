@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Maximize, Minimize, Volume2, VolumeX, RefreshCw, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,10 @@ export default function ReadyOrdersTV() {
     hide_header_fullscreen: false,
     visible_statuses: ['En preparación', 'Listo', 'Entregado'],
   });
+
+  // Cargar configuración de pantalla de espera (idle screen)
+  const idleScreenId = localConfig.idle_screen_config_id;
+  const { data: idleScreenConfig } = useTVScreenConfig(idleScreenId || undefined);
 
   // Usar estados visibles de la configuración
   const visibleStatuses = localConfig.visible_statuses || ['En preparación', 'Listo', 'Entregado'];
@@ -137,21 +141,30 @@ export default function ReadyOrdersTV() {
   const soundEnabled = localConfig.sound_enabled ?? true;
   const showLogo = localConfig.show_logo ?? true;
   const showClock = localConfig.show_clock ?? true;
-  const template = localConfig.template || 'full';
-  const sliderInterval = (localConfig.slider_interval_seconds || 8) * 1000;
-  const columns = localConfig.columns || 4;
-  const fontSize = localConfig.font_size || 'medium';
-  const theme = localConfig.theme || 'light';
   const hideHeaderFullscreen = localConfig.hide_header_fullscreen ?? false;
 
   // Determine if header should be shown
   const showHeader = !(isFullscreen && hideHeaderFullscreen);
 
-  // Determine active screen config (use idle screen if no orders)
+  // Determinar si usar pantalla de espera (cuando no hay pedidos y hay idle screen configurado)
   const hasOrders = readyOrders.length > 0;
-  const activeScreenId = hasOrders 
-    ? localConfig.id 
-    : (localConfig.idle_screen_config_id || localConfig.id);
+  const useIdleScreen = !hasOrders && !!idleScreenConfig;
+
+  // Configuración activa: usar idle screen config cuando corresponda
+  const activeConfig = useMemo(() => {
+    if (useIdleScreen && idleScreenConfig) {
+      return idleScreenConfig;
+    }
+    return localConfig;
+  }, [useIdleScreen, idleScreenConfig, localConfig]);
+
+  // Valores derivados de la configuración activa
+  const template = activeConfig.template || 'full';
+  const sliderInterval = (activeConfig.slider_interval_seconds || 8) * 1000;
+  const columns = activeConfig.columns || 4;
+  const fontSize = activeConfig.font_size || 'medium';
+  const theme = activeConfig.theme || 'light';
+  const activeScreenId = activeConfig.id || localConfig.id;
 
   const renderLayout = () => {
     if (loading) {
