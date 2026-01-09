@@ -44,6 +44,7 @@ import { Plus, Send, Trash2, Loader2, Bell, Clock, CheckCircle2, XCircle, FlaskC
 import { useMarketingPushCampaigns } from '@/hooks/useMarketingPushCampaigns';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getStaffSupabaseClient } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -131,16 +132,19 @@ export const PushCampaignsTab: React.FC = () => {
       let targetDescription = 'tu usuario actual (staff)';
       
       if (testCustomerEmail.trim()) {
+        // Use staff client to bypass RLS restrictions
+        const staffClient = getStaffSupabaseClient();
+        
         // Use ilike for case-insensitive email matching
-        const { data: customerData, error: customerError } = await supabase
+        const { data: customerData, error: customerError } = await staffClient
           .from('customers')
           .select('id, name')
           .ilike('email', testCustomerEmail.trim())
           .maybeSingle();
         
         if (customerError) {
-          console.error('Error looking up customer:', customerError);
-          setTestError('Error al buscar cliente');
+          console.error('[Test Push] Error looking up customer:', customerError);
+          setTestError(`Error al buscar cliente: ${customerError.message}`);
           setIsSendingTest(false);
           return;
         }
@@ -155,8 +159,8 @@ export const PushCampaignsTab: React.FC = () => {
         targetDescription = `cliente "${customerData.name || testCustomerEmail}"`;
         
         // Check if customer has onesignal subscription in preferences
-        // Force fresh fetch to avoid cache issues
-        const { data: prefData, error: prefError } = await supabase
+        // Use staff client to bypass RLS restrictions
+        const { data: prefData, error: prefError } = await staffClient
           .from('notification_preferences')
           .select('onesignal_subscribed, marketing_push_enabled')
           .eq('customer_id', customerData.id)
@@ -167,6 +171,14 @@ export const PushCampaignsTab: React.FC = () => {
           prefData, 
           prefError 
         });
+        
+        // Handle RLS/permission errors separately from missing data
+        if (prefError) {
+          console.error('[Test Push] Error reading preferences:', prefError);
+          setTestError(`Error al leer preferencias: ${prefError.message}. Verifica permisos RLS.`);
+          setIsSendingTest(false);
+          return;
+        }
         
         if (!prefData) {
           setTestError(`El cliente "${customerData.name || testCustomerEmail}" no tiene preferencias de notificación registradas. Debe abrir la app de cliente e iniciar sesión.`);
