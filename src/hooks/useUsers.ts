@@ -22,7 +22,8 @@ const mapAppRoleToDatabase = (appRole: AppRole): string => {
     'Administrador': 'Administrador',
     // No existe "Preparador" en el enum de la BD; lo mapeamos a Cocina por compatibilidad
     'Preparador': 'Cocina',
-    'Viewer': 'Viewer'
+    'Viewer': 'Viewer',
+    'TV': 'TV'
   };
   return mapping[appRole] || appRole;
 };

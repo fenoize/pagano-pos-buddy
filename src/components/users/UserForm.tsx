@@ -180,6 +180,11 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
       label: 'Viewer', 
       description: 'Solo lectura, para casos especiales' 
     },
+    { 
+      value: 'TV', 
+      label: 'TV', 
+      description: 'Acceso exclusivo a pantallas TV' 
+    },
   ];
 
   return (
