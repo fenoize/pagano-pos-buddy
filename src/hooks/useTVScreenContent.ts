@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { configuredSupabase } from '@/lib/supabaseClient';
+import { configuredSupabase, getStaffSupabaseClient } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
-import { setStaffContext } from '@/lib/dbContext';
 import { useAuth } from '@/hooks/useAuth';
 import { MarketingPromotion } from './useMarketingPromotions';
 
@@ -58,9 +57,11 @@ export const useTVScreenContent = (screenConfigId?: string) => {
   const addContentMutation = useMutation({
     mutationFn: async ({ promotionId, order }: { promotionId: string; order?: number }) => {
       if (!screenConfigId) throw new Error('No screen config ID');
-      if (user?.id) await setStaffContext(user.id);
 
-      const { data, error } = await configuredSupabase
+      // Importante: para escribir en tablas de staff usamos x-staff-token
+      const staffClient = getStaffSupabaseClient();
+
+      const { data, error } = await staffClient
         .from('tv_screen_content')
         .insert([{
           tv_screen_config_id: screenConfigId,
@@ -84,9 +85,9 @@ export const useTVScreenContent = (screenConfigId?: string) => {
 
   const removeContentMutation = useMutation({
     mutationFn: async (contentId: string) => {
-      if (user?.id) await setStaffContext(user.id);
+      const staffClient = getStaffSupabaseClient();
 
-      const { error } = await configuredSupabase
+      const { error } = await staffClient
         .from('tv_screen_content')
         .delete()
         .eq('id', contentId);
@@ -104,10 +105,10 @@ export const useTVScreenContent = (screenConfigId?: string) => {
 
   const reorderContentMutation = useMutation({
     mutationFn: async (items: { id: string; display_order: number }[]) => {
-      if (user?.id) await setStaffContext(user.id);
+      const staffClient = getStaffSupabaseClient();
 
       for (const item of items) {
-        const { error } = await configuredSupabase
+        const { error } = await staffClient
           .from('tv_screen_content')
           .update({ display_order: item.display_order })
           .eq('id', item.id);
