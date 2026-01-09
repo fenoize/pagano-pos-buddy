@@ -172,7 +172,7 @@ export default function ReadyOrdersTV() {
       className={cn(
         "fixed inset-0 flex flex-col overflow-hidden",
         theme === 'dark' 
-          ? "bg-gradient-to-br from-gray-900 to-gray-950 text-white" 
+          ? "bg-black text-white" 
           : "bg-gradient-to-br from-orange-50 to-amber-50 text-foreground"
       )}
       style={{ cursor: cursorVisible ? 'default' : 'none' }}
@@ -198,7 +198,7 @@ export default function ReadyOrdersTV() {
         <header className={cn(
           "px-6 py-4 flex justify-between items-center backdrop-blur-sm border-b shrink-0",
           theme === 'dark' 
-            ? "bg-gray-800/50 border-gray-700" 
+            ? "bg-neutral-900/80 border-neutral-800" 
             : "bg-white/50 border-border"
         )}>
           {/* Logo */}
