@@ -8,7 +8,6 @@ import { useAuth } from '@/hooks/useAuth';
 export const TV_STATUS_OPTIONS = [
   { value: 'En preparación', label: 'En preparación' },
   { value: 'Listo', label: 'Listo' },
-  { value: 'Entregado', label: 'Entregado' },
 ] as const;
 
 export interface TVScreenConfig {
