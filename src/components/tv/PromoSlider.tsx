@@ -27,6 +27,8 @@ export function PromoSlider({ interval = 8000, className, screenConfigId }: Prom
   const [isTransitioning, setIsTransitioning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const FADE_DURATION = 3000; // 3 seconds fade
+
   // Auto-advance slides
   useEffect(() => {
     if (promotions.length <= 1) return;
@@ -36,7 +38,7 @@ export function PromoSlider({ interval = 8000, className, screenConfigId }: Prom
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % promotions.length);
         setIsTransitioning(false);
-      }, 300);
+      }, FADE_DURATION);
     }, interval);
 
     return () => clearInterval(timer);
@@ -71,7 +73,7 @@ export function PromoSlider({ interval = 8000, className, screenConfigId }: Prom
       {/* Background media */}
       <div 
         className={cn(
-          "absolute inset-0 transition-opacity duration-300",
+          "absolute inset-0 transition-opacity duration-[3000ms] ease-in-out",
           isTransitioning ? "opacity-0" : "opacity-100"
         )}
       >
@@ -100,7 +102,7 @@ export function PromoSlider({ interval = 8000, className, screenConfigId }: Prom
       {showTitle && (
         <div 
           className={cn(
-            "absolute bottom-0 left-0 right-0 p-6 text-white transition-all duration-300",
+            "absolute bottom-0 left-0 right-0 p-6 text-white transition-all duration-[3000ms] ease-in-out",
             isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
           )}
         >
@@ -130,7 +132,7 @@ export function PromoSlider({ interval = 8000, className, screenConfigId }: Prom
                 setTimeout(() => {
                   setCurrentIndex(idx);
                   setIsTransitioning(false);
-                }, 300);
+                }, FADE_DURATION);
               }}
               className={cn(
                 "w-3 h-3 rounded-full transition-all",
