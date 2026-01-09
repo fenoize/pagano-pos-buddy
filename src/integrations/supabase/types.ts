@@ -5417,6 +5417,7 @@ export type Database = {
         | "Viewer"
         | "Preparador"
         | "Cajero"
+        | "TV"
       cash_movement_type: "ingreso" | "egreso"
       estado_cliente: "Activo" | "Inactivo" | "Bloqueado"
       fulfillment_type: "retiro" | "delivery"
@@ -5594,6 +5595,7 @@ export const Constants = {
         "Viewer",
         "Preparador",
         "Cajero",
+        "TV",
       ],
       cash_movement_type: ["ingreso", "egreso"],
       estado_cliente: ["Activo", "Inactivo", "Bloqueado"],
