@@ -27,6 +27,7 @@ const TEMPLATES = [
   { value: 'full', label: 'Completa', icon: Monitor, description: 'Solo pedidos' },
   { value: 'split_horizontal', label: 'Dividida H', icon: SplitSquareHorizontal, description: 'Pedidos | Promos' },
   { value: 'split_vertical', label: 'Dividida V', icon: SplitSquareVertical, description: 'Promos arriba' },
+  { value: 'promo_only', label: 'Solo Promos', icon: Image, description: 'Sin pedidos' },
 ] as const;
 
 const INTERVALS = [
