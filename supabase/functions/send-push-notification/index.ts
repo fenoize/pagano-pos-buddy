@@ -120,7 +120,7 @@ serve(async (req) => {
 
     // Handle test notification (direct send without preferences check)
     if (action === 'test') {
-      return await handleTestNotification(data as TestNotificationRequest, oneSignalAppId, oneSignalRestApiKey);
+      return await handleTestNotification(supabase, data as TestNotificationRequest, oneSignalAppId, oneSignalRestApiKey);
     }
 
     // Handle bulk marketing notifications
@@ -141,6 +141,7 @@ serve(async (req) => {
 });
 
 async function handleTestNotification(
+  supabase: any,
   data: TestNotificationRequest,
   appId: string,
   apiKey: string
@@ -155,18 +156,40 @@ async function handleTestNotification(
   }
 
   try {
-    const oneSignalPayload = {
+    // If this looks like a customer UUID, prefer targeting via tag(email)
+    // because some devices may not have external_id properly linked in OneSignal.
+    const { data: customer, error: customerError } = await supabase
+      .from('customers')
+      .select('email')
+      .eq('id', external_user_id)
+      .maybeSingle();
+
+    if (customerError) {
+      console.warn('Test push: could not fetch customer email, falling back to external_id:', customerError);
+    }
+
+    const email = customer?.email?.trim();
+
+    const oneSignalPayload: any = {
       app_id: appId,
-      include_aliases: {
-        external_id: [external_user_id]
-      },
       target_channel: 'push',
       headings: { en: title },
       contents: { en: body },
       data: { type: 'test' }
     };
 
-    console.log('Sending test OneSignal notification:', JSON.stringify(oneSignalPayload));
+    if (email) {
+      // Target by tag set in the customer app: setUserTags({ email })
+      oneSignalPayload.filters = [
+        { field: 'tag', key: 'email', relation: '=', value: email }
+      ];
+      console.log('Sending test OneSignal notification (by email tag):', JSON.stringify(oneSignalPayload));
+    } else {
+      oneSignalPayload.include_aliases = {
+        external_id: [external_user_id]
+      };
+      console.log('Sending test OneSignal notification (by external_id):', JSON.stringify(oneSignalPayload));
+    }
 
     const response = await fetch(ONESIGNAL_API_URL, {
       method: 'POST',
