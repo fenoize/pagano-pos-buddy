@@ -63,7 +63,7 @@ const menuItems = [
   { title: "Nueva Venta", url: "/pos/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
   { title: "Ventas", url: "/pos/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
   { title: "Cocina", url: "/pos/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
-  { title: "Pedido Listo", url: "/pos/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocinero', 'Preparador'] },
+  { title: "Pedido Listo", url: "/pos/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocinero', 'Preparador', 'TV'] },
   { title: "Productos", url: "/pos/productos", icon: Package, roles: ['Administrador'] },
   { title: "Categorías", url: "/pos/categorias", icon: Tags, roles: ['Administrador'] },
   { title: "Fidelización", url: "/pos/fidelizacion", icon: Star, roles: ['Administrador'] },
