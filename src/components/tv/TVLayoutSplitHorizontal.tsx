@@ -1,14 +1,34 @@
 import { ReadyOrderCard } from './ReadyOrderCard';
 import { PromoSlider } from './PromoSlider';
 import type { Order } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface TVLayoutSplitHorizontalProps {
   orders: Order[];
   recentlyReady: Set<string>;
   sliderInterval: number;
+  columns?: number;
+  fontSize?: 'small' | 'medium' | 'large';
 }
 
-export function TVLayoutSplitHorizontal({ orders, recentlyReady, sliderInterval }: TVLayoutSplitHorizontalProps) {
+const getGridCols = (columns: number) => {
+  // For split layout, we have less space so reduce columns
+  const effectiveCols = Math.max(2, columns - 1);
+  switch (effectiveCols) {
+    case 2: return 'grid-cols-1 md:grid-cols-2';
+    case 3: return 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3';
+    case 4: return 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4';
+    default: return 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3';
+  }
+};
+
+export function TVLayoutSplitHorizontal({ 
+  orders, 
+  recentlyReady, 
+  sliderInterval,
+  columns = 4,
+  fontSize = 'medium'
+}: TVLayoutSplitHorizontalProps) {
   return (
     <div className="flex-1 flex">
       {/* Left side: Orders */}
@@ -21,13 +41,14 @@ export function TVLayoutSplitHorizontal({ orders, recentlyReady, sliderInterval 
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className={cn("grid gap-4", getGridCols(columns))}>
             {orders.map(order => (
               <ReadyOrderCard 
                 key={order.id} 
                 order={order}
                 isRecent={recentlyReady.has(order.id)}
                 compact
+                fontSize={fontSize}
               />
             ))}
           </div>

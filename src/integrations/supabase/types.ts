@@ -4534,7 +4534,10 @@ export type Database = {
       }
       tv_screen_configs: {
         Row: {
+          columns: number | null
           created_at: string
+          font_size: string | null
+          hide_header_fullscreen: boolean | null
           id: string
           is_default: boolean
           name: string
@@ -4543,10 +4546,14 @@ export type Database = {
           slider_interval_seconds: number
           sound_enabled: boolean
           template: string
+          theme: string | null
           updated_at: string
         }
         Insert: {
+          columns?: number | null
           created_at?: string
+          font_size?: string | null
+          hide_header_fullscreen?: boolean | null
           id?: string
           is_default?: boolean
           name: string
@@ -4555,10 +4562,14 @@ export type Database = {
           slider_interval_seconds?: number
           sound_enabled?: boolean
           template?: string
+          theme?: string | null
           updated_at?: string
         }
         Update: {
+          columns?: number | null
           created_at?: string
+          font_size?: string | null
+          hide_header_fullscreen?: boolean | null
           id?: string
           is_default?: boolean
           name?: string
@@ -4567,6 +4578,7 @@ export type Database = {
           slider_interval_seconds?: number
           sound_enabled?: boolean
           template?: string
+          theme?: string | null
           updated_at?: string
         }
         Relationships: []
