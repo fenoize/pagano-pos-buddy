@@ -131,10 +131,11 @@ export const PushCampaignsTab: React.FC = () => {
       let targetDescription = 'tu usuario actual (staff)';
       
       if (testCustomerEmail.trim()) {
+        // Use ilike for case-insensitive email matching
         const { data: customerData, error: customerError } = await supabase
           .from('customers')
           .select('id, name')
-          .eq('email', testCustomerEmail.trim().toLowerCase())
+          .ilike('email', testCustomerEmail.trim())
           .maybeSingle();
         
         if (customerError) {
