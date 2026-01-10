@@ -61,12 +61,13 @@ export function useAllActiveShifts() {
 
       const userMap = new Map(users?.map(u => [u.id, u]) || []);
 
-      // Get orders for each session
+      // Get orders for each session - prioritize by cash_session_id, fallback to created_by_user_id
       const shiftsWithStats = await Promise.all(
         sessions.map(async (session) => {
           const { data: orders } = await supabase
             .from('orders')
             .select('total, status')
+            .or(`cash_session_id.eq.${session.id},and(cash_session_id.is.null,created_by_user_id.eq.${session.user_id})`)
             .gte('created_at', session.opened_at)
             .eq('status', 'Entregado');
 

@@ -65,10 +65,12 @@ export function useActiveShiftStats() {
         return;
       }
 
-      // Get orders for this session (from session start time to now)
+      // Get orders for this session - prioritize by cash_session_id, fallback to created_by_user_id
+      // This ensures each shift only sees its own sales
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('*')
+        .or(`cash_session_id.eq.${activeSession.id},and(cash_session_id.is.null,created_by_user_id.eq.${user.id})`)
         .gte('created_at', activeSession.opened_at);
 
       if (ordersError) {
