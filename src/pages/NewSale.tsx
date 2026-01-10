@@ -448,6 +448,23 @@ export default function NewSale() {
         throw new Error('Error al establecer contexto de usuario');
       }
 
+      // Obtener la sesión de caja activa del usuario para vincular la orden
+      let activeCashSessionId: string | null = null;
+      try {
+        const { data: activeSession } = await supabase
+          .from('cash_sessions')
+          .select('id')
+          .eq('user_id', validUserId)
+          .is('closed_at', null)
+          .order('opened_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        activeCashSessionId = activeSession?.id || null;
+      } catch (sessionError) {
+        console.warn('No se encontró sesión de caja activa:', sessionError);
+      }
+
       // Calculate payment totals by method
       const totals = paymentData.payments.reduce(
         (acc, payment) => {
@@ -484,6 +501,7 @@ export default function NewSale() {
       const orderData = {
         customer_id: customerId,
         created_by_user_id: validUserId,
+        cash_session_id: activeCashSessionId,
         nombre_resumen: orderSnapshot.orderName,
         fulfillment: orderSnapshot.fulfillment,
         pickup_mode: orderSnapshot.pickupMode || null,
