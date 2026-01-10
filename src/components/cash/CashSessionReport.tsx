@@ -19,13 +19,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Download, Eye, Calendar, Search, Filter } from 'lucide-react';
+import { Download, Eye, Calendar, Search, Filter, LockOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { CashSession, User, AppRole } from '@/types';
 import { CashSessionDetailButton } from './CashSessionDetailButton';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
+import { ForceCloseSessionModal } from './ForceCloseSessionModal';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -52,10 +54,14 @@ interface CashSessionWithUser extends CashSession {
 }
 
 export function CashSessionReport() {
+  const { user } = useAuthContext();
+  const isAdmin = user?.role === 'Administrador';
+  
   const [sessions, setSessions] = useState<CashSessionWithUser[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<CashSessionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
+  const [forceCloseSession, setForceCloseSession] = useState<CashSessionWithUser | null>(null);
   const [filters, setFilters] = useState({
     dateFrom: '',
     dateTo: '',
@@ -534,10 +540,22 @@ export function CashSessionReport() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <CashSessionDetailButton
-                          sessionId={session.id}
-                          sessionData={session}
-                        />
+                        <div className="flex items-center justify-end gap-2">
+                          <CashSessionDetailButton
+                            sessionId={session.id}
+                            sessionData={session}
+                          />
+                          {isAdmin && !session.closed_at && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => setForceCloseSession(session)}
+                              title="Forzar cierre"
+                            >
+                              <LockOpen className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -547,6 +565,14 @@ export function CashSessionReport() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Force Close Modal */}
+      <ForceCloseSessionModal
+        open={!!forceCloseSession}
+        onOpenChange={(open) => !open && setForceCloseSession(null)}
+        session={forceCloseSession}
+        onSuccess={loadData}
+      />
     </div>
   );
 }
