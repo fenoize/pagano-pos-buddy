@@ -7,11 +7,10 @@ import { trackPromoView, trackPromoClick } from '@/hooks/usePromoAnalytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Flame, LogOut, ShoppingBag, MapPin, Award, User, UtensilsCrossed, ArrowRight, RefreshCw } from 'lucide-react';
+import { Flame, ShoppingBag, Award, User, UtensilsCrossed, ArrowRight, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PWAInstallPrompt } from '@/components/customer/PWAInstallPrompt';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
-import { CustomerUpdateCard } from '@/components/customer/CustomerUpdateCard';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { toast } from 'sonner';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -198,18 +197,19 @@ export default function CustomerPortal() {
         <Card className="border-border bg-card">
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-4">
+              <button 
+                className="flex items-center gap-4 text-left hover:opacity-80 transition-opacity"
+                onClick={() => navigate('/profile')}
+              >
                 <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center ring-2 ring-primary/30">
                   <User className="h-8 w-8 text-primary" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-foreground">{customer.name || customer.nombres}</h2>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
+                  <p className="text-xs text-primary font-medium mt-1">Ver mi perfil →</p>
                 </div>
-              </div>
-              <Button variant="ghost" size="icon" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground">
-                <LogOut className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
 
             {/* Runas y Nivel */}
@@ -319,7 +319,7 @@ export default function CustomerPortal() {
           </Carousel>
         )}
 
-        {/* Accesos rápidos */}
+        {/* Accesos rápidos - Simplificados */}
         <div className="grid gap-3 grid-cols-2">
           <Card 
             className="bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
@@ -333,37 +333,14 @@ export default function CustomerPortal() {
 
           <Card 
             className="bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
-            onClick={() => navigate('/my-addresses')}
-          >
-            <CardContent className="p-4 text-center">
-              <MapPin className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold text-sm text-foreground">Direcciones</h3>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
-            onClick={() => navigate('/my-runes')}
-          >
-            <CardContent className="p-4 text-center">
-              <Flame className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold text-sm text-foreground">Mis Runas</h3>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
-            onClick={() => navigate('/my-badges')}
+            onClick={() => navigate('/benefits')}
           >
             <CardContent className="p-4 text-center">
               <Award className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold text-sm text-foreground">Insignias</h3>
+              <h3 className="font-semibold text-sm text-foreground">Beneficios</h3>
             </CardContent>
           </Card>
         </div>
-
-        {/* Configuración y actualizaciones */}
-        <CustomerUpdateCard />
       </div>
       
       <PWAInstallPrompt />

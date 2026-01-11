@@ -45,6 +45,7 @@ const MyOrders = lazy(() => import('@/pages/customer/MyOrders'));
 const MyAddresses = lazy(() => import('@/pages/customer/MyAddresses'));
 const MyRunes = lazy(() => import('@/pages/customer/MyRunes'));
 const MyBadges = lazy(() => import('@/pages/customer/MyBadges'));
+const CustomerProfile = lazy(() => import('@/pages/customer/CustomerProfile'));
 
 // Staff Pages - Lazy loading para code splitting
 const Login = lazy(() => import("./pages/Login"));
@@ -302,6 +303,14 @@ const App = () => (
                 <CustomerProtectedRoute>
                   <CustomerAppWrapper>
                     <MyBadges />
+                  </CustomerAppWrapper>
+                </CustomerProtectedRoute>
+              } />
+              
+              <Route path="/profile" element={
+                <CustomerProtectedRoute>
+                  <CustomerAppWrapper>
+                    <CustomerProfile />
                   </CustomerAppWrapper>
                 </CustomerProtectedRoute>
               } />

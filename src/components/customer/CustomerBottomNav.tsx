@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, UtensilsCrossed, ShoppingCart, Package, Award } from 'lucide-react';
+import { Home, UtensilsCrossed, ShoppingCart, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
 import { cn } from '@/lib/utils';
@@ -25,14 +25,9 @@ export function CustomerBottomNav() {
       badge: itemCount > 0 ? itemCount : undefined
     },
     {
-      to: '/my-orders',
-      icon: Package,
-      label: 'Pedidos'
-    },
-    {
-      to: '/benefits',
-      icon: Award,
-      label: 'Beneficios'
+      to: '/profile',
+      icon: User,
+      label: 'Perfil'
     }
   ];
 
