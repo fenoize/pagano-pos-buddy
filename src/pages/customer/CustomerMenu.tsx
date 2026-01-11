@@ -11,7 +11,7 @@ import { Plus, Flame, Search, X } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { useCart } from '@/contexts/CartContext';
-import { ProductCustomizationModal } from '@/components/pos/ProductCustomizationModal';
+import { CustomerProductCustomization } from '@/components/customer/CustomerProductCustomization';
 import { toast } from 'sonner';
 
 interface Product {
@@ -377,14 +377,13 @@ export default function CustomerMenu() {
         )}
       </div>
 
-      {/* Customization Modal */}
+      {/* Customization Drawer */}
       {selectedProduct && (
-        <ProductCustomizationModal
+        <CustomerProductCustomization
           isOpen={showCustomization}
           onClose={() => setShowCustomization(false)}
           product={selectedProduct as any}
           onAddToCart={handleAddToCart}
-          hideComboToggle={true}
         />
       )}
 
