@@ -322,12 +322,12 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
 
   return (
     <Drawer open={isOpen} onOpenChange={onClose}>
-      <DrawerContent className="max-h-[90vh]">
-        <div className="mx-auto w-full max-w-lg">
+      <DrawerContent className="max-h-[85vh] flex flex-col">
+        <div className="mx-auto w-full max-w-lg flex flex-col flex-1 min-h-0">
           {/* Header with product image */}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             {product.image_url ? (
-              <div className="h-48 w-full bg-muted">
+              <div className="h-40 w-full bg-muted">
                 <img
                   src={product.image_url}
                   alt={product.name}
@@ -335,21 +335,21 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
                 />
               </div>
             ) : (
-              <div className="h-32 w-full bg-muted flex items-center justify-center">
-                <Flame className="h-16 w-16 text-muted-foreground" />
+              <div className="h-28 w-full bg-muted flex items-center justify-center">
+                <Flame className="h-12 w-12 text-muted-foreground" />
               </div>
             )}
           </div>
 
-          <DrawerHeader className="text-left pb-2">
+          <DrawerHeader className="text-left pb-2 flex-shrink-0">
             <DrawerTitle className="text-xl font-bold">{product.name}</DrawerTitle>
             <DrawerDescription className="text-muted-foreground">
               {(product as any).description || 'Personaliza tu pedido'}
             </DrawerDescription>
           </DrawerHeader>
 
-          {/* Scrollable content */}
-          <div className="overflow-y-auto max-h-[50vh] px-4 pb-4 space-y-6">
+          {/* Scrollable content - uses flex-1 to take remaining space */}
+          <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-6 min-h-0">
             {/* Combo Selection */}
             {hasCombo && useCombo ? (
               <ComboSelector
@@ -585,8 +585,8 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
             </div>
           </div>
 
-          {/* Fixed bottom action bar */}
-          <div className="border-t bg-background p-4 space-y-4">
+          {/* Fixed bottom action bar - always visible */}
+          <div className="flex-shrink-0 border-t bg-background p-4 space-y-3">
             {/* Quantity */}
             <div className="flex items-center justify-between">
               <Label className="text-base font-semibold">Cantidad</Label>
@@ -615,7 +615,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
             {/* Add to cart button */}
             <Button
               size="lg"
-              className="w-full h-14 text-lg font-bold rounded-xl"
+              className="w-full h-12 text-lg font-bold rounded-xl"
               onClick={handleAddToCart}
             >
               <ShoppingCart className="h-5 w-5 mr-2" />
