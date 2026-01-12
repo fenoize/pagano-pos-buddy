@@ -39,8 +39,11 @@ export default function CustomerProfile() {
   
   // Profile edit state
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(customer?.name || customer?.nombres || '');
+  const [editNombre, setEditNombre] = useState(customer?.name || customer?.nombres || '');
+  const [editApellido, setEditApellido] = useState(customer?.apellido || customer?.apellidos || '');
   const [editPhone, setEditPhone] = useState(customer?.phone || '');
+  const [editEmail, setEditEmail] = useState(customer?.email || '');
+  const [editFechaNacimiento, setEditFechaNacimiento] = useState(customer?.fecha_nacimiento || '');
   const [isSaving, setIsSaving] = useState(false);
   
   // Password change state
@@ -69,9 +72,13 @@ export default function CustomerProfile() {
       const { error } = await configuredSupabase
         .from('customers')
         .update({
-          name: editName,
-          nombres: editName,
+          name: editNombre,
+          nombres: editNombre,
+          apellido: editApellido,
+          apellidos: editApellido,
           phone: editPhone,
+          email: editEmail,
+          fecha_nacimiento: editFechaNacimiento || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', customer.id);
@@ -233,8 +240,11 @@ export default function CustomerProfile() {
                     size="sm" 
                     onClick={() => {
                       setIsEditing(false);
-                      setEditName(customer?.name || customer?.nombres || '');
+                      setEditNombre(customer?.name || customer?.nombres || '');
+                      setEditApellido(customer?.apellido || customer?.apellidos || '');
                       setEditPhone(customer?.phone || '');
+                      setEditEmail(customer?.email || '');
+                      setEditFechaNacimiento(customer?.fecha_nacimiento || '');
                     }}
                   >
                     Cancelar
@@ -256,15 +266,26 @@ export default function CustomerProfile() {
           </CardHeader>
           <CardContent className="space-y-4">
             {isEditing ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre</Label>
-                  <Input 
-                    id="name"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder="Tu nombre"
-                  />
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="nombre">Nombre</Label>
+                    <Input 
+                      id="nombre"
+                      value={editNombre}
+                      onChange={(e) => setEditNombre(e.target.value)}
+                      placeholder="Tu nombre"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="apellido">Apellido</Label>
+                    <Input 
+                      id="apellido"
+                      value={editApellido}
+                      onChange={(e) => setEditApellido(e.target.value)}
+                      placeholder="Tu apellido"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Teléfono</Label>
@@ -275,21 +296,54 @@ export default function CustomerProfile() {
                     placeholder="+56 9 1234 5678"
                   />
                 </div>
-              </>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Correo Electrónico</Label>
+                  <Input 
+                    id="email"
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="correo@ejemplo.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fecha_nacimiento">Fecha de Nacimiento</Label>
+                  <Input 
+                    id="fecha_nacimiento"
+                    type="date"
+                    value={editFechaNacimiento}
+                    onChange={(e) => setEditFechaNacimiento(e.target.value)}
+                  />
+                </div>
+              </div>
             ) : (
-              <>
+              <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center ring-2 ring-primary/30">
                     <User className="h-8 w-8 text-primary" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-foreground">
-                      {customer?.name || customer?.nombres || 'Usuario'}
+                      {[customer?.name || customer?.nombres, customer?.apellido || customer?.apellidos].filter(Boolean).join(' ') || 'Usuario'}
                     </h2>
-                    <p className="text-sm text-muted-foreground">{customer?.phone || 'Sin teléfono'}</p>
+                    <p className="text-sm text-muted-foreground">{customer?.email || 'Sin correo'}</p>
                   </div>
                 </div>
-              </>
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Teléfono</p>
+                    <p className="text-sm font-medium text-foreground">{customer?.phone || 'No registrado'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Fecha de Nacimiento</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {customer?.fecha_nacimiento 
+                        ? new Date(customer.fecha_nacimiento + 'T00:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })
+                        : 'No registrada'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
