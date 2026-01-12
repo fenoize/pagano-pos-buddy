@@ -656,14 +656,16 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     );
   }
 
-  // Desktop: Dialog with side-by-side layout
+  // Desktop: Dialog with side-by-side layout (image 1:1 aspect ratio)
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl p-0 overflow-hidden h-[85vh] max-h-[700px]">
         <div className="flex h-full">
-          {/* Left side - Product image */}
-          <div className="w-1/2 relative bg-muted">
-            <ProductImage className="h-full" />
+          {/* Left side - Product image with 1:1 aspect ratio */}
+          <div className="w-[400px] flex-shrink-0 relative bg-muted flex items-center justify-center">
+            <div className="w-full aspect-square relative">
+              <ProductImage className="absolute inset-0" />
+            </div>
             {/* Close button */}
             <Button
               variant="ghost"
@@ -676,8 +678,8 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           </div>
 
           {/* Right side - Customization */}
-          <div className="w-1/2 flex flex-col h-full">
-            {/* Header */}
+          <div className="flex-1 flex flex-col h-full min-w-0">
+            {/* Header - fixed */}
             <div className="px-6 pt-6 pb-4 border-b flex-shrink-0">
               <h2 className="text-2xl font-bold">{product.name}</h2>
               <p className="text-muted-foreground mt-1">
@@ -686,13 +688,13 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
             </div>
 
             {/* Scrollable customization content */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <div className="px-6 py-4">
                 <CustomizationContent />
               </div>
             </ScrollArea>
 
-            {/* Fixed bottom action bar */}
+            {/* Fixed bottom action bar - always visible */}
             <div className="flex-shrink-0 border-t bg-background p-4">
               <ActionBar />
             </div>
