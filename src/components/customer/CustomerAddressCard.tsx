@@ -12,6 +12,9 @@ interface Address {
   comuna: string;
   observaciones?: string | null;
   is_default: boolean;
+  formatted_address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface CustomerAddressCardProps {
@@ -37,10 +40,19 @@ export function CustomerAddressCard({
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <p className="text-sm">
-            {address.calle} {address.numero}
-            {address.depto && `, ${address.depto}`}
-          </p>
+          {address.formatted_address ? (
+            <p className="text-sm">{address.formatted_address}</p>
+          ) : (
+            <p className="text-sm">
+              {address.calle} {address.numero}
+              {address.depto && `, ${address.depto}`}
+            </p>
+          )}
+          {address.depto && address.formatted_address && (
+            <p className="text-sm text-muted-foreground">
+              Depto/Oficina: {address.depto}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">{address.comuna}</p>
           {address.observaciones && (
             <p className="text-xs text-muted-foreground italic mt-2">

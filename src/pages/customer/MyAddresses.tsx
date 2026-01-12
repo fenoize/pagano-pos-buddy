@@ -2,40 +2,39 @@ import { useState, useEffect } from 'react';
 import { CustomerLayout } from '@/components/customer/CustomerLayout';
 import { CustomerAddressCard } from '@/components/customer/CustomerAddressCard';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useComunas } from '@/hooks/useComunas';
 import { MapPin, Plus } from 'lucide-react';
+import { AddressFormWithMap } from '@/components/customer/AddressFormWithMap';
+
+interface AddressFormData {
+  alias: string;
+  calle: string;
+  numero: string;
+  depto: string;
+  comuna: string;
+  observaciones: string;
+  is_default: boolean;
+  latitude?: number;
+  longitude?: number;
+  formatted_address?: string;
+}
 
 export default function MyAddresses() {
   const { customer } = useCustomerAuth();
   const { toast } = useToast();
-  const { comunas, loading: comunasLoading } = useComunas();
 
   const [addresses, setAddresses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingAddress, setSavingAddress] = useState(false);
 
   // Modal de agregar/editar
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    alias: '',
-    calle: '',
-    numero: '',
-    depto: '',
-    comuna_id: '',
-    observaciones: '',
-    is_default: false,
-  });
+  const [editingAddress, setEditingAddress] = useState<any | null>(null);
 
   // Modal de confirmación de eliminación
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -73,36 +72,18 @@ export default function MyAddresses() {
 
   const handleOpenDialog = (address?: any) => {
     if (address) {
-      setEditingId(address.id);
-      setFormData({
-        alias: address.alias || '',
-        calle: address.calle || '',
-        numero: address.numero || '',
-        depto: address.depto || '',
-        comuna_id: address.comuna_id || '',
-        observaciones: address.observaciones || '',
-        is_default: address.is_default || false,
-      });
+      setEditingAddress(address);
     } else {
-      setEditingId(null);
-      setFormData({
-        alias: '',
-        calle: '',
-        numero: '',
-        depto: '',
-        comuna_id: '',
-        observaciones: '',
-        is_default: false,
-      });
+      setEditingAddress(null);
     }
     setDialogOpen(true);
   };
 
-  const handleSaveAddress = async () => {
+  const handleSaveAddress = async (formData: AddressFormData) => {
     if (!customer?.id) return;
 
     // Validar máximo 5 direcciones
-    if (!editingId && addresses.length >= 5) {
+    if (!editingAddress && addresses.length >= 5) {
       toast({
         title: 'Límite alcanzado',
         description: 'Solo puedes tener un máximo de 5 direcciones guardadas',
@@ -111,9 +92,18 @@ export default function MyAddresses() {
       return;
     }
 
+    setSavingAddress(true);
     try {
-      if (editingId) {
-        // Actualizar
+      // If setting this as default, unset other defaults first
+      if (formData.is_default) {
+        await supabase
+          .from('addresses')
+          .update({ is_default: false })
+          .eq('customer_id', customer.id);
+      }
+
+      if (editingAddress) {
+        // Update existing address
         const { error } = await supabase
           .from('addresses')
           .update({
@@ -121,11 +111,14 @@ export default function MyAddresses() {
             calle: formData.calle,
             numero: formData.numero,
             depto: formData.depto || null,
-            comuna_id: formData.comuna_id,
+            comuna: formData.comuna,
             observaciones: formData.observaciones || null,
             is_default: formData.is_default,
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+            formatted_address: formData.formatted_address,
           })
-          .eq('id', editingId);
+          .eq('id', editingAddress.id);
 
         if (error) throw error;
 
@@ -134,20 +127,20 @@ export default function MyAddresses() {
           description: 'Tu dirección ha sido actualizada correctamente',
         });
       } else {
-        // Crear - buscar el nombre de la comuna
-        const selectedComuna = comunas.find(c => c.id === formData.comuna_id);
-        
+        // Create new address
         const { error } = await supabase.from('addresses').insert([{
           customer_id: customer.id,
           alias: formData.alias,
           calle: formData.calle,
           numero: formData.numero,
           depto: formData.depto || null,
-          comuna_id: formData.comuna_id,
-          comuna: selectedComuna?.name || '',
+          comuna: formData.comuna,
           observaciones: formData.observaciones || null,
-          is_default: formData.is_default,
-          ciudad: 'Santiago'
+          is_default: formData.is_default || addresses.length === 0, // First address is default
+          ciudad: 'Santiago',
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          formatted_address: formData.formatted_address,
         }]);
 
         if (error) throw error;
@@ -167,6 +160,8 @@ export default function MyAddresses() {
         description: error.message || 'No se pudo guardar la dirección',
         variant: 'destructive',
       });
+    } finally {
+      setSavingAddress(false);
     }
   };
 
@@ -196,7 +191,16 @@ export default function MyAddresses() {
   };
 
   const handleSetDefault = async (id: string) => {
+    if (!customer?.id) return;
+
     try {
+      // Unset all defaults first
+      await supabase
+        .from('addresses')
+        .update({ is_default: false })
+        .eq('customer_id', customer.id);
+
+      // Set the new default
       const { error } = await supabase
         .from('addresses')
         .update({ is_default: true })
@@ -267,108 +271,37 @@ export default function MyAddresses() {
         </div>
       )}
 
-      {/* Dialog Agregar/Editar */}
+      {/* Dialog Agregar/Editar con Mapbox */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingId ? 'Editar Dirección' : 'Agregar Dirección'}
+              {editingAddress ? 'Editar Dirección' : 'Agregar Dirección'}
             </DialogTitle>
             <DialogDescription>
-              {editingId
+              {editingAddress
                 ? 'Actualiza los datos de tu dirección'
-                : 'Agrega una nueva dirección de entrega'}
+                : 'Busca tu dirección y confirma la ubicación en el mapa'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <Label>Alias *</Label>
-              <Input
-                placeholder="Casa, Trabajo, etc."
-                value={formData.alias}
-                onChange={(e) => setFormData({ ...formData, alias: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label>Calle *</Label>
-              <Input
-                placeholder="Nombre de la calle"
-                value={formData.calle}
-                onChange={(e) => setFormData({ ...formData, calle: e.target.value })}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Número *</Label>
-                <Input
-                  placeholder="123"
-                  value={formData.numero}
-                  onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Depto/Oficina</Label>
-                <Input
-                  placeholder="4B (opcional)"
-                  value={formData.depto}
-                  onChange={(e) => setFormData({ ...formData, depto: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label>Comuna *</Label>
-              <Select
-                value={formData.comuna_id}
-                onValueChange={(value) => setFormData({ ...formData, comuna_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una comuna" />
-                </SelectTrigger>
-                <SelectContent>
-                  {comunas.map((comuna) => (
-                    <SelectItem key={comuna.id} value={comuna.id}>
-                      {comuna.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Referencias adicionales</Label>
-              <Textarea
-                placeholder="Ej: Casa azul con reja blanca"
-                value={formData.observaciones}
-                onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="is_default"
-                checked={formData.is_default}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_default: checked as boolean })
-                }
-              />
-              <Label htmlFor="is_default" className="cursor-pointer">
-                Dirección principal
-              </Label>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSaveAddress}>
-              {editingId ? 'Actualizar' : 'Agregar'}
-            </Button>
-          </DialogFooter>
+          <AddressFormWithMap
+            initialData={editingAddress ? {
+              alias: editingAddress.alias,
+              calle: editingAddress.calle,
+              numero: editingAddress.numero,
+              depto: editingAddress.depto || '',
+              comuna: editingAddress.comuna,
+              observaciones: editingAddress.observaciones || '',
+              is_default: editingAddress.is_default,
+              latitude: editingAddress.latitude,
+              longitude: editingAddress.longitude,
+              formatted_address: editingAddress.formatted_address || '',
+            } : undefined}
+            onSubmit={handleSaveAddress}
+            onCancel={() => setDialogOpen(false)}
+            isLoading={savingAddress}
+          />
         </DialogContent>
       </Dialog>
 

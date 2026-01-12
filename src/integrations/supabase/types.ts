@@ -24,8 +24,11 @@ export type Database = {
           created_at: string | null
           customer_id: string
           depto: string | null
+          formatted_address: string | null
           id: string
           is_default: boolean | null
+          latitude: number | null
+          longitude: number | null
           numero: string
           observaciones: string | null
           updated_at: string | null
@@ -39,8 +42,11 @@ export type Database = {
           created_at?: string | null
           customer_id: string
           depto?: string | null
+          formatted_address?: string | null
           id?: string
           is_default?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           numero: string
           observaciones?: string | null
           updated_at?: string | null
@@ -54,8 +60,11 @@ export type Database = {
           created_at?: string | null
           customer_id?: string
           depto?: string | null
+          formatted_address?: string | null
           id?: string
           is_default?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           numero?: string
           observaciones?: string | null
           updated_at?: string | null
