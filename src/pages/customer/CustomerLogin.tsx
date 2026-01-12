@@ -28,7 +28,9 @@ export default function CustomerLogin() {
   // Signup state
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
   const [signupNombre, setSignupNombre] = useState('');
   const [signupApellido, setSignupApellido] = useState('');
   const [signupPhone, setSignupPhone] = useState('');
@@ -85,6 +87,13 @@ export default function CustomerLogin() {
     if (!signupCaptchaToken) {
       toast.error('Verificación requerida', {
         description: 'Por favor completa el CAPTCHA',
+      });
+      return;
+    }
+
+    if (signupPassword !== signupConfirmPassword) {
+      toast.error('Las contraseñas no coinciden', {
+        description: 'Por favor verifica que ambas contraseñas sean iguales',
       });
       return;
     }
@@ -310,33 +319,64 @@ export default function CustomerLogin() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Contraseña</Label>
-                  <div className="relative">
-                    <Input
-                      id="signup-password"
-                      type={showSignupPassword ? "text" : "password"}
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      required
-                      disabled={loading}
-                      className="bg-muted/50 pr-10"
-                      minLength={6}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowSignupPassword(!showSignupPassword)}
-                      disabled={loading}
-                    >
-                      {showSignupPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Contraseña</Label>
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showSignupPassword ? "text" : "password"}
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        required
+                        disabled={loading}
+                        className="bg-muted/50 pr-10"
+                        minLength={6}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowSignupPassword(!showSignupPassword)}
+                        disabled={loading}
+                      >
+                        {showSignupPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-confirm-password">Confirmar</Label>
+                    <div className="relative">
+                      <Input
+                        id="signup-confirm-password"
+                        type={showSignupConfirmPassword ? "text" : "password"}
+                        value={signupConfirmPassword}
+                        onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                        required
+                        disabled={loading}
+                        className="bg-muted/50 pr-10"
+                        minLength={6}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowSignupConfirmPassword(!showSignupConfirmPassword)}
+                        disabled={loading}
+                      >
+                        {showSignupConfirmPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
