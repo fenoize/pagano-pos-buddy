@@ -187,6 +187,37 @@ All colors MUST be HSL and themed for light/dark modes.
   html {
     scroll-behavior: smooth;
   }
+
+  /* Headings - ensure proper color in all themes */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+  }
+
+  /* Customer app specific - force white headings */
+  .customer-app h1,
+  .customer-app h2,
+  .customer-app h3,
+  .customer-app h4,
+  .customer-app h5,
+  .customer-app h6 {
+    @apply text-white;
+  }
+
+  /* Labels in customer app */
+  .customer-app label,
+  .customer-app .label {
+    @apply text-white;
+  }
+
+  /* Dark mode headings */
+  .dark h1,
+  .dark h2,
+  .dark h3,
+  .dark h4,
+  .dark h5,
+  .dark h6 {
+    @apply text-foreground;
+  }
 }
 
 @layer utilities {
