@@ -222,6 +222,9 @@ export interface Address {
   ciudad: string;
   observaciones?: string;
   is_default: boolean;
+  latitude?: number;
+  longitude?: number;
+  formatted_address?: string;
   created_at: string;
   updated_at: string;
 }
