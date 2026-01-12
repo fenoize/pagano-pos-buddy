@@ -659,45 +659,53 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   // Desktop: Dialog with side-by-side layout (image 1:1 aspect ratio)
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden h-[85vh] max-h-[700px]">
-        <div className="flex h-full">
-          {/* Left side - Product image with 1:1 aspect ratio */}
-          <div className="w-[400px] flex-shrink-0 relative bg-muted flex items-center justify-center">
-            <div className="w-full aspect-square relative">
-              <ProductImage className="absolute inset-0" />
-            </div>
-            {/* Close button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-3 right-3 bg-background/80 hover:bg-background rounded-full"
-              onClick={onClose}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+      <DialogContent className="max-w-4xl p-0 overflow-hidden flex flex-row h-[80vh] max-h-[700px]">
+        {/* Left side - Product image with 1:1 aspect ratio */}
+        <div className="w-[350px] flex-shrink-0 bg-muted relative overflow-hidden">
+          <div className="w-full h-full flex items-center justify-center">
+            {product.image_url ? (
+              <img
+                src={product.image_url}
+                alt={product.name}
+                className="w-full aspect-square object-cover"
+              />
+            ) : (
+              <div className="w-full aspect-square flex items-center justify-center bg-muted">
+                <Flame className="h-16 w-16 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          {/* Close button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-3 left-3 bg-background/80 hover:bg-background rounded-full z-10"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Right side - Customization */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Header - fixed */}
+          <div className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+            <h2 className="text-2xl font-bold">{product.name}</h2>
+            <p className="text-muted-foreground mt-1">
+              {(product as any).description || 'Personaliza tu pedido'}
+            </p>
           </div>
 
-          {/* Right side - Customization */}
-          <div className="flex-1 flex flex-col h-full min-w-0">
-            {/* Header - fixed */}
-            <div className="px-6 pt-6 pb-4 border-b flex-shrink-0">
-              <h2 className="text-2xl font-bold">{product.name}</h2>
-              <p className="text-muted-foreground mt-1">
-                {(product as any).description || 'Personaliza tu pedido'}
-              </p>
+          {/* Scrollable customization content */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="px-6 py-4">
+              <CustomizationContent />
             </div>
+          </div>
 
-            {/* Scrollable customization content */}
-            <ScrollArea className="flex-1 min-h-0">
-              <div className="px-6 py-4">
-                <CustomizationContent />
-              </div>
-            </ScrollArea>
-
-            {/* Fixed bottom action bar - always visible */}
-            <div className="flex-shrink-0 border-t bg-background p-4">
-              <ActionBar />
-            </div>
+          {/* Fixed bottom action bar - always visible */}
+          <div className="flex-shrink-0 border-t bg-background p-4">
+            <ActionBar />
           </div>
         </div>
       </DialogContent>
