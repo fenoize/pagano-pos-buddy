@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { configuredSupabase } from '@/lib/supabaseClient';
 import { Product, ProductVariantOption, ComboProduct } from '@/types';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Plus, Minus, Check, Flame, ShoppingCart } from 'lucide-react';
+import { Plus, Minus, Check, Flame, ShoppingCart, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import ComboSelector from '@/components/pos/ComboSelector';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ProductExtra {
   id: string;
@@ -35,6 +36,8 @@ interface CustomerProductCustomizationProps {
 }
 
 export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, product }: CustomerProductCustomizationProps) {
+  const isMobile = useIsMobile();
+  
   // New variant system state
   const [availableVariants, setAvailableVariants] = useState<ProductVariantOption[]>([]);
   const [selectedVariantOption, setSelectedVariantOption] = useState<ProductVariantOption | null>(null);
@@ -320,310 +323,382 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     return priceType[variant] || 0;
   };
 
-  return (
-    <Drawer open={isOpen} onOpenChange={onClose}>
-      <DrawerContent className="max-h-[85vh] flex flex-col">
-        <div className="mx-auto w-full max-w-lg flex flex-col flex-1 min-h-0">
-          {/* Header with product image */}
-          <div className="relative flex-shrink-0">
-            {product.image_url ? (
-              <div className="h-40 w-full bg-muted">
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="h-28 w-full bg-muted flex items-center justify-center">
-                <Flame className="h-12 w-12 text-muted-foreground" />
-              </div>
-            )}
-          </div>
-
-          <DrawerHeader className="text-left pb-2 flex-shrink-0">
-            <DrawerTitle className="text-xl font-bold">{product.name}</DrawerTitle>
-            <DrawerDescription className="text-muted-foreground">
-              {(product as any).description || 'Personaliza tu pedido'}
-            </DrawerDescription>
-          </DrawerHeader>
-
-          {/* Scrollable content - uses flex-1 to take remaining space */}
-          <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-6 min-h-0">
-            {/* Combo Selection */}
-            {hasCombo && useCombo ? (
-              <ComboSelector
-                product={product}
-                onComboItemsChange={setComboSelections}
-                onComboTotalChange={setComboTotal}
-              />
-            ) : (
-              <>
-                {/* Variant Selection - New System */}
-                {useNewVariantSystem && availableVariants.length > 0 && (
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold">Elige tu opción</Label>
-                    <RadioGroup
-                      value={selectedVariantOption?.id || ''}
-                      onValueChange={(value) => {
-                        const variant = availableVariants.find(v => v.id === value);
-                        if (variant) setSelectedVariantOption(variant);
-                      }}
-                    >
-                      {availableVariants.map((variant) => (
-                        <div
-                          key={variant.id}
-                          className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                            selectedVariantOption?.id === variant.id
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-muted-foreground/50'
-                          }`}
-                          onClick={() => setSelectedVariantOption(variant)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <RadioGroupItem value={variant.id} id={variant.id} />
-                            <Label htmlFor={variant.id} className="font-medium cursor-pointer">
-                              {variant.variant?.name}
-                            </Label>
-                          </div>
-                          <span className="font-semibold text-primary">
-                            {formatPrice(variant.price)}
-                          </span>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                )}
-
-                {/* Legacy System - Price Type */}
-                {!useNewVariantSystem && (
-                  <>
-                    <div className="space-y-3">
-                      <Label className="text-base font-semibold">Tipo de pedido</Label>
-                      <RadioGroup
-                        value={selectedPriceType}
-                        onValueChange={(value) => setSelectedPriceType(value as 'combo' | 'only')}
-                      >
-                        <div
-                          className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                            selectedPriceType === 'combo'
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-muted-foreground/50'
-                          }`}
-                          onClick={() => setSelectedPriceType('combo')}
-                        >
-                          <div className="flex items-center gap-3">
-                            <RadioGroupItem value="combo" id="combo" />
-                            <Label htmlFor="combo" className="font-medium cursor-pointer">
-                              Combo (con papas)
-                            </Label>
-                          </div>
-                        </div>
-                        <div
-                          className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                            selectedPriceType === 'only'
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-muted-foreground/50'
-                          }`}
-                          onClick={() => setSelectedPriceType('only')}
-                        >
-                          <div className="flex items-center gap-3">
-                            <RadioGroupItem value="only" id="only" />
-                            <Label htmlFor="only" className="font-medium cursor-pointer">
-                              Solo hamburguesa
-                            </Label>
-                          </div>
-                        </div>
-                      </RadioGroup>
+  // Shared customization content
+  const CustomizationContent = () => (
+    <div className="space-y-6">
+      {/* Combo Selection */}
+      {hasCombo && useCombo ? (
+        <ComboSelector
+          product={product}
+          onComboItemsChange={setComboSelections}
+          onComboTotalChange={setComboTotal}
+        />
+      ) : (
+        <>
+          {/* Variant Selection - New System */}
+          {useNewVariantSystem && availableVariants.length > 0 && (
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Elige tu opción</Label>
+              <RadioGroup
+                value={selectedVariantOption?.id || ''}
+                onValueChange={(value) => {
+                  const variant = availableVariants.find(v => v.id === value);
+                  if (variant) setSelectedVariantOption(variant);
+                }}
+              >
+                {availableVariants.map((variant) => (
+                  <div
+                    key={variant.id}
+                    className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                      selectedVariantOption?.id === variant.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-muted-foreground/50'
+                    }`}
+                    onClick={() => setSelectedVariantOption(variant)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value={variant.id} id={variant.id} />
+                      <Label htmlFor={variant.id} className="font-medium cursor-pointer">
+                        {variant.variant?.name}
+                      </Label>
                     </div>
+                    <span className="font-semibold text-primary">
+                      {formatPrice(variant.price)}
+                    </span>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          )}
 
-                    {/* Legacy System - Variants */}
-                    {legacyVariants.length > 1 && (
-                      <div className="space-y-3">
-                        <Label className="text-base font-semibold">Tamaño</Label>
-                        <RadioGroup
-                          value={selectedVariant}
-                          onValueChange={(value) => setSelectedVariant(value as Variant)}
-                        >
-                          {legacyVariants.map((variant) => (
-                            <div
-                              key={variant}
-                              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                                selectedVariant === variant
-                                  ? 'border-primary bg-primary/5'
-                                  : 'border-border hover:border-muted-foreground/50'
-                              }`}
-                              onClick={() => setSelectedVariant(variant as Variant)}
-                            >
-                              <div className="flex items-center gap-3">
-                                <RadioGroupItem value={variant} id={variant} />
-                                <Label htmlFor={variant} className="font-medium cursor-pointer capitalize">
-                                  {variant}
-                                </Label>
-                              </div>
-                              <span className="font-semibold text-primary">
-                                {formatPrice(getLegacyPrice(variant))}
-                              </span>
-                            </div>
-                          ))}
-                        </RadioGroup>
-                      </div>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-
-            {/* Extras Section */}
-            {extras.length > 0 && (
+          {/* Legacy System - Price Type */}
+          {!useNewVariantSystem && (
+            <>
               <div className="space-y-3">
-                <Label className="text-base font-semibold">Extras</Label>
-                <div className="space-y-2">
-                  {extras.map((extra) => {
-                    const isSelected = !!selectedExtras[extra.id];
-                    const qty = selectedExtras[extra.id] || 0;
-                    
-                    return (
-                      <div
-                        key={extra.id}
-                        className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
-                          isSelected
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Switch
-                            checked={isSelected}
-                            onCheckedChange={() => handleExtraToggle(extra.id)}
-                          />
-                          <div>
-                            <p className="font-medium">{extra.name}</p>
-                            <p className="text-sm text-primary font-semibold">
-                              +{formatPrice(extra.price)}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {isSelected && (
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => handleExtraQuantityChange(extra.id, -1)}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-6 text-center font-medium">{qty}</span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => handleExtraQuantityChange(extra.id, 1)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                <Label className="text-base font-semibold">Tipo de pedido</Label>
+                <RadioGroup
+                  value={selectedPriceType}
+                  onValueChange={(value) => setSelectedPriceType(value as 'combo' | 'only')}
+                >
+                  <div
+                    className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                      selectedPriceType === 'combo'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-muted-foreground/50'
+                    }`}
+                    onClick={() => setSelectedPriceType('combo')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value="combo" id="combo" />
+                      <Label htmlFor="combo" className="font-medium cursor-pointer">
+                        Combo (con papas)
+                      </Label>
+                    </div>
+                  </div>
+                  <div
+                    className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                      selectedPriceType === 'only'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-muted-foreground/50'
+                    }`}
+                    onClick={() => setSelectedPriceType('only')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value="only" id="only" />
+                      <Label htmlFor="only" className="font-medium cursor-pointer">
+                        Solo hamburguesa
+                      </Label>
+                    </div>
+                  </div>
+                </RadioGroup>
               </div>
-            )}
 
-            {/* Modifiers Section */}
-            {!useCombo && modifiers.length > 0 && (
-              <div className="space-y-3">
-                <Label className="text-base font-semibold">Modificaciones</Label>
-                <div className="space-y-2">
-                  {modifiers.map((modifier) => {
-                    const isSelected = selectedModifiers.includes(modifier.id);
-                    
-                    return (
+              {/* Legacy System - Variants */}
+              {legacyVariants.length > 1 && (
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">Tamaño</Label>
+                  <RadioGroup
+                    value={selectedVariant}
+                    onValueChange={(value) => setSelectedVariant(value as Variant)}
+                  >
+                    {legacyVariants.map((variant) => (
                       <div
-                        key={modifier.id}
+                        key={variant}
                         className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                          isSelected
+                          selectedVariant === variant
                             ? 'border-primary bg-primary/5'
                             : 'border-border hover:border-muted-foreground/50'
                         }`}
-                        onClick={() => toggleModifier(modifier.id)}
+                        onClick={() => setSelectedVariant(variant as Variant)}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                            isSelected 
-                              ? 'bg-primary border-primary' 
-                              : 'border-muted-foreground/30'
-                          }`}>
-                            {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                          </div>
-                          <span className="font-medium">{modifier.name}</span>
+                          <RadioGroupItem value={variant} id={variant} />
+                          <Label htmlFor={variant} className="font-medium cursor-pointer capitalize">
+                            {variant}
+                          </Label>
                         </div>
-                        {modifier.price > 0 && (
-                          <span className="text-sm text-primary font-semibold">
-                            +{formatPrice(modifier.price)}
-                          </span>
-                        )}
+                        <span className="font-semibold text-primary">
+                          {formatPrice(getLegacyPrice(variant))}
+                        </span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </RadioGroup>
                 </div>
-              </div>
-            )}
+              )}
+            </>
+          )}
+        </>
+      )}
 
-            {/* Special Notes */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Notas especiales</Label>
-              <Textarea
-                placeholder="Ej: Sin cebolla, más salsa..."
-                value={specialNotes}
-                onChange={(e) => setSpecialNotes(e.target.value)}
-                className="min-h-[80px] rounded-xl resize-none"
-              />
-            </div>
-          </div>
-
-          {/* Fixed bottom action bar - always visible */}
-          <div className="flex-shrink-0 border-t bg-background p-4 space-y-3">
-            {/* Quantity */}
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">Cantidad</Label>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-10 w-10 rounded-full"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
+      {/* Extras Section */}
+      {extras.length > 0 && (
+        <div className="space-y-3">
+          <Label className="text-base font-semibold">Extras</Label>
+          <div className="space-y-2">
+            {extras.map((extra) => {
+              const isSelected = !!selectedExtras[extra.id];
+              const qty = selectedExtras[extra.id] || 0;
+              
+              return (
+                <div
+                  key={extra.id}
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                    isSelected
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border'
+                  }`}
                 >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="text-xl font-bold w-8 text-center">{quantity}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-10 w-10 rounded-full"
-                  onClick={() => setQuantity(quantity + 1)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Add to cart button */}
-            <Button
-              size="lg"
-              className="w-full h-12 text-lg font-bold rounded-xl"
-              onClick={handleAddToCart}
-            >
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              Agregar • {formatPrice(getTotalPrice())}
-            </Button>
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={isSelected}
+                      onCheckedChange={() => handleExtraToggle(extra.id)}
+                    />
+                    <div>
+                      <p className="font-medium">{extra.name}</p>
+                      <p className="text-sm text-primary font-semibold">
+                        +{formatPrice(extra.price)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {isSelected && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        onClick={() => handleExtraQuantityChange(extra.id, -1)}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="w-6 text-center font-medium">{qty}</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        onClick={() => handleExtraQuantityChange(extra.id, 1)}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      )}
+
+      {/* Modifiers Section */}
+      {!useCombo && modifiers.length > 0 && (
+        <div className="space-y-3">
+          <Label className="text-base font-semibold">Modificaciones</Label>
+          <div className="space-y-2">
+            {modifiers.map((modifier) => {
+              const isSelected = selectedModifiers.includes(modifier.id);
+              
+              return (
+                <div
+                  key={modifier.id}
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    isSelected
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-muted-foreground/50'
+                  }`}
+                  onClick={() => toggleModifier(modifier.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                      isSelected 
+                        ? 'bg-primary border-primary' 
+                        : 'border-muted-foreground/30'
+                    }`}>
+                      {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                    <span className="font-medium">{modifier.name}</span>
+                  </div>
+                  {modifier.price > 0 && (
+                    <span className="text-sm text-primary font-semibold">
+                      +{formatPrice(modifier.price)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Special Notes */}
+      <div className="space-y-3">
+        <Label className="text-base font-semibold">Notas especiales</Label>
+        <Textarea
+          placeholder="Ej: Sin cebolla, más salsa..."
+          value={specialNotes}
+          onChange={(e) => setSpecialNotes(e.target.value)}
+          className="min-h-[80px] rounded-xl resize-none"
+        />
+      </div>
+    </div>
+  );
+
+  // Action bar content
+  const ActionBar = () => (
+    <div className="space-y-3">
+      {/* Quantity */}
+      <div className="flex items-center justify-between">
+        <Label className="text-base font-semibold">Cantidad</Label>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full"
+            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            disabled={quantity <= 1}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <span className="text-xl font-bold w-8 text-center">{quantity}</span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full"
+            onClick={() => setQuantity(quantity + 1)}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Add to cart button */}
+      <Button
+        size="lg"
+        className="w-full h-12 text-lg font-bold rounded-xl"
+        onClick={handleAddToCart}
+      >
+        <ShoppingCart className="h-5 w-5 mr-2" />
+        Agregar • {formatPrice(getTotalPrice())}
+      </Button>
+    </div>
+  );
+
+  // Product image component
+  const ProductImage = ({ className = "" }: { className?: string }) => (
+    <div className={`bg-muted ${className}`}>
+      {product.image_url ? (
+        <img
+          src={product.image_url}
+          alt={product.name}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <Flame className="h-16 w-16 text-muted-foreground" />
+        </div>
+      )}
+    </div>
+  );
+
+  // Mobile: Drawer with scrollable content including image
+  if (isMobile) {
+    return (
+      <Drawer open={isOpen} onOpenChange={onClose}>
+        <DrawerContent className="max-h-[90vh] flex flex-col">
+          <div className="mx-auto w-full max-w-lg flex flex-col flex-1 min-h-0">
+            {/* Scrollable content - includes image */}
+            <ScrollArea className="flex-1">
+              <div className="pb-4">
+                {/* Product image - now scrollable */}
+                <ProductImage className="h-48 w-full" />
+                
+                {/* Header */}
+                <div className="px-4 pt-4 pb-2">
+                  <h2 className="text-xl font-bold">{product.name}</h2>
+                  <p className="text-muted-foreground text-sm">
+                    {(product as any).description || 'Personaliza tu pedido'}
+                  </p>
+                </div>
+
+                {/* Customization content */}
+                <div className="px-4">
+                  <CustomizationContent />
+                </div>
+              </div>
+            </ScrollArea>
+
+            {/* Fixed bottom action bar */}
+            <div className="flex-shrink-0 border-t bg-background p-4">
+              <ActionBar />
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  // Desktop: Dialog with side-by-side layout
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl p-0 overflow-hidden h-[85vh] max-h-[700px]">
+        <div className="flex h-full">
+          {/* Left side - Product image */}
+          <div className="w-1/2 relative bg-muted">
+            <ProductImage className="h-full" />
+            {/* Close button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-3 right-3 bg-background/80 hover:bg-background rounded-full"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Right side - Customization */}
+          <div className="w-1/2 flex flex-col h-full">
+            {/* Header */}
+            <div className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+              <h2 className="text-2xl font-bold">{product.name}</h2>
+              <p className="text-muted-foreground mt-1">
+                {(product as any).description || 'Personaliza tu pedido'}
+              </p>
+            </div>
+
+            {/* Scrollable customization content */}
+            <ScrollArea className="flex-1">
+              <div className="px-6 py-4">
+                <CustomizationContent />
+              </div>
+            </ScrollArea>
+
+            {/* Fixed bottom action bar */}
+            <div className="flex-shrink-0 border-t bg-background p-4">
+              <ActionBar />
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
