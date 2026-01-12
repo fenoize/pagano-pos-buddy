@@ -29,7 +29,8 @@ export default function CustomerLogin() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [showSignupPassword, setShowSignupPassword] = useState(false);
-  const [signupName, setSignupName] = useState('');
+  const [signupNombre, setSignupNombre] = useState('');
+  const [signupApellido, setSignupApellido] = useState('');
   const [signupPhone, setSignupPhone] = useState('');
   const [signupBirthDate, setSignupBirthDate] = useState('');
   const [signupCaptchaToken, setSignupCaptchaToken] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export default function CustomerLogin() {
 
     setLoading(true);
 
-    const { error } = await signUp(signupEmail, signupPassword, signupName, signupPhone, signupBirthDate);
+    const { error } = await signUp(signupEmail, signupPassword, signupNombre, signupApellido, signupPhone, signupBirthDate);
 
     if (error) {
       toast.error('Error al registrarse', {
@@ -240,18 +241,33 @@ export default function CustomerLogin() {
 
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nombre completo</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="Juan Pérez"
-                    value={signupName}
-                    onChange={(e) => setSignupName(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="bg-muted/50"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-nombre">Nombre</Label>
+                    <Input
+                      id="signup-nombre"
+                      type="text"
+                      placeholder="Juan"
+                      value={signupNombre}
+                      onChange={(e) => setSignupNombre(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="bg-muted/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-apellido">Apellido</Label>
+                    <Input
+                      id="signup-apellido"
+                      type="text"
+                      placeholder="Pérez"
+                      value={signupApellido}
+                      onChange={(e) => setSignupApellido(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="bg-muted/50"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">

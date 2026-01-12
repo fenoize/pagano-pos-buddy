@@ -13,7 +13,7 @@ interface CustomerAuthContextType {
   session: Session | null;
   customer: Customer | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string, phone?: string, birthDate?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, nombre: string, apellido: string, phone?: string, birthDate?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ error: Error | null }>;
@@ -95,14 +95,17 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, name: string, phone?: string, birthDate?: string) => {
+  const signUp = async (email: string, password: string, nombre: string, apellido: string, phone?: string, birthDate?: string) => {
     try {
+      const fullName = [nombre, apellido].filter(Boolean).join(' ');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name,
+            name: fullName,
+            nombre,
+            apellido,
             phone,
             birthDate,
           },
@@ -133,8 +136,10 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
               .insert({
                 auth_user_id: data.user.id,
                 email: email,
-                name: name || email.split('@')[0],
-                nombres: name || email.split('@')[0],
+                name: nombre,
+                nombres: nombre,
+                apellido: apellido,
+                apellidos: apellido,
                 phone: phone,
                 fecha_nacimiento: birthDate || null,
                 estado_cliente: 'Activo',
