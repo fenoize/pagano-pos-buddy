@@ -18,7 +18,7 @@ import {
   RefreshCw,
   TrendingUp
 } from 'lucide-react';
-import { useOrderFeedback, OrderFeedback, FeedbackStats, FeedbackFilters } from '@/hooks/useOrderFeedback';
+import { useOrderFeedback, OrderFeedback, FeedbackStats, FeedbackFilters, feedbackRequiresReview } from '@/hooks/useOrderFeedback';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -276,9 +276,13 @@ export function FeedbackContent() {
                           <Badge variant="outline" className="text-green-600">
                             <CheckCircle className="h-3 w-3 mr-1" /> Revisado
                           </Badge>
-                        ) : (
+                        ) : feedbackRequiresReview(f) ? (
                           <Badge variant="outline" className="text-amber-600">
                             <Clock className="h-3 w-3 mr-1" /> Pendiente
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            <CheckCircle className="h-3 w-3 mr-1" /> OK
                           </Badge>
                         )}
                       </TableCell>
@@ -411,7 +415,7 @@ export function FeedbackContent() {
             <Button variant="outline" onClick={() => setSelectedFeedback(null)}>
               Cerrar
             </Button>
-            {selectedFeedback && !selectedFeedback.reviewed_at && (
+            {selectedFeedback && !selectedFeedback.reviewed_at && feedbackRequiresReview(selectedFeedback) && (
               <Button onClick={handleMarkReviewed} disabled={isReviewing}>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Marcar como Revisado

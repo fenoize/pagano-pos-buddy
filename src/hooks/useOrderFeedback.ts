@@ -40,6 +40,16 @@ export interface FeedbackStats {
   satisfaction_rate: number;
 }
 
+// Helper to determine if feedback requires review
+// Positive without comment = auto-reviewed (no action needed)
+// Negative or positive with comment = requires review
+export function feedbackRequiresReview(f: { rating: string; comment?: string | null; reviewed_at?: string | null }): boolean {
+  if (f.reviewed_at) return false; // Already reviewed
+  if (f.rating === 'negative') return true; // Negative always requires review
+  if (f.rating === 'positive' && f.comment) return true; // Positive with comment requires review
+  return false; // Positive without comment = auto-reviewed
+}
+
 export interface FeedbackFilters {
   rating?: 'positive' | 'negative' | 'all';
   reviewed?: 'pending' | 'reviewed' | 'all';
@@ -169,14 +179,15 @@ export function useOrderFeedback() {
     try {
       const { data, error } = await supabase
         .from('order_feedback')
-        .select('rating, reviewed_at');
+        .select('rating, comment, reviewed_at');
 
       if (error) throw error;
 
       const total = data?.length || 0;
       const positive = data?.filter(f => f.rating === 'positive').length || 0;
       const negative = data?.filter(f => f.rating === 'negative').length || 0;
-      const pending_review = data?.filter(f => !f.reviewed_at).length || 0;
+      // Pending = negative without review OR positive with comment without review
+      const pending_review = data?.filter(f => feedbackRequiresReview(f)).length || 0;
       const satisfaction_rate = total > 0 ? Math.round((positive / total) * 100) : 0;
 
       return { total, positive, negative, pending_review, satisfaction_rate };
