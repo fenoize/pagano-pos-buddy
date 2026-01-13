@@ -23,10 +23,10 @@ function FoodIconsPattern() {
   ];
 
   return (
-    <div className="absolute inset-0 grid grid-cols-4 gap-8 p-8 opacity-20">
+    <div className="w-full h-full grid grid-cols-4 gap-6 p-6 content-center">
       {icons.map((Icon, i) => (
         <div key={i} className="flex items-center justify-center">
-          <Icon className="w-12 h-12 text-primary" strokeWidth={1.5} />
+          <Icon className="w-10 h-10 text-primary/30" strokeWidth={1.2} />
         </div>
       ))}
     </div>
@@ -221,7 +221,7 @@ export default function Login() {
           </div>
 
           {/* Right side - Food icons pattern */}
-          <div className="hidden lg:block flex-1 relative bg-background/30">
+          <div className="hidden lg:flex flex-1 items-center justify-center">
             <FoodIconsPattern />
           </div>
         </div>
