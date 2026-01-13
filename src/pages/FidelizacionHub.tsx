@@ -35,41 +35,60 @@ export default function FidelizacionHub() {
         </p>
       </div>
 
-      <Tabs defaultValue={defaultTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="runas" className="gap-2">
-            <Star className="w-4 h-4" />
-            <span className="hidden sm:inline">Runas</span>
-          </TabsTrigger>
-          <TabsTrigger value="niveles" className="gap-2">
-            <TrendingUp className="w-4 h-4" />
-            <span className="hidden sm:inline">Niveles</span>
-          </TabsTrigger>
-          <TabsTrigger value="insignias" className="gap-2">
-            <Award className="w-4 h-4" />
-            <span className="hidden sm:inline">Insignias</span>
-          </TabsTrigger>
-          <TabsTrigger value="feedback" className="gap-2">
-            <MessageSquare className="w-4 h-4" />
-            <span className="hidden sm:inline">Feedback</span>
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue={defaultTab} className="space-y-0">
+        {/* Desktop: Vertical sidebar tabs | Mobile: Horizontal tabs */}
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Tab List - Vertical on desktop, horizontal on mobile */}
+          <TabsList className="flex md:flex-col h-auto md:w-48 md:h-fit gap-1 bg-muted/50 p-2 rounded-lg">
+            <TabsTrigger 
+              value="runas" 
+              className="w-full justify-start gap-3 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              <Star className="w-4 h-4" />
+              <span>Runas</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="niveles" 
+              className="w-full justify-start gap-3 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>Niveles</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="insignias" 
+              className="w-full justify-start gap-3 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              <Award className="w-4 h-4" />
+              <span>Insignias</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="feedback" 
+              className="w-full justify-start gap-3 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Feedback</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="runas" className="mt-0">
-          <FidelizationConfig />
-        </TabsContent>
+          {/* Tab Content */}
+          <div className="flex-1 min-w-0">
+            <TabsContent value="runas" className="mt-0">
+              <FidelizationConfig />
+            </TabsContent>
 
-        <TabsContent value="niveles" className="mt-0">
-          <NivelesContent />
-        </TabsContent>
+            <TabsContent value="niveles" className="mt-0">
+              <NivelesContent />
+            </TabsContent>
 
-        <TabsContent value="insignias" className="mt-0">
-          <BadgesConfig />
-        </TabsContent>
+            <TabsContent value="insignias" className="mt-0">
+              <BadgesConfig />
+            </TabsContent>
 
-        <TabsContent value="feedback" className="mt-0">
-          <FeedbackContent />
-        </TabsContent>
+            <TabsContent value="feedback" className="mt-0">
+              <FeedbackContent />
+            </TabsContent>
+          </div>
+        </div>
       </Tabs>
     </div>
   );
