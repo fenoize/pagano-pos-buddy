@@ -117,9 +117,9 @@ export function useOrderFeedback() {
         .from('order_feedback')
         .select(`
           *,
-          order:orders!order_id(id, order_number, total, created_at, fulfillment),
-          customer:customers!customer_id(id, name, phone, email),
-          reviewer:users!reviewed_by(id, username)
+          order:orders!inner(id, order_number, total, created_at, fulfillment),
+          customer:customers!inner(id, name, phone, email),
+          reviewer:users(id, username)
         `, { count: 'exact' });
 
       // Apply filters
