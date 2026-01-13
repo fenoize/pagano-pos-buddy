@@ -1,10 +1,10 @@
 {
   "name": "Paganos Burger POS",
   "short_name": "Paganos POS",
-  "description": "Sistema de punto de venta para Paganos Burger (solo navegador)",
+  "description": "Sistema de punto de venta para Paganos Burger",
   "start_url": "/pos",
   "scope": "/pos/",
-  "display": "browser",
+  "display": "standalone",
   "orientation": "any",
   "theme_color": "#cc0000",
   "background_color": "#0a0a0a",
@@ -12,6 +12,12 @@
     {
       "src": "/icons/paganos-192.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/paganos-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }

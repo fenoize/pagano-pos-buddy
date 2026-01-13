@@ -81,27 +81,29 @@
         });
       })();
       
-      // Registrar Service Worker solo para el portal de clientes
+      // Registrar Service Worker según la ruta
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
           var path = window.location.pathname;
           
-          // Solo registrar SW si NO estamos en /pos/*
-          if (!path.startsWith('/pos')) {
-            navigator.serviceWorker.register('/sw.js')
+          if (path.startsWith('/pos')) {
+            // Registrar SW para POS con scope /pos/
+            navigator.serviceWorker.register('/sw-pos.js', { scope: '/pos/' })
               .then(function(registration) {
-                console.log('SW registered:', registration);
+                console.log('[SW-POS] Registered:', registration);
               })
               .catch(function(error) {
-                console.log('SW registration failed:', error);
+                console.log('[SW-POS] Registration failed:', error);
               });
           } else {
-            // Si estamos en /pos, asegurar que no haya SW activo
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-              for (var i = 0; i < registrations.length; i++) {
-                registrations[i].unregister();
-              }
-            });
+            // Registrar SW para clientes
+            navigator.serviceWorker.register('/sw.js')
+              .then(function(registration) {
+                console.log('[SW] Registered:', registration);
+              })
+              .catch(function(error) {
+                console.log('[SW] Registration failed:', error);
+              });
           }
         });
       }

@@ -12,6 +12,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { SEOHead } from "@/components/SEOHead";
 import { CashSessionTopBar } from "@/components/cash/CashSessionTopBar";
 import { StaffNotificationBell } from "@/components/notifications/StaffNotificationBell";
+import { POSInstallPrompt } from "@/components/pos/POSInstallPrompt";
 import { SessionExpiryModal } from "@/components/auth/SessionExpiryModal";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
 import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
@@ -156,6 +157,9 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
           onStayActive={handleStayActive}
           onLogout={handleForceLogout}
         />
+        
+        {/* Prompt de instalación PWA para POS */}
+        <POSInstallPrompt />
         
         <div className="min-h-screen flex w-full">
           <AppSidebar />
