@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Store, Truck, RefreshCw, MapPin, Eye } from 'lucide-react';
+import { ChevronDown, Store, Truck, RefreshCw, MapPin, Eye, Star, CheckCircle } from 'lucide-react';
 import { formatCLP } from '@/lib/utils';
 import { formatDateTime } from '@/lib/dateUtils';
+import { OrderFeedbackModal } from './OrderFeedbackModal';
+import { useOrderFeedback } from '@/hooks/useOrderFeedback';
+import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 
 interface OrderItem {
   id: string;
@@ -59,10 +62,23 @@ const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructiv
 
 export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [hasFeedback, setHasFeedback] = useState<boolean | null>(null);
   const navigate = useNavigate();
+  const { getFeedbackForOrder } = useOrderFeedback();
+  const { customer } = useCustomerAuth();
 
   const isOrderActive = !['Entregado', 'Cancelado'].includes(order.status);
+  const isDelivered = order.status === 'Entregado';
 
+  // Check if order has feedback when it's delivered
+  useEffect(() => {
+    if (isDelivered && hasFeedback === null) {
+      getFeedbackForOrder(order.id).then((feedback) => {
+        setHasFeedback(!!feedback);
+      });
+    }
+  }, [isDelivered, order.id, hasFeedback, getFeedbackForOrder]);
   return (
     <Card>
       <CardHeader>
@@ -171,29 +187,65 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
               )}
 
               {/* Botones de acción */}
-              <div className="flex gap-2">
-                {isOrderActive && (
+              <div className="flex flex-col gap-2">
+                {/* Feedback button for delivered orders */}
+                {isDelivered && hasFeedback === false && customer && (
                   <Button
-                    className="flex-1"
-                    onClick={() => navigate(`/track/${order.id}`)}
+                    variant="outline"
+                    className="w-full border-primary text-primary hover:bg-primary/10"
+                    onClick={() => setShowFeedbackModal(true)}
                   >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Ver seguimiento
+                    <Star className="w-4 h-4 mr-2" />
+                    Calificar pedido
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  className={isOrderActive ? 'flex-1' : 'w-full'}
-                  onClick={() => onReorder(order.id)}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Volver a pedir
-                </Button>
+                
+                {/* Show badge if already rated */}
+                {isDelivered && hasFeedback === true && (
+                  <div className="flex items-center justify-center gap-2 py-2 text-sm text-green-600">
+                    <CheckCircle className="w-4 h-4" />
+                    Ya calificaste este pedido
+                  </div>
+                )}
+                
+                <div className="flex gap-2">
+                  {isOrderActive && (
+                    <Button
+                      className="flex-1"
+                      onClick={() => navigate(`/track/${order.id}`)}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Ver seguimiento
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    className={isOrderActive ? 'flex-1' : 'w-full'}
+                    onClick={() => onReorder(order.id)}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Volver a pedir
+                  </Button>
+                </div>
               </div>
             </div>
           </CollapsibleContent>
         </Collapsible>
       </CardContent>
+
+      {/* Feedback Modal */}
+      {customer && (
+        <OrderFeedbackModal
+          open={showFeedbackModal}
+          onClose={() => {
+            setShowFeedbackModal(false);
+            setHasFeedback(true);
+          }}
+          orderId={order.id}
+          customerId={customer.id}
+          orderNumber={String(order.order_number)}
+        />
+      )}
     </Card>
   );
 }

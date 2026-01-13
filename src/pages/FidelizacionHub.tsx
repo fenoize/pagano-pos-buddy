@@ -2,7 +2,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FidelizationConfig } from '@/components/config/FidelizationConfig';
 import { BadgesConfig } from '@/components/config/BadgesConfig';
 import { NivelesContent } from '@/components/fidelizacion/NivelesContent';
-import { Star, Award, TrendingUp } from 'lucide-react';
+import { FeedbackContent } from '@/components/fidelizacion/FeedbackContent';
+import { Star, Award, TrendingUp, MessageSquare } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 
@@ -30,23 +31,27 @@ export default function FidelizacionHub() {
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold text-foreground">Fidelización</h1>
         <p className="text-muted-foreground">
-          Gestiona runas, niveles e insignias de clientes
+          Gestiona runas, niveles, insignias y feedback de clientes
         </p>
       </div>
 
       <Tabs defaultValue={defaultTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="runas" className="gap-2">
             <Star className="w-4 h-4" />
-            Runas
+            <span className="hidden sm:inline">Runas</span>
           </TabsTrigger>
           <TabsTrigger value="niveles" className="gap-2">
             <TrendingUp className="w-4 h-4" />
-            Niveles
+            <span className="hidden sm:inline">Niveles</span>
           </TabsTrigger>
           <TabsTrigger value="insignias" className="gap-2">
             <Award className="w-4 h-4" />
-            Insignias
+            <span className="hidden sm:inline">Insignias</span>
+          </TabsTrigger>
+          <TabsTrigger value="feedback" className="gap-2">
+            <MessageSquare className="w-4 h-4" />
+            <span className="hidden sm:inline">Feedback</span>
           </TabsTrigger>
         </TabsList>
 
@@ -60,6 +65,10 @@ export default function FidelizacionHub() {
 
         <TabsContent value="insignias" className="mt-0">
           <BadgesConfig />
+        </TabsContent>
+
+        <TabsContent value="feedback" className="mt-0">
+          <FeedbackContent />
         </TabsContent>
       </Tabs>
     </div>

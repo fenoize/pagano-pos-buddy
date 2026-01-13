@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,10 +17,13 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
+import { OrderFeedbackModal } from '@/components/customer/OrderFeedbackModal';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useOrderFeedback } from '@/hooks/useOrderFeedback';
+import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 
 type OrderStatus = 'PendientePago' | 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'En camino' | 'Entregado' | 'Cancelado';
 type FulfillmentType = 'retiro' | 'delivery';
@@ -36,6 +39,7 @@ interface OrderData {
   items: any; // jsonb field from database
   customer_name?: string;
   customer_phone?: string;
+  customer_id?: string;
   delivery_address?: string;
   delivery_comuna?: string;
   notes?: string;
@@ -50,6 +54,26 @@ export default function CustomerOrderTracking() {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Feedback state
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [hasFeedback, setHasFeedback] = useState<boolean | null>(null);
+  const { getFeedbackForOrder } = useOrderFeedback();
+  const { customer } = useCustomerAuth();
+
+  // Check if order already has feedback
+  const checkExistingFeedback = useCallback(async () => {
+    if (!orderId) return;
+    const feedback = await getFeedbackForOrder(orderId);
+    setHasFeedback(!!feedback);
+    
+    // Auto-show modal for delivered orders without feedback
+    const shownKey = `feedback_shown_${orderId}`;
+    if (!feedback && !localStorage.getItem(shownKey)) {
+      setShowFeedbackModal(true);
+      localStorage.setItem(shownKey, 'true');
+    }
+  }, [orderId, getFeedbackForOrder]);
 
   useEffect(() => {
     if (!orderId) {
@@ -61,6 +85,13 @@ export default function CustomerOrderTracking() {
     fetchOrder();
     setupRealtimeSubscription();
   }, [orderId]);
+
+  // Check feedback when order is delivered
+  useEffect(() => {
+    if (order?.status === 'Entregado' && hasFeedback === null) {
+      checkExistingFeedback();
+    }
+  }, [order?.status, hasFeedback, checkExistingFeedback]);
 
   const fetchOrder = async () => {
     try {
@@ -407,6 +438,24 @@ export default function CustomerOrderTracking() {
         {/* Actions */}
         {isCompleted(order.status) && (
           <div className="space-y-2">
+            {/* Feedback button for delivered orders without feedback */}
+            {order.status === 'Entregado' && hasFeedback === false && customer && (
+              <Button 
+                variant="outline" 
+                className="w-full border-primary text-primary hover:bg-primary/10"
+                onClick={() => setShowFeedbackModal(true)}
+              >
+                ⭐ Calificar pedido
+              </Button>
+            )}
+            
+            {/* Show badge if already rated */}
+            {order.status === 'Entregado' && hasFeedback === true && (
+              <div className="text-center py-2 text-sm text-muted-foreground">
+                ✅ Ya calificaste este pedido
+              </div>
+            )}
+            
             <Button className="w-full" onClick={() => navigate('/menu')}>
               Hacer otro pedido
             </Button>
@@ -416,6 +465,20 @@ export default function CustomerOrderTracking() {
           </div>
         )}
       </div>
+
+      {/* Feedback Modal */}
+      {order && customer && (
+        <OrderFeedbackModal
+          open={showFeedbackModal}
+          onClose={() => {
+            setShowFeedbackModal(false);
+            setHasFeedback(true);
+          }}
+          orderId={order.id}
+          customerId={customer.id}
+          orderNumber={String(order.order_number)}
+        />
+      )}
       <CustomerBottomNav />
     </div>
   );
