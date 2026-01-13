@@ -4189,6 +4189,57 @@ export type Database = {
           },
         ]
       }
+      staff_notifications: {
+        Row: {
+          body: string
+          created_at: string | null
+          id: string
+          payload: Json | null
+          read_at: string | null
+          role_target: string | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          id?: string
+          payload?: Json | null
+          read_at?: string | null
+          role_target?: string | null
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          id?: string
+          payload?: Json | null
+          read_at?: string | null
+          role_target?: string | null
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_sessions: {
         Row: {
           created_at: string

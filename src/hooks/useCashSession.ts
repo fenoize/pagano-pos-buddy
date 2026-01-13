@@ -4,6 +4,11 @@ import { CashSession, CashMovement } from '@/types';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { usePermissions } from './usePermissions';
 import { setStaffContext, withStaffContext } from '@/lib/dbContext';
+import { 
+  triggerCashSessionOpenNotification, 
+  triggerCashSessionCloseNotification,
+  triggerCashMovementNotification 
+} from '@/lib/staffNotificationTriggers';
 
 export function useCashSession() {
   const [currentSession, setCurrentSession] = useState<CashSession | null>(null);
@@ -79,6 +84,14 @@ export function useCashSession() {
         if (error) throw error;
 
         setCurrentSession(data);
+
+        // Notificar a administradores sobre apertura de turno
+        triggerCashSessionOpenNotification(
+          user.full_name || user.username || 'Usuario',
+          openingCash,
+          data.id
+        ).catch(err => console.error('[CashSession] Notification error:', err));
+
         return data;
       } catch (error) {
         console.error('Error opening session:', error);
@@ -120,6 +133,19 @@ export function useCashSession() {
         }
 
         console.log('✅ Sesión cerrada exitosamente:', data[0]);
+
+        // Get session summary for notification
+        const summary = await getSessionSummary(currentSession.id);
+        const totalSales = summary?.summary?.totalSales || 0;
+
+        // Notificar a administradores sobre cierre de turno
+        triggerCashSessionCloseNotification(
+          user.full_name || user.username || 'Usuario',
+          closingCash,
+          totalSales,
+          currentSession.id
+        ).catch(err => console.error('[CashSession] Notification error:', err));
+
         setCurrentSession(null);
       } catch (error) {
         console.error('❌ Error closing session:', error);
@@ -177,6 +203,14 @@ export function useCashSession() {
           // No lanzar error, el movimiento de caja ya se registró
         }
       }
+
+      // Notificar a administradores sobre movimiento de caja
+      triggerCashMovementNotification(
+        user.full_name || user.username || 'Usuario',
+        type,
+        amount,
+        note
+      ).catch(err => console.error('[CashSession] Notification error:', err));
 
       return movementData;
     } catch (error) {

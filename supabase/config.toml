@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.mercadopago-diagnostics]
 verify_jwt = false
+
+[functions.send-staff-push]
+verify_jwt = false

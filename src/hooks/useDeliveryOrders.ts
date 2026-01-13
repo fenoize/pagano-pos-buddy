@@ -5,6 +5,7 @@ import { Order, OrderStatus } from '@/types';
 import { useAuth } from './useAuth';
 import { useDeliverySettings } from './useDeliverySettings';
 import { triggerOrderStatusNotification, triggerDeliveryAssignedNotification } from '@/lib/notificationTriggers';
+import { triggerOrderAssignedNotification, triggerOrderDeliveredNotification } from '@/lib/staffNotificationTriggers';
 
 export interface DeliveryOrder extends Omit<Order, 'customer'> {
   customer_name?: string;
@@ -12,6 +13,7 @@ export interface DeliveryOrder extends Omit<Order, 'customer'> {
   minutes_since_created?: number;
   customer?: { name?: string; phone?: string };
   delivery_payment_amount?: number;
+  user_id?: string; // Cajero que creó el pedido
 }
 
 export const useDeliveryOrders = () => {
@@ -126,6 +128,14 @@ export const useDeliveryOrders = () => {
           order?.order_number || 0,
           user.full_name || user.username || 'Repartidor'
         ).catch(err => console.error('[Delivery] Push notification error:', err));
+
+        // Notificar al repartidor (staff notification in-app + push)
+        triggerOrderAssignedNotification(
+          user.id,
+          order?.order_number || 0,
+          order?.delivery_address || 'Sin dirección',
+          orderId
+        ).catch(err => console.error('[Delivery] Staff notification error:', err));
       }
 
       // Notificar cambio de estado "En camino"
@@ -234,7 +244,7 @@ export const useDeliveryOrders = () => {
         }
       }
 
-      // Notificar cambio de estado "Entregado"
+      // Notificar cambio de estado "Entregado" al cliente
       triggerOrderStatusNotification(
         order?.customer_id || null,
         orderId,
@@ -242,6 +252,16 @@ export const useDeliveryOrders = () => {
         'Entregado',
         'delivery'
       ).catch(err => console.error('[Delivery] Push notification error:', err));
+
+      // Notificar al cajero que creó el pedido (staff notification)
+      if (order?.user_id) {
+        triggerOrderDeliveredNotification(
+          order.user_id,
+          order?.order_number || 0,
+          user.full_name || user.username || 'Repartidor',
+          orderId
+        ).catch(err => console.error('[Delivery] Staff notification error:', err));
+      }
 
       toast.success('Pedido marcado como entregado');
       await fetchOrders();
