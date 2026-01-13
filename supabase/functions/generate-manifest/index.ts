@@ -109,10 +109,10 @@ Deno.serve(async (req) => {
         },
       ];
     } else {
-      // POS PWA: browser mode, minimal
+      // POS PWA: standalone mode for installable app
       manifest.start_url = '/pos';
       manifest.scope = '/pos/';
-      manifest.display = 'browser';
+      manifest.display = 'standalone';
       manifest.orientation = 'any';
       manifest.categories = ['business', 'productivity'];
       
