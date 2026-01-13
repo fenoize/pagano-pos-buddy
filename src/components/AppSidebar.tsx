@@ -31,7 +31,9 @@ import {
   Bell,
   TruckIcon,
   BarChart3,
-  Tv
+  Tv,
+  Award,
+  MessageSquare
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -66,11 +68,18 @@ const menuItems = [
   { title: "Pedido Listo", url: "/pos/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocinero', 'Preparador', 'TV'] },
   { title: "Productos", url: "/pos/productos", icon: Package, roles: ['Administrador'] },
   { title: "Categorías", url: "/pos/categorias", icon: Tags, roles: ['Administrador'] },
-  { title: "Fidelización", url: "/pos/fidelizacion", icon: Star, roles: ['Administrador'] },
   { title: "Clientes", url: "/pos/clientes", icon: Users, roles: ['Administrador', 'Cajero'] },
   { title: "Usuarios", url: "/pos/usuarios", icon: User, roles: ['Administrador'] },
   { title: "Cierres Diarios", url: "/pos/cierres-diarios", icon: FileText, roles: ['Administrador'] },
   { title: "Configuración", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
+];
+
+// Fidelización menu items
+const fidelizacionItems = [
+  { title: "Runas", url: "/pos/fidelizacion/runas", icon: Star, roles: ['Administrador'] },
+  { title: "Niveles", url: "/pos/fidelizacion/niveles", icon: TrendingUpIcon, roles: ['Administrador'] },
+  { title: "Insignias", url: "/pos/fidelizacion/insignias", icon: Award, roles: ['Administrador'] },
+  { title: "Feedback", url: "/pos/fidelizacion/feedback", icon: MessageSquare, roles: ['Administrador'] },
 ];
 
 // Delivery menu items
@@ -131,6 +140,9 @@ export function AppSidebar() {
   );
   const [financeOpen, setFinanceOpen] = useState(
     currentPath.startsWith("/pos/finanzas")
+  );
+  const [fidelizacionOpen, setFidelizacionOpen] = useState(
+    currentPath.startsWith("/pos/fidelizacion")
   );
   const [marketingOpen, setMarketingOpen] = useState(
     currentPath.startsWith("/pos/marketing")
@@ -218,6 +230,61 @@ export function AppSidebar() {
                     {!isCollapsed && (
                       <CollapsibleContent className="mt-1 space-y-1">
                         {deliveryItems
+                          .filter(item => canAccessRoute(item.roles as AppRole[]))
+                          .map((item) => (
+                          <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton asChild>
+                              <NavLink
+                                to={item.url}
+                                end
+                                className={({ isActive }) =>
+                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
+                                }
+                              >
+                                <item.icon className="h-3 w-3 shrink-0" />
+                                <span className="text-xs">{item.title}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </CollapsibleContent>
+                    )}
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
+              
+              {/* Fidelización Collapsible Group */}
+              {canAccessRoute(['Administrador'] as AppRole[]) && (
+                <Collapsible
+                  open={fidelizacionOpen}
+                  onOpenChange={setFidelizacionOpen}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                          currentPath.startsWith("/pos/fidelizacion")
+                            ? "bg-primary text-primary-foreground font-semibold"
+                            : "text-primary hover:bg-primary hover:text-primary-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Star className="h-4 w-4 shrink-0" />
+                          {!isCollapsed && <span>Fidelización</span>}
+                        </div>
+                        {!isCollapsed && (
+                          fidelizacionOpen ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    {!isCollapsed && (
+                      <CollapsibleContent className="mt-1 space-y-1">
+                        {fidelizacionItems
                           .filter(item => canAccessRoute(item.roles as AppRole[]))
                           .map((item) => (
                           <SidebarMenuItem key={item.title}>

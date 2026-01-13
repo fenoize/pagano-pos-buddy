@@ -378,6 +378,34 @@ const App = () => (
               } />
               
               <Route path="/pos/fidelizacion" element={
+                <Navigate to="/pos/fidelizacion/runas" replace />
+              } />
+              
+              <Route path="/pos/fidelizacion/runas" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <FidelizacionHub />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/fidelizacion/niveles" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <FidelizacionHub />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/fidelizacion/insignias" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <FidelizacionHub />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/fidelizacion/feedback" element={
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <FidelizacionHub />
@@ -386,7 +414,7 @@ const App = () => (
               } />
               
               <Route path="/pos/niveles" element={
-                <Navigate to="/pos/fidelizacion?tab=niveles" replace />
+                <Navigate to="/pos/fidelizacion/niveles" replace />
               } />
               
               <Route path="/pos/inventario" element={
