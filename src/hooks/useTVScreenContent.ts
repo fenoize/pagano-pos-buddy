@@ -152,19 +152,28 @@ export const useActiveTVScreenContent = (screenConfigId?: string) => {
   return useQuery({
     queryKey: ['active-tv-screen-content', screenConfigId],
     queryFn: async () => {
+      const now = new Date().toISOString().split('T')[0];
+      
       if (!screenConfigId) {
         // Si no hay screen específica, devolver todo el contenido TV activo
+        // Primero obtenemos todos los activos de tipo TV, luego filtramos por fechas
         const { data, error } = await configuredSupabase
           .from('marketing_app_promotions')
           .select('*')
           .eq('is_active', true)
           .eq('cta_type', 'none')
-          .or(`start_date.is.null,start_date.lte.${new Date().toISOString().split('T')[0]}`)
-          .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split('T')[0]}`)
           .order('priority', { ascending: true });
 
         if (error) throw error;
-        return data as MarketingPromotion[];
+        
+        // Filtrar por fechas en cliente
+        const filtered = (data as MarketingPromotion[]).filter(p => {
+          const startOk = !p.start_date || p.start_date <= now;
+          const endOk = !p.end_date || p.end_date >= now;
+          return startOk && endOk;
+        });
+        
+        return filtered;
       }
 
       // Obtener contenido específico de la pantalla
@@ -180,7 +189,6 @@ export const useActiveTVScreenContent = (screenConfigId?: string) => {
       if (error) throw error;
 
       // Filtrar solo promociones activas y dentro de fechas
-      const now = new Date().toISOString().split('T')[0];
       return (data as (TVScreenContent & { promotion: MarketingPromotion })[])
         .filter(c => c.promotion && c.promotion.is_active)
         .filter(c => {
