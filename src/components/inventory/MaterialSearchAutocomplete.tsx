@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, X, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -48,13 +48,13 @@ export function MaterialSearchAutocomplete({
   const displayText = displayValue || selectedMaterial?.name || '';
 
   // Filter materials based on search query (minimum 3 characters)
-  const filterMaterials = useCallback((query: string) => {
-    if (query.length < 3) {
+  useEffect(() => {
+    if (searchQuery.length < 3) {
       setFilteredMaterials([]);
       return;
     }
 
-    const normalizedQuery = query.toLowerCase().trim();
+    const normalizedQuery = searchQuery.toLowerCase().trim();
     const filtered = materials.filter(material => {
       const name = material.name?.toLowerCase() || '';
       const code = material.code?.toLowerCase() || '';
@@ -63,12 +63,7 @@ export function MaterialSearchAutocomplete({
 
     setFilteredMaterials(filtered.slice(0, 20)); // Limit to 20 results
     setHighlightedIndex(-1);
-  }, [materials]);
-
-  // Handle search query changes
-  useEffect(() => {
-    filterMaterials(searchQuery);
-  }, [searchQuery, filterMaterials]);
+  }, [searchQuery, materials]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
