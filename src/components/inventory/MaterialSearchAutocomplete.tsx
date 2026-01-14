@@ -65,23 +65,20 @@ export function MaterialSearchAutocomplete({
       return;
     }
 
-    // Debounce para evitar lag con listas grandes
-    const t = window.setTimeout(() => {
-      const tokens = query.split(/\s+/).filter(Boolean);
+    // Filtrar inmediatamente sin debounce para respuesta rápida
+    const filtered = materials.filter((material) => {
+      const name = normalizeText(material.name || '');
+      const code = normalizeText(material.code || '');
+      const combined = `${name} ${code}`;
+      
+      // El texto de búsqueda completo debe aparecer en nombre o código
+      return combined.includes(query);
+    });
 
-      const filtered = materials.filter((material) => {
-        const name = normalizeText(material.name || '');
-        const code = normalizeText(material.code || '');
-
-        // Match por tokens: todos los tokens deben aparecer en name o code
-        return tokens.every((tok) => name.includes(tok) || code.includes(tok));
-      });
-
-      setFilteredMaterials(filtered.slice(0, 50)); // Limit to 50 results
-      setHighlightedIndex(-1);
-    }, 150);
-
-    return () => window.clearTimeout(t);
+    console.log('[MaterialSearch] Query:', query, 'Materials count:', materials.length, 'Filtered:', filtered.length);
+    
+    setFilteredMaterials(filtered.slice(0, 50));
+    setHighlightedIndex(-1);
   }, [searchQuery, materials]);
 
   // Handle click outside to close dropdown
