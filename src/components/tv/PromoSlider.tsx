@@ -6,6 +6,7 @@ interface PromoSliderProps {
   interval?: number; // ms
   className?: string;
   screenConfigId?: string;
+  fallbackScreenId?: string; // ID de pantalla alternativa si la principal no tiene contenido
 }
 
 interface PromoConfig {
@@ -21,8 +22,12 @@ function parsePromoConfig(description: string | null | undefined): PromoConfig {
   }
 }
 
-export function PromoSlider({ interval = 8000, className, screenConfigId }: PromoSliderProps) {
-  const { data: promotions = [] } = useActiveTVScreenContent(screenConfigId);
+export function PromoSlider({ interval = 8000, className, screenConfigId, fallbackScreenId }: PromoSliderProps) {
+  const { data: mainPromotions = [] } = useActiveTVScreenContent(screenConfigId);
+  const { data: fallbackPromotions = [] } = useActiveTVScreenContent(fallbackScreenId);
+  
+  // Usar contenido principal, si está vacío usar fallback
+  const promotions = mainPromotions.length > 0 ? mainPromotions : fallbackPromotions;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);

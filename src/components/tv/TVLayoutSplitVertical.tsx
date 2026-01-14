@@ -11,6 +11,7 @@ interface TVLayoutSplitVerticalProps {
   columns?: number;
   fontSize?: 'small' | 'medium' | 'large';
   screenConfigId?: string;
+  fallbackScreenId?: string;
 }
 
 const getGridCols = (columns: number) => {
@@ -30,7 +31,8 @@ export function TVLayoutSplitVertical({
   sliderInterval,
   columns = 4,
   fontSize = 'medium',
-  screenConfigId
+  screenConfigId,
+  fallbackScreenId
 }: TVLayoutSplitVerticalProps) {
   return (
     <div className="flex-1 flex flex-col">
@@ -40,6 +42,7 @@ export function TVLayoutSplitVertical({
           interval={sliderInterval} 
           className="h-full" 
           screenConfigId={screenConfigId}
+          fallbackScreenId={fallbackScreenId}
         />
       </div>
 
