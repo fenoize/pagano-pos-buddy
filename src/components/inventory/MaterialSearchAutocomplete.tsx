@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, X, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,12 @@ export function MaterialSearchAutocomplete({
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredMaterials, setFilteredMaterials] = useState<RawMaterial[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -55,6 +62,32 @@ export function MaterialSearchAutocomplete({
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+
+  const updateDropdownRect = () => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    setDropdownRect({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+    });
+  };
+
+  // Medir y fijar el dropdown en un portal (evita que el contenedor de la tabla lo “recorte”)
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+
+    updateDropdownRect();
+
+    const handle = () => updateDropdownRect();
+    window.addEventListener('scroll', handle, true);
+    window.addEventListener('resize', handle);
+    return () => {
+      window.removeEventListener('scroll', handle, true);
+      window.removeEventListener('resize', handle);
+    };
+  }, [isOpen]);
 
   // Filter materials based on search query (minimum 3 characters)
   useEffect(() => {
@@ -75,9 +108,8 @@ export function MaterialSearchAutocomplete({
       return combined.includes(query);
     });
 
-    console.log('[MaterialSearch] Query:', query, 'Materials count:', materials.length, 'Filtered:', filtered.length);
-    
     setFilteredMaterials(filtered.slice(0, 50));
+    setHighlightedIndex(-1);
     setHighlightedIndex(-1);
   }, [searchQuery, materials]);
 
@@ -222,55 +254,66 @@ export function MaterialSearchAutocomplete({
         </div>
       )}
 
-      {/* Dropdown results */}
-      {isOpen && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg">
-          {loading ? (
-            <div className="p-3 text-center text-sm text-muted-foreground">
-              Cargando materiales...
-            </div>
-          ) : searchQuery.length < 3 ? (
-            <div className="p-3 text-center text-sm text-muted-foreground">
-              Escribe al menos 3 caracteres para buscar
-            </div>
-          ) : filteredMaterials.length === 0 ? (
-            <div className="p-3 text-center text-sm text-muted-foreground">
-              No se encontraron materiales
-            </div>
-          ) : (
-            <ul
-              ref={listRef}
-              className="max-h-60 overflow-auto py-1"
-              role="listbox"
-            >
-              {filteredMaterials.map((material, index) => (
-                <li
-                  key={material.id}
-                  role="option"
-                  aria-selected={highlightedIndex === index}
-                  onClick={() => handleSelect(material)}
-                  className={cn(
-                    'cursor-pointer px-3 py-2 text-sm transition-colors',
-                    highlightedIndex === index
-                      ? 'bg-accent text-accent-foreground'
-                      : 'hover:bg-accent/50',
-                    value === material.id && 'font-medium text-primary'
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="truncate">{material.name}</span>
-                    {material.code && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {material.code}
-                      </span>
+      {/* Dropdown results (Portal) */}
+      {isOpen &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              top: dropdownRect.top,
+              left: dropdownRect.left,
+              width: dropdownRect.width,
+              zIndex: 9999,
+            }}
+            className="rounded-md border border-border bg-popover shadow-lg"
+          >
+            {loading ? (
+              <div className="p-3 text-center text-sm text-muted-foreground">
+                Cargando materiales...
+              </div>
+            ) : searchQuery.length < 3 ? (
+              <div className="p-3 text-center text-sm text-muted-foreground">
+                Escribe al menos 3 caracteres para buscar
+              </div>
+            ) : filteredMaterials.length === 0 ? (
+              <div className="p-3 text-center text-sm text-muted-foreground">
+                No se encontraron materiales
+              </div>
+            ) : (
+              <ul
+                ref={listRef}
+                className="max-h-60 overflow-auto py-1"
+                role="listbox"
+              >
+                {filteredMaterials.map((material, index) => (
+                  <li
+                    key={material.id}
+                    role="option"
+                    aria-selected={highlightedIndex === index}
+                    onClick={() => handleSelect(material)}
+                    className={cn(
+                      'cursor-pointer px-3 py-2 text-sm transition-colors',
+                      highlightedIndex === index
+                        ? 'bg-accent text-accent-foreground'
+                        : 'hover:bg-accent/50',
+                      value === material.id && 'font-medium text-primary'
                     )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="truncate">{material.name}</span>
+                      {material.code && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {material.code}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
