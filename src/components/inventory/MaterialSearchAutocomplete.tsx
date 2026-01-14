@@ -22,6 +22,7 @@ interface MaterialSearchAutocompleteProps {
   onSelect: (materialId: string, material: RawMaterial | undefined) => void;
   placeholder?: string;
   disabled?: boolean;
+  loading?: boolean;
   className?: string;
   displayValue?: string;
 }
@@ -32,6 +33,7 @@ export function MaterialSearchAutocomplete({
   onSelect,
   placeholder = 'Buscar material...',
   disabled = false,
+  loading = false,
   className,
   displayValue,
 }: MaterialSearchAutocompleteProps) {
@@ -47,22 +49,39 @@ export function MaterialSearchAutocomplete({
   const selectedMaterial = materials.find(m => m.id === value);
   const displayText = displayValue || selectedMaterial?.name || '';
 
+  const normalizeText = (text: string) =>
+    text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+
   // Filter materials based on search query (minimum 3 characters)
   useEffect(() => {
-    if (searchQuery.length < 3) {
+    const query = normalizeText(searchQuery);
+
+    if (query.length < 3) {
       setFilteredMaterials([]);
       return;
     }
 
-    const normalizedQuery = searchQuery.toLowerCase().trim();
-    const filtered = materials.filter(material => {
-      const name = material.name?.toLowerCase() || '';
-      const code = material.code?.toLowerCase() || '';
-      return name.includes(normalizedQuery) || code.includes(normalizedQuery);
-    });
+    // Debounce para evitar lag con listas grandes
+    const t = window.setTimeout(() => {
+      const tokens = query.split(/\s+/).filter(Boolean);
 
-    setFilteredMaterials(filtered.slice(0, 20)); // Limit to 20 results
-    setHighlightedIndex(-1);
+      const filtered = materials.filter((material) => {
+        const name = normalizeText(material.name || '');
+        const code = normalizeText(material.code || '');
+
+        // Match por tokens: todos los tokens deben aparecer en name o code
+        return tokens.every((tok) => name.includes(tok) || code.includes(tok));
+      });
+
+      setFilteredMaterials(filtered.slice(0, 50)); // Limit to 50 results
+      setHighlightedIndex(-1);
+    }, 150);
+
+    return () => window.clearTimeout(t);
   }, [searchQuery, materials]);
 
   // Handle click outside to close dropdown
@@ -209,7 +228,11 @@ export function MaterialSearchAutocomplete({
       {/* Dropdown results */}
       {isOpen && (
         <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg">
-          {searchQuery.length < 3 ? (
+          {loading ? (
+            <div className="p-3 text-center text-sm text-muted-foreground">
+              Cargando materiales...
+            </div>
+          ) : searchQuery.length < 3 ? (
             <div className="p-3 text-center text-sm text-muted-foreground">
               Escribe al menos 3 caracteres para buscar
             </div>

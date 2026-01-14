@@ -277,6 +277,7 @@ export default function PurchaseRequestForm() {
                       <TableCell className="border-r border-border p-1">
                         <MaterialSearchAutocomplete
                           materials={materials}
+                          loading={materials.length === 0}
                           value={item.raw_material_id}
                           displayValue={item.materialName}
                           onSelect={(materialId, material) => {
