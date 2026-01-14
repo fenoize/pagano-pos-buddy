@@ -4,7 +4,6 @@ import { ArrowLeft, Plus, Trash2, Save, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -21,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { MaterialSearchAutocomplete } from '@/components/inventory/MaterialSearchAutocomplete';
 import { usePurchaseRequests } from '@/hooks/usePurchaseRequests';
 import { useRawMaterials } from '@/hooks/useRawMaterials';
 import { useSuppliers } from '@/hooks/useSuppliers';
@@ -275,21 +275,20 @@ export default function PurchaseRequestForm() {
                   {items.map((item, idx) => (
                     <TableRow key={item.tempId} className={idx < items.length - 1 ? 'border-b border-border' : ''}>
                       <TableCell className="border-r border-border p-1">
-                        <Select
+                        <MaterialSearchAutocomplete
+                          materials={materials}
                           value={item.raw_material_id}
-                          onValueChange={(v) => updateItem(item.tempId, 'raw_material_id', v)}
-                        >
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue placeholder="Seleccionar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {materials.map((material) => (
-                              <SelectItem key={material.id} value={material.id}>
-                                {material.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          displayValue={item.materialName}
+                          onSelect={(materialId, material) => {
+                            if (material) {
+                              updateItem(item.tempId, 'raw_material_id', materialId);
+                            } else {
+                              // Clear the material
+                              updateItem(item.tempId, 'raw_material_id', '');
+                            }
+                          }}
+                          placeholder="Buscar material..."
+                        />
                       </TableCell>
                       <TableCell className="border-r border-border p-1">
                         <Select
