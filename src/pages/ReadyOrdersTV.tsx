@@ -164,7 +164,15 @@ export default function ReadyOrdersTV() {
   const columns = activeConfig.columns || 4;
   const fontSize = activeConfig.font_size || 'medium';
   const theme = activeConfig.theme || 'light';
-  const activeScreenId = activeConfig.id || localConfig.id;
+  
+  // Para el contenido, si estamos en idle screen, primero intentar su contenido,
+  // si no tiene, usar el contenido de la pantalla principal
+  const activeScreenId = useIdleScreen 
+    ? (idleScreenConfig?.id || localConfig.id) 
+    : (localConfig.id || undefined);
+  
+  // ID de pantalla principal para fallback de contenido
+  const mainScreenId = localConfig.id;
 
   const renderLayout = () => {
     if (loading) {
@@ -182,6 +190,7 @@ export default function ReadyOrdersTV() {
       columns,
       fontSize,
       screenConfigId: activeScreenId,
+      fallbackScreenId: useIdleScreen ? mainScreenId : undefined,
     };
 
     switch (template) {
@@ -190,6 +199,7 @@ export default function ReadyOrdersTV() {
           <TVLayoutPromoOnly
             sliderInterval={sliderInterval}
             screenConfigId={activeScreenId}
+            fallbackScreenId={useIdleScreen ? mainScreenId : undefined}
           />
         );
       case 'split_horizontal':
