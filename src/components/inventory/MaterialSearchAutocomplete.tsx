@@ -49,6 +49,7 @@ export function MaterialSearchAutocomplete({
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -116,7 +117,11 @@ export function MaterialSearchAutocomplete({
   // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedInsideContainer = containerRef.current?.contains(target);
+      const clickedInsideDropdown = dropdownRef.current?.contains(target);
+
+      if (!clickedInsideContainer && !clickedInsideDropdown) {
         setIsOpen(false);
         setSearchQuery('');
       }
@@ -258,6 +263,7 @@ export function MaterialSearchAutocomplete({
       {isOpen &&
         createPortal(
           <div
+            ref={dropdownRef}
             style={{
               position: 'fixed',
               top: dropdownRect.top,
