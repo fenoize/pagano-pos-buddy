@@ -172,40 +172,56 @@ export function useCustomers() {
       return null;
     }
 
+    // Normalizar strings vacíos para evitar violaciones de UNIQUE (p.ej. rut = '')
+    const normalized: CustomerFormData = {
+      ...customerData,
+      nombres: customerData.nombres?.trim() || undefined,
+      apellidos: customerData.apellidos?.trim() || undefined,
+      phone: customerData.phone?.trim() ? customerData.phone.trim() : undefined,
+      email: customerData.email?.trim() ? customerData.email.trim() : undefined,
+      rut: customerData.rut?.trim() ? customerData.rut.trim().toUpperCase() : undefined,
+      fecha_nacimiento: customerData.fecha_nacimiento?.trim() ? customerData.fecha_nacimiento.trim() : undefined,
+      estado_cliente: customerData.estado_cliente || 'Activo',
+      motivo_estado: customerData.motivo_estado?.trim() ? customerData.motivo_estado.trim() : undefined,
+    };
+
     try {
       // Usar withStaffContext para establecer el contexto de sesión
       const data = await withStaffContext(user.id, async () => {
         // Validaciones
-        if (customerData.email) {
-          const { data: existingEmail } = await supabase
+        if (normalized.email) {
+          const { data: existingEmail, error } = await supabase
             .from('customers')
             .select('id')
-            .eq('email', customerData.email)
-            .single();
+            .eq('email', normalized.email)
+            .maybeSingle();
 
-          if (existingEmail) {
-            throw new Error('Ya existe un cliente con ese email');
-          }
+          if (error) throw error;
+          if (existingEmail) throw new Error('Ya existe un cliente con ese email');
         }
 
-        if (customerData.rut) {
-          const { data: existingRut } = await supabase
+        if (normalized.rut) {
+          const { data: existingRut, error } = await supabase
             .from('customers')
             .select('id')
-            .eq('rut', customerData.rut)
-            .single();
+            .eq('rut', normalized.rut)
+            .maybeSingle();
 
-          if (existingRut) {
-            throw new Error('Ya existe un cliente con ese RUT');
-          }
+          if (error) throw error;
+          if (existingRut) throw new Error('Ya existe un cliente con ese RUT');
         }
 
         const { data, error } = await supabase
           .from('customers')
           .insert({
-            ...customerData,
-            fecha_nacimiento: customerData.fecha_nacimiento || null,
-            estado_cliente: customerData.estado_cliente || 'Activo',
+            ...normalized,
+            // convertir undefined/'' a null para columnas con UNIQUE
+            email: normalized.email ?? null,
+            phone: normalized.phone ?? null,
+            rut: normalized.rut ?? null,
+            fecha_nacimiento: normalized.fecha_nacimiento ?? null,
+            estado_cliente: normalized.estado_cliente || 'Activo',
+            motivo_estado: normalized.motivo_estado ?? null,
             created_by_user_id: user.id,
             updated_by_user_id: user.id
           })
@@ -252,41 +268,56 @@ export function useCustomers() {
       return null;
     }
 
+    // Normalizar strings vacíos para evitar violaciones de UNIQUE (p.ej. rut = '')
+    const normalized: Partial<CustomerFormData> = {
+      ...customerData,
+      nombres: customerData.nombres?.trim() || undefined,
+      apellidos: customerData.apellidos?.trim() || undefined,
+      phone: customerData.phone?.trim() ? customerData.phone.trim() : undefined,
+      email: customerData.email?.trim() ? customerData.email.trim() : undefined,
+      rut: customerData.rut?.trim() ? customerData.rut.trim().toUpperCase() : undefined,
+      fecha_nacimiento: customerData.fecha_nacimiento?.trim() ? customerData.fecha_nacimiento.trim() : undefined,
+      motivo_estado: customerData.motivo_estado?.trim() ? customerData.motivo_estado.trim() : undefined,
+    };
+
     try {
       // Usar withStaffContext para establecer el contexto de sesión
       const data = await withStaffContext(user.id, async () => {
         // Validaciones
-        if (customerData.email) {
-          const { data: existingEmail } = await supabase
+        if (normalized.email) {
+          const { data: existingEmail, error } = await supabase
             .from('customers')
             .select('id')
-            .eq('email', customerData.email)
+            .eq('email', normalized.email)
             .neq('id', id)
-            .single();
+            .maybeSingle();
 
-          if (existingEmail) {
-            throw new Error('Ya existe otro cliente con ese email');
-          }
+          if (error) throw error;
+          if (existingEmail) throw new Error('Ya existe otro cliente con ese email');
         }
 
-        if (customerData.rut) {
-          const { data: existingRut } = await supabase
+        if (normalized.rut) {
+          const { data: existingRut, error } = await supabase
             .from('customers')
             .select('id')
-            .eq('rut', customerData.rut)
+            .eq('rut', normalized.rut)
             .neq('id', id)
-            .single();
+            .maybeSingle();
 
-          if (existingRut) {
-            throw new Error('Ya existe otro cliente con ese RUT');
-          }
+          if (error) throw error;
+          if (existingRut) throw new Error('Ya existe otro cliente con ese RUT');
         }
 
         const { data, error } = await supabase
           .from('customers')
           .update({
-            ...customerData,
-            fecha_nacimiento: customerData.fecha_nacimiento === '' ? null : customerData.fecha_nacimiento,
+            ...normalized,
+            // convertir undefined/'' a null para columnas con UNIQUE
+            email: normalized.email ?? null,
+            phone: normalized.phone ?? null,
+            rut: normalized.rut ?? null,
+            fecha_nacimiento: normalized.fecha_nacimiento === '' ? null : (normalized.fecha_nacimiento ?? null),
+            motivo_estado: normalized.motivo_estado ?? null,
             updated_by_user_id: user.id
           })
           .eq('id', id)
