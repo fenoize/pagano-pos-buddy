@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from './usePermissions';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
+import { withStaffContext } from '@/lib/dbContext';
 
 export interface CustomerFilters {
   search?: string;
@@ -162,55 +163,58 @@ export function useCustomers() {
       return null;
     }
 
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "No hay sesión de usuario activa",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     try {
-      // Validaciones
-      if (customerData.email) {
-        const { data: existingEmail } = await supabase
+      // Usar withStaffContext para establecer el contexto de sesión
+      const data = await withStaffContext(user.id, async () => {
+        // Validaciones
+        if (customerData.email) {
+          const { data: existingEmail } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('email', customerData.email)
+            .single();
+
+          if (existingEmail) {
+            throw new Error('Ya existe un cliente con ese email');
+          }
+        }
+
+        if (customerData.rut) {
+          const { data: existingRut } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('rut', customerData.rut)
+            .single();
+
+          if (existingRut) {
+            throw new Error('Ya existe un cliente con ese RUT');
+          }
+        }
+
+        const { data, error } = await supabase
           .from('customers')
-          .select('id')
-          .eq('email', customerData.email)
+          .insert({
+            ...customerData,
+            fecha_nacimiento: customerData.fecha_nacimiento || null,
+            estado_cliente: customerData.estado_cliente || 'Activo',
+            created_by_user_id: user.id,
+            updated_by_user_id: user.id
+          })
+          .select()
           .single();
 
-        if (existingEmail) {
-          toast({
-            title: "Error",
-            description: "Ya existe un cliente con ese email",
-            variant: "destructive"
-          });
-          return null;
-        }
-      }
-
-      if (customerData.rut) {
-        const { data: existingRut } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('rut', customerData.rut)
-          .single();
-
-        if (existingRut) {
-          toast({
-            title: "Error", 
-            description: "Ya existe un cliente con ese RUT",
-            variant: "destructive"
-          });
-          return null;
-        }
-      }
-
-      const { data, error } = await supabase
-        .from('customers')
-        .insert({
-          ...customerData,
-          fecha_nacimiento: customerData.fecha_nacimiento || null,
-          estado_cliente: customerData.estado_cliente || 'Activo',
-          created_by_user_id: user?.id,
-          updated_by_user_id: user?.id
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+        if (error) throw error;
+        return data;
+      });
 
       toast({
         title: "Éxito",
@@ -222,7 +226,7 @@ export function useCustomers() {
       console.error('Error creating customer:', error);
       toast({
         title: "Error",
-        description: "Error al crear el cliente",
+        description: error instanceof Error ? error.message : "Error al crear el cliente",
         variant: "destructive"
       });
       return null;
@@ -239,56 +243,59 @@ export function useCustomers() {
       return null;
     }
 
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "No hay sesión de usuario activa",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     try {
-      // Validaciones
-      if (customerData.email) {
-        const { data: existingEmail } = await supabase
+      // Usar withStaffContext para establecer el contexto de sesión
+      const data = await withStaffContext(user.id, async () => {
+        // Validaciones
+        if (customerData.email) {
+          const { data: existingEmail } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('email', customerData.email)
+            .neq('id', id)
+            .single();
+
+          if (existingEmail) {
+            throw new Error('Ya existe otro cliente con ese email');
+          }
+        }
+
+        if (customerData.rut) {
+          const { data: existingRut } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('rut', customerData.rut)
+            .neq('id', id)
+            .single();
+
+          if (existingRut) {
+            throw new Error('Ya existe otro cliente con ese RUT');
+          }
+        }
+
+        const { data, error } = await supabase
           .from('customers')
-          .select('id')
-          .eq('email', customerData.email)
-          .neq('id', id)
+          .update({
+            ...customerData,
+            fecha_nacimiento: customerData.fecha_nacimiento === '' ? null : customerData.fecha_nacimiento,
+            updated_by_user_id: user.id
+          })
+          .eq('id', id)
+          .select()
           .single();
 
-        if (existingEmail) {
-          toast({
-            title: "Error",
-            description: "Ya existe otro cliente con ese email",
-            variant: "destructive"
-          });
-          return null;
-        }
-      }
-
-      if (customerData.rut) {
-        const { data: existingRut } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('rut', customerData.rut)
-          .neq('id', id)
-          .single();
-
-        if (existingRut) {
-          toast({
-            title: "Error",
-            description: "Ya existe otro cliente con ese RUT",
-            variant: "destructive"
-          });
-          return null;
-        }
-      }
-
-      const { data, error } = await supabase
-        .from('customers')
-        .update({
-          ...customerData,
-          fecha_nacimiento: customerData.fecha_nacimiento === '' ? null : customerData.fecha_nacimiento,
-          updated_by_user_id: user?.id
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
+        if (error) throw error;
+        return data;
+      });
 
       toast({
         title: "Éxito",
@@ -300,7 +307,7 @@ export function useCustomers() {
       console.error('Error updating customer:', error);
       toast({
         title: "Error",
-        description: "Error al actualizar el cliente",
+        description: error instanceof Error ? error.message : "Error al actualizar el cliente",
         variant: "destructive"
       });
       return null;
@@ -317,18 +324,29 @@ export function useCustomers() {
       return false;
     }
 
-    try {
-      // En lugar de eliminar físicamente, cambiamos el estado a "Inactivo"
-      const { error } = await supabase
-        .from('customers')
-        .update({ 
-          estado_cliente: 'Inactivo' as EstadoCliente,
-          motivo_estado: 'Cliente eliminado por administrador',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "No hay sesión de usuario activa",
+        variant: "destructive"
+      });
+      return false;
+    }
 
-      if (error) throw error;
+    try {
+      await withStaffContext(user.id, async () => {
+        // En lugar de eliminar físicamente, cambiamos el estado a "Inactivo"
+        const { error } = await supabase
+          .from('customers')
+          .update({ 
+            estado_cliente: 'Inactivo' as EstadoCliente,
+            motivo_estado: 'Cliente eliminado por administrador',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id);
+
+        if (error) throw error;
+      });
 
       toast({
         title: "Éxito",
@@ -357,14 +375,25 @@ export function useCustomers() {
       return false;
     }
 
-    try {
-      // Proceder con la eliminación definitiva del cliente
-      const { error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', id);
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "No hay sesión de usuario activa",
+        variant: "destructive"
+      });
+      return false;
+    }
 
-      if (error) throw error;
+    try {
+      await withStaffContext(user.id, async () => {
+        // Proceder con la eliminación definitiva del cliente
+        const { error } = await supabase
+          .from('customers')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+      });
 
       toast({
         title: "Éxito",
