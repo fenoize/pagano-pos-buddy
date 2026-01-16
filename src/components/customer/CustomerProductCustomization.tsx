@@ -634,10 +634,10 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent className="max-h-[90vh] flex flex-col">
-          <div className="mx-auto w-full max-w-lg flex flex-col flex-1 min-h-0">
+        <DrawerContent className="max-h-[90vh] h-[90vh] flex flex-col">
+          <div className="mx-auto w-full max-w-lg flex flex-col flex-1 overflow-hidden">
             {/* Scrollable content - includes image */}
-            <ScrollArea className="flex-1">
+            <div className="flex-1 overflow-y-auto overscroll-contain">
               <div className="pb-4">
                 {/* Product image - now scrollable */}
                 <ProductImage className="h-48 w-full" />
@@ -655,7 +655,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
                   <CustomizationContent />
                 </div>
               </div>
-            </ScrollArea>
+            </div>
 
             {/* Fixed bottom action bar */}
             <div className="flex-shrink-0 border-t bg-background p-4">
