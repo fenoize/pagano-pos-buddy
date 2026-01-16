@@ -1,8 +1,13 @@
 import { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ThumbsUp, ThumbsDown, Send, CheckCircle, X } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Send, CheckCircle } from 'lucide-react';
 import { useOrderFeedback } from '@/hooks/useOrderFeedback';
 import { cn } from '@/lib/utils';
 
@@ -61,27 +66,18 @@ export function OrderFeedbackModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="max-w-md p-0 overflow-hidden">
+    <AlertDialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
+      <AlertDialogContent className="max-w-md p-0 overflow-hidden dark bg-background text-foreground border-border">
         {/* Header */}
-        <div className="relative bg-primary/5 p-6 text-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-3 right-3"
-            onClick={handleClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          
-          <div className="text-sm text-muted-foreground mb-1">
-            Pedido #{orderNumber}
-          </div>
-          <h2 className="text-xl font-bold">
+        <div className="relative bg-primary/10 p-6 text-center">
+          <AlertDialogTitle className="text-xl font-bold">
             {step === 'thanks' 
               ? '¡Gracias por tu feedback!' 
               : '¿Cómo estuvo tu pedido?'}
-          </h2>
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-sm text-muted-foreground mt-1">
+            Pedido #{orderNumber}
+          </AlertDialogDescription>
         </div>
 
         {/* Content */}
@@ -92,16 +88,16 @@ export function OrderFeedbackModal({
                 onClick={() => handleRatingSelect('positive')}
                 disabled={loading}
                 className={cn(
-                  "flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all",
-                  "hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-950/20",
-                  "focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2",
+                  "flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border transition-all",
+                  "hover:border-green-500 hover:bg-green-950/20",
+                  "focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-background",
                   loading && "opacity-50 cursor-not-allowed"
                 )}
               >
-                <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <ThumbsUp className="h-8 w-8 text-green-600" />
+                <div className="w-16 h-16 rounded-full bg-green-900/30 flex items-center justify-center">
+                  <ThumbsUp className="h-8 w-8 text-green-500" />
                 </div>
-                <span className="font-medium text-green-700 dark:text-green-400">
+                <span className="font-medium text-green-400">
                   ¡Me gustó!
                 </span>
               </button>
@@ -110,16 +106,16 @@ export function OrderFeedbackModal({
                 onClick={() => handleRatingSelect('negative')}
                 disabled={loading}
                 className={cn(
-                  "flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all",
-                  "hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/20",
-                  "focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2",
+                  "flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border transition-all",
+                  "hover:border-red-500 hover:bg-red-950/20",
+                  "focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-background",
                   loading && "opacity-50 cursor-not-allowed"
                 )}
               >
-                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <ThumbsDown className="h-8 w-8 text-red-600" />
+                <div className="w-16 h-16 rounded-full bg-red-900/30 flex items-center justify-center">
+                  <ThumbsDown className="h-8 w-8 text-red-500" />
                 </div>
-                <span className="font-medium text-red-700 dark:text-red-400">
+                <span className="font-medium text-red-400">
                   Tuve un problema
                 </span>
               </button>
@@ -137,7 +133,7 @@ export function OrderFeedbackModal({
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Cuéntanos qué pasó con tu pedido..."
                 rows={4}
-                className="resize-none"
+                className="resize-none bg-muted/50 border-border"
               />
 
               <div className="flex gap-3">
@@ -162,8 +158,8 @@ export function OrderFeedbackModal({
 
           {step === 'thanks' && (
             <div className="text-center space-y-4">
-              <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
-                <CheckCircle className="h-10 w-10 text-green-600" />
+              <div className="w-20 h-20 rounded-full bg-green-900/30 flex items-center justify-center mx-auto">
+                <CheckCircle className="h-10 w-10 text-green-500" />
               </div>
               
               <p className="text-muted-foreground">
@@ -178,7 +174,7 @@ export function OrderFeedbackModal({
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
