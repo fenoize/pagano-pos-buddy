@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, AppRole } from '@/types';
 import { usePermissions } from './usePermissions';
+import { useAuth } from '@/hooks/useAuth';
+import { withStaffContext } from '@/lib/dbContext';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -32,24 +34,45 @@ export function useUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const { user } = useAuth();
+
   // Usar hook de permisos centralizado
   const { canManageUsers } = usePermissions();
+
+  const requireAdminContext = async <T,>(operation: () => Promise<T>): Promise<T> => {
+    if (!canManageUsers) {
+      throw new Error('No tienes permisos para gestionar usuarios');
+    }
+    if (!user?.id) {
+      throw new Error('No hay sesión de usuario activa');
+    }
+    return withStaffContext(user.id, operation);
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Optimización: Solo select campos necesarios
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, username, full_name, email, role, active, can_do_delivery, created_at, updated_at')
-        .order('created_at', { ascending: false });
+      if (!user?.id) {
+        setUsers([]);
+        return;
+      }
 
-      if (error) throw error;
-      // Map old role names to new ones
-      const mappedUsers = (data || []).map(user => ({
-        ...user,
-        role: mapDatabaseRoleToApp(user.role)
+      // Setear contexto para que RLS permita el SELECT
+      const result = await withStaffContext(user.id, async () => {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, username, full_name, email, role, active, can_do_delivery, created_at, updated_at')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+      });
+
+      const mappedUsers = result.map(u => ({
+        ...u,
+        role: mapDatabaseRoleToApp((u as any).role)
       })) as User[];
+
       setUsers(mappedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -67,14 +90,18 @@ export function useUsers() {
     role: AppRole;
     can_do_delivery?: boolean;
   }) => {
-    try {
+    return requireAdminContext(async () => {
+      const username = userData.username.trim();
+      const full_name = userData.full_name.trim();
+      const email = userData.email.trim();
+
       // First create the user with a temporary password
       const { data, error: insertError } = await supabase
         .from('users')
         .insert({
-          username: userData.username,
-          full_name: userData.full_name,
-          email: userData.email,
+          username,
+          full_name: full_name || null,
+          email: email || null,
           pass_hash: 'temp', // Temporary value
           role: mapAppRoleToDatabase(userData.role) as any,
           active: true,
@@ -98,10 +125,7 @@ export function useUsers() {
       }
 
       return data;
-    } catch (error) {
-      console.error('Error creating user:', error);
-      throw error;
-    }
+    });
   };
 
   const updateUser = async (userId: string, userData: {
@@ -111,14 +135,24 @@ export function useUsers() {
     role?: AppRole;
     can_do_delivery?: boolean;
   }) => {
-    try {
+    return requireAdminContext(async () => {
       const updateData: any = {};
-      if (userData.username) updateData.username = userData.username;
-      if (userData.full_name !== undefined) updateData.full_name = userData.full_name;
-      if (userData.email !== undefined) updateData.email = userData.email;
+
+      if (userData.username !== undefined) {
+        const v = userData.username.trim();
+        if (v) updateData.username = v;
+      }
+      if (userData.full_name !== undefined) {
+        const v = userData.full_name.trim();
+        updateData.full_name = v ? v : null;
+      }
+      if (userData.email !== undefined) {
+        const v = userData.email.trim();
+        updateData.email = v ? v : null;
+      }
       if (userData.role) updateData.role = mapAppRoleToDatabase(userData.role);
       if (userData.can_do_delivery !== undefined) updateData.can_do_delivery = userData.can_do_delivery;
-      
+
       const { data, error } = await supabase
         .from('users')
         .update(updateData)
@@ -128,28 +162,18 @@ export function useUsers() {
 
       if (error) throw error;
       return data;
-    } catch (error) {
-      console.error('Error updating user:', error);
-      throw error;
-    }
+    });
   };
 
   const deleteUser = async (userId: string) => {
-    try {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
-
+    return requireAdminContext(async () => {
+      const { error } = await supabase.from('users').delete().eq('id', userId);
       if (error) throw error;
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      throw error;
-    }
+    });
   };
 
   const toggleUserStatus = async (userId: string, active: boolean) => {
-    try {
+    return requireAdminContext(async () => {
       const { data, error } = await supabase
         .from('users')
         .update({ active })
@@ -159,15 +183,11 @@ export function useUsers() {
 
       if (error) throw error;
       return data;
-    } catch (error) {
-      console.error('Error toggling user status:', error);
-      throw error;
-    }
+    });
   };
 
   const updateUserPassword = async (userId: string, newPassword: string): Promise<void> => {
-    try {
-      // Use the database function to set password
+    return requireAdminContext(async () => {
       const { data, error } = await supabase.rpc('set_user_password', {
         user_uuid: userId,
         new_password: newPassword
@@ -181,18 +201,13 @@ export function useUsers() {
       if (!data) {
         throw new Error('No se pudo actualizar la contraseña. Usuario no encontrado.');
       }
-    } catch (error) {
-      console.error('Error in updateUserPassword:', error);
-      throw error;
-    }
+    });
   };
 
   const resetPassword = async (userId: string): Promise<string> => {
-    try {
-      // Generate a random password
+    return requireAdminContext(async () => {
       const newPassword = Math.random().toString(36).slice(-8);
-      
-      // Use the database function to set password
+
       const { data, error } = await supabase.rpc('set_user_password', {
         user_uuid: userId,
         new_password: newPassword
@@ -200,12 +215,9 @@ export function useUsers() {
 
       if (error) throw error;
       if (!data) throw new Error('No se pudo resetear la contraseña. Usuario no encontrado.');
-      
+
       return newPassword;
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      throw error;
-    }
+    });
   };
 
   return {
