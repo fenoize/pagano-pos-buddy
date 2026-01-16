@@ -134,15 +134,26 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
 
   const fetchProductVariantsAndCustomizations = async () => {
     try {
-      // Fetch product variants from new system
+      // First, get the product's assigned categories
+      const { data: productCategories, error: catError } = await supabase
+        .from('product_categories')
+        .select('category_id')
+        .eq('product_id', product.id);
+
+      if (catError) throw catError;
+
+      const categoryIds = (productCategories || []).map(pc => pc.category_id);
+
+      // Fetch product variants from new system, filtering by product's categories
       const { data: variantsData, error: variantsError } = await supabase
         .from('product_variant_options')
         .select(`
           *,
-          variant:category_variants(*)
+          variant:category_variants!inner(*)
         `)
         .eq('product_id', product.id)
         .eq('active', true)
+        .in('variant.category_id', categoryIds.length > 0 ? categoryIds : ['00000000-0000-0000-0000-000000000000'])
         .order('variant(display_order)');
 
       if (variantsError) throw variantsError;
