@@ -154,12 +154,12 @@ export default function MyOrders() {
       <div className="mb-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Label>Estado</Label>
+            <Label className="text-foreground">Estado</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background text-foreground border-border">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background text-foreground border-border">
                 <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="Pendiente">Pendiente</SelectItem>
                 <SelectItem value="En preparación">En preparación</SelectItem>
@@ -170,12 +170,22 @@ export default function MyOrders() {
             </Select>
           </div>
           <div>
-            <Label>Desde</Label>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <Label className="text-foreground">Desde</Label>
+            <Input 
+              type="date" 
+              value={dateFrom} 
+              onChange={(e) => setDateFrom(e.target.value)} 
+              className="bg-background text-foreground border-border [color-scheme:dark]"
+            />
           </div>
           <div>
-            <Label>Hasta</Label>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <Label className="text-foreground">Hasta</Label>
+            <Input 
+              type="date" 
+              value={dateTo} 
+              onChange={(e) => setDateTo(e.target.value)} 
+              className="bg-background text-foreground border-border [color-scheme:dark]"
+            />
           </div>
         </div>
       </div>
