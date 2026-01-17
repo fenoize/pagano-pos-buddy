@@ -88,6 +88,7 @@ export default function DeliveryHistory() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="Listo">Listo</SelectItem>
                   <SelectItem value="En camino">En camino</SelectItem>
                   <SelectItem value="Entregado">Entregado</SelectItem>
                 </SelectContent>
