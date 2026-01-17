@@ -61,8 +61,8 @@ export const useDeliveryHistory = () => {
       if (filters.status) {
         query = query.eq('status', filters.status);
       } else {
-        // Por defecto solo mostrar En camino y Entregado
-        query = query.in('status', ['En camino', 'Entregado']);
+        // Por defecto mostrar todos los estados relevantes de delivery
+        query = query.in('status', ['Listo', 'En camino', 'Entregado']);
       }
 
       query = query.order('created_at', { ascending: false });
