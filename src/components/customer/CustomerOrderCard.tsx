@@ -12,12 +12,16 @@ import { useOrderFeedback } from '@/hooks/useOrderFeedback';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 
 interface OrderItem {
-  id: string;
-  name: string;
+  id?: string;
+  // Pueden venir con diferentes nombres de propiedades
+  name?: string;
+  productName?: string;
   quantity: number;
-  base_price: number;
-  total: number;
+  base_price?: number;
+  basePrice?: number;
+  total?: number;
   variant?: string;
+  variant_name?: string;
   extras?: Array<{ name: string; price: number }>;
   modifiers?: string[];
   notes?: string;
@@ -124,34 +128,41 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
               {/* Items del pedido */}
               <div className="space-y-2">
                 <h5 className="font-medium text-sm text-foreground">Productos:</h5>
-                {order.items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm border-b pb-2">
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">
-                        {item.quantity}x {item.name}
-                      </p>
-                      {item.variant && (
-                        <p className="text-xs text-muted-foreground">{item.variant}</p>
-                      )}
-                      {item.extras && item.extras.length > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          + {item.extras.map((e) => e.name).join(', ')}
+                {order.items.map((item, index) => {
+                  // Manejar diferentes estructuras de datos
+                  const itemName = item.name || item.productName || 'Producto';
+                  const itemVariant = item.variant || item.variant_name;
+                  const itemTotal = item.total ?? item.basePrice ?? item.base_price ?? 0;
+                  
+                  return (
+                    <div key={item.id || index} className="flex justify-between text-sm border-b border-border pb-2">
+                      <div className="flex-1">
+                        <p className="font-medium text-foreground">
+                          {item.quantity}x {itemName}
                         </p>
-                      )}
-                      {item.modifiers && item.modifiers.length > 0 && (
-                        <p className="text-xs text-muted-foreground italic">
-                          {item.modifiers.join(', ')}
-                        </p>
-                      )}
-                      {item.notes && (
-                        <p className="text-xs text-muted-foreground italic">
-                          Nota: {item.notes}
-                        </p>
-                      )}
+                        {itemVariant && (
+                          <p className="text-xs text-muted-foreground">{itemVariant}</p>
+                        )}
+                        {item.extras && item.extras.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            + {item.extras.map((e) => e.name).join(', ')}
+                          </p>
+                        )}
+                        {item.modifiers && item.modifiers.length > 0 && (
+                          <p className="text-xs text-muted-foreground italic">
+                            {item.modifiers.join(', ')}
+                          </p>
+                        )}
+                        {item.notes && (
+                          <p className="text-xs text-muted-foreground italic">
+                            Nota: {item.notes}
+                          </p>
+                        )}
+                      </div>
+                      <span className="font-medium text-foreground">{formatCLP(itemTotal * item.quantity)}</span>
                     </div>
-                    <span className="font-medium text-foreground">{formatCLP(item.total)}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Dirección snapshot (si es delivery) */}
