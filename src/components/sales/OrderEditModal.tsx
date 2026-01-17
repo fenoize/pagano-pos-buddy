@@ -117,24 +117,26 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   // Cargar datos cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
-      // Cargar usuarios
-      fetchUsers();
-      
-      // Cargar saldo de runas si hay customer
-      if (order && order.customer_id) {
-        const loadRunasData = async () => {
+      // Cargar usuarios inmediatamente al abrir
+      const loadData = async () => {
+        // Cargar usuarios primero (para que repartidores estén disponibles)
+        await fetchUsers();
+        
+        // Cargar saldo de runas si hay customer
+        if (order && order.customer_id) {
           const balance = await getCustomerRunasBalance(order.customer_id!);
           const value = await fetchRunaValue();
           setSaldoRunasCliente(balance);
           setValorRunaActual(value);
-        };
-        loadRunasData();
-      }
+        }
 
-      // Check if order belongs to closed session
-      if (order?.id) {
-        checkIfClosedSession();
-      }
+        // Check if order belongs to closed session
+        if (order?.id) {
+          checkIfClosedSession();
+        }
+      };
+      
+      loadData();
     }
   }, [isOpen, order]);
 
