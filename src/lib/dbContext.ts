@@ -73,7 +73,7 @@ export async function clearDBContext(): Promise<void> {
 /**
  * Wrapper para operaciones que requieren contexto de staff
  * Garantiza que el contexto se establezca antes de cada operación
- * 
+ *
  * IMPORTANTE: Esto es necesario porque set_config(..., false) solo persiste
  * durante la transacción actual en Supabase con connection pooling.
  */
@@ -81,14 +81,9 @@ export async function withStaffContext<T>(
   userId: string,
   operation: () => Promise<T>
 ): Promise<T> {
-  try {
-    // Establecer contexto inmediatamente antes de la operación
-    await setStaffContext(userId);
-    
-    // Ejecutar la operación dentro de la misma "sesión lógica"
-    return await operation();
-  } catch (error) {
-    console.error('Error in withStaffContext:', error);
-    throw error;
-  }
+  // Establecer contexto inmediatamente antes de la operación
+  await setStaffContext(userId);
+
+  // Ejecutar la operación dentro de la misma "sesión lógica"
+  return await operation();
 }

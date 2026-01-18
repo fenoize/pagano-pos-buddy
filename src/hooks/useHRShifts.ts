@@ -22,7 +22,7 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
       const userId = getUserId();
       if (!userId) return;
       
-      const data = await withStaffContext(userId, async () => {
+      await withStaffContext(userId, async () => {
         let query = supabase
           .from('hr_shifts')
           .select(`
@@ -54,10 +54,8 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
         
         const { data, error } = await query;
         if (error) throw error;
-        return data;
+        setShifts(data as HRShift[]);
       });
-      
-      setShifts(data as HRShift[]);
     } catch (error: any) {
       console.error('Error fetching HR shifts:', error);
       toast.error('Error al cargar turnos');
@@ -71,25 +69,25 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
   }, [fetchShifts]);
 
   const createShift = async (formData: HRShiftFormData) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shifts')
-          .insert({
-            employee_id: formData.employee_id,
-            shift_date: formData.shift_date,
-            shift_type_id: formData.shift_type_id,
-            role_id: formData.role_id,
-            hours_override: formData.hours_override || null,
-            notes: formData.notes || null,
-            status: 'draft',
-            created_by: userId,
-          });
-        
+        const { error } = await supabase.from('hr_shifts').insert({
+          employee_id: formData.employee_id,
+          shift_date: formData.shift_date,
+          shift_type_id: formData.shift_type_id,
+          role_id: formData.role_id,
+          hours_override: formData.hours_override || null,
+          notes: formData.notes || null,
+          status: 'draft',
+          created_by: userId,
+        });
         if (error) throw error;
       });
-      
       toast.success('Turno creado');
       await fetchShifts();
     } catch (error: any) {
@@ -100,20 +98,18 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
   };
 
   const updateShift = async (id: string, formData: Partial<HRShiftFormData>) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shifts')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString(),
-          })
+        const { error } = await supabase.from('hr_shifts')
+          .update({ ...formData, updated_at: new Date().toISOString() })
           .eq('id', id);
-        
         if (error) throw error;
       });
-      
       toast.success('Turno actualizado');
       await fetchShifts();
     } catch (error: any) {
@@ -124,23 +120,21 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
   };
 
   const confirmShift = async (id: string) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shifts')
-          .update({
-            status: 'confirmed',
-            confirmed_by: userId,
-            confirmed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', id)
-          .eq('status', 'draft');
-        
+        const { error } = await supabase.from('hr_shifts').update({
+          status: 'confirmed',
+          confirmed_by: userId,
+          confirmed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('id', id).eq('status', 'draft');
         if (error) throw error;
       });
-      
       toast.success('Turno confirmado');
       await fetchShifts();
     } catch (error: any) {
@@ -151,23 +145,21 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
   };
 
   const approveShift = async (id: string) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shifts')
-          .update({
-            status: 'approved',
-            approved_by: userId,
-            approved_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', id)
-          .eq('status', 'confirmed');
-        
+        const { error } = await supabase.from('hr_shifts').update({
+          status: 'approved',
+          approved_by: userId,
+          approved_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('id', id).eq('status', 'confirmed');
         if (error) throw error;
       });
-      
       toast.success('Turno aprobado');
       await fetchShifts();
     } catch (error: any) {
@@ -178,18 +170,16 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
   };
 
   const deleteShift = async (id: string) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shifts')
-          .delete()
-          .eq('id', id)
-          .in('status', ['draft', 'confirmed']);
-        
+        const { error } = await supabase.from('hr_shifts').delete().eq('id', id).in('status', ['draft', 'confirmed']);
         if (error) throw error;
       });
-      
       toast.success('Turno eliminado');
       await fetchShifts();
     } catch (error: any) {
@@ -200,23 +190,21 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
   };
 
   const bulkConfirm = async (ids: string[]) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shifts')
-          .update({
-            status: 'confirmed',
-            confirmed_by: userId,
-            confirmed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .in('id', ids)
-          .eq('status', 'draft');
-        
+        const { error } = await supabase.from('hr_shifts').update({
+          status: 'confirmed',
+          confirmed_by: userId,
+          confirmed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).in('id', ids).eq('status', 'draft');
         if (error) throw error;
       });
-      
       toast.success(`${ids.length} turnos confirmados`);
       await fetchShifts();
     } catch (error: any) {
@@ -227,23 +215,21 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
   };
 
   const bulkApprove = async (ids: string[]) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shifts')
-          .update({
-            status: 'approved',
-            approved_by: userId,
-            approved_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .in('id', ids)
-          .eq('status', 'confirmed');
-        
+        const { error } = await supabase.from('hr_shifts').update({
+          status: 'approved',
+          approved_by: userId,
+          approved_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).in('id', ids).eq('status', 'confirmed');
         if (error) throw error;
       });
-      
       toast.success(`${ids.length} turnos aprobados`);
       await fetchShifts();
     } catch (error: any) {
