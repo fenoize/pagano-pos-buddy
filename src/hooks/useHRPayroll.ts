@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { withStaffContext } from '@/lib/dbContext';
+import { getStaffUserId } from '@/lib/staffSession';
 import { HRPayrollRun, HRPayrollItem, HRPayrollGenerateParams, HRPayrollFilters, HRPayAdjustment } from '@/types/hr';
 import { toast } from 'sonner';
 
-const getUserId = () => localStorage.getItem('pos_user_id') || '';
+const getUserId = () => getStaffUserId();
 
 export function useHRPayroll() {
   const [payrollRuns, setPayrollRuns] = useState<HRPayrollRun[]>([]);

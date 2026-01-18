@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { withStaffContext } from '@/lib/dbContext';
+import { getStaffUserId } from '@/lib/staffSession';
 import { HRShiftRole, HRShiftType, HRPayRule } from '@/types/hr';
 import { toast } from 'sonner';
 
@@ -11,8 +12,7 @@ export function useHRShiftConfig() {
   const [loading, setLoading] = useState(true);
 
   const getUserId = (): string => {
-    const id = localStorage.getItem('pos_user_id') || '';
-    return id;
+    return getStaffUserId();
   };
 
   const requireUserId = (): string => {

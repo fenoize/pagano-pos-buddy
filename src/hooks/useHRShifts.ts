@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { withStaffContext } from '@/lib/dbContext';
+import { getStaffUserId } from '@/lib/staffSession';
 import { HRShift, HRShiftFormData, HRShiftFilters } from '@/types/hr';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
@@ -13,7 +14,7 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
     dateTo: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
   });
 
-  const getUserId = () => localStorage.getItem('pos_user_id') || '';
+  const getUserId = () => getStaffUserId();
 
   const fetchShifts = useCallback(async () => {
     try {

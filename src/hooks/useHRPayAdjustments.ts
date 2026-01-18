@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { withStaffContext } from '@/lib/dbContext';
+import { getStaffUserId } from '@/lib/staffSession';
 import { HRPayAdjustment, HRPayAdjustmentFormData } from '@/types/hr';
 import { toast } from 'sonner';
 
@@ -8,7 +9,7 @@ export function useHRPayAdjustments(employeeId?: string) {
   const [adjustments, setAdjustments] = useState<HRPayAdjustment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getUserId = () => localStorage.getItem('pos_user_id') || '';
+  const getUserId = () => getStaffUserId();
 
   const fetchAdjustments = useCallback(async () => {
     try {
