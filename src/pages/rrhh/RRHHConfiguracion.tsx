@@ -449,15 +449,15 @@ function RRHHConfiguracion() {
             <div>
               <Label>Usuario Vinculado (opcional)</Label>
               <Select 
-                value={employeeForm.user_id || ''} 
-                onValueChange={(val) => setEmployeeForm(f => ({ ...f, user_id: val || null }))}
+                value={employeeForm.user_id || '__none__'} 
+                onValueChange={(val) => setEmployeeForm(f => ({ ...f, user_id: val === '__none__' ? null : val }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sin vincular" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin vincular</SelectItem>
-                  {users.map((u) => (
+                  <SelectItem value="__none__">Sin vincular</SelectItem>
+                  {users.filter((u) => u.id).map((u) => (
                     <SelectItem key={u.id} value={u.id}>{u.full_name} ({u.username})</SelectItem>
                   ))}
                 </SelectContent>
