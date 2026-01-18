@@ -10,13 +10,28 @@ export function useHRShiftConfig() {
   const [payRules, setPayRules] = useState<HRPayRule[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getUserId = () => localStorage.getItem('pos_user_id') || '';
+  const getUserId = (): string => {
+    const id = localStorage.getItem('pos_user_id') || '';
+    return id;
+  };
+
+  const requireUserId = (): string => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión para realizar esta acción');
+      throw new Error('No user logged in');
+    }
+    return userId;
+  };
 
   const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
       const userId = getUserId();
-      if (!userId) return;
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
       
       const result = await withStaffContext(userId, async () => {
         const [rolesRes, typesRes, rulesRes] = await Promise.all([
@@ -56,8 +71,8 @@ export function useHRShiftConfig() {
 
   // Roles CRUD
   const createRole = async (name: string, description?: string) => {
+    const userId = requireUserId();
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
         const { error } = await supabase
           .from('hr_shift_roles')
@@ -74,8 +89,8 @@ export function useHRShiftConfig() {
   };
 
   const updateRole = async (id: string, data: { name?: string; description?: string; is_active?: boolean }) => {
+    const userId = requireUserId();
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
         const { error } = await supabase
           .from('hr_shift_roles')
@@ -93,8 +108,8 @@ export function useHRShiftConfig() {
   };
 
   const deleteRole = async (id: string) => {
+    const userId = requireUserId();
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
         const { error } = await supabase.from('hr_shift_roles').delete().eq('id', id);
         if (error) throw error;
@@ -110,8 +125,8 @@ export function useHRShiftConfig() {
 
   // Shift Types CRUD
   const createShiftType = async (name: string, defaultHours: number) => {
+    const userId = requireUserId();
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
         const { error } = await supabase
           .from('hr_shift_types')
@@ -128,8 +143,8 @@ export function useHRShiftConfig() {
   };
 
   const updateShiftType = async (id: string, data: { name?: string; default_hours?: number; is_active?: boolean }) => {
+    const userId = requireUserId();
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
         const { error } = await supabase
           .from('hr_shift_types')
@@ -147,8 +162,8 @@ export function useHRShiftConfig() {
   };
 
   const deleteShiftType = async (id: string) => {
+    const userId = requireUserId();
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
         const { error } = await supabase.from('hr_shift_types').delete().eq('id', id);
         if (error) throw error;
@@ -164,8 +179,8 @@ export function useHRShiftConfig() {
 
   // Pay Rules CRUD
   const updatePayRule = async (id: string, data: { pay_per_shift?: number; tax_percent?: number | null; is_active?: boolean }) => {
+    const userId = requireUserId();
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
         const { error } = await supabase
           .from('hr_pay_rules')
@@ -183,8 +198,8 @@ export function useHRShiftConfig() {
   };
 
   const createPayRule = async (shiftTypeId: string, payPerShift: number) => {
+    const userId = requireUserId();
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
         const { error } = await supabase
           .from('hr_pay_rules')

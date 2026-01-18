@@ -27,6 +27,17 @@ export async function setCustomerContext(accountId: string, customerId: string):
  * Setea app.user_id en la sesión DB y limpia cualquier contexto de customer
  */
 export async function setStaffContext(userId: string): Promise<void> {
+  // Validar que userId sea un UUID válido antes de llamar a la RPC
+  if (!userId || userId.trim() === '') {
+    throw new Error('userId es requerido para establecer el contexto de staff');
+  }
+  
+  // Validar formato UUID básico
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(userId)) {
+    throw new Error('userId debe ser un UUID válido');
+  }
+  
   try {
     const { error } = await supabase.rpc('set_staff_context', {
       p_user_id: userId
