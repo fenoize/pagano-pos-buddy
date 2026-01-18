@@ -132,6 +132,7 @@ const reportItems = [
 const rrhhItems = [
   { title: "Turnos", url: "/pos/rrhh/turnos", icon: Users, roles: ['Administrador'] },
   { title: "Liquidaciones", url: "/pos/rrhh/liquidaciones", icon: DollarSign, roles: ['Administrador'] },
+  { title: "Ajustes", url: "/pos/rrhh/ajustes", icon: TrendingUpIcon, roles: ['Administrador'] },
   { title: "Configuración", url: "/pos/rrhh/configuracion", icon: SettingsIcon, roles: ['Administrador'] },
 ];
 
