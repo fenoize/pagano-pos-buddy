@@ -1819,6 +1819,7 @@ export type Database = {
           expense_date: string
           expense_type: string
           fixed_subtype: string | null
+          hr_payroll_id: string | null
           id: string
           notes: string | null
           payment_method: string | null
@@ -1841,6 +1842,7 @@ export type Database = {
           expense_date?: string
           expense_type: string
           fixed_subtype?: string | null
+          hr_payroll_id?: string | null
           id?: string
           notes?: string | null
           payment_method?: string | null
@@ -1863,6 +1865,7 @@ export type Database = {
           expense_date?: string
           expense_type?: string
           fixed_subtype?: string | null
+          hr_payroll_id?: string | null
           id?: string
           notes?: string | null
           payment_method?: string | null
@@ -1891,6 +1894,13 @@ export type Database = {
             columns: ["cash_session_id"]
             isOneToOne: false
             referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_expenses_hr_payroll_id_fkey"
+            columns: ["hr_payroll_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_runs"
             referencedColumns: ["id"]
           },
           {
@@ -2211,6 +2221,491 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_employees: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          phone: string | null
+          rut: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone?: string | null
+          rut?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone?: string | null
+          rut?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_employees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_employees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_pay_adjustments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          employee_id: string
+          id: string
+          period_end: string
+          period_start: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          employee_id: string
+          id?: string
+          period_end: string
+          period_start: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          employee_id?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_pay_adjustments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_pay_adjustments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_pay_adjustments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_pay_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          pay_per_shift: number
+          round_policy: string | null
+          shift_type_id: string
+          tax_percent: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pay_per_shift: number
+          round_policy?: string | null
+          shift_type_id: string
+          tax_percent?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pay_per_shift?: number
+          round_policy?: string | null
+          shift_type_id?: string
+          tax_percent?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_pay_rules_shift_type_id_fkey"
+            columns: ["shift_type_id"]
+            isOneToOne: false
+            referencedRelation: "hr_shift_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll_items: {
+        Row: {
+          advances: number
+          base_amount: number
+          bonuses: number
+          created_at: string
+          discounts: number
+          employee_id: string
+          gross_reference: number
+          id: string
+          net_pay: number
+          payroll_id: string
+          shifts_count: number
+          snapshot: Json
+          tax_estimated: number
+        }
+        Insert: {
+          advances?: number
+          base_amount?: number
+          bonuses?: number
+          created_at?: string
+          discounts?: number
+          employee_id: string
+          gross_reference?: number
+          id?: string
+          net_pay?: number
+          payroll_id: string
+          shifts_count?: number
+          snapshot?: Json
+          tax_estimated?: number
+        }
+        Update: {
+          advances?: number
+          base_amount?: number
+          bonuses?: number
+          created_at?: string
+          discounts?: number
+          employee_id?: string
+          gross_reference?: number
+          id?: string
+          net_pay?: number
+          payroll_id?: string
+          shifts_count?: number
+          snapshot?: Json
+          tax_estimated?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_items_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_items_payroll_id_fkey"
+            columns: ["payroll_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll_runs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          issued_at: string | null
+          issued_by: string | null
+          notes: string | null
+          paid_at: string | null
+          paid_by: string | null
+          period_end: string
+          period_start: string
+          period_type: string
+          status: string
+          totals: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          issued_at?: string | null
+          issued_by?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          period_end: string
+          period_start: string
+          period_type: string
+          status?: string
+          totals?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          issued_at?: string | null
+          issued_by?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          period_end?: string
+          period_start?: string
+          period_type?: string
+          status?: string
+          totals?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_runs_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_runs_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_runs_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_runs_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_shift_roles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hr_shift_types: {
+        Row: {
+          created_at: string
+          default_hours: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_hours: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_hours?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hr_shifts: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          hours_override: number | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          role_id: string
+          shift_date: string
+          shift_type_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          hours_override?: number | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          role_id: string
+          shift_date: string
+          shift_type_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          hours_override?: number | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          role_id?: string
+          shift_date?: string
+          shift_type_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_shifts_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_shifts_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_shifts_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_shifts_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_shifts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_shifts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_shifts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_shifts_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "hr_shift_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_shifts_shift_type_id_fkey"
+            columns: ["shift_type_id"]
+            isOneToOne: false
+            referencedRelation: "hr_shift_types"
             referencedColumns: ["id"]
           },
         ]
@@ -5481,6 +5976,24 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      hr_generate_payroll_run_v1: {
+        Args: {
+          p_end_date: string
+          p_notes?: string
+          p_period_type: string
+          p_start_date: string
+        }
+        Returns: string
+      }
+      hr_issue_payroll: { Args: { p_payroll_id: string }; Returns: undefined }
+      hr_mark_payroll_paid: {
+        Args: {
+          p_account_id: string
+          p_payment_method: string
+          p_payroll_id: string
+        }
+        Returns: undefined
       }
       insert_cash_movement_with_context: {
         Args: {
