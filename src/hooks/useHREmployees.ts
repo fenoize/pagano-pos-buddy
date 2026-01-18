@@ -17,20 +17,15 @@ export function useHREmployees() {
       const userId = getUserId();
       if (!userId) return;
       
-      const data = await withStaffContext(userId, async () => {
+      await withStaffContext(userId, async () => {
         const { data, error } = await supabase
           .from('hr_employees')
-          .select(`
-            *,
-            user:users(id, username, full_name)
-          `)
+          .select(`*, user:users(id, username, full_name)`)
           .order('full_name');
         
         if (error) throw error;
-        return data;
+        setEmployees(data as HREmployee[]);
       });
-      
-      setEmployees(data as HREmployee[]);
     } catch (error: any) {
       console.error('Error fetching HR employees:', error);
       toast.error('Error al cargar empleados');
@@ -44,23 +39,23 @@ export function useHREmployees() {
   }, [fetchEmployees]);
 
   const createEmployee = async (formData: HREmployeeFormData) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_employees')
-          .insert({
-            full_name: formData.full_name,
-            email: formData.email || null,
-            phone: formData.phone || null,
-            rut: formData.rut || null,
-            user_id: formData.user_id || null,
-            notes: formData.notes || null,
-          });
-        
+        const { error } = await supabase.from('hr_employees').insert({
+          full_name: formData.full_name,
+          email: formData.email || null,
+          phone: formData.phone || null,
+          rut: formData.rut || null,
+          user_id: formData.user_id || null,
+          notes: formData.notes || null,
+        });
         if (error) throw error;
       });
-      
       toast.success('Empleado creado exitosamente');
       await fetchEmployees();
     } catch (error: any) {
@@ -71,20 +66,18 @@ export function useHREmployees() {
   };
 
   const updateEmployee = async (id: string, formData: Partial<HREmployeeFormData>) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_employees')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString(),
-          })
+        const { error } = await supabase.from('hr_employees')
+          .update({ ...formData, updated_at: new Date().toISOString() })
           .eq('id', id);
-        
         if (error) throw error;
       });
-      
       toast.success('Empleado actualizado exitosamente');
       await fetchEmployees();
     } catch (error: any) {
@@ -95,17 +88,18 @@ export function useHREmployees() {
   };
 
   const toggleEmployeeStatus = async (id: string, isActive: boolean) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_employees')
+        const { error } = await supabase.from('hr_employees')
           .update({ is_active: isActive, updated_at: new Date().toISOString() })
           .eq('id', id);
-        
         if (error) throw error;
       });
-      
       toast.success(isActive ? 'Empleado activado' : 'Empleado desactivado');
       await fetchEmployees();
     } catch (error: any) {
@@ -116,17 +110,16 @@ export function useHREmployees() {
   };
 
   const deleteEmployee = async (id: string) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_employees')
-          .delete()
-          .eq('id', id);
-        
+        const { error } = await supabase.from('hr_employees').delete().eq('id', id);
         if (error) throw error;
       });
-      
       toast.success('Empleado eliminado');
       await fetchEmployees();
     } catch (error: any) {

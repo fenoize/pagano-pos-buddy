@@ -17,13 +17,10 @@ export function useHRPayAdjustments(employeeId?: string) {
       const userId = getUserId();
       if (!userId) return;
       
-      const data = await withStaffContext(userId, async () => {
+      await withStaffContext(userId, async () => {
         let query = supabase
           .from('hr_pay_adjustments')
-          .select(`
-            *,
-            employee:hr_employees(id, full_name, rut)
-          `)
+          .select(`*, employee:hr_employees(id, full_name, rut)`)
           .order('created_at', { ascending: false });
         
         if (employeeId) {
@@ -32,10 +29,8 @@ export function useHRPayAdjustments(employeeId?: string) {
         
         const { data, error } = await query;
         if (error) throw error;
-        return data;
+        setAdjustments(data as HRPayAdjustment[]);
       });
-      
-      setAdjustments(data as HRPayAdjustment[]);
     } catch (error: any) {
       console.error('Error fetching adjustments:', error);
       toast.error('Error al cargar ajustes');
@@ -49,22 +44,23 @@ export function useHRPayAdjustments(employeeId?: string) {
   }, [fetchAdjustments]);
 
   const createAdjustment = async (formData: HRPayAdjustmentFormData) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_pay_adjustments')
-          .insert({
-            employee_id: formData.employee_id,
-            type: formData.type,
-            amount: formData.amount,
-            description: formData.description || null,
-            period_start: formData.period_start || null,
-            period_end: formData.period_end || null,
-          });
+        const { error } = await supabase.from('hr_pay_adjustments').insert({
+          employee_id: formData.employee_id,
+          type: formData.type,
+          amount: formData.amount,
+          description: formData.description || null,
+          period_start: formData.period_start || null,
+          period_end: formData.period_end || null,
+        });
         if (error) throw error;
       });
-      
       toast.success('Ajuste creado exitosamente');
       await fetchAdjustments();
     } catch (error: any) {
@@ -75,16 +71,16 @@ export function useHRPayAdjustments(employeeId?: string) {
   };
 
   const updateAdjustment = async (id: string, formData: Partial<HRPayAdjustmentFormData>) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_pay_adjustments')
-          .update(formData)
-          .eq('id', id);
+        const { error } = await supabase.from('hr_pay_adjustments').update(formData).eq('id', id);
         if (error) throw error;
       });
-      
       toast.success('Ajuste actualizado');
       await fetchAdjustments();
     } catch (error: any) {
@@ -95,16 +91,16 @@ export function useHRPayAdjustments(employeeId?: string) {
   };
 
   const deleteAdjustment = async (id: string) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
     try {
-      const userId = getUserId();
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_pay_adjustments')
-          .delete()
-          .eq('id', id);
+        const { error } = await supabase.from('hr_pay_adjustments').delete().eq('id', id);
         if (error) throw error;
       });
-      
       toast.success('Ajuste eliminado');
       await fetchAdjustments();
     } catch (error: any) {

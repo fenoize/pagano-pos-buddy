@@ -11,9 +11,7 @@ export function useHRShiftConfig() {
   const [payRules, setPayRules] = useState<HRPayRule[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getUserId = (): string => {
-    return getStaffUserId();
-  };
+  const getUserId = (): string => getStaffUserId();
 
   const requireUserId = (): string => {
     const userId = getUserId();
@@ -33,30 +31,21 @@ export function useHRShiftConfig() {
         return;
       }
       
-      const result = await withStaffContext(userId, async () => {
+      await withStaffContext(userId, async () => {
         const [rolesRes, typesRes, rulesRes] = await Promise.all([
           supabase.from('hr_shift_roles').select('*').order('name'),
           supabase.from('hr_shift_types').select('*').order('name'),
-          supabase.from('hr_pay_rules').select(`
-            *,
-            shift_type:hr_shift_types(*)
-          `).order('created_at'),
+          supabase.from('hr_pay_rules').select(`*, shift_type:hr_shift_types(*)`).order('created_at'),
         ]);
         
         if (rolesRes.error) throw rolesRes.error;
         if (typesRes.error) throw typesRes.error;
         if (rulesRes.error) throw rulesRes.error;
         
-        return {
-          roles: rolesRes.data,
-          types: typesRes.data,
-          rules: rulesRes.data,
-        };
+        setRoles(rolesRes.data as HRShiftRole[]);
+        setShiftTypes(typesRes.data as HRShiftType[]);
+        setPayRules(rulesRes.data as HRPayRule[]);
       });
-      
-      setRoles(result.roles as HRShiftRole[]);
-      setShiftTypes(result.types as HRShiftType[]);
-      setPayRules(result.rules as HRPayRule[]);
     } catch (error: any) {
       console.error('Error fetching HR config:', error);
       toast.error('Error al cargar configuración RRHH');
@@ -74,9 +63,7 @@ export function useHRShiftConfig() {
     const userId = requireUserId();
     try {
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shift_roles')
-          .insert({ name, description: description || null });
+        const { error } = await supabase.from('hr_shift_roles').insert({ name, description: description || null });
         if (error) throw error;
       });
       toast.success('Rol creado');
@@ -92,10 +79,7 @@ export function useHRShiftConfig() {
     const userId = requireUserId();
     try {
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shift_roles')
-          .update(data)
-          .eq('id', id);
+        const { error } = await supabase.from('hr_shift_roles').update(data).eq('id', id);
         if (error) throw error;
       });
       toast.success('Rol actualizado');
@@ -128,9 +112,7 @@ export function useHRShiftConfig() {
     const userId = requireUserId();
     try {
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shift_types')
-          .insert({ name, default_hours: defaultHours });
+        const { error } = await supabase.from('hr_shift_types').insert({ name, default_hours: defaultHours });
         if (error) throw error;
       });
       toast.success('Tipo de turno creado');
@@ -146,10 +128,7 @@ export function useHRShiftConfig() {
     const userId = requireUserId();
     try {
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_shift_types')
-          .update(data)
-          .eq('id', id);
+        const { error } = await supabase.from('hr_shift_types').update(data).eq('id', id);
         if (error) throw error;
       });
       toast.success('Tipo de turno actualizado');
@@ -182,10 +161,7 @@ export function useHRShiftConfig() {
     const userId = requireUserId();
     try {
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_pay_rules')
-          .update(data)
-          .eq('id', id);
+        const { error } = await supabase.from('hr_pay_rules').update(data).eq('id', id);
         if (error) throw error;
       });
       toast.success('Regla de pago actualizada');
@@ -201,9 +177,7 @@ export function useHRShiftConfig() {
     const userId = requireUserId();
     try {
       await withStaffContext(userId, async () => {
-        const { error } = await supabase
-          .from('hr_pay_rules')
-          .insert({ shift_type_id: shiftTypeId, pay_per_shift: payPerShift });
+        const { error } = await supabase.from('hr_pay_rules').insert({ shift_type_id: shiftTypeId, pay_per_shift: payPerShift });
         if (error) throw error;
       });
       toast.success('Regla de pago creada');
@@ -224,15 +198,12 @@ export function useHRShiftConfig() {
     activePayRules: payRules.filter(r => r.is_active),
     loading,
     refetch: fetchConfig,
-    // Roles
     createRole,
     updateRole,
     deleteRole,
-    // Shift Types
     createShiftType,
     updateShiftType,
     deleteShiftType,
-    // Pay Rules
     createPayRule,
     updatePayRule,
   };
