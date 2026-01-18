@@ -109,6 +109,7 @@ const ProductSalesReport = lazy(() => import("@/pages/reports/ProductSalesReport
 // RRHH Pages
 const RRHHTurnos = lazy(() => import("@/pages/rrhh/RRHHTurnos"));
 const RRHHLiquidaciones = lazy(() => import("@/pages/rrhh/RRHHLiquidaciones"));
+const RRHHAjustes = lazy(() => import("@/pages/rrhh/RRHHAjustes"));
 const RRHHConfiguracion = lazy(() => import("@/pages/rrhh/RRHHConfiguracion"));
 
 // Loading component para Suspense - siempre dark para consistencia con el tema POS
@@ -702,6 +703,7 @@ const App = () => (
               <Route path="/pos/rrhh" element={<Navigate to="/pos/rrhh/turnos" replace />} />
               <Route path="/pos/rrhh/turnos" element={<StaffProtectedRoute><StaffLayout><RRHHTurnos /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/rrhh/liquidaciones" element={<StaffProtectedRoute><StaffLayout><RRHHLiquidaciones /></StaffLayout></StaffProtectedRoute>} />
+              <Route path="/pos/rrhh/ajustes" element={<StaffProtectedRoute><StaffLayout><RRHHAjustes /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/rrhh/configuracion" element={<StaffProtectedRoute><StaffLayout><RRHHConfiguracion /></StaffLayout></StaffProtectedRoute>} />
               
               {/* Legacy redirects for old staff routes */}

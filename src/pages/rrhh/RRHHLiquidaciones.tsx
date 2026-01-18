@@ -9,10 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
-import { Plus, Eye, FileText, DollarSign, Loader2, Download, Send, Trash2 } from 'lucide-react';
+import { Plus, Eye, FileText, DollarSign, Loader2, Download, Send, Trash2, FileDown } from 'lucide-react';
 import { useHRPayroll } from '@/hooks/useHRPayroll';
 import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { HRPayrollRun, HRPayrollItem, HRPayrollPeriodType, HRPayrollStatus } from '@/types/hr';
+import { exportPayrollCSV, exportPayrollPDF } from '@/lib/hrExport';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -168,28 +169,16 @@ function RRHHLiquidaciones() {
     } catch (e) {}
   };
 
-  const exportCSV = () => {
+  const handleExportCSV = () => {
     if (!selectedPayroll || payrollItems.length === 0) return;
-    
-    const headers = ['Empleado', 'RUT', 'Turnos', 'Base', 'Bonos', 'Adelantos', 'Descuentos', 'Neto'];
-    const rows = payrollItems.map(item => [
-      item.employee?.full_name || '',
-      item.employee?.rut || '',
-      item.shifts_count,
-      item.base_amount,
-      item.bonuses,
-      item.advances,
-      item.discounts,
-      item.net_pay,
-    ]);
-    
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `liquidacion-${selectedPayroll.period_start}-${selectedPayroll.period_end}.csv`;
-    a.click();
+    exportPayrollCSV(selectedPayroll, payrollItems);
+    toast.success('CSV exportado');
+  };
+
+  const handleExportPDF = () => {
+    if (!selectedPayroll || payrollItems.length === 0) return;
+    exportPayrollPDF(selectedPayroll, payrollItems);
+    toast.success('PDF exportado');
   };
 
   return (
@@ -399,10 +388,14 @@ function RRHHLiquidaciones() {
             )}
             
             {/* Actions */}
-            <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
-              <Button variant="outline" onClick={exportCSV}>
+            <div className="flex flex-wrap justify-end gap-2 mt-6 pt-4 border-t">
+              <Button variant="outline" onClick={handleExportCSV}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
+                CSV
+              </Button>
+              <Button variant="outline" onClick={handleExportPDF}>
+                <FileDown className="h-4 w-4 mr-2" />
+                PDF
               </Button>
               
               {selectedPayroll?.status === 'draft' && (
