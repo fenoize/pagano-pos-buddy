@@ -38,6 +38,7 @@ function RRHHConfiguracion() {
   // Employee Modal State
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [employeeForm, setEmployeeForm] = useState<HREmployeeFormData>({
     full_name: '',
     email: '',
@@ -46,6 +47,11 @@ function RRHHConfiguracion() {
     user_id: null,
     notes: '',
   });
+
+  // Get users that are not yet employees
+  const availableUsers = users.filter(u => 
+    u.id && !employees.some(emp => emp.user_id === u.id)
+  );
   
   // Role Modal State
   const [roleModalOpen, setRoleModalOpen] = useState(false);
@@ -70,6 +76,7 @@ function RRHHConfiguracion() {
   const handleOpenEmployeeModal = (employee?: any) => {
     if (employee) {
       setEditingEmployee(employee);
+      setSelectedUserId(employee.user_id || '');
       setEmployeeForm({
         full_name: employee.full_name,
         email: employee.email || '',
@@ -80,9 +87,23 @@ function RRHHConfiguracion() {
       });
     } else {
       setEditingEmployee(null);
+      setSelectedUserId('');
       setEmployeeForm({ full_name: '', email: '', phone: '', rut: '', user_id: null, notes: '' });
     }
     setEmployeeModalOpen(true);
+  };
+
+  const handleUserSelect = (userId: string) => {
+    setSelectedUserId(userId);
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setEmployeeForm(f => ({
+        ...f,
+        full_name: user.full_name || '',
+        email: user.email || '',
+        user_id: userId,
+      }));
+    }
   };
 
   const handleSaveEmployee = async () => {
@@ -411,69 +432,90 @@ function RRHHConfiguracion() {
       <Dialog open={employeeModalOpen} onOpenChange={setEmployeeModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingEmployee ? 'Editar Empleado' : 'Nuevo Empleado'}</DialogTitle>
+            <DialogTitle>{editingEmployee ? 'Editar Empleado' : 'Agregar Usuario como Empleado'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>Nombre Completo *</Label>
-              <Input 
-                value={employeeForm.full_name}
-                onChange={(e) => setEmployeeForm(f => ({ ...f, full_name: e.target.value }))}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            {!editingEmployee && (
               <div>
-                <Label>Email</Label>
-                <Input 
-                  type="email"
-                  value={employeeForm.email}
-                  onChange={(e) => setEmployeeForm(f => ({ ...f, email: e.target.value }))}
+                <Label>Seleccionar Usuario *</Label>
+                <Select 
+                  value={selectedUserId || '__none__'} 
+                  onValueChange={(val) => val !== '__none__' && handleUserSelect(val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un usuario" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__" disabled>Selecciona un usuario</SelectItem>
+                    {availableUsers.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>{u.full_name} ({u.username})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {availableUsers.length === 0 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    No hay usuarios disponibles. Todos ya están registrados como empleados.
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {(editingEmployee || selectedUserId) && (
+              <>
+                <div>
+                  <Label>Nombre Completo</Label>
+                  <Input 
+                    value={employeeForm.full_name}
+                    onChange={(e) => setEmployeeForm(f => ({ ...f, full_name: e.target.value }))}
+                    disabled={!editingEmployee}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Email</Label>
+                    <Input 
+                      type="email"
+                      value={employeeForm.email}
+                      onChange={(e) => setEmployeeForm(f => ({ ...f, email: e.target.value }))}
+                      disabled={!editingEmployee}
+                    />
+                  </div>
+                  <div>
+                    <Label>Teléfono</Label>
+                    <Input 
+                      value={employeeForm.phone}
+                      onChange={(e) => setEmployeeForm(f => ({ ...f, phone: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>RUT</Label>
+                  <Input 
+                    value={employeeForm.rut}
+                    onChange={(e) => setEmployeeForm(f => ({ ...f, rut: e.target.value }))}
+                    placeholder="12.345.678-9"
+                  />
+                </div>
+              </>
+            )}
+            {(editingEmployee || selectedUserId) && (
+              <div>
+                <Label>Notas</Label>
+                <Textarea 
+                  value={employeeForm.notes}
+                  onChange={(e) => setEmployeeForm(f => ({ ...f, notes: e.target.value }))}
                 />
               </div>
-              <div>
-                <Label>Teléfono</Label>
-                <Input 
-                  value={employeeForm.phone}
-                  onChange={(e) => setEmployeeForm(f => ({ ...f, phone: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div>
-              <Label>RUT</Label>
-              <Input 
-                value={employeeForm.rut}
-                onChange={(e) => setEmployeeForm(f => ({ ...f, rut: e.target.value }))}
-                placeholder="12.345.678-9"
-              />
-            </div>
-            <div>
-              <Label>Usuario Vinculado (opcional)</Label>
-              <Select 
-                value={employeeForm.user_id || '__none__'} 
-                onValueChange={(val) => setEmployeeForm(f => ({ ...f, user_id: val === '__none__' ? null : val }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sin vincular" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Sin vincular</SelectItem>
-                  {users.filter((u) => u.id).map((u) => (
-                    <SelectItem key={u.id} value={u.id}>{u.full_name} ({u.username})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Notas</Label>
-              <Textarea 
-                value={employeeForm.notes}
-                onChange={(e) => setEmployeeForm(f => ({ ...f, notes: e.target.value }))}
-              />
-            </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEmployeeModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEmployee}>Guardar</Button>
+            <Button 
+              onClick={handleSaveEmployee}
+              disabled={!editingEmployee && !selectedUserId}
+            >
+              {editingEmployee ? 'Guardar' : 'Agregar'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
