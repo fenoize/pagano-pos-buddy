@@ -126,6 +126,14 @@ export function usePermissions() {
   const canManageClosures = useMemo(() => can('finance.manage_closures'), [can]);
   const canExportFinance = useMemo(() => can('finance.export'), [can]);
 
+  // Permisos de RRHH
+  const canViewHR = useMemo(() => can('hr.view'), [can]);
+  const canManageShifts = useMemo(() => can('hr.manage_shifts'), [can]);
+  const canApproveShifts = useMemo(() => can('hr.approve_shifts'), [can]);
+  const canManagePayroll = useMemo(() => can('hr.manage_payroll'), [can]);
+  const canExportPayroll = useMemo(() => can('hr.export_payroll'), [can]);
+  const canManageHRConfig = useMemo(() => can('hr.manage_config'), [can]);
+
   return {
     // Estado
     permissions,
@@ -173,5 +181,13 @@ export function usePermissions() {
     canViewFinance,
     canManageClosures,
     canExportFinance,
+    
+    // RRHH
+    canViewHR,
+    canManageShifts,
+    canApproveShifts,
+    canManagePayroll,
+    canExportPayroll,
+    canManageHRConfig,
   };
 }
