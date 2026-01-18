@@ -106,6 +106,11 @@ const FinanceConfig = lazy(() => import("@/pages/finance/FinanceConfig"));
 // Report Pages
 const ProductSalesReport = lazy(() => import("@/pages/reports/ProductSalesReport"));
 
+// RRHH Pages
+const RRHHTurnos = lazy(() => import("@/pages/rrhh/RRHHTurnos"));
+const RRHHLiquidaciones = lazy(() => import("@/pages/rrhh/RRHHLiquidaciones"));
+const RRHHConfiguracion = lazy(() => import("@/pages/rrhh/RRHHConfiguracion"));
+
 // Loading component para Suspense - siempre dark para consistencia con el tema POS
 function LoadingFallback() {
   // Detectar si es ruta POS para usar tema oscuro
@@ -692,6 +697,12 @@ const App = () => (
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />
+              
+              {/* RRHH Routes */}
+              <Route path="/pos/rrhh" element={<Navigate to="/pos/rrhh/turnos" replace />} />
+              <Route path="/pos/rrhh/turnos" element={<StaffProtectedRoute><StaffLayout><RRHHTurnos /></StaffLayout></StaffProtectedRoute>} />
+              <Route path="/pos/rrhh/liquidaciones" element={<StaffProtectedRoute><StaffLayout><RRHHLiquidaciones /></StaffLayout></StaffProtectedRoute>} />
+              <Route path="/pos/rrhh/configuracion" element={<StaffProtectedRoute><StaffLayout><RRHHConfiguracion /></StaffLayout></StaffProtectedRoute>} />
               
               {/* Legacy redirects for old staff routes */}
               <Route path="/nueva-venta" element={<Navigate to="/pos/nueva-venta" replace />} />

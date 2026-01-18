@@ -33,7 +33,8 @@ import {
   BarChart3,
   Tv,
   Award,
-  MessageSquare
+  MessageSquare,
+  Briefcase
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -127,6 +128,13 @@ const reportItems = [
   { title: "Productos", url: "/pos/reportes/productos", icon: TrendingUpIcon, roles: ['Administrador', 'Cajero'] },
 ];
 
+// RRHH menu items
+const rrhhItems = [
+  { title: "Turnos", url: "/pos/rrhh/turnos", icon: Users, roles: ['Administrador'] },
+  { title: "Liquidaciones", url: "/pos/rrhh/liquidaciones", icon: DollarSign, roles: ['Administrador'] },
+  { title: "Configuración", url: "/pos/rrhh/configuracion", icon: SettingsIcon, roles: ['Administrador'] },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
@@ -149,6 +157,9 @@ export function AppSidebar() {
   );
   const [reportsOpen, setReportsOpen] = useState(
     currentPath.startsWith("/pos/reportes")
+  );
+  const [rrhhOpen, setRrhhOpen] = useState(
+    currentPath.startsWith("/pos/rrhh")
   );
 
   const isCollapsed = state === "collapsed";
@@ -505,6 +516,61 @@ export function AppSidebar() {
                     {!isCollapsed && (
                       <CollapsibleContent className="mt-1 space-y-1">
                         {reportItems
+                          .filter(item => canAccessRoute(item.roles as AppRole[]))
+                          .map((item) => (
+                          <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton asChild>
+                              <NavLink
+                                to={item.url}
+                                end
+                                className={({ isActive }) =>
+                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
+                                }
+                              >
+                                <item.icon className="h-3 w-3 shrink-0" />
+                                <span className="text-xs">{item.title}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </CollapsibleContent>
+                    )}
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
+              
+              {/* RRHH Collapsible Group */}
+              {canAccessRoute(['Administrador'] as AppRole[]) && (
+                <Collapsible
+                  open={rrhhOpen}
+                  onOpenChange={setRrhhOpen}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                          currentPath.startsWith("/pos/rrhh")
+                            ? "bg-primary text-primary-foreground font-semibold"
+                            : "text-primary hover:bg-primary hover:text-primary-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Briefcase className="h-4 w-4 shrink-0" />
+                          {!isCollapsed && <span>RRHH</span>}
+                        </div>
+                        {!isCollapsed && (
+                          rrhhOpen ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    {!isCollapsed && (
+                      <CollapsibleContent className="mt-1 space-y-1">
+                        {rrhhItems
                           .filter(item => canAccessRoute(item.roles as AppRole[]))
                           .map((item) => (
                           <SidebarMenuItem key={item.title}>
