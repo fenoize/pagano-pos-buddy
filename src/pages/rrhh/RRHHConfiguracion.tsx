@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,12 @@ function RRHHConfiguracion() {
   
   // Employees
   const { employees, loading: loadingEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, deleteEmployee } = useHREmployees();
-  const { users } = useUsers();
+  const { users, loading: loadingUsers, fetchUsers } = useUsers();
+  
+  // Cargar usuarios al montar el componente
+  useEffect(() => {
+    fetchUsers();
+  }, []);
   
   // Config
   const { 
@@ -179,7 +184,7 @@ function RRHHConfiguracion() {
     } catch (e) {}
   };
 
-  const loading = loadingEmployees || loadingConfig;
+  const loading = loadingEmployees || loadingConfig || loadingUsers;
 
   return (
     <div className="space-y-6">
