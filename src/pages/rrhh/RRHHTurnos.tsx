@@ -46,15 +46,15 @@ function RRHHTurnos() {
 
   const { 
     shifts, loading, filters, setFilters, 
-    createShift, confirmShift, approveShift, deleteShift,
+    createShift, updateShift, confirmShift, approveShift, deleteShift,
     bulkConfirm, bulkApprove, bulkCreateShifts,
   } = useHRShifts({
     dateFrom: format(dateRange.start, 'yyyy-MM-dd'),
     dateTo: format(dateRange.end, 'yyyy-MM-dd'),
   });
 
-  const { activeEmployees } = useHREmployees();
-  const { activeRoles, activeShiftTypes } = useHRShiftConfig();
+  const { employees, activeEmployees } = useHREmployees();
+  const { roles, shiftTypes, activeRoles, activeShiftTypes } = useHRShiftConfig();
   const { schedules } = useHRSchedules();
   
   const [modalOpen, setModalOpen] = useState(false);
@@ -335,7 +335,11 @@ function RRHHTurnos() {
           shifts={shifts}
           currentDate={currentDate}
           viewMode={periodType}
+          employees={employees}
+          shiftTypes={shiftTypes}
+          roles={roles}
           onAddShift={handleOpenModal}
+          onUpdateShift={updateShift}
           onConfirmShift={confirmShift}
           onApproveShift={approveShift}
           onDeleteShift={deleteShift}
@@ -344,8 +348,12 @@ function RRHHTurnos() {
         <ShiftListView
           shifts={shifts}
           selectedIds={selectedIds}
+          employees={employees}
+          shiftTypes={shiftTypes}
+          roles={roles}
           onSelect={handleSelect}
           onSelectAll={handleSelectAll}
+          onUpdateShift={updateShift}
           onConfirmShift={confirmShift}
           onApproveShift={approveShift}
           onDeleteShift={deleteShift}
