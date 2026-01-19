@@ -2535,6 +2535,91 @@ export type Database = {
           },
         ]
       }
+      hr_schedule_positions: {
+        Row: {
+          created_at: string | null
+          id: string
+          role_id: string
+          schedule_id: string
+          shift_type_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role_id: string
+          schedule_id: string
+          shift_type_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role_id?: string
+          schedule_id?: string
+          shift_type_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_schedule_positions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "hr_shift_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_schedule_positions_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "hr_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_schedule_positions_shift_type_id_fkey"
+            columns: ["shift_type_id"]
+            isOneToOne: false
+            referencedRelation: "hr_shift_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_schedules: {
+        Row: {
+          created_at: string | null
+          crosses_midnight: boolean | null
+          days_of_week: number[]
+          end_time: string
+          id: string
+          is_active: boolean | null
+          name: string
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          crosses_midnight?: boolean | null
+          days_of_week?: number[]
+          end_time: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          crosses_midnight?: boolean | null
+          days_of_week?: number[]
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       hr_shift_roles: {
         Row: {
           created_at: string

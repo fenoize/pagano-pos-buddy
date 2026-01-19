@@ -205,3 +205,46 @@ export interface HRPayrollFilters {
   status?: HRPayrollStatus | '';
   periodType?: HRPayrollPeriodType | '';
 }
+
+// =============================================
+// TIPOS PARA HORARIOS / PLANTILLAS DE TURNOS
+// =============================================
+
+export interface HRSchedule {
+  id: string;
+  name: string;
+  days_of_week: number[]; // 1=Lun, 2=Mar, ..., 7=Dom
+  start_time: string; // "11:00:00"
+  end_time: string;   // "17:30:00"
+  crosses_midnight: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  positions?: HRSchedulePosition[];
+}
+
+export interface HRSchedulePosition {
+  id: string;
+  schedule_id: string;
+  role_id: string;
+  shift_type_id: string;
+  sort_order: number;
+  created_at: string;
+  // Joined data
+  role?: HRShiftRole;
+  shift_type?: HRShiftType;
+}
+
+export interface HRScheduleFormData {
+  name: string;
+  days_of_week: number[];
+  start_time: string;
+  end_time: string;
+  crosses_midnight?: boolean;
+}
+
+export interface HRSchedulePositionFormData {
+  role_id: string;
+  shift_type_id: string;
+}
