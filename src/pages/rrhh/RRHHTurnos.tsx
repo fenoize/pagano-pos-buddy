@@ -1,35 +1,56 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, Plus, Check, CheckCheck, Trash2, Loader2, Filter } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Calendar, CalendarDays, List, Plus, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, Filter } from 'lucide-react';
 import { useHRShifts } from '@/hooks/useHRShifts';
 import { useHREmployees } from '@/hooks/useHREmployees';
 import { useHRShiftConfig } from '@/hooks/useHRShiftConfig';
 import { HRShiftFormData, HRShiftStatus } from '@/types/hr';
-import { format, parseISO } from 'date-fns';
+import { format, addWeeks, subWeeks, addMonths, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ShiftCalendar } from '@/components/rrhh/ShiftCalendar';
+import { ShiftListView } from '@/components/rrhh/ShiftListView';
 
-const statusConfig: Record<HRShiftStatus, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
-  draft: { label: 'Borrador', variant: 'outline' },
-  confirmed: { label: 'Confirmado', variant: 'secondary' },
-  approved: { label: 'Aprobado', variant: 'default' },
-  paid: { label: 'Pagado', variant: 'destructive' },
-};
+type ViewType = 'calendar' | 'list';
+type PeriodType = 'week' | 'month';
 
 function RRHHTurnos() {
+  const [viewType, setViewType] = useState<ViewType>('calendar');
+  const [periodType, setPeriodType] = useState<PeriodType>('month');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Calculate date range based on period
+  const dateRange = useMemo(() => {
+    if (periodType === 'week') {
+      return {
+        start: startOfWeek(currentDate, { weekStartsOn: 1 }),
+        end: endOfWeek(currentDate, { weekStartsOn: 1 }),
+      };
+    } else {
+      return {
+        start: startOfMonth(currentDate),
+        end: endOfMonth(currentDate),
+      };
+    }
+  }, [currentDate, periodType]);
+
   const { 
     shifts, loading, filters, setFilters, 
     createShift, confirmShift, approveShift, deleteShift,
     bulkConfirm, bulkApprove,
-  } = useHRShifts();
+  } = useHRShifts({
+    dateFrom: format(dateRange.start, 'yyyy-MM-dd'),
+    dateTo: format(dateRange.end, 'yyyy-MM-dd'),
+  });
+
   const { activeEmployees } = useHREmployees();
   const { activeRoles, activeShiftTypes } = useHRShiftConfig();
   
@@ -43,12 +64,41 @@ function RRHHTurnos() {
   });
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
 
-  const handleOpenModal = () => {
+  // Navigation handlers
+  const goToToday = () => setCurrentDate(new Date());
+  
+  const goToPrevious = () => {
+    if (periodType === 'week') {
+      setCurrentDate(prev => subWeeks(prev, 1));
+    } else {
+      setCurrentDate(prev => subMonths(prev, 1));
+    }
+  };
+
+  const goToNext = () => {
+    if (periodType === 'week') {
+      setCurrentDate(prev => addWeeks(prev, 1));
+    } else {
+      setCurrentDate(prev => addMonths(prev, 1));
+    }
+  };
+
+  // Get period label
+  const periodLabel = useMemo(() => {
+    if (periodType === 'week') {
+      const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+      return `${format(start, 'd MMM', { locale: es })} - ${format(end, 'd MMM yyyy', { locale: es })}`;
+    } else {
+      return format(currentDate, "MMMM 'de' yyyy", { locale: es });
+    }
+  }, [currentDate, periodType]);
+
+  const handleOpenModal = (date?: string) => {
     setShiftForm({
       employee_id: '',
-      shift_date: format(new Date(), 'yyyy-MM-dd'),
+      shift_date: date || format(new Date(), 'yyyy-MM-dd'),
       shift_type_id: activeShiftTypes[0]?.id || '',
       role_id: activeRoles[0]?.id || '',
       notes: '',
@@ -108,21 +158,66 @@ function RRHHTurnos() {
   const confirmedSelected = selectedIds.filter(id => shifts.find(s => s.id === id)?.status === 'confirmed').length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Gestión de Turnos</h1>
-          <p className="text-muted-foreground">Registra y gestiona turnos del personal</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
-          </Button>
-          <Button onClick={handleOpenModal}>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Gestión de Turnos</h1>
+            <p className="text-muted-foreground">Registra y gestiona turnos del personal</p>
+          </div>
+          <Button onClick={() => handleOpenModal()}>
             <Plus className="h-4 w-4 mr-2" />
             Nuevo Turno
           </Button>
+        </div>
+
+        {/* Toolbar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b pb-3">
+          {/* Period label and navigation */}
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-semibold capitalize min-w-[200px]">
+              {periodLabel}
+            </span>
+            <div className="flex items-center">
+              <Button variant="ghost" size="icon" onClick={goToPrevious}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={goToToday}>
+                Hoy
+              </Button>
+              <Button variant="ghost" size="icon" onClick={goToNext}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* View toggles */}
+          <div className="flex items-center gap-2">
+            {/* Period toggle */}
+            <ToggleGroup type="single" value={periodType} onValueChange={(v) => v && setPeriodType(v as PeriodType)}>
+              <ToggleGroupItem value="week" aria-label="Vista semanal" className="text-xs">
+                Semana
+              </ToggleGroupItem>
+              <ToggleGroupItem value="month" aria-label="Vista mensual" className="text-xs">
+                Mes
+              </ToggleGroupItem>
+            </ToggleGroup>
+
+            {/* View type toggle */}
+            <ToggleGroup type="single" value={viewType} onValueChange={(v) => v && setViewType(v as ViewType)}>
+              <ToggleGroupItem value="calendar" aria-label="Vista calendario">
+                <CalendarDays className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="Vista lista">
+                <List className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+
+            <Button variant="outline" size="icon" onClick={() => setShowFilters(!showFilters)}>
+              <Filter className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -130,23 +225,7 @@ function RRHHTurnos() {
       {showFilters && (
         <Card>
           <CardContent className="pt-4">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div>
-                <Label>Desde</Label>
-                <Input 
-                  type="date" 
-                  value={filters.dateFrom || ''}
-                  onChange={(e) => setFilters(f => ({ ...f, dateFrom: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>Hasta</Label>
-                <Input 
-                  type="date" 
-                  value={filters.dateTo || ''}
-                  onChange={(e) => setFilters(f => ({ ...f, dateTo: e.target.value }))}
-                />
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <Label>Empleado</Label>
                 <Select 
@@ -173,6 +252,21 @@ function RRHHTurnos() {
                     <SelectItem value="">Todos</SelectItem>
                     {activeShiftTypes.map(t => (
                       <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Rol</Label>
+                <Select 
+                  value={filters.roleId || ''} 
+                  onValueChange={(val) => setFilters(f => ({ ...f, roleId: val || undefined }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos</SelectItem>
+                    {activeRoles.map(r => (
+                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -221,88 +315,32 @@ function RRHHTurnos() {
         </Card>
       )}
 
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox 
-                      checked={selectedIds.length > 0 && selectedIds.length === shifts.filter(s => s.status !== 'paid' && s.status !== 'approved').length}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Empleado</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {shifts.map((shift) => {
-                  const canSelect = shift.status === 'draft' || shift.status === 'confirmed';
-                  return (
-                    <TableRow key={shift.id}>
-                      <TableCell>
-                        <Checkbox 
-                          checked={selectedIds.includes(shift.id)}
-                          onCheckedChange={(checked) => handleSelect(shift.id, !!checked)}
-                          disabled={!canSelect}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {format(parseISO(shift.shift_date), 'EEE dd MMM', { locale: es })}
-                      </TableCell>
-                      <TableCell>{shift.employee?.full_name || '-'}</TableCell>
-                      <TableCell>{shift.shift_type?.name || '-'}</TableCell>
-                      <TableCell>{shift.role?.name || '-'}</TableCell>
-                      <TableCell>
-                        <Badge variant={statusConfig[shift.status].variant}>
-                          {statusConfig[shift.status].label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          {shift.status === 'draft' && (
-                            <Button variant="ghost" size="sm" onClick={() => confirmShift(shift.id)}>
-                              <Check className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {shift.status === 'confirmed' && (
-                            <Button variant="ghost" size="sm" onClick={() => approveShift(shift.id)}>
-                              <CheckCheck className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {(shift.status === 'draft' || shift.status === 'confirmed') && (
-                            <Button variant="ghost" size="sm" onClick={() => deleteShift(shift.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {shifts.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No hay turnos en el rango seleccionado
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Main content */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : viewType === 'calendar' ? (
+        <ShiftCalendar
+          shifts={shifts}
+          currentDate={currentDate}
+          viewMode={periodType}
+          onAddShift={handleOpenModal}
+          onConfirmShift={confirmShift}
+          onApproveShift={approveShift}
+          onDeleteShift={deleteShift}
+        />
+      ) : (
+        <ShiftListView
+          shifts={shifts}
+          selectedIds={selectedIds}
+          onSelect={handleSelect}
+          onSelectAll={handleSelectAll}
+          onConfirmShift={confirmShift}
+          onApproveShift={approveShift}
+          onDeleteShift={deleteShift}
+        />
+      )}
 
       {/* New Shift Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
