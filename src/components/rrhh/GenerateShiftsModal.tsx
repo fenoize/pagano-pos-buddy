@@ -43,7 +43,7 @@ export function GenerateShiftsModal({
   const [endDate, setEndDate] = useState(format(addDays(new Date(), 6), 'yyyy-MM-dd'));
   const [generating, setGenerating] = useState(false);
 
-  const activeSchedules = schedules.filter(s => s.is_active);
+  const activeSchedules = useMemo(() => schedules.filter(s => s.is_active), [schedules]);
 
   useEffect(() => {
     if (open) {
@@ -51,7 +51,8 @@ export function GenerateShiftsModal({
       setStartDate(format(new Date(), 'yyyy-MM-dd'));
       setEndDate(format(addDays(new Date(), 6), 'yyyy-MM-dd'));
     }
-  }, [open, activeSchedules]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const selectedSchedule = schedules.find(s => s.id === scheduleId);
 
@@ -98,7 +99,7 @@ export function GenerateShiftsModal({
       for (const day of preview) {
         for (const position of day.positions || []) {
           shiftsToCreate.push({
-            employee_id: '', // Sin asignar
+            employee_id: null, // Sin asignar
             shift_date: day.dateStr,
             shift_type_id: position.shift_type_id,
             role_id: position.role_id,

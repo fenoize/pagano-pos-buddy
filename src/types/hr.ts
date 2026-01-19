@@ -56,7 +56,7 @@ export type HRShiftStatus = 'draft' | 'confirmed' | 'approved' | 'paid';
 
 export interface HRShift {
   id: string;
-  employee_id: string;
+  employee_id: string | null;
   shift_date: string;
   shift_type_id: string;
   role_id: string;
@@ -165,7 +165,7 @@ export interface HREmployeeFormData {
 }
 
 export interface HRShiftFormData {
-  employee_id: string;
+  employee_id?: string | null;
   shift_date: string;
   shift_type_id: string;
   role_id: string;

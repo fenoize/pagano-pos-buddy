@@ -123,7 +123,7 @@ export function ShiftListView({
                       {/* Shift info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium">{shift.employee?.full_name || '-'}</span>
+                          <span className="font-medium">{shift.employee?.full_name || 'Sin asignar'}</span>
                           <Badge variant="outline" className="text-xs">
                             {shift.shift_type?.name || '-'}
                           </Badge>

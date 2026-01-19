@@ -2682,7 +2682,7 @@ export type Database = {
           confirmed_by: string | null
           created_at: string
           created_by: string | null
-          employee_id: string
+          employee_id: string | null
           hours_override: number | null
           id: string
           notes: string | null
@@ -2700,7 +2700,7 @@ export type Database = {
           confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
-          employee_id: string
+          employee_id?: string | null
           hours_override?: number | null
           id?: string
           notes?: string | null
@@ -2718,7 +2718,7 @@ export type Database = {
           confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
-          employee_id?: string
+          employee_id?: string | null
           hours_override?: number | null
           id?: string
           notes?: string | null
