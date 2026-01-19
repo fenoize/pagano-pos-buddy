@@ -25,10 +25,12 @@ function RRHHConfiguracion() {
   const { employees, loading: loadingEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, deleteEmployee } = useHREmployees({ userId: user?.id });
   const { users, loading: loadingUsers, fetchUsers } = useUsers();
   
-  // Cargar usuarios al montar el componente
+  // Cargar usuarios cuando haya sesión
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (user?.id) {
+      fetchUsers();
+    }
+  }, [user?.id, fetchUsers]);
   
   // Config - pasamos el userId del contexto
   const { 
