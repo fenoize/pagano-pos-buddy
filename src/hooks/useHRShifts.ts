@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { withStaffContext } from '@/lib/dbContext';
 import { getStaffUserId } from '@/lib/staffSession';
@@ -14,20 +14,24 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
     dateTo: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
   });
 
-  // Sync filters when initialFilters change (for calendar navigation)
-  const prevInitialFiltersRef = useState<HRShiftFilters | undefined>(undefined);
-  if (initialFilters && (
-    initialFilters.dateFrom !== prevInitialFiltersRef[0]?.dateFrom ||
-    initialFilters.dateTo !== prevInitialFiltersRef[0]?.dateTo
-  )) {
-    prevInitialFiltersRef[0] = initialFilters;
-    // Update date filters while preserving other filters
-    setFilters(prev => ({
-      ...prev,
-      dateFrom: initialFilters.dateFrom,
-      dateTo: initialFilters.dateTo,
-    }));
-  }
+  // Sync date filters when initialFilters change (for calendar navigation)
+  const prevDateFrom = useRef(initialFilters?.dateFrom);
+  const prevDateTo = useRef(initialFilters?.dateTo);
+
+  useEffect(() => {
+    if (initialFilters && (
+      initialFilters.dateFrom !== prevDateFrom.current ||
+      initialFilters.dateTo !== prevDateTo.current
+    )) {
+      prevDateFrom.current = initialFilters.dateFrom;
+      prevDateTo.current = initialFilters.dateTo;
+      setFilters(prev => ({
+        ...prev,
+        dateFrom: initialFilters.dateFrom,
+        dateTo: initialFilters.dateTo,
+      }));
+    }
+  }, [initialFilters?.dateFrom, initialFilters?.dateTo]);
 
   const getUserId = () => getStaffUserId();
 
