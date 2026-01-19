@@ -71,11 +71,15 @@ export function AddPositionModal({
           {/* Role */}
           <div className="space-y-2">
             <Label>Rol requerido</Label>
-            <Select value={roleId} onValueChange={setRoleId}>
+            <Select value={roleId} onValueChange={(val) => setRoleId(val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar rol" />
               </SelectTrigger>
-              <SelectContent className="z-[9999] bg-popover">
+              <SelectContent 
+                className="z-[9999] bg-popover"
+                position="popper"
+                sideOffset={4}
+              >
                 {activeRoles.map(role => (
                   <SelectItem key={role.id} value={role.id}>
                     {role.name}
@@ -93,11 +97,15 @@ export function AddPositionModal({
           {/* Shift Type */}
           <div className="space-y-2">
             <Label>Tipo de turno</Label>
-            <Select value={shiftTypeId} onValueChange={setShiftTypeId}>
+            <Select value={shiftTypeId} onValueChange={(val) => setShiftTypeId(val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar tipo" />
               </SelectTrigger>
-              <SelectContent className="z-[9999] bg-popover">
+              <SelectContent 
+                className="z-[9999] bg-popover"
+                position="popper"
+                sideOffset={4}
+              >
                 {activeShiftTypes.map(st => (
                   <SelectItem key={st.id} value={st.id}>
                     {st.name} ({st.default_hours}h)
