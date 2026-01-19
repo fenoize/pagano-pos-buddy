@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 /**
  * Hook para gestionar permisos de usuario de forma centralizada
  * Conecta con la tabla role_permissions en Supabase
  */
 export function usePermissions() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 

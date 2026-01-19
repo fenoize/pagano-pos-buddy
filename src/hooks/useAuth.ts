@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { configuredSupabase } from '@/lib/supabaseClient';
 import { User, AppRole } from '@/types';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
-import { setStaffContext, clearDBContext } from '@/lib/dbContext';
+import { setStaffContext, clearDBContext, withStaffContext } from '@/lib/dbContext';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -52,13 +52,15 @@ export function useAuth() {
             return;
           }
           
-          // Validate that the user still exists in the database
-          const { data: dbUser, error } = await supabase
-            .from('users')
-            .select('id, active')
-            .eq('id', user.id)
-            .eq('active', true)
-            .maybeSingle();
+          // Validate that the user still exists in the database (requiere contexto staff por RLS)
+          const { data: dbUser, error } = await withStaffContext(user.id, async () => {
+            return await supabase
+              .from('users')
+              .select('id, active')
+              .eq('id', user.id)
+              .eq('active', true)
+              .maybeSingle();
+          });
           
           if (error || !dbUser) {
             console.log('Stored user no longer valid, clearing localStorage');

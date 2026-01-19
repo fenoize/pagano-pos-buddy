@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, AppRole } from '@/types';
 import { usePermissions } from './usePermissions';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { withStaffContext } from '@/lib/dbContext';
 
 // Map old database role names to new app role names
@@ -34,7 +34,7 @@ export function useUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const { user } = useAuth();
+  const { user } = useAuthContext();
 
   // Usar hook de permisos centralizado
   const { canManageUsers } = usePermissions();
