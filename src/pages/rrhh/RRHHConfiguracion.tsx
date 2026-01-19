@@ -45,7 +45,7 @@ function RRHHConfiguracion() {
     updatePayRule,
   } = useHRShiftConfig({ userId: user?.id });
 
-  // Schedules
+  // Schedules - pasamos el userId del contexto
   const {
     schedules,
     loading: loadingSchedules,
@@ -54,7 +54,7 @@ function RRHHConfiguracion() {
     deleteSchedule,
     addPosition,
     removePosition
-  } = useHRSchedules();
+  } = useHRSchedules({ userId: user?.id });
   
   // Employee Modal State
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
