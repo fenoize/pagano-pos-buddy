@@ -8,15 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Calendar, CalendarDays, List, Plus, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, Filter } from 'lucide-react';
+import { Calendar, CalendarDays, List, Plus, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, Filter, CalendarClock } from 'lucide-react';
 import { useHRShifts } from '@/hooks/useHRShifts';
 import { useHREmployees } from '@/hooks/useHREmployees';
 import { useHRShiftConfig } from '@/hooks/useHRShiftConfig';
+import { useHRSchedules } from '@/hooks/useHRSchedules';
 import { HRShiftFormData, HRShiftStatus } from '@/types/hr';
 import { format, addWeeks, subWeeks, addMonths, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ShiftCalendar } from '@/components/rrhh/ShiftCalendar';
 import { ShiftListView } from '@/components/rrhh/ShiftListView';
+import { GenerateShiftsModal } from '@/components/rrhh/GenerateShiftsModal';
 
 type ViewType = 'calendar' | 'list';
 type PeriodType = 'week' | 'month';
@@ -45,7 +47,7 @@ function RRHHTurnos() {
   const { 
     shifts, loading, filters, setFilters, 
     createShift, confirmShift, approveShift, deleteShift,
-    bulkConfirm, bulkApprove,
+    bulkConfirm, bulkApprove, bulkCreateShifts,
   } = useHRShifts({
     dateFrom: format(dateRange.start, 'yyyy-MM-dd'),
     dateTo: format(dateRange.end, 'yyyy-MM-dd'),
@@ -53,8 +55,10 @@ function RRHHTurnos() {
 
   const { activeEmployees } = useHREmployees();
   const { activeRoles, activeShiftTypes } = useHRShiftConfig();
+  const { schedules } = useHRSchedules();
   
   const [modalOpen, setModalOpen] = useState(false);
+  const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [shiftForm, setShiftForm] = useState<HRShiftFormData>({
     employee_id: '',
     shift_date: format(new Date(), 'yyyy-MM-dd'),
@@ -166,10 +170,16 @@ function RRHHTurnos() {
             <h1 className="text-2xl font-bold">Gestión de Turnos</h1>
             <p className="text-muted-foreground">Registra y gestiona turnos del personal</p>
           </div>
-          <Button onClick={() => handleOpenModal()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Turno
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setGenerateModalOpen(true)}>
+              <CalendarClock className="h-4 w-4 mr-2" />
+              Generar desde Horario
+            </Button>
+            <Button onClick={() => handleOpenModal()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Turno
+            </Button>
+          </div>
         </div>
 
         {/* Toolbar */}
@@ -417,6 +427,14 @@ function RRHHTurnos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Generate from Schedule Modal */}
+      <GenerateShiftsModal
+        open={generateModalOpen}
+        onOpenChange={setGenerateModalOpen}
+        schedules={schedules}
+        onGenerate={bulkCreateShifts}
+      />
     </div>
   );
 }

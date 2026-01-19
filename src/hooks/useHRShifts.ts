@@ -258,6 +258,40 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
     }
   };
 
+  // Bulk create shifts (for generating from schedules)
+  const bulkCreateShifts = async (shiftsData: Omit<HRShiftFormData, 'notes'>[]) => {
+    const userId = getUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
+    if (shiftsData.length === 0) return;
+    
+    try {
+      await withStaffContext(userId, async () => {
+        const inserts = shiftsData.map(s => ({
+          employee_id: s.employee_id || null,
+          shift_date: s.shift_date,
+          shift_type_id: s.shift_type_id,
+          role_id: s.role_id,
+          hours_override: s.hours_override || null,
+          notes: null,
+          status: 'draft',
+          created_by: userId,
+        }));
+        
+        const { error } = await supabase.from('hr_shifts').insert(inserts);
+        if (error) throw error;
+      });
+      toast.success(`${shiftsData.length} turnos creados`);
+      await fetchShifts();
+    } catch (error: any) {
+      console.error('Error bulk creating shifts:', error);
+      toast.error('Error al crear turnos');
+      throw error;
+    }
+  };
+
   return {
     shifts,
     loading,
@@ -271,5 +305,6 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
     deleteShift,
     bulkConfirm,
     bulkApprove,
+    bulkCreateShifts,
   };
 }
