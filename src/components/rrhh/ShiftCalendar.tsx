@@ -1,63 +1,58 @@
-import { useMemo } from 'react';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addDays, isSameMonth } from 'date-fns';
+import { useMemo, useState } from 'react';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { HRShift, HRShiftStatus } from '@/types/hr';
-import { Check, CheckCheck, Trash2, Plus } from 'lucide-react';
+import { HRShift, HRShiftStatus, HREmployee, HRShiftType, HRShiftRole } from '@/types/hr';
+import { Plus } from 'lucide-react';
+import { getRoleIcon, getRoleColorClass } from '@/lib/roleIcons';
+import { ShiftDetailModal } from './ShiftDetailModal';
 
 interface ShiftCalendarProps {
   shifts: HRShift[];
   currentDate: Date;
   viewMode: 'week' | 'month';
+  employees: HREmployee[];
+  shiftTypes: HRShiftType[];
+  roles: HRShiftRole[];
   onAddShift: (date: string) => void;
-  onConfirmShift: (id: string) => void;
-  onApproveShift: (id: string) => void;
-  onDeleteShift: (id: string) => void;
+  onUpdateShift: (id: string, data: any) => Promise<void>;
+  onConfirmShift: (id: string) => Promise<void>;
+  onApproveShift: (id: string) => Promise<void>;
+  onDeleteShift: (id: string) => Promise<void>;
 }
 
 const statusColors: Record<HRShiftStatus, string> = {
-  draft: 'bg-muted text-muted-foreground border-muted-foreground/30',
-  confirmed: 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30',
-  approved: 'bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30',
-  paid: 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30',
+  draft: 'border-l-gray-400',
+  confirmed: 'border-l-blue-500',
+  approved: 'border-l-green-500',
+  paid: 'border-l-purple-500',
 };
 
-const employeeColors = [
-  'bg-pink-500',
-  'bg-blue-500',
-  'bg-green-500',
-  'bg-yellow-500',
-  'bg-purple-500',
-  'bg-orange-500',
-  'bg-teal-500',
-  'bg-indigo-500',
-];
-
-function getEmployeeColor(employeeId: string | null): string {
-  if (!employeeId) return 'bg-gray-400'; // Sin asignar
-  const hash = employeeId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return employeeColors[hash % employeeColors.length];
-}
-
-function getInitials(name: string): string {
-  const parts = name.split(' ');
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-}
+const statusBg: Record<HRShiftStatus, string> = {
+  draft: 'bg-muted/60',
+  confirmed: 'bg-blue-50 dark:bg-blue-950/30',
+  approved: 'bg-green-50 dark:bg-green-950/30',
+  paid: 'bg-purple-50 dark:bg-purple-950/30',
+};
 
 export function ShiftCalendar({
   shifts,
   currentDate,
   viewMode,
+  employees,
+  shiftTypes,
+  roles,
   onAddShift,
+  onUpdateShift,
   onConfirmShift,
   onApproveShift,
   onDeleteShift,
 }: ShiftCalendarProps) {
+  const [selectedShift, setSelectedShift] = useState<HRShift | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
   // Generate days based on view mode
   const days = useMemo(() => {
     if (viewMode === 'week') {
@@ -65,7 +60,6 @@ export function ShiftCalendar({
       const end = endOfWeek(currentDate, { weekStartsOn: 1 });
       return eachDayOfInterval({ start, end });
     } else {
-      // For month view, include days from previous/next month to fill the grid
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
       const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -82,25 +76,23 @@ export function ShiftCalendar({
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(shift);
     });
-    // Sort shifts by type name within each day
+    // Sort shifts by role name then employee name
     Object.keys(map).forEach(key => {
-      map[key].sort((a, b) => (a.shift_type?.name || '').localeCompare(b.shift_type?.name || ''));
+      map[key].sort((a, b) => {
+        const roleCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
+        if (roleCompare !== 0) return roleCompare;
+        return (a.employee?.full_name || 'ZZZ').localeCompare(b.employee?.full_name || 'ZZZ');
+      });
     });
     return map;
   }, [shifts]);
 
-  // Group shifts by shift_type for rendering
-  const groupByType = (dayShifts: HRShift[]): Record<string, HRShift[]> => {
-    const grouped: Record<string, HRShift[]> = {};
-    dayShifts.forEach(shift => {
-      const typeName = shift.shift_type?.name || 'Sin tipo';
-      if (!grouped[typeName]) grouped[typeName] = [];
-      grouped[typeName].push(shift);
-    });
-    return grouped;
+  const handleShiftClick = (shift: HRShift) => {
+    setSelectedShift(shift);
+    setModalOpen(true);
   };
 
-  const dayNames = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  const dayNames = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
   const weeks = useMemo(() => {
     const result: Date[][] = [];
     for (let i = 0; i < days.length; i += 7) {
@@ -110,103 +102,114 @@ export function ShiftCalendar({
   }, [days]);
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-card">
-      {/* Header with day names */}
-      <div className="grid grid-cols-7 border-b bg-muted/30">
-        {dayNames.map((day, idx) => (
-          <div 
-            key={day} 
-            className={cn(
-              "py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wide",
-              idx === 0 && "text-red-500"
-            )}
-          >
-            {day}
-          </div>
-        ))}
-      </div>
+    <>
+      <div className="border rounded-lg overflow-hidden bg-card">
+        {/* Header with day names */}
+        <div className="grid grid-cols-7 border-b bg-muted/30">
+          {dayNames.map((day, idx) => (
+            <div
+              key={day}
+              className={cn(
+                "py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wide",
+                idx === 6 && "text-red-500"
+              )}
+            >
+              {day}
+            </div>
+          ))}
+        </div>
 
-      {/* Calendar grid */}
-      <div className="divide-y">
-        {weeks.map((week, weekIdx) => (
-          <div key={weekIdx} className="grid grid-cols-7 divide-x">
-            {week.map((day) => {
-              const dateKey = format(day, 'yyyy-MM-dd');
-              const dayShifts = shiftsByDate[dateKey] || [];
-              const isCurrentMonth = isSameMonth(day, currentDate);
-              const isCurrentDay = isToday(day);
-              const groupedShifts = groupByType(dayShifts);
+        {/* Calendar grid */}
+        <div className="divide-y">
+          {weeks.map((week, weekIdx) => (
+            <div key={weekIdx} className="grid grid-cols-7 divide-x">
+              {week.map((day) => {
+                const dateKey = format(day, 'yyyy-MM-dd');
+                const dayShifts = shiftsByDate[dateKey] || [];
+                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isCurrentDay = isToday(day);
 
-              return (
-                <div
-                  key={dateKey}
-                  className={cn(
-                    "min-h-[120px] p-1 relative group transition-colors",
-                    viewMode === 'month' && "min-h-[100px]",
-                    !isCurrentMonth && "bg-muted/20",
-                    "hover:bg-muted/40"
-                  )}
-                >
-                  {/* Day number */}
-                  <div className="flex items-center justify-between mb-1">
-                    <span
-                      className={cn(
-                        "text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full",
-                        isCurrentDay && "bg-primary text-primary-foreground",
-                        !isCurrentMonth && "text-muted-foreground/50"
-                      )}
-                    >
-                      {format(day, 'd')}
-                    </span>
-                    {/* Add button on hover */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => onAddShift(dateKey)}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  {/* Shifts grouped by type */}
-                  <div className="space-y-1.5 overflow-y-auto max-h-[calc(100%-28px)]">
-                    {Object.entries(groupedShifts).map(([typeName, typeShifts]) => (
-                      <div
-                        key={typeName}
+                return (
+                  <div
+                    key={dateKey}
+                    className={cn(
+                      "min-h-[100px] p-1 relative group transition-colors",
+                      viewMode === 'month' && "min-h-[90px]",
+                      !isCurrentMonth && "bg-muted/20",
+                      "hover:bg-muted/40"
+                    )}
+                  >
+                    {/* Day number */}
+                    <div className="flex items-center justify-between mb-1">
+                      <span
                         className={cn(
-                          "rounded-md p-1.5 text-xs",
-                          "bg-accent/50 border border-border/50"
+                          "text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full",
+                          isCurrentDay && "bg-primary text-primary-foreground",
+                          !isCurrentMonth && "text-muted-foreground/50"
                         )}
                       >
-                        <div className="font-medium text-foreground mb-1 truncate">
-                          {typeName}
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {typeShifts.map((shift) => (
-                            <Badge
-                              key={shift.id}
-                              variant="secondary"
-                              className={cn(
-                                "text-[10px] px-1.5 py-0.5 cursor-default",
-                                getEmployeeColor(shift.employee_id),
-                                "text-white border-0"
-                              )}
-                              title={`${shift.employee?.full_name || 'Sin asignar'} - ${shift.status}`}
-                            >
-                              {shift.employee ? getInitials(shift.employee.full_name) : 'SA'}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                        {format(day, 'd')}
+                      </span>
+                      {/* Add button on hover */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => onAddShift(dateKey)}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+
+                    {/* Shifts */}
+                    <div className="space-y-0.5 overflow-y-auto max-h-[calc(100%-24px)]">
+                      {dayShifts.map((shift) => {
+                        const RoleIcon = getRoleIcon(shift.role?.name || '');
+                        const roleColorClass = getRoleColorClass(shift.role?.name || '');
+                        
+                        return (
+                          <button
+                            key={shift.id}
+                            onClick={() => handleShiftClick(shift)}
+                            className={cn(
+                              "w-full text-left rounded px-1.5 py-0.5 text-xs transition-all",
+                              "border-l-2 cursor-pointer hover:shadow-sm hover:scale-[1.02]",
+                              statusColors[shift.status],
+                              statusBg[shift.status]
+                            )}
+                          >
+                            <div className="flex items-center gap-1 min-w-0">
+                              <RoleIcon className={cn("h-3 w-3 flex-shrink-0", roleColorClass)} />
+                              <span className="truncate font-medium">
+                                {shift.employee?.full_name || 'Sin asignar'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+
+      {/* Shift Detail Modal */}
+      <ShiftDetailModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        shift={selectedShift}
+        mode="view"
+        employees={employees}
+        shiftTypes={shiftTypes}
+        roles={roles}
+        onUpdate={onUpdateShift}
+        onDelete={onDeleteShift}
+        onConfirm={onConfirmShift}
+        onApprove={onApproveShift}
+      />
+    </>
   );
 }
