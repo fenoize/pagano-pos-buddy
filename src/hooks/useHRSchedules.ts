@@ -5,11 +5,15 @@ import { getStaffUserId } from '@/lib/staffSession';
 import { toast } from '@/hooks/use-toast';
 import type { HRSchedule, HRScheduleFormData, HRSchedulePositionFormData } from '@/types/hr';
 
-export function useHRSchedules() {
+interface UseHRSchedulesOptions {
+  userId?: string;
+}
+
+export function useHRSchedules(options?: UseHRSchedulesOptions) {
   const [schedules, setSchedules] = useState<HRSchedule[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getUserId = () => getStaffUserId();
+  const getUserId = () => options?.userId || getStaffUserId();
 
   const fetchSchedules = useCallback(async () => {
     const userId = getUserId();
@@ -60,7 +64,7 @@ export function useHRSchedules() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [options?.userId]);
 
   useEffect(() => {
     fetchSchedules();
