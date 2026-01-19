@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, AppRole } from '@/types';
 import { usePermissions } from './usePermissions';
@@ -49,7 +49,7 @@ export function useUsers() {
     return withStaffContext(user.id, operation);
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       if (!user?.id) {
@@ -80,7 +80,7 @@ export function useUsers() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
   const createUser = async (userData: {
     username: string;
