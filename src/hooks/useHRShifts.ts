@@ -9,10 +9,25 @@ import { format, startOfWeek, endOfWeek } from 'date-fns';
 export function useHRShifts(initialFilters?: HRShiftFilters) {
   const [shifts, setShifts] = useState<HRShift[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<HRShiftFilters>(initialFilters || {
+  const [filters, setFilters] = useState<HRShiftFilters>(() => initialFilters || {
     dateFrom: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
     dateTo: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
   });
+
+  // Sync filters when initialFilters change (for calendar navigation)
+  const prevInitialFiltersRef = useState<HRShiftFilters | undefined>(undefined);
+  if (initialFilters && (
+    initialFilters.dateFrom !== prevInitialFiltersRef[0]?.dateFrom ||
+    initialFilters.dateTo !== prevInitialFiltersRef[0]?.dateTo
+  )) {
+    prevInitialFiltersRef[0] = initialFilters;
+    // Update date filters while preserving other filters
+    setFilters(prev => ({
+      ...prev,
+      dateFrom: initialFilters.dateFrom,
+      dateTo: initialFilters.dateTo,
+    }));
+  }
 
   const getUserId = () => getStaffUserId();
 
