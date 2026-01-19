@@ -35,7 +35,8 @@ const employeeColors = [
   'bg-indigo-500',
 ];
 
-function getEmployeeColor(employeeId: string): string {
+function getEmployeeColor(employeeId: string | null): string {
+  if (!employeeId) return 'bg-gray-400'; // Sin asignar
   const hash = employeeId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return employeeColors[hash % employeeColors.length];
 }
@@ -191,9 +192,9 @@ export function ShiftCalendar({
                                 getEmployeeColor(shift.employee_id),
                                 "text-white border-0"
                               )}
-                              title={`${shift.employee?.full_name} - ${shift.status}`}
+                              title={`${shift.employee?.full_name || 'Sin asignar'} - ${shift.status}`}
                             >
-                              {getInitials(shift.employee?.full_name || 'NN')}
+                              {shift.employee ? getInitials(shift.employee.full_name) : 'SA'}
                             </Badge>
                           ))}
                         </div>
