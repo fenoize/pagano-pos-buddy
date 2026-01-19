@@ -75,7 +75,7 @@ export function AddPositionModal({
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar rol" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[9999] bg-popover">
                 {activeRoles.map(role => (
                   <SelectItem key={role.id} value={role.id}>
                     {role.name}
@@ -97,7 +97,7 @@ export function AddPositionModal({
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar tipo" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[9999] bg-popover">
                 {activeShiftTypes.map(st => (
                   <SelectItem key={st.id} value={st.id}>
                     {st.name} ({st.default_hours}h)
