@@ -5,17 +5,30 @@ import { getStaffUserId } from '@/lib/staffSession';
 import { HREmployee, HREmployeeFormData } from '@/types/hr';
 import { toast } from 'sonner';
 
-export function useHREmployees() {
+interface UseHREmployeesOptions {
+  userId?: string;
+}
+
+export function useHREmployees(options?: UseHREmployeesOptions) {
   const [employees, setEmployees] = useState<HREmployee[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getUserId = () => getStaffUserId();
+  // Obtener userId: primero del parámetro, luego de localStorage
+  const getUserId = useCallback((): string => {
+    if (options?.userId) {
+      return options.userId;
+    }
+    return getStaffUserId();
+  }, [options?.userId]);
 
   const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
       const userId = getUserId();
-      if (!userId) return;
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
       
       await withStaffContext(userId, async () => {
         const { data, error } = await supabase
@@ -32,7 +45,7 @@ export function useHREmployees() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getUserId]);
 
   useEffect(() => {
     fetchEmployees();

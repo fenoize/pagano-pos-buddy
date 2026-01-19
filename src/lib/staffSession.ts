@@ -11,13 +11,24 @@ export function getStaffUserId(): string {
     const stored = localStorage.getItem(STORAGE_KEYS.STAFF_USER);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (parsed?.id && typeof parsed.id === 'string') return parsed.id;
+      // Intentar obtener 'id' o 'user_id' del objeto almacenado
+      const userId = parsed?.id || parsed?.user_id;
+      if (userId && typeof userId === 'string') {
+        return userId;
+      }
     }
-  } catch {
-    // ignore
+  } catch (e) {
+    console.error('Error parsing staff user from localStorage:', e);
   }
 
   // Backward-compat (legacy key)
   const legacy = localStorage.getItem('pos_user_id');
   return legacy || '';
+}
+
+/**
+ * Verifica si hay un usuario staff autenticado
+ */
+export function hasStaffUser(): boolean {
+  return getStaffUserId() !== '';
 }
