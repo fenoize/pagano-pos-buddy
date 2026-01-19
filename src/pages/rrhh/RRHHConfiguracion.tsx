@@ -10,12 +10,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Pencil, Trash2, Users, Briefcase, Clock, DollarSign, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, Briefcase, Clock, DollarSign, Loader2, CalendarClock } from 'lucide-react';
 import { useHREmployees } from '@/hooks/useHREmployees';
 import { useHRShiftConfig } from '@/hooks/useHRShiftConfig';
+import { useHRSchedules } from '@/hooks/useHRSchedules';
 import { useUsers } from '@/hooks/useUsers';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { HREmployeeFormData } from '@/types/hr';
+import { HREmployeeFormData, HRSchedule, HRScheduleFormData, HRSchedulePositionFormData } from '@/types/hr';
+import { ScheduleCard } from '@/components/rrhh/ScheduleCard';
+import { ScheduleFormModal } from '@/components/rrhh/ScheduleFormModal';
+import { AddPositionModal } from '@/components/rrhh/AddPositionModal';
 
 function RRHHConfiguracion() {
   const { user } = useAuthContext();
@@ -40,6 +44,17 @@ function RRHHConfiguracion() {
     createShiftType, updateShiftType, deleteShiftType,
     updatePayRule,
   } = useHRShiftConfig({ userId: user?.id });
+
+  // Schedules
+  const {
+    schedules,
+    loading: loadingSchedules,
+    createSchedule,
+    updateSchedule,
+    deleteSchedule,
+    addPosition,
+    removePosition
+  } = useHRSchedules();
   
   // Employee Modal State
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
@@ -73,6 +88,13 @@ function RRHHConfiguracion() {
   const [payRuleModalOpen, setPayRuleModalOpen] = useState(false);
   const [editingPayRule, setEditingPayRule] = useState<any>(null);
   const [payRuleForm, setPayRuleForm] = useState({ pay_per_shift: 0 });
+
+  // Schedule Modal State
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<HRSchedule | null>(null);
+  const [addPositionModalOpen, setAddPositionModalOpen] = useState(false);
+  const [addPositionScheduleId, setAddPositionScheduleId] = useState<string>('');
+
 
   const formatCLP = (amount: number) => {
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(amount);
@@ -185,7 +207,36 @@ function RRHHConfiguracion() {
     } catch (e) {}
   };
 
-  const loading = loadingEmployees || loadingConfig || loadingUsers;
+  const loading = loadingEmployees || loadingConfig || loadingUsers || loadingSchedules;
+
+  // Schedule handlers
+  const handleOpenScheduleModal = (schedule?: HRSchedule) => {
+    setEditingSchedule(schedule || null);
+    setScheduleModalOpen(true);
+  };
+
+  const handleSaveSchedule = async (data: HRScheduleFormData) => {
+    if (editingSchedule) {
+      await updateSchedule(editingSchedule.id, data);
+    } else {
+      await createSchedule(data);
+    }
+  };
+
+  const handleDeleteSchedule = async (id: string) => {
+    if (confirm('¿Eliminar este horario?')) {
+      await deleteSchedule(id);
+    }
+  };
+
+  const handleOpenAddPosition = (scheduleId: string) => {
+    setAddPositionScheduleId(scheduleId);
+    setAddPositionModalOpen(true);
+  };
+
+  const handleAddPosition = async (data: HRSchedulePositionFormData) => {
+    await addPosition(addPositionScheduleId, data);
+  };
 
   return (
     <div className="space-y-6">
@@ -195,10 +246,14 @@ function RRHHConfiguracion() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="personal" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Personal</span>
+          </TabsTrigger>
+          <TabsTrigger value="horarios" className="flex items-center gap-2">
+            <CalendarClock className="h-4 w-4" />
+            <span className="hidden sm:inline">Horarios</span>
           </TabsTrigger>
           <TabsTrigger value="roles" className="flex items-center gap-2">
             <Briefcase className="h-4 w-4" />
@@ -287,6 +342,49 @@ function RRHHConfiguracion() {
                     )}
                   </TableBody>
                 </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB: HORARIOS */}
+        <TabsContent value="horarios">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Horarios / Plantillas</CardTitle>
+                <CardDescription>Define plantillas de turnos con días, horas y personal requerido</CardDescription>
+              </div>
+              <Button onClick={() => handleOpenScheduleModal()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Horario
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : schedules.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No hay horarios configurados. Crea uno para comenzar.
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {schedules.map((schedule) => (
+                    <ScheduleCard
+                      key={schedule.id}
+                      schedule={schedule}
+                      roles={roles}
+                      shiftTypes={shiftTypes}
+                      onEdit={handleOpenScheduleModal}
+                      onDelete={handleDeleteSchedule}
+                      onToggleActive={(id, isActive) => updateSchedule(id, { is_active: isActive })}
+                      onAddPosition={handleOpenAddPosition}
+                      onRemovePosition={removePosition}
+                    />
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -612,6 +710,23 @@ function RRHHConfiguracion() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Schedule Modal */}
+      <ScheduleFormModal
+        open={scheduleModalOpen}
+        onOpenChange={setScheduleModalOpen}
+        schedule={editingSchedule}
+        onSave={handleSaveSchedule}
+      />
+
+      {/* Add Position Modal */}
+      <AddPositionModal
+        open={addPositionModalOpen}
+        onOpenChange={setAddPositionModalOpen}
+        roles={roles}
+        shiftTypes={shiftTypes}
+        onSave={handleAddPosition}
+      />
     </div>
   );
 }
