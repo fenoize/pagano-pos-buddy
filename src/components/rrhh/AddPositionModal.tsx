@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -36,15 +37,20 @@ export function AddPositionModal({
   const [shiftTypeId, setShiftTypeId] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const activeRoles = roles.filter(r => r.is_active);
-  const activeShiftTypes = shiftTypes.filter(st => st.is_active);
+  // Memoize filtered arrays to prevent unnecessary re-renders
+  const activeRoles = useMemo(() => roles.filter(r => r.is_active), [roles]);
+  const activeShiftTypes = useMemo(() => shiftTypes.filter(st => st.is_active), [shiftTypes]);
 
+  // Reset form only when modal opens - NOT when activeShiftTypes changes
   useEffect(() => {
     if (open) {
       setRoleId('');
-      setShiftTypeId(activeShiftTypes[0]?.id || '');
+      // Set default shift type only on open
+      const defaultShiftType = shiftTypes.find(st => st.is_active)?.id || '';
+      setShiftTypeId(defaultShiftType);
     }
-  }, [open, activeShiftTypes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleSave = async () => {
     if (!roleId || !shiftTypeId) return;
@@ -65,6 +71,9 @@ export function AddPositionModal({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Agregar Posición</DialogTitle>
+          <DialogDescription>
+            Selecciona el rol y tipo de turno para esta posición.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
