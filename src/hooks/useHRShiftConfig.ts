@@ -5,17 +5,28 @@ import { getStaffUserId } from '@/lib/staffSession';
 import { HRShiftRole, HRShiftType, HRPayRule } from '@/types/hr';
 import { toast } from 'sonner';
 
-export function useHRShiftConfig() {
+interface UseHRShiftConfigOptions {
+  userId?: string;
+}
+
+export function useHRShiftConfig(options?: UseHRShiftConfigOptions) {
   const [roles, setRoles] = useState<HRShiftRole[]>([]);
   const [shiftTypes, setShiftTypes] = useState<HRShiftType[]>([]);
   const [payRules, setPayRules] = useState<HRPayRule[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getUserId = (): string => getStaffUserId();
+  // Obtener userId: primero del parámetro, luego de localStorage
+  const getUserId = useCallback((): string => {
+    if (options?.userId) {
+      return options.userId;
+    }
+    return getStaffUserId();
+  }, [options?.userId]);
 
   const requireUserId = (): string => {
     const userId = getUserId();
     if (!userId) {
+      console.error('useHRShiftConfig: No user logged in. localStorage:', localStorage.getItem('paganos_staff_user'));
       toast.error('Debes iniciar sesión para realizar esta acción');
       throw new Error('No user logged in');
     }
@@ -52,7 +63,7 @@ export function useHRShiftConfig() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getUserId]);
 
   useEffect(() => {
     fetchConfig();

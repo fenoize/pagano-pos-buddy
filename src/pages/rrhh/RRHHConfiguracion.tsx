@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,22 +7,22 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Pencil, Trash2, Users, Briefcase, Clock, DollarSign, Loader2 } from 'lucide-react';
 import { useHREmployees } from '@/hooks/useHREmployees';
 import { useHRShiftConfig } from '@/hooks/useHRShiftConfig';
 import { useUsers } from '@/hooks/useUsers';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { HREmployeeFormData } from '@/types/hr';
-import { toast } from 'sonner';
 
 function RRHHConfiguracion() {
-  const location = useLocation();
+  const { user } = useAuthContext();
   const [activeTab, setActiveTab] = useState('personal');
   
-  // Employees
-  const { employees, loading: loadingEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, deleteEmployee } = useHREmployees();
+  // Employees - pasamos el userId del contexto
+  const { employees, loading: loadingEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, deleteEmployee } = useHREmployees({ userId: user?.id });
   const { users, loading: loadingUsers, fetchUsers } = useUsers();
   
   // Cargar usuarios al montar el componente
@@ -31,14 +30,14 @@ function RRHHConfiguracion() {
     fetchUsers();
   }, []);
   
-  // Config
+  // Config - pasamos el userId del contexto
   const { 
     roles, shiftTypes, payRules, 
     loading: loadingConfig,
     createRole, updateRole, deleteRole,
     createShiftType, updateShiftType, deleteShiftType,
     updatePayRule,
-  } = useHRShiftConfig();
+  } = useHRShiftConfig({ userId: user?.id });
   
   // Employee Modal State
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
