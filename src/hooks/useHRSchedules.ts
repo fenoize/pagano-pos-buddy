@@ -16,44 +16,36 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
   const getUserId = () => options?.userId || getStaffUserId();
 
   const fetchSchedules = useCallback(async () => {
-    const userId = getUserId();
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       
-      await withStaffContext(userId, async () => {
-        // Fetch schedules
-        const { data: schedulesData, error: schedulesError } = await supabase
-          .from('hr_schedules' as any)
-          .select('*')
-          .order('name');
+      // Fetch schedules - RLS is public, no context needed for read
+      const { data: schedulesData, error: schedulesError } = await supabase
+        .from('hr_schedules' as any)
+        .select('*')
+        .order('name');
 
-        if (schedulesError) throw schedulesError;
+      if (schedulesError) throw schedulesError;
 
-        // Fetch positions with joins
-        const { data: positionsData, error: positionsError } = await supabase
-          .from('hr_schedule_positions' as any)
-          .select(`
-            *,
-            role:hr_shift_roles(*),
-            shift_type:hr_shift_types(*)
-          `)
-          .order('sort_order');
+      // Fetch positions with joins
+      const { data: positionsData, error: positionsError } = await supabase
+        .from('hr_schedule_positions' as any)
+        .select(`
+          *,
+          role:hr_shift_roles(*),
+          shift_type:hr_shift_types(*)
+        `)
+        .order('sort_order');
 
-        if (positionsError) throw positionsError;
+      if (positionsError) throw positionsError;
 
-        // Group positions by schedule
-        const schedulesWithPositions = (schedulesData || []).map((schedule: any) => ({
-          ...schedule,
-          positions: (positionsData || []).filter((p: any) => p.schedule_id === schedule.id)
-        }));
+      // Group positions by schedule
+      const schedulesWithPositions = (schedulesData || []).map((schedule: any) => ({
+        ...schedule,
+        positions: (positionsData || []).filter((p: any) => p.schedule_id === schedule.id)
+      }));
 
-        setSchedules(schedulesWithPositions);
-      });
+      setSchedules(schedulesWithPositions);
     } catch (error) {
       console.error('Error fetching schedules:', error);
       toast({
@@ -64,7 +56,7 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
     } finally {
       setLoading(false);
     }
-  }, [options?.userId]);
+  }, []);
 
   useEffect(() => {
     fetchSchedules();

@@ -24,28 +24,22 @@ export function useHREmployees(options?: UseHREmployeesOptions) {
   const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
-      const userId = getUserId();
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
       
-      await withStaffContext(userId, async () => {
-        const { data, error } = await supabase
-          .from('hr_employees')
-          .select(`*, user:users(id, username, full_name)`)
-          .order('full_name');
-        
-        if (error) throw error;
-        setEmployees(data as HREmployee[]);
-      });
+      // Fetch directly - RLS is public for read operations
+      const { data, error } = await supabase
+        .from('hr_employees')
+        .select(`*, user:users(id, username, full_name)`)
+        .order('full_name');
+      
+      if (error) throw error;
+      setEmployees(data as HREmployee[]);
     } catch (error: any) {
       console.error('Error fetching HR employees:', error);
       toast.error('Error al cargar empleados');
     } finally {
       setLoading(false);
     }
-  }, [getUserId]);
+  }, []);
 
   useEffect(() => {
     fetchEmployees();

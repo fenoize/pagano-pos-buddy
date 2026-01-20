@@ -36,34 +36,28 @@ export function useHRShiftConfig(options?: UseHRShiftConfigOptions) {
   const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
-      const userId = getUserId();
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
       
-      await withStaffContext(userId, async () => {
-        const [rolesRes, typesRes, rulesRes] = await Promise.all([
-          supabase.from('hr_shift_roles').select('*').order('name'),
-          supabase.from('hr_shift_types').select('*').order('name'),
-          supabase.from('hr_pay_rules').select(`*, shift_type:hr_shift_types(*)`).order('created_at'),
-        ]);
-        
-        if (rolesRes.error) throw rolesRes.error;
-        if (typesRes.error) throw typesRes.error;
-        if (rulesRes.error) throw rulesRes.error;
-        
-        setRoles(rolesRes.data as HRShiftRole[]);
-        setShiftTypes(typesRes.data as HRShiftType[]);
-        setPayRules(rulesRes.data as HRPayRule[]);
-      });
+      // Fetch directly - RLS is public for read operations
+      const [rolesRes, typesRes, rulesRes] = await Promise.all([
+        supabase.from('hr_shift_roles').select('*').order('name'),
+        supabase.from('hr_shift_types').select('*').order('name'),
+        supabase.from('hr_pay_rules').select(`*, shift_type:hr_shift_types(*)`).order('created_at'),
+      ]);
+      
+      if (rolesRes.error) throw rolesRes.error;
+      if (typesRes.error) throw typesRes.error;
+      if (rulesRes.error) throw rulesRes.error;
+      
+      setRoles(rolesRes.data as HRShiftRole[]);
+      setShiftTypes(typesRes.data as HRShiftType[]);
+      setPayRules(rulesRes.data as HRPayRule[]);
     } catch (error: any) {
       console.error('Error fetching HR config:', error);
       toast.error('Error al cargar configuración RRHH');
     } finally {
       setLoading(false);
     }
-  }, [getUserId]);
+  }, []);
 
   useEffect(() => {
     fetchConfig();

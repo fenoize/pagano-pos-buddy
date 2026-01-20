@@ -38,43 +38,40 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
   const fetchShifts = useCallback(async () => {
     try {
       setLoading(true);
-      const userId = getUserId();
-      if (!userId) return;
       
-      await withStaffContext(userId, async () => {
-        let query = supabase
-          .from('hr_shifts')
-          .select(`
-            *,
-            employee:hr_employees(id, full_name, rut),
-            shift_type:hr_shift_types(id, name, default_hours),
-            role:hr_shift_roles(id, name)
-          `)
-          .order('shift_date', { ascending: false });
-        
-        if (filters.dateFrom) {
-          query = query.gte('shift_date', filters.dateFrom);
-        }
-        if (filters.dateTo) {
-          query = query.lte('shift_date', filters.dateTo);
-        }
-        if (filters.employeeId) {
-          query = query.eq('employee_id', filters.employeeId);
-        }
-        if (filters.roleId) {
-          query = query.eq('role_id', filters.roleId);
-        }
-        if (filters.shiftTypeId) {
-          query = query.eq('shift_type_id', filters.shiftTypeId);
-        }
-        if (filters.status) {
-          query = query.eq('status', filters.status);
-        }
-        
-        const { data, error } = await query;
-        if (error) throw error;
-        setShifts(data as HRShift[]);
-      });
+      // Fetch directly - RLS is public for read operations
+      let query = supabase
+        .from('hr_shifts')
+        .select(`
+          *,
+          employee:hr_employees(id, full_name, rut),
+          shift_type:hr_shift_types(id, name, default_hours),
+          role:hr_shift_roles(id, name)
+        `)
+        .order('shift_date', { ascending: false });
+      
+      if (filters.dateFrom) {
+        query = query.gte('shift_date', filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        query = query.lte('shift_date', filters.dateTo);
+      }
+      if (filters.employeeId) {
+        query = query.eq('employee_id', filters.employeeId);
+      }
+      if (filters.roleId) {
+        query = query.eq('role_id', filters.roleId);
+      }
+      if (filters.shiftTypeId) {
+        query = query.eq('shift_type_id', filters.shiftTypeId);
+      }
+      if (filters.status) {
+        query = query.eq('status', filters.status);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      setShifts(data as HRShift[]);
     } catch (error: any) {
       console.error('Error fetching HR shifts:', error);
       toast.error('Error al cargar turnos');
