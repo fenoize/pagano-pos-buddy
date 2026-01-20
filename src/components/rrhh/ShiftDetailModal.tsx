@@ -237,14 +237,14 @@ export function ShiftDetailModal({
               <div>
                 <Label>Empleado</Label>
                 <Select
-                  value={formData.employee_id || ''}
-                  onValueChange={(val) => setFormData(f => ({ ...f, employee_id: val }))}
+                  value={formData.employee_id || '__unassigned__'}
+                  onValueChange={(val) => setFormData(f => ({ ...f, employee_id: val === '__unassigned__' ? null : val }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sin asignar" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin asignar</SelectItem>
+                    <SelectItem value="__unassigned__">Sin asignar</SelectItem>
                     {activeEmployees.map(e => (
                       <SelectItem key={e.id} value={e.id}>{e.full_name}</SelectItem>
                     ))}
