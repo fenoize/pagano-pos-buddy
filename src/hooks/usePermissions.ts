@@ -5,6 +5,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 /**
  * Hook para gestionar permisos de usuario de forma centralizada
  * Conecta con la tabla role_permissions en Supabase
+ * RLS policies are now permissive - no DB context needed
  */
 export function usePermissions() {
   const { user } = useAuthContext();
@@ -20,7 +21,7 @@ export function usePermissions() {
       }
 
       try {
-        // Obtener roles del usuario
+        // Direct query - RLS policies are permissive for these tables
         const { data: userRoles, error: rolesError } = await supabase
           .from('user_roles')
           .select('role')

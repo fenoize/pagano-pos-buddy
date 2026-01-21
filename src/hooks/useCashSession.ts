@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { CashSession, CashMovement } from '@/types';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { usePermissions } from './usePermissions';
-import { setStaffContext, withStaffContext } from '@/lib/dbContext';
 import { 
   triggerCashSessionOpenNotification, 
   triggerCashSessionCloseNotification,
@@ -30,9 +29,7 @@ export function useCashSession() {
 
     setLoading(true);
     try {
-      // Establecer contexto antes de la query
-      await setStaffContext(user.id);
-      
+      // RLS policies are now permissive - no context needed
       const { data, error } = await supabase
         .from('cash_sessions')
         .select('*')
@@ -57,101 +54,97 @@ export function useCashSession() {
   const openSession = async (openingCash: number, acceptAppOrders: boolean = false): Promise<CashSession> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    return withStaffContext(user.id, async () => {
-      try {
-        // Check if there's already an active session
-        const { data: existingSession } = await supabase
-          .from('cash_sessions')
-          .select('*')
-          .eq('user_id', user.id)
-          .is('closed_at', null)
-          .single();
+    try {
+      // Check if there's already an active session
+      const { data: existingSession } = await supabase
+        .from('cash_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .is('closed_at', null)
+        .single();
 
-        if (existingSession) {
-          throw new Error('Ya existe una sesión de caja abierta');
-        }
-
-        const { data, error } = await supabase
-          .from('cash_sessions')
-          .insert({
-            user_id: user.id,
-            opening_cash: openingCash,
-            accept_app_orders: acceptAppOrders
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        setCurrentSession(data);
-
-        // Notificar a administradores sobre apertura de turno
-        triggerCashSessionOpenNotification(
-          user.full_name || user.username || 'Usuario',
-          openingCash,
-          data.id
-        ).catch(err => console.error('[CashSession] Notification error:', err));
-
-        return data;
-      } catch (error) {
-        console.error('Error opening session:', error);
-        throw error;
+      if (existingSession) {
+        throw new Error('Ya existe una sesión de caja abierta');
       }
-    });
+
+      const { data, error } = await supabase
+        .from('cash_sessions')
+        .insert({
+          user_id: user.id,
+          opening_cash: openingCash,
+          accept_app_orders: acceptAppOrders
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCurrentSession(data);
+
+      // Notificar a administradores sobre apertura de turno
+      triggerCashSessionOpenNotification(
+        user.full_name || user.username || 'Usuario',
+        openingCash,
+        data.id
+      ).catch(err => console.error('[CashSession] Notification error:', err));
+
+      return data;
+    } catch (error) {
+      console.error('Error opening session:', error);
+      throw error;
+    }
   };
 
   const closeSession = async (closingCash: number): Promise<void> => {
     if (!currentSession) throw new Error('No active session to close');
     if (!user?.id) throw new Error('User not authenticated');
 
-    return withStaffContext(user.id, async () => {
-      try {
-        console.log('🔒 Cerrando sesión:', {
-          sessionId: currentSession.id,
-          closingCash,
-          userId: user.id
-        });
-        
-        const { data, error } = await supabase
-          .from('cash_sessions')
-          .update({
-            closed_at: new Date().toISOString(),
-            closing_cash: closingCash
-          })
-          .eq('id', currentSession.id)
-          .select();
+    try {
+      console.log('🔒 Cerrando sesión:', {
+        sessionId: currentSession.id,
+        closingCash,
+        userId: user.id
+      });
+      
+      const { data, error } = await supabase
+        .from('cash_sessions')
+        .update({
+          closed_at: new Date().toISOString(),
+          closing_cash: closingCash
+        })
+        .eq('id', currentSession.id)
+        .select();
 
-        if (error) {
-          console.error('❌ Error de Supabase al cerrar sesión:', error);
-          throw new Error(`Error al cerrar sesión: ${error.message}`);
-        }
-
-        // Verificar que se actualizó la sesión
-        if (!data || data.length === 0) {
-          console.error('❌ No se encontró la sesión para actualizar');
-          throw new Error('No se pudo actualizar la sesión. Verifica que exista y tengas permisos.');
-        }
-
-        console.log('✅ Sesión cerrada exitosamente:', data[0]);
-
-        // Get session summary for notification
-        const summary = await getSessionSummary(currentSession.id);
-        const totalSales = summary?.summary?.totalSales || 0;
-
-        // Notificar a administradores sobre cierre de turno
-        triggerCashSessionCloseNotification(
-          user.full_name || user.username || 'Usuario',
-          closingCash,
-          totalSales,
-          currentSession.id
-        ).catch(err => console.error('[CashSession] Notification error:', err));
-
-        setCurrentSession(null);
-      } catch (error) {
-        console.error('❌ Error closing session:', error);
-        throw error;
+      if (error) {
+        console.error('❌ Error de Supabase al cerrar sesión:', error);
+        throw new Error(`Error al cerrar sesión: ${error.message}`);
       }
-    });
+
+      // Verificar que se actualizó la sesión
+      if (!data || data.length === 0) {
+        console.error('❌ No se encontró la sesión para actualizar');
+        throw new Error('No se pudo actualizar la sesión. Verifica que exista y tengas permisos.');
+      }
+
+      console.log('✅ Sesión cerrada exitosamente:', data[0]);
+
+      // Get session summary for notification
+      const summary = await getSessionSummary(currentSession.id);
+      const totalSales = summary?.summary?.totalSales || 0;
+
+      // Notificar a administradores sobre cierre de turno
+      triggerCashSessionCloseNotification(
+        user.full_name || user.username || 'Usuario',
+        closingCash,
+        totalSales,
+        currentSession.id
+      ).catch(err => console.error('[CashSession] Notification error:', err));
+
+      setCurrentSession(null);
+    } catch (error) {
+      console.error('❌ Error closing session:', error);
+      throw error;
+    }
   };
 
   const addCashMovement = async (
@@ -166,21 +159,22 @@ export function useCashSession() {
     if (!user?.id) throw new Error('User not authenticated');
 
     try {
-      // Usar RPC que establece contexto y hace insert en la misma transacción
-      const { data, error } = await supabase.rpc('insert_cash_movement_with_context', {
-        p_user_id: user.id,
-        p_session_id: currentSession.id,
-        p_type: type,
-        p_amount: amount,
-        p_note: note || null,
-        p_category: category || null,
-        p_account_id: accountId || null,
-        p_synced_to_finance: type === 'egreso' && syncToFinance
-      });
+      // Direct insert - RLS policies are now permissive
+      const { data, error } = await supabase
+        .from('cash_movements')
+        .insert({
+          session_id: currentSession.id,
+          type,
+          amount,
+          note: note || null,
+          category: category || null,
+          account_id: accountId || null,
+          synced_to_finance: type === 'egreso' && syncToFinance
+        })
+        .select()
+        .single();
 
       if (error) throw error;
-
-      const movementData = data as unknown as CashMovement;
 
       // Si es un egreso y tiene cuenta asignada, sincronizar con finance_expenses
       if (type === 'egreso' && syncToFinance && accountId) {
@@ -194,7 +188,7 @@ export function useCashSession() {
             category: category || 'Caja - Movimiento de Turno',
             notes: note || null,
             payment_method: 'Efectivo',
-            cash_movement_id: movementData.id,
+            cash_movement_id: data.id,
             cash_session_id: currentSession.id
           });
 
@@ -212,7 +206,7 @@ export function useCashSession() {
         note
       ).catch(err => console.error('[CashSession] Notification error:', err));
 
-      return movementData;
+      return data;
     } catch (error) {
       console.error('Error adding cash movement:', error);
       throw error;
@@ -229,11 +223,6 @@ export function useCashSession() {
     console.log('Getting session summary for ID:', sessionToQuery);
 
     try {
-      // Establecer contexto antes de las queries
-      if (user?.id) {
-        await setStaffContext(user.id);
-      }
-      
       // Get session details
       const { data: session, error: sessionError } = await supabase
         .from('cash_sessions')
@@ -262,27 +251,27 @@ export function useCashSession() {
 
       console.log('Movements found:', movements?.length || 0);
 
-      // Get orders from this session - Remove user filter and status filter for now
+      // Get orders from this session
       const sessionStart = session.opened_at;
       const sessionEnd = session.closed_at || new Date().toISOString();
 
       console.log('Looking for orders between:', sessionStart, 'and', sessionEnd);
 
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        customers (
-          id,
-          name,
-          nombres,
-          apellidos
-        )
-      `)
-      .gte('created_at', sessionStart)
-      .lte('created_at', sessionEnd)
-      .eq('status', 'Entregado')
-      .order('created_at');
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          customers (
+            id,
+            name,
+            nombres,
+            apellidos
+          )
+        `)
+        .gte('created_at', sessionStart)
+        .lte('created_at', sessionEnd)
+        .eq('status', 'Entregado')
+        .order('created_at');
 
       if (ordersError) {
         console.error('Orders error:', ordersError);
@@ -337,7 +326,6 @@ export function useCashSession() {
         const runaRewardValue = rewardConfig?.value ? Number(rewardConfig.value) : 600;
 
         // Sum redemptions (negative impact on revenue)
-        // Usar el valor de CANJE para calcular el monto monetario
         const runasRedeemed = runasTransactions
           .filter(t => t.type === 'canje')
           .reduce((sum, t) => sum + Math.abs(t.runas), 0);
@@ -370,9 +358,9 @@ export function useCashSession() {
 
       const totalCashDeliveryDeposited = depositedCashData?.reduce((sum, p) => sum + p.amount, 0) || 0;
 
-      // Calculate how much deposited cash came from other shifts (collected before session opened)
+      // Calculate how much deposited cash came from other shifts
       const sessionOpenedAt = new Date(session.opened_at);
-      sessionOpenedAt.setHours(0, 0, 0, 0); // Start of day when session opened
+      sessionOpenedAt.setHours(0, 0, 0, 0);
       
       let deliveryCashFromOtherShifts = 0;
       let deliveryCashFromThisShift = 0;
@@ -435,47 +423,43 @@ export function useCashSession() {
   const updateSessionObservaciones = async (sessionId: string, observaciones: string): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    return withStaffContext(user.id, async () => {
-      try {
-        const { error } = await supabase
-          .from('cash_sessions')
-          .update({ observaciones })
-          .eq('id', sessionId);
+    try {
+      const { error } = await supabase
+        .from('cash_sessions')
+        .update({ observaciones })
+        .eq('id', sessionId);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        // Update current session if it's the same
-        if (currentSession?.id === sessionId) {
-          setCurrentSession({ ...currentSession, observaciones });
-        }
-      } catch (error) {
-        console.error('Error updating session observaciones:', error);
-        throw error;
+      // Update current session if it's the same
+      if (currentSession?.id === sessionId) {
+        setCurrentSession({ ...currentSession, observaciones });
       }
-    });
+    } catch (error) {
+      console.error('Error updating session observaciones:', error);
+      throw error;
+    }
   };
 
   const updateClosingCash = async (sessionId: string, closingCash: number): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    return withStaffContext(user.id, async () => {
-      try {
-        const { error } = await supabase
-          .from('cash_sessions')
-          .update({ closing_cash: closingCash })
-          .eq('id', sessionId);
+    try {
+      const { error } = await supabase
+        .from('cash_sessions')
+        .update({ closing_cash: closingCash })
+        .eq('id', sessionId);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        // Update current session if it's the same
-        if (currentSession?.id === sessionId) {
-          setCurrentSession({ ...currentSession, closing_cash: closingCash });
-        }
-      } catch (error) {
-        console.error('Error updating closing cash:', error);
-        throw error;
+      // Update current session if it's the same
+      if (currentSession?.id === sessionId) {
+        setCurrentSession({ ...currentSession, closing_cash: closingCash });
       }
-    });
+    } catch (error) {
+      console.error('Error updating closing cash:', error);
+      throw error;
+    }
   };
 
   const hasActiveSession = (): boolean => {
@@ -533,41 +517,37 @@ export function useCashSession() {
   ): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    return withStaffContext(user.id, async () => {
-      try {
-        const { error } = await supabase
-          .from('cash_movements')
-          .update({
-            type,
-            amount,
-            note
-          })
-          .eq('id', movementId);
+    try {
+      const { error } = await supabase
+        .from('cash_movements')
+        .update({
+          type,
+          amount,
+          note
+        })
+        .eq('id', movementId);
 
-        if (error) throw error;
-      } catch (error) {
-        console.error('Error updating cash movement:', error);
-        throw error;
-      }
-    });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating cash movement:', error);
+      throw error;
+    }
   };
 
   const deleteCashMovement = async (movementId: string): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    return withStaffContext(user.id, async () => {
-      try {
-        const { error } = await supabase
-          .from('cash_movements')
-          .delete()
-          .eq('id', movementId);
+    try {
+      const { error } = await supabase
+        .from('cash_movements')
+        .delete()
+        .eq('id', movementId);
 
-        if (error) throw error;
-      } catch (error) {
-        console.error('Error deleting cash movement:', error);
-        throw error;
-      }
-    });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting cash movement:', error);
+      throw error;
+    }
   };
 
   const addCashMovementToClosedSession = async (
@@ -578,26 +558,24 @@ export function useCashSession() {
   ): Promise<CashMovement> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    return withStaffContext(user.id, async () => {
-      try {
-        const { data, error } = await supabase
-          .from('cash_movements')
-          .insert({
-            session_id: sessionId,
-            type,
-            amount,
-            note
-          })
-          .select()
-          .single();
+    try {
+      const { data, error } = await supabase
+        .from('cash_movements')
+        .insert({
+          session_id: sessionId,
+          type,
+          amount,
+          note
+        })
+        .select()
+        .single();
 
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error('Error adding cash movement to closed session:', error);
-        throw error;
-      }
-    });
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error adding cash movement to closed session:', error);
+      throw error;
+    }
   };
 
   const updateCurrentSessionLocally = (updates: Partial<CashSession>) => {
