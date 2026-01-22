@@ -33,6 +33,7 @@ export function AddressAutocomplete({
   const [isOpen, setIsOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [justSelected, setJustSelected] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
@@ -41,6 +42,12 @@ export function AddressAutocomplete({
 
   // Search for addresses with debounce
   const performSearch = useCallback(async (query: string) => {
+    // Skip search if we just selected an address
+    if (justSelected) {
+      setJustSelected(false);
+      return;
+    }
+    
     if (query.length < 3) {
       setSuggestions([]);
       setIsOpen(false);
@@ -59,7 +66,7 @@ export function AddressAutocomplete({
     } finally {
       setIsSearching(false);
     }
-  }, [searchAddresses]);
+  }, [searchAddresses, justSelected]);
 
   // Debounced search
   useEffect(() => {
@@ -91,7 +98,9 @@ export function AddressAutocomplete({
   }, []);
 
   const handleSelect = useCallback((result: AddressResult) => {
-    // Use flushSync to ensure immediate DOM update and dropdown close
+    // Mark that we just selected to prevent search from reopening dropdown
+    setJustSelected(true);
+    // Clear suggestions and close dropdown synchronously
     flushSync(() => {
       setSuggestions([]);
       setIsOpen(false);
