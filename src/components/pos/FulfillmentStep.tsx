@@ -770,16 +770,24 @@ function DeliveryMapPreview({
     fetchToken();
   }, []);
 
-  // Initialize map
+  // Initialize and update map when token or coordinates change
   useEffect(() => {
-    if (!mapboxToken || !mapContainerRef.current || mapRef.current) return;
+    if (!mapboxToken || !mapContainerRef.current) return;
+
+    // Remove existing map if any
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
 
     // Dynamically import mapbox
     import('mapbox-gl').then((mapboxgl) => {
+      if (!mapContainerRef.current) return;
+      
       mapboxgl.default.accessToken = mapboxToken;
       
       const map = new mapboxgl.default.Map({
-        container: mapContainerRef.current!,
+        container: mapContainerRef.current,
         style: 'mapbox://styles/mapbox/streets-v12',
         center: [coordinates.lng, coordinates.lat],
         zoom: 14,
@@ -789,12 +797,12 @@ function DeliveryMapPreview({
       mapRef.current = map;
 
       map.on('load', () => {
-        // Add destination marker
+        // Add destination marker (red)
         new mapboxgl.default.Marker({ color: '#ef4444' })
           .setLngLat([coordinates.lng, coordinates.lat])
           .addTo(map);
 
-        // Add store marker if available
+        // Add store marker (green) if available
         if (storeLocation) {
           new mapboxgl.default.Marker({ color: '#22c55e' })
             .setLngLat([storeLocation.lng, storeLocation.lat])
@@ -816,14 +824,7 @@ function DeliveryMapPreview({
         mapRef.current = null;
       }
     };
-  }, [mapboxToken]);
-
-  // Update markers when coordinates change
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    mapRef.current.setCenter([coordinates.lng, coordinates.lat]);
-  }, [coordinates]);
+  }, [mapboxToken, coordinates.lat, coordinates.lng, storeLocation]);
 
   if (!mapboxToken) {
     return (
