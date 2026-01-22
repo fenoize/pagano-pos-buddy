@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Loader2, X } from 'lucide-react';
 import { useDeliveryGeo } from '@/hooks/useDeliveryGeo';
 import { cn } from '@/lib/utils';
+import { flushSync } from 'react-dom';
 
 interface AddressResult {
   address: string;
@@ -89,12 +90,16 @@ export function AddressAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelect = (result: AddressResult) => {
+  const handleSelect = useCallback((result: AddressResult) => {
+    // Use flushSync to ensure immediate DOM update and dropdown close
+    flushSync(() => {
+      setSuggestions([]);
+      setIsOpen(false);
+      setSelectedIndex(-1);
+    });
     onChange(result.address);
     onSelect(result);
-    setIsOpen(false);
-    setSuggestions([]);
-  };
+  }, [onChange, onSelect]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) return;

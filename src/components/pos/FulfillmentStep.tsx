@@ -489,246 +489,250 @@ export default function FulfillmentStep({ fulfillment, pickupMode, customer, ini
                 Dirección de Entrega
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Saved Addresses Selector */}
-              {customer?.id && customerAddresses.length > 0 && (
-                <div>
-                  <Label>Direcciones guardadas</Label>
-                  <Select value={selectedAddressId} onValueChange={handleSelectSavedAddress}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar dirección guardada" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new">+ Nueva dirección</SelectItem>
-                      {customerAddresses.map(addr => (
-                        <SelectItem key={addr.id} value={addr.id}>
-                          {addr.calle} {addr.numero}, {addr.comuna}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Address Autocomplete */}
-              <div>
-                <Label>Buscar dirección *</Label>
-                <AddressAutocomplete
-                  value={fullAddress}
-                  onChange={setFullAddress}
-                  onSelect={handleAddressSelect}
-                  placeholder="Escribe la dirección completa..."
-                />
-              </div>
-              
-              {/* Calculating indicator */}
-              {isCalculating && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Calculando zona y tarifa...</span>
-                </div>
-              )}
-              
-              {/* Zone Error with Exception Option */}
-              {zoneError && !isExceptionMode && (
-                <div className="p-4 border border-destructive/30 rounded-lg bg-destructive/5 space-y-3">
-                  <div className="flex items-center gap-2 text-destructive">
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{zoneError}</span>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      setIsExceptionMode(true);
-                      setExceptionAddress(fullAddress);
-                    }}
-                  >
-                    Agregar como excepción
-                  </Button>
-                </div>
-              )}
-              
-              {/* Exception Mode Form */}
-              {isExceptionMode && (
-                <div className="p-4 border border-amber-400 rounded-lg bg-amber-50 dark:bg-amber-950/20 space-y-4">
-                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium">
-                    <AlertCircle className="w-5 h-5" />
-                    Pedido con excepción de zona
-                  </div>
-                  
-                  <div>
-                    <Label>Dirección completa *</Label>
-                    <Input 
-                      value={exceptionAddress}
-                      onChange={(e) => setExceptionAddress(e.target.value)}
-                      placeholder="Ingresa la dirección manualmente"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Costo de delivery (manual) *</Label>
-                    <Input
-                      type="number"
-                      value={exceptionFee}
-                      onChange={(e) => setExceptionFee(e.target.value)}
-                      placeholder="Ej: 5000"
-                    />
-                  </div>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => {
-                      setIsExceptionMode(false);
-                      setExceptionAddress('');
-                      setExceptionFee('');
-                    }}
-                  >
-                    Cancelar excepción
-                  </Button>
-                </div>
-              )}
-              
-              {/* Delivery Fee Display */}
-              {selectedZone && !zoneError && (
-                <div className="p-4 border rounded-lg bg-primary/5 space-y-2">
-                  <div className="flex items-center justify-between">
+            <CardContent>
+              {/* Two-column layout: Form on left, Map on right */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column - Form */}
+                <div className="space-y-4">
+                  {/* Saved Addresses Selector */}
+                  {customer?.id && customerAddresses.length > 0 && (
                     <div>
-                      <span className="text-sm text-muted-foreground">Zona detectada:</span>
-                      <Badge variant="secondary" className="ml-2">{selectedZone.name}</Badge>
-                    </div>
-                  </div>
-                  
-                  {distance !== null && (
-                    <div className="text-sm text-muted-foreground">
-                      Distancia: {distance.toFixed(1)} km
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <span className="font-medium">Costo de delivery:</span>
-                    <div className="flex items-center gap-2">
-                      {isEditingFee ? (
-                        <>
-                          <Input
-                            type="number"
-                            value={manualFee}
-                            onChange={(e) => setManualFee(e.target.value)}
-                            className="w-24 h-8"
-                          />
-                          <Button size="sm" variant="ghost" onClick={handleSaveFee}>
-                            <Check className="w-4 h-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Badge variant="default" className="text-base">
-                            {formatPrice(deliveryFee)}
-                          </Badge>
-                          <Button size="sm" variant="ghost" onClick={handleEditFee}>
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Additional fields */}
-              {selectedZone && (
-                <div className="space-y-4 pt-4 border-t">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Número / Depto</Label>
-                      <Input 
-                        value={addressNumber}
-                        onChange={(e) => setAddressNumber(e.target.value)}
-                        placeholder="123, Depto 45..."
-                      />
-                    </div>
-                    <div>
-                      <Label>Comuna</Label>
-                      <Select value={selectedComunaId} onValueChange={setSelectedComunaId}>
+                      <Label>Direcciones guardadas</Label>
+                      <Select value={selectedAddressId} onValueChange={handleSelectSavedAddress}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar" />
+                          <SelectValue placeholder="Seleccionar dirección guardada" />
                         </SelectTrigger>
                         <SelectContent>
-                          {comunas.filter(c => c.is_active).map(comuna => (
-                            <SelectItem key={comuna.id} value={comuna.id}>
-                              {comuna.name}
+                          <SelectItem value="new">+ Nueva dirección</SelectItem>
+                          {customerAddresses.map(addr => (
+                            <SelectItem key={addr.id} value={addr.id}>
+                              {addr.calle} {addr.numero}, {addr.comuna}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
+                  )}
 
+                  {/* Address Autocomplete */}
                   <div>
-                    <Label>Referencia (opcional)</Label>
-                    <Textarea 
-                      value={reference}
-                      onChange={(e) => setReference(e.target.value)}
-                      placeholder="Torre, color de casa, referencias..."
-                      rows={2}
+                    <Label>Buscar dirección *</Label>
+                    <AddressAutocomplete
+                      value={fullAddress}
+                      onChange={setFullAddress}
+                      onSelect={handleAddressSelect}
+                      placeholder="Escribe la dirección completa..."
                     />
                   </div>
+                  
+                  {/* Calculating indicator */}
+                  {isCalculating && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Calculando zona y tarifa...</span>
+                    </div>
+                  )}
+                  
+                  {/* Zone Error with Exception Option */}
+                  {zoneError && !isExceptionMode && (
+                    <div className="p-4 border border-destructive/30 rounded-lg bg-destructive/5 space-y-3">
+                      <div className="flex items-center gap-2 text-destructive">
+                        <AlertCircle className="w-5 h-5" />
+                        <span>{zoneError}</span>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setIsExceptionMode(true);
+                          setExceptionAddress(fullAddress);
+                        }}
+                      >
+                        Agregar como excepción
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Exception Mode Form */}
+                  {isExceptionMode && (
+                    <div className="p-4 border border-amber-400 rounded-lg bg-amber-50 dark:bg-amber-950/20 space-y-4">
+                      <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium">
+                        <AlertCircle className="w-5 h-5" />
+                        Pedido con excepción de zona
+                      </div>
+                      
+                      <div>
+                        <Label>Dirección completa *</Label>
+                        <Input 
+                          value={exceptionAddress}
+                          onChange={(e) => setExceptionAddress(e.target.value)}
+                          placeholder="Ingresa la dirección manualmente"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Costo de delivery (manual) *</Label>
+                        <Input
+                          type="number"
+                          value={exceptionFee}
+                          onChange={(e) => setExceptionFee(e.target.value)}
+                          placeholder="Ej: 5000"
+                        />
+                      </div>
+                      
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setIsExceptionMode(false);
+                          setExceptionAddress('');
+                          setExceptionFee('');
+                        }}
+                      >
+                        Cancelar excepción
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Delivery Fee Display */}
+                  {selectedZone && !zoneError && (
+                    <div className="p-4 border rounded-lg bg-primary/5 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-sm text-muted-foreground">Zona detectada:</span>
+                          <Badge variant="secondary" className="ml-2">{selectedZone.name}</Badge>
+                        </div>
+                      </div>
+                      
+                      {distance !== null && (
+                        <div className="text-sm text-muted-foreground">
+                          Distancia: {distance.toFixed(1)} km
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="font-medium">Costo de delivery:</span>
+                        <div className="flex items-center gap-2">
+                          {isEditingFee ? (
+                            <>
+                              <Input
+                                type="number"
+                                value={manualFee}
+                                onChange={(e) => setManualFee(e.target.value)}
+                                className="w-24 h-8"
+                              />
+                              <Button size="sm" variant="ghost" onClick={handleSaveFee}>
+                                <Check className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Badge variant="default" className="text-base">
+                                {formatPrice(deliveryFee)}
+                              </Badge>
+                              <Button size="sm" variant="ghost" onClick={handleEditFee}>
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Save Address Checkbox */}
-                  {customer?.id && (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="save-address"
-                        checked={saveAddress}
-                        onCheckedChange={(checked) => setSaveAddress(checked as boolean)}
-                      />
-                      <Label htmlFor="save-address" className="cursor-pointer">
-                        Guardar en la ficha del cliente
-                      </Label>
+                  {/* Additional fields - No comuna field */}
+                  {selectedZone && (
+                    <div className="space-y-4 pt-4 border-t">
+                      <div>
+                        <Label>Número / Depto</Label>
+                        <Input 
+                          value={addressNumber}
+                          onChange={(e) => setAddressNumber(e.target.value)}
+                          placeholder="123, Depto 45..."
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Referencia (opcional)</Label>
+                        <Textarea 
+                          value={reference}
+                          onChange={(e) => setReference(e.target.value)}
+                          placeholder="Torre, color de casa, referencias..."
+                          rows={2}
+                        />
+                      </div>
+
+                      {/* Save Address Checkbox */}
+                      {customer?.id && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="save-address"
+                            checked={saveAddress}
+                            onCheckedChange={(checked) => setSaveAddress(checked as boolean)}
+                          />
+                          <Label htmlFor="save-address" className="cursor-pointer">
+                            Guardar en la ficha del cliente
+                          </Label>
+                        </div>
+                      )}
+
+                      {/* Repartidor Selection - now inside form column */}
+                      <div className="pt-4 border-t">
+                        <Label>Repartidor (opcional)</Label>
+                        <Select value={selectedRepartidorId} onValueChange={setSelectedRepartidorId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sin asignar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin asignar</SelectItem>
+                            {repartidores.map(rep => (
+                              <SelectItem key={rep.id} value={rep.id}>
+                                {rep.full_name || rep.username}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   )}
                 </div>
-              )}
+
+                {/* Right Column - Map Preview */}
+                <div className="lg:sticky lg:top-4">
+                  {coordinates ? (
+                    <div className="border rounded-lg overflow-hidden bg-muted/30">
+                      <div className="aspect-square lg:aspect-[4/3]">
+                        <DeliveryMapPreview 
+                          coordinates={coordinates}
+                          storeLocation={storeLocation}
+                          zoneName={selectedZone?.name}
+                        />
+                      </div>
+                      <div className="p-3 bg-background border-t">
+                        <p className="text-sm font-medium truncate">{fullAddress}</p>
+                        {selectedZone && (
+                          <p className="text-xs text-muted-foreground">
+                            Zona: {selectedZone.name} • {distance?.toFixed(1)} km
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg bg-muted/30 aspect-square lg:aspect-[4/3] flex items-center justify-center">
+                      <div className="text-center text-muted-foreground">
+                        <MapPin className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Ingresa una dirección para ver el mapa</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
-
-          {/* Repartidor Selection */}
-          {selectedZone && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Asignar Repartidor</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label>Repartidor (opcional)</Label>
-                  <Select value={selectedRepartidorId} onValueChange={setSelectedRepartidorId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sin asignar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sin asignar</SelectItem>
-                      {repartidores.map(rep => (
-                        <SelectItem key={rep.id} value={rep.id}>
-                          {rep.full_name || rep.username}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </>
       )}
 
-      {/* Continue Button - only for delivery now, retiro advances on pickup mode selection */}
-      {fulfillment === 'delivery' && ((selectedZone && fullAddress) || isExceptionMode) && (
-        <Button onClick={handleContinue} className="w-full" size="lg">
-          Continuar a Cliente
-        </Button>
-      )}
-      
+      {/* Continue Button - only one, no duplicate */}
       {fulfillment === 'delivery' && ((selectedZone && fullAddress) || isExceptionMode) && (
         <Button onClick={handleContinue} className="w-full" size="lg">
           Continuar a Cliente
@@ -736,4 +740,98 @@ export default function FulfillmentStep({ fulfillment, pickupMode, customer, ini
       )}
     </div>
   );
+}
+
+// Map Preview Component
+function DeliveryMapPreview({ 
+  coordinates, 
+  storeLocation, 
+  zoneName 
+}: { 
+  coordinates: { lat: number; lng: number }; 
+  storeLocation: { lat: number; lng: number } | null;
+  zoneName?: string;
+}) {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+
+  // Fetch mapbox token
+  useEffect(() => {
+    const fetchToken = async () => {
+      const { data } = await supabase
+        .from('delivery_settings')
+        .select('mapbox_token')
+        .single();
+      if (data?.mapbox_token) {
+        setMapboxToken(data.mapbox_token);
+      }
+    };
+    fetchToken();
+  }, []);
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapboxToken || !mapContainerRef.current || mapRef.current) return;
+
+    // Dynamically import mapbox
+    import('mapbox-gl').then((mapboxgl) => {
+      mapboxgl.default.accessToken = mapboxToken;
+      
+      const map = new mapboxgl.default.Map({
+        container: mapContainerRef.current!,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [coordinates.lng, coordinates.lat],
+        zoom: 14,
+        interactive: false
+      });
+
+      mapRef.current = map;
+
+      map.on('load', () => {
+        // Add destination marker
+        new mapboxgl.default.Marker({ color: '#ef4444' })
+          .setLngLat([coordinates.lng, coordinates.lat])
+          .addTo(map);
+
+        // Add store marker if available
+        if (storeLocation) {
+          new mapboxgl.default.Marker({ color: '#22c55e' })
+            .setLngLat([storeLocation.lng, storeLocation.lat])
+            .addTo(map);
+
+          // Fit bounds to show both markers
+          const bounds = new mapboxgl.default.LngLatBounds()
+            .extend([coordinates.lng, coordinates.lat])
+            .extend([storeLocation.lng, storeLocation.lat]);
+          
+          map.fitBounds(bounds, { padding: 50 });
+        }
+      });
+    });
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [mapboxToken]);
+
+  // Update markers when coordinates change
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    mapRef.current.setCenter([coordinates.lng, coordinates.lat]);
+  }, [coordinates]);
+
+  if (!mapboxToken) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return <div ref={mapContainerRef} className="w-full h-full" />;
 }
