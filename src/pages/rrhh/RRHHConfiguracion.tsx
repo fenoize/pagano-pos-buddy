@@ -396,7 +396,7 @@ function RRHHConfiguracion() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Roles de Turno</CardTitle>
-                <CardDescription>Solo informativo, no impacta el pago</CardDescription>
+                <CardDescription>Roles agrupados por tipo de turno (solo informativo, no impacta el pago)</CardDescription>
               </div>
               <Button onClick={() => handleOpenRoleModal()}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -404,38 +404,61 @@ function RRHHConfiguracion() {
               </Button>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {roles.map((role) => (
-                    <TableRow key={role.id}>
-                      <TableCell className="font-medium">{role.name}</TableCell>
-                      <TableCell>{role.description || '-'}</TableCell>
-                      <TableCell>
-                        <Switch
-                          checked={role.is_active}
-                          onCheckedChange={(checked) => updateRole(role.id, { is_active: checked })}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenRoleModal(role)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => deleteRole(role.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+              {shiftTypes.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Primero crea tipos de turno en la pestaña "Tipos Turno"
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {shiftTypes.map((shiftType) => (
+                    <div key={shiftType.id} className="space-y-3">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="font-semibold text-base">{shiftType.name}</h3>
+                        <Badge variant={shiftType.is_active ? "secondary" : "outline"} className="text-xs">
+                          {shiftType.default_hours}h
+                        </Badge>
+                        {!shiftType.is_active && (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">Inactivo</Badge>
+                        )}
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {roles.map((role) => (
+                          <div
+                            key={role.id}
+                            className={`flex items-center justify-between p-3 rounded-lg border ${
+                              role.is_active ? 'bg-card' : 'bg-muted/50 opacity-60'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate">{role.name}</p>
+                                {role.description && (
+                                  <p className="text-xs text-muted-foreground truncate">{role.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Switch
+                                checked={role.is_active}
+                                onCheckedChange={(checked) => updateRole(role.id, { is_active: checked })}
+                                className="scale-75"
+                              />
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenRoleModal(role)}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteRole(role.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
