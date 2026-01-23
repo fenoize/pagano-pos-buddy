@@ -103,6 +103,7 @@ export function GenerateShiftsModal({
             shift_date: day.dateStr,
             shift_type_id: position.shift_type_id,
             role_id: position.role_id,
+            schedule_id: scheduleId, // Vincular con el horario/jornada
           });
         }
       }

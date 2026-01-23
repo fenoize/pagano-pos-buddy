@@ -4,7 +4,7 @@ import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { HRShift, HRShiftStatus, HREmployee, HRShiftType, HRShiftRole } from '@/types/hr';
+import { HRShift, HRShiftStatus, HREmployee, HRShiftType, HRShiftRole, HRSchedule } from '@/types/hr';
 import { Plus } from 'lucide-react';
 import { getRoleIcon, getRoleColorClass } from '@/lib/roleIcons';
 import { ShiftDetailModal } from './ShiftDetailModal';
@@ -16,6 +16,7 @@ interface ShiftCalendarProps {
   employees: HREmployee[];
   shiftTypes: HRShiftType[];
   roles: HRShiftRole[];
+  schedules: HRSchedule[];
   onAddShift: (date: string) => void;
   onUpdateShift: (id: string, data: any) => Promise<void>;
   onConfirmShift: (id: string) => Promise<void>;
@@ -37,6 +38,8 @@ const statusBg: Record<HRShiftStatus, string> = {
   paid: 'bg-purple-50 dark:bg-purple-950/30',
 };
 
+const NO_SCHEDULE_KEY = '__no_schedule__';
+
 export function ShiftCalendar({
   shifts,
   currentDate,
@@ -44,6 +47,7 @@ export function ShiftCalendar({
   employees,
   shiftTypes,
   roles,
+  schedules,
   onAddShift,
   onUpdateShift,
   onConfirmShift,
@@ -68,23 +72,23 @@ export function ShiftCalendar({
     }
   }, [currentDate, viewMode]);
 
-  // Group shifts by date and then by shift type
-  const shiftsByDateAndType = useMemo(() => {
+  // Group shifts by date and then by schedule (jornada)
+  const shiftsByDateAndSchedule = useMemo(() => {
     const map: Record<string, Record<string, HRShift[]>> = {};
     
     shifts.forEach(shift => {
       const dateKey = shift.shift_date;
-      const typeId = shift.shift_type_id || 'unknown';
+      const scheduleKey = shift.schedule_id || NO_SCHEDULE_KEY;
       
       if (!map[dateKey]) map[dateKey] = {};
-      if (!map[dateKey][typeId]) map[dateKey][typeId] = [];
-      map[dateKey][typeId].push(shift);
+      if (!map[dateKey][scheduleKey]) map[dateKey][scheduleKey] = [];
+      map[dateKey][scheduleKey].push(shift);
     });
     
-    // Sort shifts within each type by role name then employee name
+    // Sort shifts within each schedule by role name then employee name
     Object.keys(map).forEach(dateKey => {
-      Object.keys(map[dateKey]).forEach(typeId => {
-        map[dateKey][typeId].sort((a, b) => {
+      Object.keys(map[dateKey]).forEach(scheduleKey => {
+        map[dateKey][scheduleKey].sort((a, b) => {
           const roleCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
           if (roleCompare !== 0) return roleCompare;
           return (a.employee?.full_name || 'ZZZ').localeCompare(b.employee?.full_name || 'ZZZ');
@@ -95,10 +99,19 @@ export function ShiftCalendar({
     return map;
   }, [shifts]);
 
-  // Get ordered shift types for consistent display
-  const orderedShiftTypes = useMemo(() => {
-    return shiftTypes.filter(st => st.is_active).sort((a, b) => a.name.localeCompare(b.name));
-  }, [shiftTypes]);
+  // Get ordered schedules for consistent display (sorted by start_time)
+  const orderedSchedules = useMemo(() => {
+    return [...schedules]
+      .filter(s => s.is_active)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+  }, [schedules]);
+
+  // Build a map of schedule_id -> schedule for quick lookup
+  const scheduleMap = useMemo(() => {
+    const map: Record<string, HRSchedule> = {};
+    schedules.forEach(s => { map[s.id] = s; });
+    return map;
+  }, [schedules]);
 
   const handleShiftClick = (shift: HRShift) => {
     setSelectedShift(shift);
@@ -113,6 +126,8 @@ export function ShiftCalendar({
     }
     return result;
   }, [days]);
+
+  const formatTime = (time: string) => time?.substring(0, 5) || '';
 
   return (
     <>
@@ -138,7 +153,7 @@ export function ShiftCalendar({
             <div key={weekIdx} className="grid grid-cols-7 divide-x">
               {week.map((day) => {
                 const dateKey = format(day, 'yyyy-MM-dd');
-                const dayShiftsByType = shiftsByDateAndType[dateKey] || {};
+                const dayShiftsBySchedule = shiftsByDateAndSchedule[dateKey] || {};
                 const isCurrentMonth = isSameMonth(day, currentDate);
                 const isCurrentDay = isToday(day);
 
@@ -174,24 +189,28 @@ export function ShiftCalendar({
                       </Button>
                     </div>
 
-                    {/* Shifts grouped by type */}
-                    <div className="space-y-1 overflow-y-auto max-h-[calc(100%-28px)]">
-                      {orderedShiftTypes.map((shiftType) => {
-                        const typeShifts = dayShiftsByType[shiftType.id] || [];
-                        if (typeShifts.length === 0) return null;
+                    {/* Shifts grouped by schedule (jornada) */}
+                    <div className="space-y-1.5 overflow-y-auto max-h-[calc(100%-28px)]">
+                      {/* First show ordered schedules */}
+                      {orderedSchedules.map((schedule) => {
+                        const scheduleShifts = dayShiftsBySchedule[schedule.id] || [];
+                        if (scheduleShifts.length === 0) return null;
                         
                         return (
-                          <div key={shiftType.id} className="space-y-0.5">
-                            {/* Shift type header */}
+                          <div key={schedule.id} className="space-y-0.5">
+                            {/* Schedule/Jornada header */}
                             <div className="flex items-center gap-1 px-1">
-                              <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-                                {shiftType.name}
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-primary truncate">
+                                {schedule.name}
                               </span>
-                              <div className="flex-1 h-px bg-border" />
+                              <span className="text-[8px] text-muted-foreground">
+                                ({formatTime(schedule.start_time)}-{formatTime(schedule.end_time)})
+                              </span>
+                              <div className="flex-1 h-px bg-primary/30" />
                             </div>
                             
-                            {/* Shifts for this type */}
-                            {typeShifts.map((shift) => {
+                            {/* Shifts for this schedule */}
+                            {scheduleShifts.map((shift) => {
                               const RoleIcon = getRoleIcon(shift.role?.name || '');
                               const roleColorClass = getRoleColorClass(shift.role?.name || '');
                               
@@ -218,6 +237,43 @@ export function ShiftCalendar({
                           </div>
                         );
                       })}
+
+                      {/* Show shifts without schedule at the end */}
+                      {dayShiftsBySchedule[NO_SCHEDULE_KEY] && dayShiftsBySchedule[NO_SCHEDULE_KEY].length > 0 && (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1 px-1">
+                            <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+                              Sin jornada
+                            </span>
+                            <div className="flex-1 h-px bg-border" />
+                          </div>
+                          
+                          {dayShiftsBySchedule[NO_SCHEDULE_KEY].map((shift) => {
+                            const RoleIcon = getRoleIcon(shift.role?.name || '');
+                            const roleColorClass = getRoleColorClass(shift.role?.name || '');
+                            
+                            return (
+                              <button
+                                key={shift.id}
+                                onClick={() => handleShiftClick(shift)}
+                                className={cn(
+                                  "w-full text-left rounded px-1.5 py-0.5 text-xs transition-all",
+                                  "border-l-2 cursor-pointer hover:shadow-sm hover:scale-[1.02]",
+                                  statusColors[shift.status],
+                                  statusBg[shift.status]
+                                )}
+                              >
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <RoleIcon className={cn("h-3 w-3 flex-shrink-0", roleColorClass)} />
+                                  <span className="truncate font-medium">
+                                    {shift.employee?.full_name || 'Sin asignar'}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

@@ -2688,6 +2688,7 @@ export type Database = {
           notes: string | null
           paid_at: string | null
           role_id: string
+          schedule_id: string | null
           shift_date: string
           shift_type_id: string
           status: string
@@ -2706,6 +2707,7 @@ export type Database = {
           notes?: string | null
           paid_at?: string | null
           role_id: string
+          schedule_id?: string | null
           shift_date: string
           shift_type_id: string
           status?: string
@@ -2724,6 +2726,7 @@ export type Database = {
           notes?: string | null
           paid_at?: string | null
           role_id?: string
+          schedule_id?: string | null
           shift_date?: string
           shift_type_id?: string
           status?: string
@@ -2784,6 +2787,13 @@ export type Database = {
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "hr_shift_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_shifts_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "hr_schedules"
             referencedColumns: ["id"]
           },
           {
