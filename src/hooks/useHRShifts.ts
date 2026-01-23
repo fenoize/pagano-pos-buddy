@@ -56,7 +56,8 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
           *,
           employee:hr_employees(id, full_name, rut),
           shift_type:hr_shift_types(id, name, default_hours),
-          role:hr_shift_roles(id, name)
+          role:hr_shift_roles(id, name),
+          schedule:hr_schedules(id, name, start_time, end_time)
         `)
         .order('shift_date', { ascending: false });
       
@@ -106,6 +107,7 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
         shift_date: formData.shift_date,
         shift_type_id: formData.shift_type_id,
         role_id: formData.role_id,
+        schedule_id: formData.schedule_id || null,
         hours_override: formData.hours_override || null,
         notes: formData.notes || null,
         status: 'draft',
@@ -266,6 +268,7 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
         shift_date: s.shift_date,
         shift_type_id: s.shift_type_id,
         role_id: s.role_id,
+        schedule_id: s.schedule_id || null,
         hours_override: s.hours_override || null,
         notes: null,
         status: 'draft',

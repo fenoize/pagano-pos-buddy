@@ -60,6 +60,7 @@ export interface HRShift {
   shift_date: string;
   shift_type_id: string;
   role_id: string;
+  schedule_id: string | null;
   hours_override: number | null;
   notes: string | null;
   status: HRShiftStatus;
@@ -72,9 +73,10 @@ export interface HRShift {
   created_at: string;
   updated_at: string;
   // Joined data
-  employee?: HREmployee;
-  shift_type?: HRShiftType;
-  role?: HRShiftRole;
+  employee?: Pick<HREmployee, 'id' | 'full_name' | 'rut'>;
+  shift_type?: Pick<HRShiftType, 'id' | 'name' | 'default_hours'>;
+  role?: Pick<HRShiftRole, 'id' | 'name'>;
+  schedule?: Pick<HRSchedule, 'id' | 'name' | 'start_time' | 'end_time'>;
 }
 
 export type HRAdjustmentType = 'bonus' | 'advance' | 'discount';
@@ -169,6 +171,7 @@ export interface HRShiftFormData {
   shift_date: string;
   shift_type_id: string;
   role_id: string;
+  schedule_id?: string | null;
   hours_override?: number | null;
   notes?: string;
 }

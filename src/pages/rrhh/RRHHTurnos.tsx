@@ -338,6 +338,7 @@ function RRHHTurnos() {
           employees={employees}
           shiftTypes={shiftTypes}
           roles={roles}
+          schedules={schedules}
           onAddShift={handleOpenModal}
           onUpdateShift={updateShift}
           onConfirmShift={confirmShift}
