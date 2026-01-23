@@ -68,24 +68,37 @@ export function ShiftCalendar({
     }
   }, [currentDate, viewMode]);
 
-  // Group shifts by date
-  const shiftsByDate = useMemo(() => {
-    const map: Record<string, HRShift[]> = {};
+  // Group shifts by date and then by shift type
+  const shiftsByDateAndType = useMemo(() => {
+    const map: Record<string, Record<string, HRShift[]>> = {};
+    
     shifts.forEach(shift => {
       const dateKey = shift.shift_date;
-      if (!map[dateKey]) map[dateKey] = [];
-      map[dateKey].push(shift);
+      const typeId = shift.shift_type_id || 'unknown';
+      
+      if (!map[dateKey]) map[dateKey] = {};
+      if (!map[dateKey][typeId]) map[dateKey][typeId] = [];
+      map[dateKey][typeId].push(shift);
     });
-    // Sort shifts by role name then employee name
-    Object.keys(map).forEach(key => {
-      map[key].sort((a, b) => {
-        const roleCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
-        if (roleCompare !== 0) return roleCompare;
-        return (a.employee?.full_name || 'ZZZ').localeCompare(b.employee?.full_name || 'ZZZ');
+    
+    // Sort shifts within each type by role name then employee name
+    Object.keys(map).forEach(dateKey => {
+      Object.keys(map[dateKey]).forEach(typeId => {
+        map[dateKey][typeId].sort((a, b) => {
+          const roleCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
+          if (roleCompare !== 0) return roleCompare;
+          return (a.employee?.full_name || 'ZZZ').localeCompare(b.employee?.full_name || 'ZZZ');
+        });
       });
     });
+    
     return map;
   }, [shifts]);
+
+  // Get ordered shift types for consistent display
+  const orderedShiftTypes = useMemo(() => {
+    return shiftTypes.filter(st => st.is_active).sort((a, b) => a.name.localeCompare(b.name));
+  }, [shiftTypes]);
 
   const handleShiftClick = (shift: HRShift) => {
     setSelectedShift(shift);
@@ -125,7 +138,7 @@ export function ShiftCalendar({
             <div key={weekIdx} className="grid grid-cols-7 divide-x">
               {week.map((day) => {
                 const dateKey = format(day, 'yyyy-MM-dd');
-                const dayShifts = shiftsByDate[dateKey] || [];
+                const dayShiftsByType = shiftsByDateAndType[dateKey] || {};
                 const isCurrentMonth = isSameMonth(day, currentDate);
                 const isCurrentDay = isToday(day);
 
@@ -133,8 +146,8 @@ export function ShiftCalendar({
                   <div
                     key={dateKey}
                     className={cn(
-                      "min-h-[100px] p-1 relative group transition-colors",
-                      viewMode === 'month' && "min-h-[90px]",
+                      "min-h-[120px] p-1 relative group transition-colors",
+                      viewMode === 'month' && "min-h-[100px]",
                       !isCurrentMonth && "bg-muted/20",
                       "hover:bg-muted/40"
                     )}
@@ -161,30 +174,48 @@ export function ShiftCalendar({
                       </Button>
                     </div>
 
-                    {/* Shifts */}
-                    <div className="space-y-0.5 overflow-y-auto max-h-[calc(100%-24px)]">
-                      {dayShifts.map((shift) => {
-                        const RoleIcon = getRoleIcon(shift.role?.name || '');
-                        const roleColorClass = getRoleColorClass(shift.role?.name || '');
+                    {/* Shifts grouped by type */}
+                    <div className="space-y-1 overflow-y-auto max-h-[calc(100%-28px)]">
+                      {orderedShiftTypes.map((shiftType) => {
+                        const typeShifts = dayShiftsByType[shiftType.id] || [];
+                        if (typeShifts.length === 0) return null;
                         
                         return (
-                          <button
-                            key={shift.id}
-                            onClick={() => handleShiftClick(shift)}
-                            className={cn(
-                              "w-full text-left rounded px-1.5 py-0.5 text-xs transition-all",
-                              "border-l-2 cursor-pointer hover:shadow-sm hover:scale-[1.02]",
-                              statusColors[shift.status],
-                              statusBg[shift.status]
-                            )}
-                          >
-                            <div className="flex items-center gap-1 min-w-0">
-                              <RoleIcon className={cn("h-3 w-3 flex-shrink-0", roleColorClass)} />
-                              <span className="truncate font-medium">
-                                {shift.employee?.full_name || 'Sin asignar'}
+                          <div key={shiftType.id} className="space-y-0.5">
+                            {/* Shift type header */}
+                            <div className="flex items-center gap-1 px-1">
+                              <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+                                {shiftType.name}
                               </span>
+                              <div className="flex-1 h-px bg-border" />
                             </div>
-                          </button>
+                            
+                            {/* Shifts for this type */}
+                            {typeShifts.map((shift) => {
+                              const RoleIcon = getRoleIcon(shift.role?.name || '');
+                              const roleColorClass = getRoleColorClass(shift.role?.name || '');
+                              
+                              return (
+                                <button
+                                  key={shift.id}
+                                  onClick={() => handleShiftClick(shift)}
+                                  className={cn(
+                                    "w-full text-left rounded px-1.5 py-0.5 text-xs transition-all",
+                                    "border-l-2 cursor-pointer hover:shadow-sm hover:scale-[1.02]",
+                                    statusColors[shift.status],
+                                    statusBg[shift.status]
+                                  )}
+                                >
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    <RoleIcon className={cn("h-3 w-3 flex-shrink-0", roleColorClass)} />
+                                    <span className="truncate font-medium">
+                                      {shift.employee?.full_name || 'Sin asignar'}
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
                         );
                       })}
                     </div>
