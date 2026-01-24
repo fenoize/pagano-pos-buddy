@@ -2,104 +2,143 @@
 
 ## Objetivo
 
-Modificar la visualización del calendario de turnos en RRHH para que agrupe los turnos por **Jornada/Horario** (ej: "Jornada AM", "Jornada PM") en lugar de por tipo de turno de pago ("Turno Completo", "Medio Turno").
+Permitir seleccionar **múltiples jornadas/horarios** en el modal "Generar desde Horario" para crear turnos de varias jornadas simultáneamente en un solo paso.
 
 ---
 
-## Análisis del Problema
+## Problema Actual
 
-Actualmente:
-- Los turnos (`hr_shifts`) se almacenan con `shift_type_id` que apunta a tipos de pago como "TURNO COMPLETO" o "MEDIO TURNO"
-- **No existe** una columna `schedule_id` que vincule cada turno con su jornada/horario
-- Cuando se generan turnos desde un horario, no se guarda esa referencia
-
----
-
-## Plan de Implementación
-
-### 1. Migración de Base de Datos
-
-Agregar columna `schedule_id` a la tabla `hr_shifts`:
+El modal `GenerateShiftsModal` solo permite seleccionar **una jornada a la vez**:
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│  hr_shifts                                              │
-├─────────────────────────────────────────────────────────┤
-│  + schedule_id (UUID, nullable, FK → hr_schedules.id)   │
-│    SET NULL on delete                                   │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│  Generar Turnos desde Horario        │
+├──────────────────────────────────────┤
+│  Horario / Plantilla                 │
+│  [Dropdown: Jornada AM ▼]  ← Solo 1  │
+│                                      │
+│  Fecha inicio: [_________]           │
+│  Fecha fin:    [_________]           │
+└──────────────────────────────────────┘
 ```
 
-- Columna nullable para no afectar turnos existentes
-- FK con `ON DELETE SET NULL` para que si se elimina un horario, los turnos no se pierdan
-
-### 2. Actualizar Tipos TypeScript
-
-Modificar `src/types/hr.ts`:
-- Agregar `schedule_id?: string | null` a `HRShift`
-- Agregar `schedule?: HRSchedule` para datos relacionados
-- Actualizar `HRShiftFormData` con `schedule_id`
-
-### 3. Actualizar Generación de Turnos
-
-Modificar `src/components/rrhh/GenerateShiftsModal.tsx`:
-- Incluir `schedule_id` al generar turnos desde un horario
-
-Modificar `src/hooks/useHRShifts.ts`:
-- En `bulkCreateShifts`: pasar `schedule_id` en los inserts
-- En `fetchShifts`: incluir join con `hr_schedules` en la consulta
-
-### 4. Actualizar Calendario de Turnos
-
-Modificar `src/components/rrhh/ShiftCalendar.tsx`:
-- Cambiar agrupación de `shift_type_id` a `schedule_id`
-- Mostrar nombre del horario (ej: "Jornada AM") como cabecera de grupo
-- Los turnos sin `schedule_id` se agruparán bajo "Sin jornada asignada"
-
-### 5. Actualizar Formulario de Turno Individual
-
-El formulario de crear/editar turno manual (`ShiftFormModal`) deberá permitir seleccionar el horario/jornada además del tipo de turno.
+Esto obliga al usuario a generar turnos de cada jornada por separado, lo cual es:
+- Tedioso (abrir modal múltiples veces)
+- Propenso a errores (olvidar generar una jornada)
 
 ---
 
-## Resultado Visual Esperado
+## Solución Propuesta
+
+Reemplazar el `Select` simple por un sistema de **selección múltiple** con checkboxes:
 
 ```text
-┌─────────────────────────────────────┐
-│ VIERNES 23                          │
-├─────────────────────────────────────┤
-│ JORNADA AM                          │
-│ ────────────────────                │
-│ 🍳 Cristóbal Sepúlveda              │
-│ 💰 Felipe Sepúlveda                 │
-├─────────────────────────────────────┤
-│ JORNADA PM                          │
-│ ────────────────────                │
-│ 🍳 Diego Ulloa                      │
-│ 💰 Ignacio Hernández                │
-│ 📋 Joshua Herrera                   │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│  Generar Turnos desde Horario        │
+├──────────────────────────────────────┤
+│  Horarios / Jornadas                 │
+│  ┌────────────────────────────────┐  │
+│  │ ☑ Jornada AM (11:00-17:30)     │  │
+│  │   L M X J V S D                │  │
+│  │   ○ ○ ○ ○ ● ● ○   2 pos/día    │  │
+│  ├────────────────────────────────┤  │
+│  │ ☑ Jornada PM FDS (18:30-01:00) │  │
+│  │   L M X J V S D                │  │
+│  │   ○ ○ ○ ○ ● ● ○   3 pos/día    │  │
+│  ├────────────────────────────────┤  │
+│  │ ☐ Jornada PM (18:00-12:00)     │  │
+│  │   L M X J V S D                │  │
+│  │   ● ● ● ● ○ ○ ○   2 pos/día    │  │
+│  └────────────────────────────────┘  │
+│                                      │
+│  Fecha inicio: [2026-01-24]          │
+│  Fecha fin:    [2026-01-31]          │
+│                                      │
+│  Vista previa: 35 turnos             │
+│  • Jornada AM: 10 turnos             │
+│  • Jornada PM FDS: 12 turnos         │
+│  • Jornada PM: 13 turnos             │
+│                                      │
+│  [Cancelar]  [Generar 35 turno(s)]   │
+└──────────────────────────────────────┘
 ```
 
 ---
 
-## Archivos a Modificar
+## Cambios Técnicos
 
-| Archivo | Cambio |
-|---------|--------|
-| `supabase/migrations/` | Nueva migración para agregar `schedule_id` |
-| `src/types/hr.ts` | Agregar campos `schedule_id` y `schedule` |
-| `src/hooks/useHRShifts.ts` | Join con schedules, soporte para `schedule_id` |
-| `src/components/rrhh/GenerateShiftsModal.tsx` | Pasar `schedule_id` al generar |
-| `src/components/rrhh/ShiftCalendar.tsx` | Agrupar por `schedule` en lugar de `shift_type` |
-| `src/components/rrhh/ShiftFormModal.tsx` | Selector de jornada/horario |
-| `src/integrations/supabase/types.ts` | Se regenera automáticamente |
+### Archivo: `src/components/rrhh/GenerateShiftsModal.tsx`
+
+| Cambio | Descripción |
+|--------|-------------|
+| Estado | Cambiar `scheduleId: string` a `selectedScheduleIds: string[]` |
+| UI | Reemplazar `<Select>` por lista de checkboxes/cards |
+| Preview | Modificar para iterar sobre múltiples horarios |
+| Generación | Concatenar turnos de todos los horarios seleccionados |
+
+### Lógica de Preview
+
+```typescript
+// Antes: un solo scheduleId
+const preview = useMemo(() => {
+  if (!selectedSchedule) return [];
+  // ... genera turnos para 1 horario
+}, [selectedSchedule, startDate, endDate]);
+
+// Después: múltiples scheduleIds
+const preview = useMemo(() => {
+  const allShifts = [];
+  for (const scheduleId of selectedScheduleIds) {
+    const schedule = schedules.find(s => s.id === scheduleId);
+    if (!schedule) continue;
+    // ... genera turnos para este horario
+    allShifts.push({ schedule, shifts: [...] });
+  }
+  return allShifts;
+}, [selectedScheduleIds, schedules, startDate, endDate]);
+```
+
+### Lógica de Generación
+
+```typescript
+const handleGenerate = async () => {
+  const allShiftsToCreate = [];
+  
+  for (const scheduleGroup of preview) {
+    for (const day of scheduleGroup.shifts) {
+      for (const position of day.positions) {
+        allShiftsToCreate.push({
+          employee_id: null,
+          shift_date: day.dateStr,
+          shift_type_id: position.shift_type_id,
+          role_id: position.role_id,
+          schedule_id: scheduleGroup.schedule.id,
+        });
+      }
+    }
+  }
+  
+  await onGenerate(allShiftsToCreate);
+};
+```
 
 ---
 
-## Consideraciones
+## Flujo de Usuario
 
-- Los turnos existentes tendrán `schedule_id = null` y se mostrarán bajo "Sin jornada"
-- Los turnos creados manualmente podrán seleccionar opcionalmente una jornada
-- El `shift_type_id` sigue siendo necesario para el cálculo de pago en nómina
+1. Usuario abre modal "Generar desde Horario"
+2. Ve lista de todas las jornadas activas con checkboxes
+3. Selecciona las jornadas deseadas (ej: AM + PM FDS)
+4. Define rango de fechas
+5. Ve preview consolidado con desglose por jornada
+6. Confirma y se generan todos los turnos de una vez
+
+---
+
+## Beneficios
+
+- Menor fricción: un solo paso en lugar de múltiples
+- Menos errores: usuario ve todas las jornadas a generar
+- Vista previa clara: desglose por jornada antes de confirmar
+- Mantiene compatibilidad: sigue usando el mismo `bulkCreateShifts`
 
