@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { HRShift, HRShiftStatus, HREmployee, HRShiftType, HRShiftRole } from '@/types/hr';
+import { HRShift, HRShiftStatus, HREmployee, HRShiftType, HRShiftRole, HRSchedule } from '@/types/hr';
 import { Check, CheckCheck, Trash2, Eye, Pencil } from 'lucide-react';
 import { getRoleIcon, getRoleColorClass } from '@/lib/roleIcons';
 import { ShiftDetailModal } from './ShiftDetailModal';
@@ -16,6 +16,7 @@ interface ShiftListViewProps {
   employees: HREmployee[];
   shiftTypes: HRShiftType[];
   roles: HRShiftRole[];
+  schedules: HRSchedule[];
   onSelect: (id: string, checked: boolean) => void;
   onSelectAll: (checked: boolean) => void;
   onUpdateShift: (id: string, data: any) => Promise<void>;
@@ -37,6 +38,7 @@ export function ShiftListView({
   employees,
   shiftTypes,
   roles,
+  schedules,
   onSelect,
   onSelectAll,
   onUpdateShift,
@@ -266,6 +268,7 @@ export function ShiftListView({
         employees={employees}
         shiftTypes={shiftTypes}
         roles={roles}
+        schedules={schedules}
         onUpdate={onUpdateShift}
         onDelete={onDeleteShift}
         onConfirm={onConfirmShift}

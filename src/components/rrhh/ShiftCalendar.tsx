@@ -292,6 +292,7 @@ export function ShiftCalendar({
         employees={employees}
         shiftTypes={shiftTypes}
         roles={roles}
+        schedules={schedules}
         onUpdate={onUpdateShift}
         onDelete={onDeleteShift}
         onConfirm={onConfirmShift}

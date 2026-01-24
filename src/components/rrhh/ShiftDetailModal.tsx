@@ -29,10 +29,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Pencil, Trash2, Check, CheckCheck, Eye, Calendar, User, Briefcase, Clock } from 'lucide-react';
+import { Loader2, Pencil, Trash2, Check, CheckCheck, Eye, Calendar, User, Briefcase, Clock, CalendarClock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { HRShift, HRShiftFormData, HREmployee, HRShiftType, HRShiftRole, HRShiftStatus } from '@/types/hr';
+import type { HRShift, HRShiftFormData, HREmployee, HRShiftType, HRShiftRole, HRShiftStatus, HRSchedule } from '@/types/hr';
 import { getRoleIcon } from '@/lib/roleIcons';
 
 interface ShiftDetailModalProps {
@@ -43,6 +43,7 @@ interface ShiftDetailModalProps {
   employees: HREmployee[];
   shiftTypes: HRShiftType[];
   roles: HRShiftRole[];
+  schedules: HRSchedule[];
   onUpdate?: (id: string, data: Partial<HRShiftFormData>) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   onConfirm?: (id: string) => Promise<void>;
@@ -64,6 +65,7 @@ export function ShiftDetailModal({
   employees,
   shiftTypes,
   roles,
+  schedules,
   onUpdate,
   onDelete,
   onConfirm,
@@ -84,6 +86,7 @@ export function ShiftDetailModal({
         shift_date: shift.shift_date,
         shift_type_id: shift.shift_type_id,
         role_id: shift.role_id,
+        schedule_id: shift.schedule_id || null,
         hours_override: shift.hours_override,
         notes: shift.notes || '',
       });
@@ -93,6 +96,7 @@ export function ShiftDetailModal({
   const activeEmployees = useMemo(() => employees.filter(e => e.is_active), [employees]);
   const activeShiftTypes = useMemo(() => shiftTypes.filter(t => t.is_active), [shiftTypes]);
   const activeRoles = useMemo(() => roles.filter(r => r.is_active), [roles]);
+  const activeSchedules = useMemo(() => schedules.filter(s => s.is_active), [schedules]);
 
   if (!shift) return null;
 
@@ -212,6 +216,26 @@ export function ShiftDetailModal({
                 </div>
               </div>
 
+              {/* Schedule/Jornada */}
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <CalendarClock className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <div className="text-sm text-muted-foreground">Jornada</div>
+                  <div className="font-medium">
+                    {shift.schedule ? (
+                      <span>
+                        {shift.schedule.name}{' '}
+                        <span className="text-muted-foreground text-sm">
+                          ({shift.schedule.start_time?.substring(0, 5)}-{shift.schedule.end_time?.substring(0, 5)})
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Sin jornada</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Hours */}
               {shift.hours_override && (
                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
@@ -294,6 +318,26 @@ export function ShiftDetailModal({
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div>
+                <Label>Jornada</Label>
+                <Select
+                  value={formData.schedule_id || '__none__'}
+                  onValueChange={(val) => setFormData(f => ({ ...f, schedule_id: val === '__none__' ? null : val }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin jornada" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="z-[9999]">
+                    <SelectItem value="__none__">Sin jornada</SelectItem>
+                    {activeSchedules.map(s => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name} ({s.start_time?.substring(0, 5)}-{s.end_time?.substring(0, 5)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
