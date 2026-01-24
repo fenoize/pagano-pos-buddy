@@ -64,8 +64,11 @@ function RRHHTurnos() {
     shift_date: format(new Date(), 'yyyy-MM-dd'),
     shift_type_id: '',
     role_id: '',
+    schedule_id: null,
     notes: '',
   });
+  
+  const activeSchedules = useMemo(() => schedules.filter(s => s.is_active), [schedules]);
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -105,6 +108,7 @@ function RRHHTurnos() {
       shift_date: date || format(new Date(), 'yyyy-MM-dd'),
       shift_type_id: activeShiftTypes[0]?.id || '',
       role_id: activeRoles[0]?.id || '',
+      schedule_id: null,
       notes: '',
     });
     setModalOpen(true);
@@ -352,6 +356,7 @@ function RRHHTurnos() {
           employees={employees}
           shiftTypes={shiftTypes}
           roles={roles}
+          schedules={schedules}
           onSelect={handleSelect}
           onSelectAll={handleSelectAll}
           onUpdateShift={updateShift}
@@ -419,6 +424,23 @@ function RRHHTurnos() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div>
+              <Label>Jornada</Label>
+              <Select 
+                value={shiftForm.schedule_id || '__none__'} 
+                onValueChange={(val) => setShiftForm(f => ({ ...f, schedule_id: val === '__none__' ? null : val }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Sin jornada" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sin jornada</SelectItem>
+                  {activeSchedules.map(s => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} ({s.start_time?.substring(0, 5)}-{s.end_time?.substring(0, 5)})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Notas</Label>
