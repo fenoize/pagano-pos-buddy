@@ -110,7 +110,7 @@ export default function MarketingPromosApp() {
         <div>
           <h1 className="text-3xl font-bold">Promos App</h1>
           <p className="text-muted-foreground mt-1">
-            Gestiona promociones y analiza su rendimiento en la app de clientes
+            Gestiona las promociones del slider de la app cliente. Para contenido de TV, usa "Contenido TV".
           </p>
         </div>
         <Button onClick={handleCreate}>
@@ -131,9 +131,9 @@ export default function MarketingPromosApp() {
         <TabsContent value="promotions" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Promociones Activas</CardTitle>
+              <CardTitle>Promociones del Slider</CardTitle>
               <CardDescription>
-                Configura las promociones que se mostrarán en la pantalla de inicio de la app de clientes.
+                Promociones que se muestran en el slider de la pantalla de inicio de la app cliente.
               </CardDescription>
             </CardHeader>
 
