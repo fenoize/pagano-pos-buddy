@@ -1,144 +1,155 @@
 
-
 ## Objetivo
 
-Permitir seleccionar **múltiples jornadas/horarios** en el modal "Generar desde Horario" para crear turnos de varias jornadas simultáneamente en un solo paso.
+Separar la visualización y gestión de contenido de **Promos App** y **Contenido TV** en el módulo de Marketing, ya que actualmente ambos tipos de promociones se muestran mezclados en la página "Promos App".
 
 ---
 
-## Problema Actual
+## Análisis del Problema
 
-El modal `GenerateShiftsModal` solo permite seleccionar **una jornada a la vez**:
+### Estructura Actual de Datos
+
+Ambos tipos de contenido se almacenan en la misma tabla `marketing_app_promotions`, diferenciados por el campo `cta_type`:
+
+| Tipo | cta_type | Uso |
+|------|----------|-----|
+| **Promos App** | `open_menu`, `open_cart`, `open_orders`, `open_benefits`, `open_product`, `open_custom_url` | Slider en app cliente |
+| **Contenido TV** | `none` | Pantallas TV de pedidos listos |
+
+### Código Actual
 
 ```text
+┌─────────────────────────────────────────────────────────────┐
+│ useMarketingPromotions (hook)                               │
+├─────────────────────────────────────────────────────────────┤
+│ SELECT * FROM marketing_app_promotions                      │
+│ ORDER BY priority, created_at                               │
+│                                                             │
+│ ❌ NO filtra por cta_type                                   │
+│ ❌ Trae TODO (App + TV)                                     │
+└─────────────────────────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ MarketingPromosApp.tsx                                      │
+├─────────────────────────────────────────────────────────────┤
+│ Muestra TODAS las promociones en la tabla                   │
+│ ❌ Incluye contenido TV (cta_type = 'none')                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Plan de Implementación
+
+### 1. Modificar Hook `useMarketingPromotions`
+
+**Archivo:** `src/hooks/useMarketingPromotions.ts`
+
+Agregar filtro para excluir contenido TV:
+
+```typescript
+// Antes
+const { data, error } = await configuredSupabase
+  .from('marketing_app_promotions')
+  .select('*')
+  .order('priority', { ascending: true })
+
+// Después
+const { data, error } = await configuredSupabase
+  .from('marketing_app_promotions')
+  .select('*')
+  .neq('cta_type', 'none')  // 👈 Excluir contenido TV
+  .order('priority', { ascending: true })
+```
+
+### 2. Actualizar Mutations en el Hook
+
+Asegurar que las mutaciones (create, update, delete) continúen funcionando correctamente y refresquen las queries apropiadas:
+
+- `createPromotion`: Invalidar `marketing-promotions`
+- `updatePromotion`: Invalidar `marketing-promotions`
+- `deletePromotion`: Invalidar `marketing-promotions`
+- `toggleActive`: Invalidar `marketing-promotions`
+
+### 3. Actualizar Descripción en MarketingPromosApp
+
+**Archivo:** `src/pages/MarketingPromosApp.tsx`
+
+Clarificar en la interfaz que esta sección es exclusivamente para promociones de la app cliente:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ Promos App                                                  │
+│ Gestiona promociones que se muestran en el slider de la    │
+│ aplicación cliente. Para contenido de TV, usa el módulo    │
+│ "Contenido TV".                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Resultado Esperado
+
+### Antes
+
+```text
+Marketing > Promos App
 ┌──────────────────────────────────────┐
-│  Generar Turnos desde Horario        │
+│ Título          │ CTA          │ ... │
 ├──────────────────────────────────────┤
-│  Horario / Plantilla                 │
-│  [Dropdown: Jornada AM ▼]  ← Solo 1  │
-│                                      │
-│  Fecha inicio: [_________]           │
-│  Fecha fin:    [_________]           │
+│ Promo Verano    │ Ir al Menú   │     │ ← App
+│ Video Cocina    │ Sin acción   │     │ ← TV ❌
+│ Nuevo Combo     │ Ir al Carrito│     │ ← App
+│ Imagen Promo    │ Sin acción   │     │ ← TV ❌
 └──────────────────────────────────────┘
 ```
 
-Esto obliga al usuario a generar turnos de cada jornada por separado, lo cual es:
-- Tedioso (abrir modal múltiples veces)
-- Propenso a errores (olvidar generar una jornada)
-
----
-
-## Solución Propuesta
-
-Reemplazar el `Select` simple por un sistema de **selección múltiple** con checkboxes:
+### Después
 
 ```text
+Marketing > Promos App
 ┌──────────────────────────────────────┐
-│  Generar Turnos desde Horario        │
+│ Título          │ CTA          │ ... │
 ├──────────────────────────────────────┤
-│  Horarios / Jornadas                 │
-│  ┌────────────────────────────────┐  │
-│  │ ☑ Jornada AM (11:00-17:30)     │  │
-│  │   L M X J V S D                │  │
-│  │   ○ ○ ○ ○ ● ● ○   2 pos/día    │  │
-│  ├────────────────────────────────┤  │
-│  │ ☑ Jornada PM FDS (18:30-01:00) │  │
-│  │   L M X J V S D                │  │
-│  │   ○ ○ ○ ○ ● ● ○   3 pos/día    │  │
-│  ├────────────────────────────────┤  │
-│  │ ☐ Jornada PM (18:00-12:00)     │  │
-│  │   L M X J V S D                │  │
-│  │   ● ● ● ● ○ ○ ○   2 pos/día    │  │
-│  └────────────────────────────────┘  │
-│                                      │
-│  Fecha inicio: [2026-01-24]          │
-│  Fecha fin:    [2026-01-31]          │
-│                                      │
-│  Vista previa: 35 turnos             │
-│  • Jornada AM: 10 turnos             │
-│  • Jornada PM FDS: 12 turnos         │
-│  • Jornada PM: 13 turnos             │
-│                                      │
-│  [Cancelar]  [Generar 35 turno(s)]   │
+│ Promo Verano    │ Ir al Menú   │     │ ← Solo App
+│ Nuevo Combo     │ Ir al Carrito│     │ ← Solo App
+└──────────────────────────────────────┘
+
+Marketing > Contenido TV
+┌──────────────────────────────────────┐
+│ Título          │ Tipo   │ ...       │
+├──────────────────────────────────────┤
+│ Video Cocina    │ Video  │           │ ← Solo TV
+│ Imagen Promo    │ Imagen │           │ ← Solo TV
 └──────────────────────────────────────┘
 ```
 
 ---
 
-## Cambios Técnicos
+## Archivos a Modificar
 
-### Archivo: `src/components/rrhh/GenerateShiftsModal.tsx`
-
-| Cambio | Descripción |
-|--------|-------------|
-| Estado | Cambiar `scheduleId: string` a `selectedScheduleIds: string[]` |
-| UI | Reemplazar `<Select>` por lista de checkboxes/cards |
-| Preview | Modificar para iterar sobre múltiples horarios |
-| Generación | Concatenar turnos de todos los horarios seleccionados |
-
-### Lógica de Preview
-
-```typescript
-// Antes: un solo scheduleId
-const preview = useMemo(() => {
-  if (!selectedSchedule) return [];
-  // ... genera turnos para 1 horario
-}, [selectedSchedule, startDate, endDate]);
-
-// Después: múltiples scheduleIds
-const preview = useMemo(() => {
-  const allShifts = [];
-  for (const scheduleId of selectedScheduleIds) {
-    const schedule = schedules.find(s => s.id === scheduleId);
-    if (!schedule) continue;
-    // ... genera turnos para este horario
-    allShifts.push({ schedule, shifts: [...] });
-  }
-  return allShifts;
-}, [selectedScheduleIds, schedules, startDate, endDate]);
-```
-
-### Lógica de Generación
-
-```typescript
-const handleGenerate = async () => {
-  const allShiftsToCreate = [];
-  
-  for (const scheduleGroup of preview) {
-    for (const day of scheduleGroup.shifts) {
-      for (const position of day.positions) {
-        allShiftsToCreate.push({
-          employee_id: null,
-          shift_date: day.dateStr,
-          shift_type_id: position.shift_type_id,
-          role_id: position.role_id,
-          schedule_id: scheduleGroup.schedule.id,
-        });
-      }
-    }
-  }
-  
-  await onGenerate(allShiftsToCreate);
-};
-```
+| Archivo | Cambio |
+|---------|--------|
+| `src/hooks/useMarketingPromotions.ts` | Agregar `.neq('cta_type', 'none')` al query principal |
+| `src/pages/MarketingPromosApp.tsx` | Actualizar descripción para clarificar que es solo para app cliente |
 
 ---
 
-## Flujo de Usuario
+## Validación del Cambio
 
-1. Usuario abre modal "Generar desde Horario"
-2. Ve lista de todas las jornadas activas con checkboxes
-3. Selecciona las jornadas deseadas (ej: AM + PM FDS)
-4. Define rango de fechas
-5. Ve preview consolidado con desglose por jornada
-6. Confirma y se generan todos los turnos de una vez
+El contenido TV ya está correctamente separado:
+
+- **Hook `useTVContent`** en `MarketingTVContent.tsx` filtra con `.eq('cta_type', 'none')` ✅
+- **Hook `useActivePromotions`** para app cliente ya filtra con `.neq('cta_type', 'none')` ✅
+- **Hook `useActiveTVContent`** para TV ya filtra con `.eq('cta_type', 'none')` ✅
+
+Solo falta aplicar el mismo filtro al hook de gestión `useMarketingPromotions`.
 
 ---
 
-## Beneficios
+## Impacto
 
-- Menor fricción: un solo paso en lugar de múltiples
-- Menos errores: usuario ve todas las jornadas a generar
-- Vista previa clara: desglose por jornada antes de confirmar
-- Mantiene compatibilidad: sigue usando el mismo `bulkCreateShifts`
-
+- **Bajo riesgo**: Solo se modifica el filtro de la query, no afecta la estructura de datos
+- **Sin migración**: No requiere cambios en la base de datos
+- **Retrocompatible**: El contenido existente seguirá funcionando correctamente
