@@ -36,6 +36,7 @@ export const useMarketingPromotions = () => {
       const { data, error } = await configuredSupabase
         .from('marketing_app_promotions')
         .select('*')
+        .neq('cta_type', 'none') // Excluir contenido TV
         .order('priority', { ascending: true })
         .order('created_at', { ascending: false });
 
