@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { CartItem } from '@/contexts/CartContext';
+import type { CartItem } from '@/contexts/CartContext';
 
 export interface CreateRunasOrderParams {
   items: CartItem[];
@@ -116,15 +116,27 @@ export async function createRunasOrder(
       return sum + itemTotal + extrasTotal;
     }, 0);
 
-    // 3. Preparar items para la orden
+    // 3. Preparar items para la orden (usar estructura de OrderItem)
     const orderItems = items.map(item => ({
       productId: item.productId,
       productName: item.productName,
       quantity: item.quantity,
       basePrice: item.basePrice,
-      selectedExtras: item.selectedExtras || [],
-      selectedModifiers: item.selectedModifiers || [],
-      selectedVariant: item.selectedVariant,
+      // Usar estructura de OrderItem
+      extras: item.extras || item.selectedExtras?.map(e => ({
+        key: e.id,
+        label: e.name,
+        price: e.price,
+        quantity: 1
+      })) || [],
+      modifiers: item.modifiers || item.selectedModifiers || [],
+      variant_name: item.variant_name || item.selectedVariant?.name,
+      category_variant_id: item.category_variant_id,
+      product_variant_option_id: item.product_variant_option_id,
+      size: item.size,
+      priceKind: item.priceKind,
+      is_combo_item: item.is_combo_item,
+      combo_selections: item.combo_selections,
       notes: item.notes || ''
     }));
 
