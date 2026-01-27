@@ -301,11 +301,12 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       productName: product.name,
       basePrice: useCombo ? comboTotal : getBasePrice(),
       quantity,
-      extras: selectedExtrasArray,
-      modifiers: selectedModifiersArray,
+      extras: selectedExtrasArray.length > 0 ? selectedExtrasArray : undefined,
+      modifiers: selectedModifiersArray.length > 0 ? selectedModifiersArray : undefined,
       notes: specialNotes.trim() || undefined,
       is_combo_item: useCombo,
       combo_selections: useCombo ? comboSelections : undefined,
+      imageUrl: product.image_url,
     };
 
     if (!useCombo) {
@@ -318,6 +319,8 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         orderItem.priceKind = selectedPriceType;
       }
     }
+
+    console.log('[CustomerProductCustomization] Adding item to cart:', JSON.stringify(orderItem, null, 2));
 
     onAddToCart(orderItem);
     resetForm();

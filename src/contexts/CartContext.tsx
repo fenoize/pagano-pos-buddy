@@ -94,6 +94,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     };
     
+    console.log('[CartContext] Adding item:', JSON.stringify(newItem, null, 2));
+    
     setItems(prev => [...prev, newItem]);
     toast.success(`${itemData.productName} agregado al carrito`);
   };
