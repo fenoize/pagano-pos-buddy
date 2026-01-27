@@ -9,20 +9,23 @@ export interface CartItem {
   categoryName?: string;
   basePrice: number;
   quantity: number;
-  selectedVariant?: {
-    id: string;
-    name: string;
-    priceAdjustment: number;
-  };
-  selectedExtras?: Array<{
-    id: string;
-    name: string;
-    price: number;
-  }>;
-  selectedModifiers?: Array<{
-    id: string;
-    name: string;
-  }>;
+  
+  // Campos de OrderItem (usados por CustomerProductCustomization)
+  extras?: Array<{ key: string; label: string; price: number; quantity?: number }>;
+  modifiers?: Array<{ id: string; name: string }>;
+  variant_name?: string;
+  category_variant_id?: string;
+  product_variant_option_id?: string;
+  size?: 'simple' | 'doble' | 'triple' | 'cuádruple';
+  priceKind?: 'combo' | 'only';
+  is_combo_item?: boolean;
+  combo_selections?: any[];
+  
+  // Campos legacy (opcionales para compatibilidad)
+  selectedVariant?: { id: string; name: string; priceAdjustment: number };
+  selectedExtras?: Array<{ id: string; name: string; price: number }>;
+  selectedModifiers?: Array<{ id: string; name: string }>;
+  
   notes?: string;
   imageUrl?: string;
 }
@@ -66,13 +69,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const getItemTotal = (item: CartItem): number => {
     let total = item.basePrice;
     
-    // Sumar ajuste de variante
+    // Sumar ajuste de variante (legacy)
     if (item.selectedVariant) {
       total += item.selectedVariant.priceAdjustment;
     }
     
-    // Sumar extras
-    if (item.selectedExtras) {
+    // Sumar extras - priorizar el formato de OrderItem
+    if (item.extras && item.extras.length > 0) {
+      total += item.extras.reduce((sum, extra) => 
+        sum + (extra.price * (extra.quantity || 1)), 0);
+    } else if (item.selectedExtras && item.selectedExtras.length > 0) {
       total += item.selectedExtras.reduce((sum, extra) => sum + extra.price, 0);
     }
     

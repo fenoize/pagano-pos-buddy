@@ -80,24 +80,28 @@ export default function CustomerCart() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold mb-1">{item.productName}</h3>
                     
-                    {/* Variant */}
-                    {item.selectedVariant && (
+                    {/* Variant - leer de ambos formatos */}
+                    {(item.variant_name || item.selectedVariant?.name) && (
                       <p className="text-sm text-muted-foreground">
-                        {item.selectedVariant.name}
+                        {item.variant_name || item.selectedVariant?.name}
                       </p>
                     )}
                     
-                    {/* Extras */}
-                    {item.selectedExtras && item.selectedExtras.length > 0 && (
+                    {/* Extras - leer de ambos formatos */}
+                    {((item.extras && item.extras.length > 0) || 
+                      (item.selectedExtras && item.selectedExtras.length > 0)) && (
                       <p className="text-sm text-muted-foreground">
-                        + {item.selectedExtras.map(e => e.name).join(', ')}
+                        + {item.extras 
+                            ? item.extras.map(e => `${e.quantity && e.quantity > 1 ? e.quantity + 'x ' : ''}${e.label}`).join(', ')
+                            : item.selectedExtras?.map(e => e.name).join(', ')}
                       </p>
                     )}
                     
-                    {/* Modifiers */}
-                    {item.selectedModifiers && item.selectedModifiers.length > 0 && (
+                    {/* Modifiers - leer de ambos formatos */}
+                    {((item.modifiers && item.modifiers.length > 0) ||
+                      (item.selectedModifiers && item.selectedModifiers.length > 0)) && (
                       <p className="text-xs text-muted-foreground">
-                        {item.selectedModifiers.map(m => m.name).join(', ')}
+                        {(item.modifiers || item.selectedModifiers)?.map(m => m.name).join(', ')}
                       </p>
                     )}
 

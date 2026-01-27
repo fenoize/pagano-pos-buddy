@@ -171,9 +171,24 @@ export default function CustomerCheckout() {
             productName: item.productName,
             quantity: item.quantity,
             basePrice: item.basePrice,
-            selectedExtras: item.selectedExtras,
-            selectedModifiers: item.selectedModifiers,
-            selectedVariant: item.selectedVariant
+            // Mapear extras al formato correcto de OrderItem
+            extras: item.extras || item.selectedExtras?.map(e => ({
+              key: e.id,
+              label: e.name,
+              price: e.price,
+              quantity: 1
+            })) || [],
+            modifiers: item.modifiers || item.selectedModifiers || [],
+            // Variantes
+            variant_name: item.variant_name || item.selectedVariant?.name,
+            category_variant_id: item.category_variant_id,
+            product_variant_option_id: item.product_variant_option_id,
+            size: item.size,
+            priceKind: item.priceKind,
+            // Combos
+            is_combo_item: item.is_combo_item,
+            combo_selections: item.combo_selections,
+            notes: item.notes
           })),
           customer_id: customer.id,
           notes: notes || 'Pedido desde app cliente',
