@@ -60,6 +60,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { StaffNotificationBell } from "@/components/notifications/StaffNotificationBell";
 
 const menuItems = [
   { title: "Escritorio", url: "/pos", icon: Home, roles: ['Administrador', 'Cajero'] },
@@ -611,6 +612,9 @@ export function AppSidebar() {
               )}
               <div className="flex items-center gap-2">
                 <ThemeToggle variant="icon" className="h-8 w-8" />
+                {user?.role === 'Administrador' && (
+                  <StaffNotificationBell />
+                )}
                 <Button 
                   variant="ghost" 
                   size="sm" 
