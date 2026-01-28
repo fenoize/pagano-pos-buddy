@@ -121,7 +121,15 @@ export default function CustomerLogin() {
   };
 
   return (
-    <div className="customer-app min-h-screen flex items-center justify-center p-4 bg-background">
+    <div className="customer-app min-h-screen flex items-center justify-center p-4 bg-background relative">
+      {/* Staff Login - enlace discreto */}
+      <a
+        href="/pos"
+        className="absolute bottom-3 left-3 text-[10px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
+      >
+        Staff Login
+      </a>
+
       <Card className="w-full max-w-md border-border shadow-2xl bg-card">
         <CardHeader className="space-y-3 text-center">
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
