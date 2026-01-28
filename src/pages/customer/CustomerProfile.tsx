@@ -18,7 +18,8 @@ import {
   ChevronRight,
   ArrowLeft,
   Save,
-  CheckCircle
+  CheckCircle,
+  LogOut
 } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { configuredSupabase } from '@/lib/supabaseClient';
@@ -35,7 +36,7 @@ import {
 
 export default function CustomerProfile() {
   const navigate = useNavigate();
-  const { customer, refreshCustomerData } = useCustomerAuth();
+  const { customer, refreshCustomerData, signOut } = useCustomerAuth();
   
   // Profile edit state
   const [isEditing, setIsEditing] = useState(false);
@@ -433,6 +434,27 @@ export default function CustomerProfile() {
                 Forzar
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Cerrar Sesión */}
+        <Card className="border-destructive/30 bg-card">
+          <CardContent className="p-0">
+            <button
+              onClick={async () => {
+                await signOut();
+                navigate('/login');
+              }}
+              className="w-full flex items-center justify-between p-4 hover:bg-destructive/10 transition-colors text-destructive"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <LogOut className="h-5 w-5 text-destructive" />
+                </div>
+                <span className="font-medium">Cerrar Sesión</span>
+              </div>
+              <ChevronRight className="h-5 w-5" />
+            </button>
           </CardContent>
         </Card>
       </div>
