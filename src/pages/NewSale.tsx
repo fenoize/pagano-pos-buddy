@@ -816,13 +816,23 @@ export default function NewSale() {
                       <span className="text-muted-foreground">Sin cliente seleccionado</span>
                     )}
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsCustomerModalOpen(true)}
-                  >
-                    {customer.id ? 'Cambiar' : 'Añadir Cliente'}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsCustomerModalOpen(true)}
+                    >
+                      {customer.id ? 'Cambiar' : 'Añadir Cliente'}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsCouponModalOpen(true)}
+                    >
+                      <Ticket className="w-4 h-4 mr-1" />
+                      {appliedCoupons.length > 0 ? `${appliedCoupons.length} Cupón${appliedCoupons.length > 1 ? 'es' : ''}` : 'Añadir Cupón'}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -857,13 +867,23 @@ export default function NewSale() {
                       <span className="text-muted-foreground">Sin cliente seleccionado</span>
                     )}
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsCustomerModalOpen(true)}
-                  >
-                    {customer.id ? 'Cambiar' : 'Añadir Cliente'}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsCustomerModalOpen(true)}
+                    >
+                      {customer.id ? 'Cambiar' : 'Añadir Cliente'}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsCouponModalOpen(true)}
+                    >
+                      <Ticket className="w-4 h-4 mr-1" />
+                      {appliedCoupons.length > 0 ? `${appliedCoupons.length} Cupón${appliedCoupons.length > 1 ? 'es' : ''}` : 'Añadir Cupón'}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
