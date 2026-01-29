@@ -73,14 +73,16 @@ export async function triggerCashSessionCloseNotification(
   userName: string,
   closingCash: number,
   totalSales: number,
-  sessionId: string
+  sessionId: string,
+  orderCount?: number
 ): Promise<void> {
+  const orderCountText = orderCount !== undefined ? ` | ${orderCount} pedidos` : '';
   await createStaffNotification({
     role_target: 'Administrador',
     type: 'cash_session_close',
     title: 'Turno Cerrado 🔒',
-    body: `${userName} cerró turno. Cierre: ${formatCurrency(closingCash)} | Ventas: ${formatCurrency(totalSales)}`,
-    payload: { session_id: sessionId, user_name: userName, closing_cash: closingCash, total_sales: totalSales }
+    body: `${userName} cerró turno. Efectivo: ${formatCurrency(closingCash)} | Ventas: ${formatCurrency(totalSales)}${orderCountText}`,
+    payload: { session_id: sessionId, user_name: userName, closing_cash: closingCash, total_sales: totalSales, order_count: orderCount }
   });
 }
 

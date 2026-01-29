@@ -131,13 +131,15 @@ export function useCashSession() {
       // Get session summary for notification
       const summary = await getSessionSummary(currentSession.id);
       const totalSales = summary?.summary?.totalSales || 0;
+      const orderCount = summary?.orders?.length || 0;
 
       // Notificar a administradores sobre cierre de turno
       triggerCashSessionCloseNotification(
         user.full_name || user.username || 'Usuario',
         closingCash,
         totalSales,
-        currentSession.id
+        currentSession.id,
+        orderCount
       ).catch(err => console.error('[CashSession] Notification error:', err));
 
       setCurrentSession(null);
