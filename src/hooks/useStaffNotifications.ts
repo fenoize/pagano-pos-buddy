@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { StaffNotification } from '@/types/staffNotifications';
-import { setStaffContext } from '@/lib/dbContext';
 
 export function useStaffNotifications() {
   const { user } = useAuthContext();
@@ -19,9 +18,6 @@ export function useStaffNotifications() {
     }
 
     try {
-      // Set the user context for RLS
-      await setStaffContext(user.id);
-
       const { data, error } = await supabase
         .from('staff_notifications')
         .select('*')
@@ -45,8 +41,6 @@ export function useStaffNotifications() {
     if (!user?.id) return;
 
     try {
-      await setStaffContext(user.id);
-
       const { error } = await supabase
         .from('staff_notifications')
         .update({ read_at: new Date().toISOString() })
@@ -67,8 +61,6 @@ export function useStaffNotifications() {
     if (!user?.id) return;
 
     try {
-      await setStaffContext(user.id);
-
       const unreadIds = notifications.filter(n => !n.read_at).map(n => n.id);
       
       if (unreadIds.length === 0) return;

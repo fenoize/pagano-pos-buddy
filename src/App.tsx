@@ -12,7 +12,6 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { SEOHead } from "@/components/SEOHead";
 import { CashSessionTopBar } from "@/components/cash/CashSessionTopBar";
-import { StaffNotificationBell } from "@/components/notifications/StaffNotificationBell";
 import { POSInstallPrompt } from "@/components/pos/POSInstallPrompt";
 import { SessionExpiryModal } from "@/components/auth/SessionExpiryModal";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
@@ -177,7 +176,6 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
                 <h2 className="font-semibold text-primary">Paganos POS</h2>
               </div>
               <div className="flex items-center gap-2">
-                <StaffNotificationBell />
                 <CashSessionTopBar />
               </div>
             </header>
