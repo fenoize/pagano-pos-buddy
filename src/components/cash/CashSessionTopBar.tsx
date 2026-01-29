@@ -12,6 +12,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { setStaffContext } from '@/lib/dbContext';
+import { StaffNotificationBell } from '@/components/notifications/StaffNotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -123,10 +124,13 @@ export function CashSessionTopBar() {
   if (!hasActiveSession()) {
     return (
       <>
-        <Button onClick={handleOpenSession} variant="outline" size="sm" className="gap-2">
-          <Lock className="h-4 w-4" />
-          <span className="hidden md:inline">Abrir Turno</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          {user?.role === 'Administrador' && <StaffNotificationBell />}
+          <Button onClick={handleOpenSession} variant="outline" size="sm" className="gap-2">
+            <Lock className="h-4 w-4" />
+            <span className="hidden md:inline">Abrir Turno</span>
+          </Button>
+        </div>
 
         <CashSessionModal
           isOpen={showModal}
@@ -140,6 +144,9 @@ export function CashSessionTopBar() {
   return (
     <>
       <div className="flex items-center gap-3">
+        {/* Notificaciones para administradores */}
+        {user?.role === 'Administrador' && <StaffNotificationBell />}
+
         {/* Icono de efectivo de delivery con badge */}
         <Button
           variant="ghost"
