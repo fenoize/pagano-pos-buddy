@@ -83,6 +83,7 @@ export function useCashSession() {
 
       // Notificar a administradores sobre apertura de turno
       triggerCashSessionOpenNotification(
+        user.id,
         user.full_name || user.username || 'Usuario',
         openingCash,
         data.id
@@ -135,6 +136,7 @@ export function useCashSession() {
 
       // Notificar a administradores sobre cierre de turno
       triggerCashSessionCloseNotification(
+        user.id,
         user.full_name || user.username || 'Usuario',
         closingCash,
         totalSales,
@@ -202,6 +204,7 @@ export function useCashSession() {
 
       // Notificar a administradores sobre movimiento de caja
       triggerCashMovementNotification(
+        user.id,
         user.full_name || user.username || 'Usuario',
         type,
         amount,
