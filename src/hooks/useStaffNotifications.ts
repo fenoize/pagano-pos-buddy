@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { StaffNotification } from '@/types/staffNotifications';
+import { withStaffContext } from '@/lib/dbContext';
 
 export function useStaffNotifications() {
   const { user } = useAuthContext();
@@ -18,12 +19,14 @@ export function useStaffNotifications() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('staff_notifications')
-        .select('*')
-        .or(`user_id.eq.${user.id},role_target.eq.${user.role}`)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data, error } = await withStaffContext(user.id, async () => {
+        return await supabase
+          .from('staff_notifications')
+          .select('*')
+          .or(`user_id.eq.${user.id},role_target.eq.${user.role}`)
+          .order('created_at', { ascending: false })
+          .limit(50);
+      });
 
       if (error) throw error;
 
@@ -41,10 +44,12 @@ export function useStaffNotifications() {
     if (!user?.id) return;
 
     try {
-      const { error } = await supabase
-        .from('staff_notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('id', notificationId);
+      const { error } = await withStaffContext(user.id, async () => {
+        return await supabase
+          .from('staff_notifications')
+          .update({ read_at: new Date().toISOString() })
+          .eq('id', notificationId);
+      });
 
       if (error) throw error;
 
@@ -65,10 +70,12 @@ export function useStaffNotifications() {
       
       if (unreadIds.length === 0) return;
 
-      const { error } = await supabase
-        .from('staff_notifications')
-        .update({ read_at: new Date().toISOString() })
-        .in('id', unreadIds);
+      const { error } = await withStaffContext(user.id, async () => {
+        return await supabase
+          .from('staff_notifications')
+          .update({ read_at: new Date().toISOString() })
+          .in('id', unreadIds);
+      });
 
       if (error) throw error;
 

@@ -132,6 +132,7 @@ export const useDeliveryOrders = () => {
         // Notificar al repartidor (staff notification in-app + push)
         triggerOrderAssignedNotification(
           user.id,
+          user.id,
           order?.order_number || 0,
           order?.delivery_address || 'Sin dirección',
           orderId
@@ -256,6 +257,7 @@ export const useDeliveryOrders = () => {
       // Notificar al cajero que creó el pedido (staff notification)
       if (order?.user_id) {
         triggerOrderDeliveredNotification(
+          user.id,
           order.user_id,
           order?.order_number || 0,
           user.full_name || user.username || 'Repartidor',
