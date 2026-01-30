@@ -195,7 +195,17 @@ export function useAuth() {
         await supabase.rpc('invalidate_staff_session', { _token: token });
       }
       
-      // 2. Limpiar contexto DB y localStorage
+      // 2. Logout from OneSignal (staff push notifications)
+      try {
+        if (typeof window !== 'undefined' && window.OneSignal) {
+          await window.OneSignal.logout();
+          console.log('[useAuth] Logged out from OneSignal');
+        }
+      } catch (osError) {
+        console.error('[useAuth] OneSignal logout failed:', osError);
+      }
+      
+      // 3. Limpiar contexto DB y localStorage
       await clearDBContext();
       clearStaffStorage();
       
