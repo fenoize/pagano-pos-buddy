@@ -1,17 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { getStaffSupabaseClient } from '@/lib/supabaseClient';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { StaffNotification } from '@/types/staffNotifications';
-import { withStaffContext } from '@/lib/dbContext';
+
+const POLLING_INTERVAL_MS = 4000;
 
 export function useStaffNotifications() {
   const { user } = useAuthContext();
   const [notifications, setNotifications] = useState<StaffNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchNotifications = useCallback(async () => {
-    if (!user?.id) {
+    if (!user?.id || !user?.role) {
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
@@ -19,16 +21,20 @@ export function useStaffNotifications() {
     }
 
     try {
-      const { data, error } = await withStaffContext(user.id, async () => {
-        return await supabase
-          .from('staff_notifications')
-          .select('*')
-          .or(`user_id.eq.${user.id},role_target.eq.${user.role}`)
-          .order('created_at', { ascending: false })
-          .limit(50);
-      });
+      // Use staff client which sends x-staff-token header
+      const staff = getStaffSupabaseClient();
+      
+      const { data, error } = await staff
+        .from('staff_notifications')
+        .select('*')
+        .or(`user_id.eq.${user.id},role_target.eq.${user.role}`)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching staff notifications:', error);
+        return;
+      }
 
       const notifs = (data || []) as StaffNotification[];
       setNotifications(notifs);
@@ -44,14 +50,17 @@ export function useStaffNotifications() {
     if (!user?.id) return;
 
     try {
-      const { error } = await withStaffContext(user.id, async () => {
-        return await supabase
-          .from('staff_notifications')
-          .update({ read_at: new Date().toISOString() })
-          .eq('id', notificationId);
-      });
+      const staff = getStaffSupabaseClient();
+      
+      const { error } = await staff
+        .from('staff_notifications')
+        .update({ read_at: new Date().toISOString() })
+        .eq('id', notificationId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error marking notification as read:', error);
+        return;
+      }
 
       setNotifications(prev => 
         prev.map(n => n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n)
@@ -65,19 +74,21 @@ export function useStaffNotifications() {
   const markAllAsRead = useCallback(async () => {
     if (!user?.id) return;
 
+    const unreadIds = notifications.filter(n => !n.read_at).map(n => n.id);
+    if (unreadIds.length === 0) return;
+
     try {
-      const unreadIds = notifications.filter(n => !n.read_at).map(n => n.id);
+      const staff = getStaffSupabaseClient();
       
-      if (unreadIds.length === 0) return;
+      const { error } = await staff
+        .from('staff_notifications')
+        .update({ read_at: new Date().toISOString() })
+        .in('id', unreadIds);
 
-      const { error } = await withStaffContext(user.id, async () => {
-        return await supabase
-          .from('staff_notifications')
-          .update({ read_at: new Date().toISOString() })
-          .in('id', unreadIds);
-      });
-
-      if (error) throw error;
+      if (error) {
+        console.error('Error marking all notifications as read:', error);
+        return;
+      }
 
       setNotifications(prev => 
         prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
@@ -88,53 +99,28 @@ export function useStaffNotifications() {
     }
   }, [user?.id, notifications]);
 
-  // Handle new notification from realtime
-  const handleNewNotification = useCallback((payload: any) => {
-    const newNotif = payload.new as StaffNotification;
-    
-    // Check if this notification is for current user
-    const isForUser = newNotif.user_id === user?.id;
-    const isForRole = newNotif.role_target === user?.role;
-    
-    if (isForUser || isForRole) {
-      setNotifications(prev => [newNotif, ...prev.slice(0, 49)]);
-      setUnreadCount(prev => prev + 1);
-      
-      // Play notification sound
-      try {
-        const audio = new Audio('/notification.mp3');
-        audio.volume = 0.5;
-        audio.play().catch(() => {});
-      } catch (e) {
-        // Ignore audio errors
-      }
-    }
-  }, [user?.id, user?.role]);
-
-  // Setup realtime subscription
+  // Setup polling instead of realtime (more reliable without Supabase Auth)
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setLoading(false);
+      return;
+    }
 
+    // Initial fetch
     fetchNotifications();
 
-    // Subscribe to new notifications
-    const channel = supabase
-      .channel('staff-notifications-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'staff_notifications'
-        },
-        handleNewNotification
-      )
-      .subscribe();
+    // Setup polling interval
+    pollingRef.current = setInterval(fetchNotifications, POLLING_INTERVAL_MS);
 
     return () => {
-      supabase.removeChannel(channel);
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
     };
-  }, [user?.id, fetchNotifications, handleNewNotification]);
+  }, [user?.id, fetchNotifications]);
 
   return {
     notifications,

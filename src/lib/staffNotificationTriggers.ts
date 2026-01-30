@@ -1,55 +1,50 @@
-import { supabase } from '@/integrations/supabase/client';
+import { getStaffSupabaseClient } from '@/lib/supabaseClient';
 import { StaffNotificationInsert, StaffNotificationType } from '@/types/staffNotifications';
 import { formatCurrency } from '@/lib/utils';
-import { withStaffContext } from '@/lib/dbContext';
 
 /**
  * Create a staff notification (in-app + push)
- * For role-targeted notifications, set role_target
- * For user-specific notifications, set user_id
+ * Uses staff client with x-staff-token header for RLS compliance
  */
 export async function createStaffNotification(
   actorUserId: string,
   notification: StaffNotificationInsert
 ): Promise<void> {
   try {
-    // IMPORTANT: app.user_id context must be set immediately before each DB operation
-    // because set_config(..., false) doesn't survive across pooled connections.
-    await withStaffContext(actorUserId, async () => {
-      // Insert notification in database (for in-app)
-      const { error: insertError } = await supabase
-        .from('staff_notifications')
-        .insert({
-          user_id: notification.user_id || null,
-          role_target: notification.role_target || null,
-          type: notification.type,
-          title: notification.title,
-          body: notification.body,
-          payload: notification.payload || {}
-        });
+    // Use staff client which sends x-staff-token header
+    const staff = getStaffSupabaseClient();
 
-      if (insertError) {
-        console.error('Error inserting staff notification:', insertError);
-      }
-
-      // Send push notification via edge function (best-effort)
-      const { error: pushError } = await supabase.functions.invoke('send-staff-push', {
-        body: {
-          user_id: notification.user_id,
-          role_target: notification.role_target,
-          type: notification.type,
-          title: notification.title,
-          body: notification.body,
-          payload: notification.payload
-        }
+    // Insert notification in database (for in-app)
+    const { error: insertError } = await staff
+      .from('staff_notifications')
+      .insert({
+        user_id: notification.user_id || null,
+        role_target: notification.role_target || null,
+        type: notification.type,
+        title: notification.title,
+        body: notification.body,
+        payload: notification.payload || {}
       });
 
-      if (pushError) {
-        console.error('Error sending staff push notification:', pushError);
-      }
+    if (insertError) {
+      console.error('Error inserting staff notification:', insertError);
+    }
 
-      return null;
+    // Send push notification via edge function (best-effort)
+    const { error: pushError } = await staff.functions.invoke('send-staff-push', {
+      body: {
+        user_id: notification.user_id,
+        role_target: notification.role_target,
+        type: notification.type,
+        title: notification.title,
+        body: notification.body,
+        payload: notification.payload
+      }
     });
+
+    if (pushError) {
+      console.error('Error sending staff push notification:', pushError);
+    }
   } catch (error) {
     console.error('Error creating staff notification:', error);
   }

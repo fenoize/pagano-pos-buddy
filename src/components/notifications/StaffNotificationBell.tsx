@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +12,14 @@ import { cn } from '@/lib/utils';
 
 export function StaffNotificationBell() {
   const [open, setOpen] = useState(false);
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useStaffNotifications();
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead, refetch } = useStaffNotifications();
+
+  // Refetch when popover opens to ensure fresh data
+  useEffect(() => {
+    if (open) {
+      refetch();
+    }
+  }, [open, refetch]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
