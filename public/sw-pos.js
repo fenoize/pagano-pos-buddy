@@ -1,6 +1,9 @@
 // Service Worker para POS - Estrategia Network First
 // Prioriza siempre la versión más reciente del servidor
 
+// Import OneSignal SDK for push notifications
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+
 const CACHE_NAME = 'paganos-pos-v1';
 
 // Assets estáticos mínimos para fallback offline

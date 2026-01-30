@@ -16,12 +16,14 @@ import { POSInstallPrompt } from "@/components/pos/POSInstallPrompt";
 import { SessionExpiryModal } from "@/components/auth/SessionExpiryModal";
 import { useKitchenExpanded } from "@/hooks/useKitchenExpanded";
 import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive";
+import { useStaffOneSignal } from "@/hooks/useStaffOneSignal";
 import { Suspense, lazy } from "react";
 import { CartProvider } from "@/contexts/CartContext";
 import { CustomerAppWrapper } from "@/components/customer/CustomerAppWrapper";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { POSThemeProvider } from "@/components/theme/POSThemeProvider";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { StaffPushBanner } from "@/components/notifications/StaffPushBanner";
 
 // Guards
 import { CustomerProtectedRoute } from "@/components/guards/CustomerProtectedRoute";
@@ -145,6 +147,9 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
   // Activar keep-alive de sesión para staff autenticado
   const { showExpiryModal, handleStayActive, handleForceLogout } = useSessionKeepAlive();
   
+  // OneSignal push notifications for staff
+  const { showBanner, requestPermission, dismissBanner } = useStaffOneSignal();
+  
   // If on kitchen route and expanded, render without layout
   if (isKitchenRoute && isExpanded) {
     return (
@@ -186,6 +191,14 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         {!(isKitchenRoute && isExpanded) && <MobileNav />}
+        
+        {/* Push notification permission banner for staff */}
+        {showBanner && (
+          <StaffPushBanner
+            onRequestPermission={requestPermission}
+            onDismiss={dismissBanner}
+          />
+        )}
       </SidebarProvider>
     </POSThemeProvider>
   );
