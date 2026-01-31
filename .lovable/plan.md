@@ -1,158 +1,258 @@
 
-Objetivo
-- Que las notificaciones de “Apertura de caja”, “Cierre de turno” y “Movimientos (ingreso/egreso)” se registren y se VEAN en la campana del Administrador en /pos, de forma “tiempo real” (sin recargar), sin errores.
+# Plan: Calendario de Turnos para Empleados + Notificaciones
 
-Diagnóstico (qué está pasando ahora)
-1) La tabla `staff_notifications` sí está recibiendo registros.
-   - En TEST hay 59 notificaciones recientes, incluyendo cash_session_open / cash_session_close / cash_movement con `role_target='Administrador'`.
-2) Pero el Administrador no las ve porque las políticas RLS de `staff_notifications` no están evaluando al usuario correctamente:
-   - Las policies de SELECT/UPDATE usan `current_setting('app.current_user_id', true)` para identificar al usuario.
-   - Nuestro “contexto staff” actual setea `app.user_id` (via `set_staff_context`) y además es poco confiable con pooling.
-   - Resultado: SELECT devuelve 0 filas y la campana muestra “No tienes notificaciones”.
-3) “Tiempo real” con `postgres_changes` no es confiable en este proyecto porque el staff NO usa Supabase Auth (JWT).
-   - La suscripción realtime termina conectando como anon, y con RLS activa no recibirá eventos filtrados por usuario/rol.
-   - Solución práctica: “pseudo-realtime” con polling rápido + refetch al abrir campana (se siente como realtime).
+## Resumen Ejecutivo
+Implementar un módulo de "Mi Calendario" donde cada usuario del sistema (vinculado como empleado HR) pueda:
+1. Ver sus turnos asignados en un calendario
+2. Ver con quiénes trabajará en cada jornada
+3. Aceptar o rechazar turnos (individual o masivamente)
+4. Recibir notificaciones push cuando se les asigne un turno
+5. Los administradores recibirán notificaciones cuando un empleado acepte o rechace
 
-Solución (enfoque)
-A) Corregir la identidad del staff para RLS usando el token del staff (header `x-staff-token`)
-- Ya existe la función DB `get_current_staff_user_from_token()` que extrae el usuario desde `request.headers`.
-- También existe el `getStaffSupabaseClient()` que envía automáticamente el header `x-staff-token`.
-- Vamos a:
-  1) Ajustar las policies de `staff_notifications` para que usen `get_current_staff_user_from_token()` en vez de `app.current_user_id`.
-  2) Endurecer INSERT policy (ahora está en `true`, lo cual permite que cualquiera inserte notificaciones con la anon key; es un riesgo real).
-  3) Cambiar el frontend de notificaciones (lectura/mark-as-read) a usar el “staff client” (con `x-staff-token`) y dejar de depender de `setStaffContext/withStaffContext` para esta feature.
+## Contexto Actual
 
-B) Pseudo-realtime robusto (sin Supabase Auth)
-- Implementar polling en `useStaffNotifications` cada 3–5s cuando:
-  - el usuario está logueado,
-  - y el rol corresponde (en este caso Administrador; opcionalmente para todos los roles para futuro).
-- Al abrir la campana: refetch inmediato.
-- Esto asegura que tras un egreso/ingreso o apertura/cierre, la campana se actualiza en segundos.
+### Modelo de Datos
+- `hr_employees` tiene `user_id` que vincula empleados con usuarios del sistema
+- `hr_shifts` tiene:
+  - `employee_id` (FK a hr_employees)
+  - `status`: draft | confirmed | approved | paid
+  - `shift_date`, `shift_type_id`, `role_id`, `schedule_id`
+- Los turnos actualmente pasan: draft -> confirmed -> approved -> paid (flujo admin)
 
-Cambios concretos propuestos
+### Relaciones
+- Usuario del sistema (`users.id`) -> `hr_employees.user_id` -> `hr_shifts.employee_id`
+- Ejemplo: Matias (user_id: 3af48824) -> hr_employee (id: d7094d61) -> puede tener turnos asignados
 
-1) Base de datos (migración SQL en `supabase/migrations/*`)
-1.1. Reemplazar policies de `staff_notifications` para SELECT/UPDATE usando token
-- El objetivo es que:
-  - Si `staff_notifications.user_id` coincide con el usuario del token -> puede verla/actualizarla.
-  - Si `staff_notifications.role_target` coincide con el rol del usuario (según tabla `users`) -> puede verla/actualizarla.
-- SQL aproximado:
+### Sistema de Notificaciones Staff
+- Ya existe `staff_notifications` con tipos: cash_session_open/close, cash_movement, order_assigned/delivered
+- Edge function `send-staff-push` envía push via OneSignal usando `staff_${user_id}`
+- Hook `useStaffNotifications` con polling cada 4s
+
+## Cambios Propuestos
+
+### 1. Base de Datos
+
+#### 1.1 Nuevos Estados para Turnos (o campo separado)
+Añadir campo `employee_response` a `hr_shifts` para manejar la respuesta del empleado:
 
 ```sql
--- 1) Quitar policies actuales (ajustar nombres exactos según pg_policies)
-DROP POLICY IF EXISTS "Staff can view own or role notifications" ON public.staff_notifications;
-DROP POLICY IF EXISTS "Staff can update own or role notifications" ON public.staff_notifications;
+ALTER TABLE hr_shifts 
+ADD COLUMN employee_response TEXT CHECK (employee_response IN ('pending', 'accepted', 'rejected'));
 
--- 2) Crear policy SELECT segura basada en token
-CREATE POLICY "Staff can view own or role notifications (token)"
-ON public.staff_notifications
-FOR SELECT
-USING (
-  -- usuario desde token
-  (user_id IS NOT NULL AND user_id = public.get_current_staff_user_from_token())
-  OR
-  (
-    role_target IS NOT NULL
-    AND role_target = (
-      SELECT u.role::text
-      FROM public.users u
-      WHERE u.id = public.get_current_staff_user_from_token()
-    )
-  )
-);
+ALTER TABLE hr_shifts
+ADD COLUMN employee_response_at TIMESTAMPTZ;
 
--- 3) Crear policy UPDATE segura basada en token (marcar read_at)
-CREATE POLICY "Staff can update own or role notifications (token)"
-ON public.staff_notifications
-FOR UPDATE
-USING (
-  (user_id IS NOT NULL AND user_id = public.get_current_staff_user_from_token())
-  OR
-  (
-    role_target IS NOT NULL
-    AND role_target = (
-      SELECT u.role::text
-      FROM public.users u
-      WHERE u.id = public.get_current_staff_user_from_token()
-    )
-  )
-);
+ALTER TABLE hr_shifts
+ADD COLUMN employee_response_note TEXT;
+
+-- Default para registros existentes
+UPDATE hr_shifts SET employee_response = 'pending' WHERE employee_response IS NULL;
 ```
 
-1.2. Arreglar INSERT policy (seguridad) para impedir spam externo
-- Hoy INSERT está efectivamente abierto (`WITH CHECK true`), lo que permite insertar notificaciones desde cualquier navegador con la anon key.
-- La política correcta: solo staff con token válido puede insertar.
-- SQL:
+Esto permite:
+- Separar el flujo de confirmación/aprobación del admin del flujo de aceptación del empleado
+- Un turno puede estar "confirmed" (por admin) pero "pending" (esperando respuesta del empleado)
+
+#### 1.2 Nuevos Tipos de Notificación Staff
+Agregar tipos en `staff_notifications`:
 
 ```sql
-DROP POLICY IF EXISTS "Authenticated can insert notifications" ON public.staff_notifications;
-
-CREATE POLICY "Staff can insert notifications (token)"
-ON public.staff_notifications
-FOR INSERT
-WITH CHECK (
-  public.get_current_staff_user_from_token() IS NOT NULL
-);
+-- En el tipo ya existente o como extensión (solo validación frontend)
+-- shift_assigned: cuando asignan un turno al empleado
+-- shift_accepted: cuando el empleado acepta (para admins)
+-- shift_rejected: cuando el empleado rechaza (para admins)
 ```
 
-Nota: Si la creación de notificación la hace un “actor staff” (Ignacio) desde el POS, esto seguirá funcionando porque ya existe el token en localStorage.
+### 2. Frontend: Nueva Página "Mi Calendario"
 
-2) Frontend: notificaciones (campana) debe usar el staff client + polling
+#### 2.1 Ruta y Navegación
+- Nueva ruta: `/pos/mi-calendario`
+- Agregar al menú lateral para TODOS los roles (no solo admin)
+- Icono: Calendar
 
-2.1. `src/hooks/useStaffNotifications.ts`
-- Cambios:
-  - Reemplazar `supabase` + `withStaffContext` por `getStaffSupabaseClient()` (desde `src/lib/supabaseClient.ts`).
-  - En cada `fetchNotifications`, instanciar `const staff = getStaffSupabaseClient()` y consultar con ese cliente.
-  - Implementar polling:
-    - `setInterval(fetchNotifications, 4000)` (por ejemplo) mientras esté montado y exista `user.id`.
-    - Limpiar interval al unmount.
-  - Mantener el filtro:
-    - `.or(\`user_id.eq.${user.id},role_target.eq.${user.role}\`)`
-  - Realtime (`postgres_changes`) se puede desactivar o dejar como “best-effort” pero NO depender de él.
+#### 2.2 Página: `src/pages/MiCalendario.tsx`
+Componente principal que:
+- Detecta el usuario actual y busca su `hr_employee` vinculado
+- Si no está vinculado, muestra mensaje "No tienes turnos asignados"
+- Si está vinculado, muestra calendario con SUS turnos
 
-2.2. `src/components/notifications/StaffNotificationBell.tsx`
-- Añadir refetch al abrir:
-  - Cuando `open` pase a true -> llamar `refetch()` para que siempre muestre lo último.
-- Esto ayuda a que aunque el polling se atrase, al abrir el usuario vea lo nuevo.
+Vista:
+- Calendario mensual/semanal similar al de RRHH pero solo con turnos propios
+- Badge con estado de aceptación (Pendiente/Aceptado/Rechazado)
+- Checkbox para seleccionar turnos
+- Botones "Aceptar Seleccionados" y "Rechazar Seleccionados"
 
-2.3. `src/components/notifications/StaffNotificationItem.tsx` (opcional)
-- Si el click solo marca leído, ok.
-- (Opcional futuro) navegar al módulo relacionado usando `payload` (caja/ventas), pero no es necesario para “que funcione”.
+Información extra por día:
+- Lista de compañeros que trabajan ese día (mismo schedule/jornada)
+- Horario de la jornada
 
-3) Frontend: creación de notificaciones (triggers) debe usar staff client (para consistencia)
-Aunque ya se están insertando filas, lo vamos a dejar coherente y blindado al cambio de policy INSERT.
+#### 2.3 Componente: `src/components/rrhh/EmployeeShiftCalendar.tsx`
+Reutiliza la visualización de `ShiftCalendar` pero:
+- Filtrado solo para el empleado actual
+- Añade información de compañeros de trabajo
+- Permite acciones de aceptar/rechazar
 
-3.1. `src/lib/staffNotificationTriggers.ts`
-- Reemplazar `supabase` por un `const staff = getStaffSupabaseClient()` dentro de `createStaffNotification`.
-- Insert en `staff_notifications` con `staff.from(...).insert(...)`.
-- Invocación de edge function:
-  - `staff.functions.invoke('send-staff-push', ...)`
-  - Esto mantiene el header y evita problemas si la edge function o futuras policies dependen del token.
+#### 2.4 Hook: `src/hooks/useMyShifts.ts`
+Hook específico para el empleado:
+```typescript
+function useMyShifts() {
+  // 1. Obtener user actual desde AuthContext
+  // 2. Buscar hr_employee con ese user_id
+  // 3. Cargar turnos donde employee_id = ese hr_employee.id
+  // 4. Funciones: acceptShift, rejectShift, bulkAccept, bulkReject
+}
+```
 
-4) Verificación end-to-end (QA) que haremos al terminar
-Checklist de pruebas con cuentas reales:
-1) Login como “Ignacio” (Cajero/Caja) -> abrir turno:
-   - En DB debe crearse un registro `cash_session_open` role_target=Administrador.
-   - En cuenta Admin (en /pos), la campana debe incrementarse en ~4s.
-2) Desde Ignacio: registrar egreso $3.000 con nota “test”:
-   - Debe aparecer “Egreso de Caja” con monto y nota en la campana admin.
-3) Desde Ignacio: cerrar turno:
-   - Debe aparecer “Turno Cerrado” con efectivo, ventas y cantidad de pedidos.
-4) Admin: abrir campana y marcar una como leída:
-   - Debe cambiar el dot/estado y bajar el contador.
-5) Seguridad:
-   - Desde un navegador sin token staff, intentar insertar en `staff_notifications` con anon key (debe fallar por RLS).
+### 3. Notificaciones
 
-Riesgos y mitigaciones
-- Realtime “real” con postgres_changes no es viable sin Supabase Auth. Mitigación: polling cada 3–5s + refetch al abrir (se percibe realtime).
-- Cambiar policies puede afectar otros módulos si consultan `staff_notifications` con el client antiguo. Mitigación: actualizamos el hook y triggers para usar staff client; y (si existiese otro consumo) lo migramos también.
+#### 3.1 Tipos de Notificación (Frontend)
+Actualizar `src/types/staffNotifications.ts`:
+```typescript
+export type StaffNotificationType = 
+  | 'cash_session_open'
+  | 'cash_session_close'
+  | 'cash_movement'
+  | 'order_assigned'
+  | 'order_delivered'
+  | 'shift_assigned'    // Nuevo: turno asignado al empleado
+  | 'shift_accepted'    // Nuevo: empleado aceptó (para admin)
+  | 'shift_rejected';   // Nuevo: empleado rechazó (para admin)
+```
 
-Entregable
-- Notificaciones de apertura/cierre/movimientos visibles para Administradores en la campana en /pos, actualizando en segundos sin recargar, y sin duplicados.
-- RLS corregido y más seguro (sin inserciones anónimas).
+#### 3.2 Triggers de Notificación
+Actualizar `src/lib/staffNotificationTriggers.ts`:
+```typescript
+// Notificar al empleado cuando se le asigna un turno
+async function triggerShiftAssignedNotification(
+  actorUserId: string,      // Admin que asigna
+  employeeUserId: string,   // Usuario del empleado
+  shiftDate: string,
+  scheduleName: string,
+  shiftId: string
+)
 
-Implementación (secuenciación)
-1) Agregar migración SQL para policies de `staff_notifications` (SELECT/UPDATE/INSERT).
-2) Actualizar `useStaffNotifications` a staff client + polling + refetch on open.
-3) Actualizar `staffNotificationTriggers` a staff client.
-4) Probar flujo completo Ignacio -> Admin (apertura, egreso, cierre) y validar contador/lecturas.
+// Notificar a admins cuando empleado acepta
+async function triggerShiftAcceptedNotification(
+  actorUserId: string,      // Empleado que acepta
+  employeeName: string,
+  shiftDate: string,
+  shiftId: string
+)
+
+// Notificar a admins cuando empleado rechaza
+async function triggerShiftRejectedNotification(
+  actorUserId: string,      // Empleado que rechaza
+  employeeName: string,
+  shiftDate: string,
+  rejectReason: string | null,
+  shiftId: string
+)
+```
+
+#### 3.3 Integración en Hooks
+- En `useHRShifts.ts`:
+  - Al crear turno con employee_id -> trigger `shift_assigned`
+  - Al asignar empleado a turno existente -> trigger `shift_assigned`
+
+- En `useMyShifts.ts`:
+  - Al aceptar turno -> trigger `shift_accepted`
+  - Al rechazar turno -> trigger `shift_rejected`
+
+#### 3.4 Edge Function Update
+Actualizar `send-staff-push` para manejar los nuevos tipos y generar URLs correctas:
+```typescript
+// En send-staff-push/index.ts
+if (body.type === 'shift_assigned') {
+  clickUrl = `${baseUrl}/pos/mi-calendario`;
+} else if (body.type === 'shift_accepted' || body.type === 'shift_rejected') {
+  clickUrl = `${baseUrl}/pos/rrhh/turnos`;
+}
+```
+
+### 4. Actualización del Sidebar
+En `src/components/AppSidebar.tsx`, agregar item de menú accesible para todos los empleados:
+```typescript
+// Nuevo item fuera de los menús admin-only
+{ 
+  title: "Mi Calendario", 
+  url: "/pos/mi-calendario", 
+  icon: Calendar, 
+  roles: ['Administrador', 'Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina'] 
+}
+```
+
+### 5. Rutas en App.tsx
+Agregar nueva ruta protegida:
+```tsx
+<Route path="/pos/mi-calendario" element={
+  <StaffProtectedRoute>
+    <StaffLayout>
+      <MiCalendario />
+    </StaffLayout>
+  </StaffProtectedRoute>
+} />
+```
+
+## Flujo de Usuario
+
+### Empleado
+1. Login en POS
+2. Ve "Mi Calendario" en sidebar
+3. Entra y ve calendario con sus turnos
+4. Puede filtrar por semana/mes
+5. Selecciona turno(s) pendientes
+6. Acepta o rechaza (con nota opcional en rechazo)
+7. Turno cambia a "Aceptado" o "Rechazado"
+
+### Administrador
+1. Crea/genera turnos desde RRHH > Turnos
+2. Al asignar empleado, automáticamente se envía notificación push al empleado
+3. Empleado acepta/rechaza
+4. Admin recibe notificación en su campana
+5. En vista de RRHH > Turnos puede ver estado de respuesta del empleado
+
+## Archivos a Crear/Modificar
+
+### Nuevos Archivos
+- `src/pages/MiCalendario.tsx`
+- `src/components/rrhh/EmployeeShiftCalendar.tsx`
+- `src/components/rrhh/ShiftResponseModal.tsx` (modal para rechazar con nota)
+- `src/hooks/useMyShifts.ts`
+
+### Archivos a Modificar
+- `src/types/hr.ts` - Agregar campos de respuesta
+- `src/types/staffNotifications.ts` - Nuevos tipos
+- `src/lib/staffNotificationTriggers.ts` - Nuevas funciones trigger
+- `src/hooks/useHRShifts.ts` - Trigger notificación al asignar
+- `src/components/AppSidebar.tsx` - Nuevo item de menú
+- `src/App.tsx` - Nueva ruta
+- `supabase/functions/send-staff-push/index.ts` - Nuevos tipos de click URL
+- Migración SQL para nuevos campos
+
+## Secuencia de Implementación
+
+1. **Migración BD**: Agregar campos `employee_response`, `employee_response_at`, `employee_response_note`
+2. **Tipos**: Actualizar tipos TypeScript (hr.ts, staffNotifications.ts)
+3. **Hook useMyShifts**: Crear hook para empleados
+4. **Triggers**: Agregar funciones de notificación para turnos
+5. **Página MiCalendario**: Crear página y componentes
+6. **Sidebar + Rutas**: Agregar navegación
+7. **Edge Function**: Actualizar URLs de click
+8. **Integración**: Conectar triggers en useHRShifts
+
+## Consideraciones Técnicas
+
+### Permisos RLS
+- Los empleados solo deben poder:
+  - VER turnos donde ellos son el `employee_id`
+  - ACTUALIZAR solo `employee_response`, `employee_response_at`, `employee_response_note`
+- Admins pueden ver/editar todo
+
+### Compatibilidad
+- Los turnos existentes tendrán `employee_response = 'pending'` por defecto
+- El flujo actual de draft -> confirmed -> approved no cambia
+- La respuesta del empleado es un campo paralelo, no reemplaza el status
+
+### Performance
+- Usar polling (ya implementado) para recibir notificaciones
+- El calendario de empleado filtra solo sus turnos (menos data)
