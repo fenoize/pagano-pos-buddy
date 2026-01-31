@@ -2683,6 +2683,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           employee_id: string | null
+          employee_response: string | null
+          employee_response_at: string | null
+          employee_response_note: string | null
           hours_override: number | null
           id: string
           notes: string | null
@@ -2702,6 +2705,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           employee_id?: string | null
+          employee_response?: string | null
+          employee_response_at?: string | null
+          employee_response_note?: string | null
           hours_override?: number | null
           id?: string
           notes?: string | null
@@ -2721,6 +2727,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           employee_id?: string | null
+          employee_response?: string | null
+          employee_response_at?: string | null
+          employee_response_note?: string | null
           hours_override?: number | null
           id?: string
           notes?: string | null

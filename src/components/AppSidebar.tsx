@@ -34,7 +34,8 @@ import {
   Tv,
   Award,
   MessageSquare,
-  Briefcase
+  Briefcase,
+  Calendar
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -74,6 +75,7 @@ const menuItems = [
   { title: "Usuarios", url: "/pos/usuarios", icon: User, roles: ['Administrador'] },
   { title: "Cierres Diarios", url: "/pos/cierres-diarios", icon: FileText, roles: ['Administrador'] },
   { title: "Configuración", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
+  { title: "Mi Calendario", url: "/pos/mi-calendario", icon: Calendar, roles: ['Administrador', 'Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer'] },
 ];
 
 // Fidelización menu items

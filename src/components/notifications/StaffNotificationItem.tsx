@@ -4,7 +4,9 @@ import {
   DollarSign, 
   Truck, 
   CheckCircle,
-  Circle
+  Circle,
+  Calendar,
+  XCircle
 } from 'lucide-react';
 import { StaffNotification, StaffNotificationType, NOTIFICATION_TYPE_CONFIG } from '@/types/staffNotifications';
 import { cn } from '@/lib/utils';
@@ -21,7 +23,10 @@ const ICONS: Record<StaffNotificationType, React.ReactNode> = {
   cash_session_close: <Lock className="h-4 w-4" />,
   cash_movement: <DollarSign className="h-4 w-4" />,
   order_assigned: <Truck className="h-4 w-4" />,
-  order_delivered: <CheckCircle className="h-4 w-4" />
+  order_delivered: <CheckCircle className="h-4 w-4" />,
+  shift_assigned: <Calendar className="h-4 w-4" />,
+  shift_accepted: <CheckCircle className="h-4 w-4" />,
+  shift_rejected: <XCircle className="h-4 w-4" />
 };
 
 export function StaffNotificationItem({ 
