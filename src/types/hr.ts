@@ -53,6 +53,7 @@ export interface HRPayRule {
 }
 
 export type HRShiftStatus = 'draft' | 'confirmed' | 'approved' | 'paid';
+export type HREmployeeResponse = 'pending' | 'accepted' | 'rejected';
 
 export interface HRShift {
   id: string;
@@ -72,8 +73,12 @@ export interface HRShift {
   paid_at: string | null;
   created_at: string;
   updated_at: string;
+  // Employee response fields
+  employee_response: HREmployeeResponse | null;
+  employee_response_at: string | null;
+  employee_response_note: string | null;
   // Joined data
-  employee?: Pick<HREmployee, 'id' | 'full_name' | 'rut'>;
+  employee?: Pick<HREmployee, 'id' | 'full_name' | 'rut'> & { user_id?: string | null };
   shift_type?: Pick<HRShiftType, 'id' | 'name' | 'default_hours'>;
   role?: Pick<HRShiftRole, 'id' | 'name'>;
   schedule?: Pick<HRSchedule, 'id' | 'name' | 'start_time' | 'end_time'>;

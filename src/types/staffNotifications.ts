@@ -5,7 +5,10 @@ export type StaffNotificationType =
   | 'cash_session_close'
   | 'cash_movement'
   | 'order_assigned'
-  | 'order_delivered';
+  | 'order_delivered'
+  | 'shift_assigned'
+  | 'shift_accepted'
+  | 'shift_rejected';
 
 export interface StaffNotification {
   id: string;
@@ -58,5 +61,20 @@ export const NOTIFICATION_TYPE_CONFIG: Record<StaffNotificationType, {
     icon: 'CheckCircle',
     color: 'text-green-600',
     category: 'Pedido'
+  },
+  shift_assigned: {
+    icon: 'Calendar',
+    color: 'text-blue-600',
+    category: 'Turno'
+  },
+  shift_accepted: {
+    icon: 'CheckCircle',
+    color: 'text-green-600',
+    category: 'Turno'
+  },
+  shift_rejected: {
+    icon: 'XCircle',
+    color: 'text-red-600',
+    category: 'Turno'
   }
 };

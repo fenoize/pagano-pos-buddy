@@ -113,6 +113,7 @@ const RRHHTurnos = lazy(() => import("@/pages/rrhh/RRHHTurnos"));
 const RRHHLiquidaciones = lazy(() => import("@/pages/rrhh/RRHHLiquidaciones"));
 const RRHHAjustes = lazy(() => import("@/pages/rrhh/RRHHAjustes"));
 const RRHHConfiguracion = lazy(() => import("@/pages/rrhh/RRHHConfiguracion"));
+const MiCalendario = lazy(() => import("@/pages/MiCalendario"));
 
 // Loading component para Suspense - siempre dark para consistencia con el tema POS
 function LoadingFallback() {
@@ -717,6 +718,9 @@ const App = () => (
               <Route path="/pos/rrhh/liquidaciones" element={<StaffProtectedRoute><StaffLayout><RRHHLiquidaciones /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/rrhh/ajustes" element={<StaffProtectedRoute><StaffLayout><RRHHAjustes /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/rrhh/configuracion" element={<StaffProtectedRoute><StaffLayout><RRHHConfiguracion /></StaffLayout></StaffProtectedRoute>} />
+              
+              {/* My Calendar (all staff roles) */}
+              <Route path="/pos/mi-calendario" element={<StaffProtectedRoute><StaffLayout><MiCalendario /></StaffLayout></StaffProtectedRoute>} />
               
               {/* Legacy redirects for old staff routes */}
               <Route path="/nueva-venta" element={<Navigate to="/pos/nueva-venta" replace />} />

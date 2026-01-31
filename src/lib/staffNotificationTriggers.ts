@@ -148,3 +148,63 @@ export async function triggerOrderDeliveredNotification(
     payload: { order_id: orderId, order_number: orderNumber, delivery_person: deliveryPersonName }
   });
 }
+
+// ==================== SHIFT NOTIFICATION TRIGGERS ====================
+
+/**
+ * Trigger notification when a shift is assigned to an employee
+ */
+export async function triggerShiftAssignedNotification(
+  actorUserId: string,
+  employeeUserId: string,
+  shiftDate: string,
+  scheduleName: string | null,
+  shiftId: string
+): Promise<void> {
+  const scheduleText = scheduleName ? ` (${scheduleName})` : '';
+  await createStaffNotification(actorUserId, {
+    user_id: employeeUserId,
+    type: 'shift_assigned',
+    title: 'Nuevo Turno Asignado 📅',
+    body: `Te asignaron un turno el ${shiftDate}${scheduleText}. Revisa tu calendario.`,
+    payload: { shift_id: shiftId, shift_date: shiftDate, schedule_name: scheduleName }
+  });
+}
+
+/**
+ * Trigger notification when an employee accepts a shift (to admins)
+ */
+export async function triggerShiftAcceptedNotification(
+  actorUserId: string,
+  employeeName: string,
+  shiftDate: string,
+  shiftId: string
+): Promise<void> {
+  await createStaffNotification(actorUserId, {
+    role_target: 'Administrador',
+    type: 'shift_accepted',
+    title: 'Turno Aceptado ✅',
+    body: `${employeeName} aceptó el turno del ${shiftDate}`,
+    payload: { shift_id: shiftId, shift_date: shiftDate, employee_name: employeeName }
+  });
+}
+
+/**
+ * Trigger notification when an employee rejects a shift (to admins)
+ */
+export async function triggerShiftRejectedNotification(
+  actorUserId: string,
+  employeeName: string,
+  shiftDate: string,
+  rejectReason: string | null,
+  shiftId: string
+): Promise<void> {
+  const reasonText = rejectReason ? ` - Motivo: ${rejectReason}` : '';
+  await createStaffNotification(actorUserId, {
+    role_target: 'Administrador',
+    type: 'shift_rejected',
+    title: 'Turno Rechazado ❌',
+    body: `${employeeName} rechazó el turno del ${shiftDate}${reasonText}`,
+    payload: { shift_id: shiftId, shift_date: shiftDate, employee_name: employeeName, reason: rejectReason }
+  });
+}
