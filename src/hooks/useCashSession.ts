@@ -180,25 +180,24 @@ export function useCashSession() {
 
       if (error) throw error;
 
-      // Si es un egreso y tiene cuenta asignada, sincronizar con finance_expenses
-      if (type === 'egreso' && syncToFinance && accountId) {
-        const { error: financeError } = await supabase
-          .from('finance_expenses')
-          .insert({
-            expense_date: new Date().toISOString().split('T')[0],
-            account_id: accountId,
-            amount: amount,
-            expense_type: 'Variable',
-            category: category || 'Caja - Movimiento de Turno',
-            notes: note || null,
-            payment_method: 'Efectivo',
-            cash_movement_id: data.id,
-            cash_session_id: currentSession.id
+      // Si es un egreso, sincronizar con finance_expenses usando RPC (bypass RLS)
+      if (type === 'egreso' && syncToFinance) {
+        const { data: financeResult, error: financeError } = await supabase
+          .rpc('sync_cash_movement_to_finance', {
+            p_cash_movement_id: data.id,
+            p_session_id: currentSession.id,
+            p_expense_date: new Date().toISOString().split('T')[0],
+            p_account_id: accountId || null,
+            p_amount: amount,
+            p_category: category || 'Caja - Movimiento de Turno',
+            p_notes: note || null
           });
 
         if (financeError) {
           console.error('Error syncing to finance_expenses:', financeError);
           // No lanzar error, el movimiento de caja ya se registró
+        } else {
+          console.log('✅ Egreso sincronizado a finanzas:', financeResult);
         }
       }
 
