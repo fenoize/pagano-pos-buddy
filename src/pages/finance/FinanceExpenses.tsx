@@ -57,6 +57,29 @@ export default function FinanceExpenses() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [monthInitialized, setMonthInitialized] = useState(false);
+
+  // Si hoy es un mes “nuevo” (p.ej. día 1) y los egresos están en el mes anterior,
+  // el filtro mensual puede dar la impresión de que “no hay egresos”.
+  // Por eso, al cargar, seteamos el mes al del egreso más reciente.
+  useEffect(() => {
+    if (monthInitialized) return;
+    if (!expenses) return;
+
+    if (expenses.length === 0) {
+      setMonthInitialized(true);
+      return;
+    }
+
+    const latest = expenses.reduce((acc, e) => {
+      // expense_date viene como 'YYYY-MM-DD'
+      const d = new Date(`${e.expense_date}T00:00:00`);
+      return d > acc ? d : acc;
+    }, new Date('1970-01-01T00:00:00'));
+
+    setCurrentMonth(latest);
+    setMonthInitialized(true);
+  }, [expenses, monthInitialized]);
 
   const [formData, setFormData] = useState({
     expense_date: format(new Date(), 'yyyy-MM-dd'),
