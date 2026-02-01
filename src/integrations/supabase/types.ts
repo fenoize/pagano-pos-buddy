@@ -6221,6 +6221,18 @@ export type Database = {
         Returns: boolean
       }
       staff_has_permission: { Args: { perm: string }; Returns: boolean }
+      sync_cash_movement_to_finance: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_cash_movement_id: string
+          p_category: string
+          p_expense_date: string
+          p_notes: string
+          p_session_id: string
+        }
+        Returns: string
+      }
       update_customer_runas: {
         Args: { p_cantidad_runas: number; p_customer_id: string }
         Returns: undefined
