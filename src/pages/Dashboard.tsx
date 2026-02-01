@@ -46,8 +46,55 @@ export default function Dashboard() {
     return <RepartoDashboard />;
   }
 
-  // Default dashboard for other roles
-  return <DefaultDashboard />;
+  // Operational roles (Cocinero, Cocina, Preparador) - No financial info
+  const operationalRoles = ['Cocinero', 'Cocina', 'Preparador', 'TV'];
+  if (user?.role && operationalRoles.includes(user.role)) {
+    return <OperationalDashboard />;
+  }
+
+  // Full dashboard only for Administrador
+  if (user?.role === 'Administrador') {
+    return <DefaultDashboard />;
+  }
+
+  // Fallback for unknown roles - operational view (safe default)
+  return <OperationalDashboard />;
+}
+
+// Dashboard simplificado para roles operativos (sin info financiera)
+function OperationalDashboard() {
+  const { user } = useAuthContext();
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold text-foreground">
+          Escritorio
+        </h1>
+        <p className="text-muted-foreground">
+          Bienvenido, {user?.username} ({user?.role})
+        </p>
+      </div>
+
+      {/* Active Shift Widget - Own shift */}
+      <ActiveShiftWidget />
+
+      {/* Info card for operational roles */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4">
+            <Clock className="h-8 w-8 text-primary" />
+            <div>
+              <h3 className="font-semibold text-lg">Panel de Trabajo</h3>
+              <p className="text-muted-foreground text-sm">
+                Usa el menú lateral para acceder a tus módulos de trabajo.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 function DefaultDashboard() {
