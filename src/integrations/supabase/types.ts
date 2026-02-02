@@ -6003,6 +6003,96 @@ export type Database = {
         }
         Returns: Json
       }
+      get_delivery_payments: {
+        Args: {
+          p_date_end?: string
+          p_date_start?: string
+          p_delivery_person_id?: string
+          p_status?: string
+        }
+        Returns: {
+          account_id: string
+          account_name: string
+          base_amount: number
+          company_pays_tax: boolean
+          created_at: string
+          delivery_address: string
+          delivery_delivered_at: string
+          delivery_fee: number
+          delivery_person_id: string
+          delivery_person_name: string
+          expense_id: string
+          gross_amount: number
+          has_invoice: boolean
+          id: string
+          net_amount: number
+          notes: string
+          order_created_at: string
+          order_id: string
+          order_number: string
+          paid_by: string
+          payment_date: string
+          shift_bonus: number
+          status: string
+          tax_amount: number
+          tax_expense_id: string
+          tax_percentage: number
+          updated_at: string
+        }[]
+      }
+      get_finance_accounts: {
+        Args: never
+        Returns: {
+          balance: number
+          code: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          type: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "finance_accounts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_finance_expenses: {
+        Args: never
+        Returns: {
+          account_id: string
+          amount: number
+          attachment_url: string | null
+          cash_movement_id: string | null
+          cash_session_id: string | null
+          category: string
+          created_at: string
+          currency: string
+          document_number: string | null
+          document_type: string | null
+          expense_date: string
+          expense_type: string
+          fixed_subtype: string | null
+          hr_payroll_id: string | null
+          id: string
+          notes: string | null
+          payment_method: string | null
+          recurring_id: string | null
+          registered_by: string | null
+          supplier: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "finance_expenses"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_fixed_expenses_for_closure: {
         Args: { _end: string; _start: string }
         Returns: {
@@ -6066,6 +6156,7 @@ export type Database = {
       }
       get_user_id_from_current_session: { Args: never; Returns: string }
       has_active_staff_session: { Args: never; Returns: boolean }
+      has_any_active_staff_session: { Args: never; Returns: boolean }
       has_orders_in_last_4_weeks: {
         Args: { p_customer_id: string }
         Returns: boolean
