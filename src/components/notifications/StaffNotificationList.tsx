@@ -53,11 +53,11 @@ export function StaffNotificationList({
         <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
           <Bell className="h-10 w-10 text-muted-foreground/50 mb-2" />
           <p className="text-sm text-muted-foreground">
-            No tienes notificaciones
+            No tienes notificaciones de los últimos 7 días
           </p>
         </div>
       ) : (
-        <ScrollArea className="max-h-[400px]">
+        <ScrollArea className="h-[400px]">
           <div className="flex flex-col">
             {notifications.map((notification, index) => (
               <div key={notification.id}>

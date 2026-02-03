@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getStaffSupabaseClient } from '@/lib/supabaseClient';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { StaffNotification } from '@/types/staffNotifications';
+import { subDays, formatISO } from 'date-fns';
 
 const POLLING_INTERVAL_MS = 4000;
+const NOTIFICATIONS_DAYS = 7; // Show notifications from last 7 days
 
 export function useStaffNotifications() {
   const { user } = useAuthContext();
@@ -24,12 +26,16 @@ export function useStaffNotifications() {
       // Use staff client which sends x-staff-token header
       const staff = getStaffSupabaseClient();
       
+      // Calculate date 7 days ago
+      const sevenDaysAgo = formatISO(subDays(new Date(), NOTIFICATIONS_DAYS));
+      
       const { data, error } = await staff
         .from('staff_notifications')
         .select('*')
         .or(`user_id.eq.${user.id},role_target.eq.${user.role}`)
+        .gte('created_at', sevenDaysAgo)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100); // Increase limit to show more notifications from 7 days
 
       if (error) {
         console.error('Error fetching staff notifications:', error);
