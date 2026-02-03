@@ -1,15 +1,25 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import { toast } from '@/hooks/use-toast';
 
-const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutos
-const AUTO_REFRESH_THRESHOLD = 60 * 60 * 1000; // 1 hora - renovar automáticamente
-const EXPIRY_WARNING = 5 * 60 * 1000; // 5 minutos - mostrar modal (fallback)
+// Configuración para navegador web (4 horas de sesión)
+const WEB_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutos
+const WEB_AUTO_REFRESH_THRESHOLD = 60 * 60 * 1000; // 1 hora - renovar automáticamente
+const WEB_EXPIRY_WARNING = 5 * 60 * 1000; // 5 minutos - mostrar modal
+
+// Configuración para PWA (365 días de sesión)
+const PWA_REFRESH_INTERVAL = 6 * 60 * 60 * 1000; // 6 horas
+const PWA_AUTO_REFRESH_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 días - renovar automáticamente
 
 export function useSessionKeepAlive() {
   const [showExpiryModal, setShowExpiryModal] = useState(false);
   const isRefreshing = useRef(false);
+  
+  // Detectar si es sesión PWA
+  const isPWA = useMemo(() => {
+    return localStorage.getItem(STORAGE_KEYS.STAFF_IS_PWA) === 'true';
+  }, []);
 
   const handleForceLogout = useCallback(() => {
     setShowExpiryModal(false);
@@ -73,6 +83,10 @@ export function useSessionKeepAlive() {
   }, [refreshToken, handleForceLogout]);
 
   useEffect(() => {
+    // Intervalos diferenciados según tipo de sesión
+    const REFRESH_INTERVAL = isPWA ? PWA_REFRESH_INTERVAL : WEB_REFRESH_INTERVAL;
+    const AUTO_REFRESH_THRESHOLD = isPWA ? PWA_AUTO_REFRESH_THRESHOLD : WEB_AUTO_REFRESH_THRESHOLD;
+    
     const checkAndRefresh = async () => {
       const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
       if (!token) return;
@@ -104,21 +118,31 @@ export function useSessionKeepAlive() {
           return;
         }
 
-        // Renovar automáticamente si queda menos de 1 hora (silencioso)
-        if (timeUntilExpiry < AUTO_REFRESH_THRESHOLD && timeUntilExpiry > EXPIRY_WARNING) {
-          console.log('Token próximo a expirar, renovando automáticamente...');
-          const success = await refreshToken(true);
-          if (!success) {
-            console.warn('Renovación automática falló, se mostrará modal pronto');
+        // Renovar automáticamente si queda menos del threshold (silencioso)
+        if (timeUntilExpiry < AUTO_REFRESH_THRESHOLD) {
+          // Para PWA: siempre renovar silenciosamente, sin modal
+          if (isPWA) {
+            console.log('PWA: Token próximo a expirar, renovando silenciosamente...');
+            await refreshToken(true);
+            return;
           }
-          return;
-        }
+          
+          // Para web: renovar silenciosamente si queda más de 5 min
+          if (timeUntilExpiry > WEB_EXPIRY_WARNING) {
+            console.log('Web: Token próximo a expirar, renovando automáticamente...');
+            const success = await refreshToken(true);
+            if (!success) {
+              console.warn('Renovación automática falló, se mostrará modal pronto');
+            }
+            return;
+          }
 
-        // Fallback: mostrar modal si queda menos de 5 minutos
-        if (timeUntilExpiry < EXPIRY_WARNING && timeUntilExpiry > 0) {
-          console.log('Sesión próxima a expirar, mostrando modal');
-          setShowExpiryModal(true);
-          return;
+          // Web: Fallback - mostrar modal si queda menos de 5 minutos
+          if (timeUntilExpiry > 0) {
+            console.log('Sesión próxima a expirar, mostrando modal');
+            setShowExpiryModal(true);
+            return;
+          }
         }
       } catch (error) {
         console.error('Error en keep-alive:', error);
@@ -129,7 +153,7 @@ export function useSessionKeepAlive() {
     const intervalId = setInterval(checkAndRefresh, REFRESH_INTERVAL);
 
     return () => clearInterval(intervalId);
-  }, [handleForceLogout, refreshToken]);
+  }, [handleForceLogout, refreshToken, isPWA]);
 
   return {
     showExpiryModal,

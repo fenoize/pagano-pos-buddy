@@ -111,6 +111,10 @@ export function useAuth() {
     try {
       console.log('Attempting login for username:', username);
       
+      // Detectar si es PWA standalone
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches 
+        || (window.navigator as any).standalone === true;
+      
       // 1. Autenticar usuario
       const { data: userData, error: userError } = await supabase
         .rpc('authenticate_user', {
@@ -133,10 +137,11 @@ export function useAuth() {
       const userRecord = userData[0];
       console.log('Authentication successful for user:', userRecord.username);
 
-      // 2. Crear sesión de staff
+      // 2. Crear sesión de staff con flag PWA
       const { data: sessionData, error: sessionError } = await supabase
         .rpc('create_staff_session', {
-          _user_id: userRecord.user_id
+          _user_id: userRecord.user_id,
+          _is_pwa: isPWA
         });
 
       if (sessionError || !sessionData || sessionData.length === 0) {
@@ -158,6 +163,13 @@ export function useAuth() {
       
       localStorage.setItem(STORAGE_KEYS.STAFF_USER, JSON.stringify(mappedUser));
       localStorage.setItem(STORAGE_KEYS.STAFF_TOKEN, token);
+      
+      // Guardar flag PWA para renovaciones posteriores
+      if (isPWA) {
+        localStorage.setItem(STORAGE_KEYS.STAFF_IS_PWA, 'true');
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.STAFF_IS_PWA);
+      }
 
       // 4. Establecer contexto DB (opcional, para otras operaciones)
       try {

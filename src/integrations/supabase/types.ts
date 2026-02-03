@@ -4845,6 +4845,7 @@ export type Database = {
           expires_at: string
           id: string
           is_active: boolean
+          is_pwa: boolean | null
           token: string
           user_id: string
         }
@@ -4853,6 +4854,7 @@ export type Database = {
           expires_at?: string
           id?: string
           is_active?: boolean
+          is_pwa?: boolean | null
           token: string
           user_id: string
         }
@@ -4861,6 +4863,7 @@ export type Database = {
           expires_at?: string
           id?: string
           is_active?: boolean
+          is_pwa?: boolean | null
           token?: string
           user_id?: string
         }
@@ -5878,13 +5881,21 @@ export type Database = {
         Args: { p_order_data: Json; p_user_id: string }
         Returns: Json
       }
-      create_staff_session: {
-        Args: { _user_id: string }
-        Returns: {
-          expires_at: string
-          token: string
-        }[]
-      }
+      create_staff_session:
+        | {
+            Args: { _user_id: string }
+            Returns: {
+              expires_at: string
+              token: string
+            }[]
+          }
+        | {
+            Args: { _is_pwa?: boolean; _user_id: string }
+            Returns: {
+              expires_at: string
+              token: string
+            }[]
+          }
       deduct_from_recipe: {
         Args: {
           p_order_id: string
