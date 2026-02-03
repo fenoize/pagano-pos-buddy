@@ -88,13 +88,72 @@ serve(async (req) => {
 
     // 4. Parsear parámetros de consulta
     const url = new URL(req.url);
+    const id = url.searchParams.get("id") || undefined; // Búsqueda exacta por ID
     const q = (url.searchParams.get("q") || "").trim();
     const estado = url.searchParams.get("estado") || undefined;
     const hasRunas = url.searchParams.get("hasRunas") || undefined;
     const limit = Math.min(Number(url.searchParams.get("limit") || 50), 100);
     const offset = Math.max(Number(url.searchParams.get("offset") || 0), 0);
 
-    // 5. Construir query
+    // 5. Si se proporciona ID, buscar directamente por ID (para escaneo QR)
+    if (id) {
+      const { data, error } = await supabaseAdmin
+        .from("customers")
+        .select(`
+          id,
+          nombres,
+          apellidos,
+          name,
+          apellido,
+          email,
+          phone,
+          rut,
+          cantidad_runas,
+          valor_cliente,
+          estado_cliente,
+          ultima_compra,
+          created_at,
+          updated_at,
+          addresses (
+            id,
+            customer_id,
+            alias,
+            calle,
+            numero,
+            depto,
+            comuna,
+            ciudad,
+            observaciones,
+            is_default,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[DB] Query by ID error:', error);
+        return new Response(JSON.stringify({ error: "Database error" }), { 
+          status: 500,
+          headers: { ...corsHeaders, "content-type": "application/json" }
+        });
+      }
+
+      console.log(`[AUDIT] User ${userId} looked up customer by ID: ${id} (found: ${!!data})`);
+
+      return new Response(JSON.stringify({ 
+        data: data ? [data] : [], 
+        count: data ? 1 : 0, 
+        limit: 1, 
+        offset: 0 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "content-type": "application/json" },
+      });
+    }
+
+    // 6. Construir query para búsqueda general
     let query = supabaseAdmin
       .from("customers")
       .select(`
