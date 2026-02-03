@@ -109,6 +109,7 @@ const FinanceConfig = lazy(() => import("@/pages/finance/FinanceConfig"));
 const ProductSalesReport = lazy(() => import("@/pages/reports/ProductSalesReport"));
 
 // RRHH Pages
+const RRHHResumen = lazy(() => import("@/pages/rrhh/RRHHResumen"));
 const RRHHTurnos = lazy(() => import("@/pages/rrhh/RRHHTurnos"));
 const RRHHLiquidaciones = lazy(() => import("@/pages/rrhh/RRHHLiquidaciones"));
 const RRHHAjustes = lazy(() => import("@/pages/rrhh/RRHHAjustes"));
@@ -713,7 +714,8 @@ const App = () => (
               } />
               
               {/* RRHH Routes */}
-              <Route path="/pos/rrhh" element={<Navigate to="/pos/rrhh/turnos" replace />} />
+              <Route path="/pos/rrhh" element={<Navigate to="/pos/rrhh/resumen" replace />} />
+              <Route path="/pos/rrhh/resumen" element={<StaffProtectedRoute><StaffLayout><RRHHResumen /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/rrhh/turnos" element={<StaffProtectedRoute><StaffLayout><RRHHTurnos /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/rrhh/liquidaciones" element={<StaffProtectedRoute><StaffLayout><RRHHLiquidaciones /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/rrhh/ajustes" element={<StaffProtectedRoute><StaffLayout><RRHHAjustes /></StaffLayout></StaffProtectedRoute>} />

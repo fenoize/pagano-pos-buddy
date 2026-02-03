@@ -133,6 +133,7 @@ const reportItems = [
 
 // RRHH menu items
 const rrhhItems = [
+  { title: "Resumen", url: "/pos/rrhh/resumen", icon: BarChart3, roles: ['Administrador'] },
   { title: "Turnos", url: "/pos/rrhh/turnos", icon: Users, roles: ['Administrador'] },
   { title: "Liquidaciones", url: "/pos/rrhh/liquidaciones", icon: DollarSign, roles: ['Administrador'] },
   { title: "Ajustes", url: "/pos/rrhh/ajustes", icon: TrendingUpIcon, roles: ['Administrador'] },
