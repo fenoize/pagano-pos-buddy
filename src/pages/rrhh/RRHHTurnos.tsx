@@ -19,6 +19,8 @@ import { es } from 'date-fns/locale';
 import { ShiftCalendar } from '@/components/rrhh/ShiftCalendar';
 import { ShiftListView } from '@/components/rrhh/ShiftListView';
 import { GenerateShiftsModal } from '@/components/rrhh/GenerateShiftsModal';
+import { SHIFT_COLOR_LEGEND } from '@/lib/shiftColors';
+import { cn } from '@/lib/utils';
 
 type ViewType = 'calendar' | 'list';
 type PeriodType = 'week' | 'month';
@@ -232,6 +234,17 @@ function RRHHTurnos() {
               <Filter className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+
+        {/* Color Legend */}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+          <span className="font-medium">Leyenda:</span>
+          {SHIFT_COLOR_LEGEND.map((item) => (
+            <div key={item.label} className="flex items-center gap-1.5">
+              <span className={cn("w-3 h-3 rounded-full", item.color)} />
+              <span>{item.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 

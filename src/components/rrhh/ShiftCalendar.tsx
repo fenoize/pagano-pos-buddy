@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { HRShift, HRShiftStatus, HREmployee, HRShiftType, HRShiftRole, HRSchedule } from '@/types/hr';
+import { HRShift, HREmployee, HRShiftType, HRShiftRole, HRSchedule } from '@/types/hr';
 import { Plus } from 'lucide-react';
 import { getRoleIcon, getRoleColorClass } from '@/lib/roleIcons';
 import { ShiftDetailModal } from './ShiftDetailModal';
+import { getShiftColors } from '@/lib/shiftColors';
 
 interface ShiftCalendarProps {
   shifts: HRShift[];
@@ -23,20 +23,6 @@ interface ShiftCalendarProps {
   onApproveShift: (id: string) => Promise<void>;
   onDeleteShift: (id: string) => Promise<void>;
 }
-
-const statusColors: Record<HRShiftStatus, string> = {
-  draft: 'border-l-gray-400',
-  confirmed: 'border-l-blue-500',
-  approved: 'border-l-green-500',
-  paid: 'border-l-purple-500',
-};
-
-const statusBg: Record<HRShiftStatus, string> = {
-  draft: 'bg-muted/60',
-  confirmed: 'bg-blue-50 dark:bg-blue-950/30',
-  approved: 'bg-green-50 dark:bg-green-950/30',
-  paid: 'bg-purple-50 dark:bg-purple-950/30',
-};
 
 const NO_SCHEDULE_KEY = '__no_schedule__';
 
@@ -213,6 +199,7 @@ export function ShiftCalendar({
                             {scheduleShifts.map((shift) => {
                               const RoleIcon = getRoleIcon(shift.role?.name || '');
                               const roleColorClass = getRoleColorClass(shift.role?.name || '');
+                              const shiftColors = getShiftColors(shift);
                               
                               return (
                                 <button
@@ -221,8 +208,8 @@ export function ShiftCalendar({
                                   className={cn(
                                     "w-full text-left rounded px-1.5 py-0.5 text-xs transition-all",
                                     "border-l-2 cursor-pointer hover:shadow-sm hover:scale-[1.02]",
-                                    statusColors[shift.status],
-                                    statusBg[shift.status]
+                                    shiftColors.border,
+                                    shiftColors.bg
                                   )}
                                 >
                                   <div className="flex items-center gap-1 min-w-0">
@@ -251,6 +238,7 @@ export function ShiftCalendar({
                           {dayShiftsBySchedule[NO_SCHEDULE_KEY].map((shift) => {
                             const RoleIcon = getRoleIcon(shift.role?.name || '');
                             const roleColorClass = getRoleColorClass(shift.role?.name || '');
+                            const shiftColors = getShiftColors(shift);
                             
                             return (
                               <button
@@ -259,8 +247,8 @@ export function ShiftCalendar({
                                 className={cn(
                                   "w-full text-left rounded px-1.5 py-0.5 text-xs transition-all",
                                   "border-l-2 cursor-pointer hover:shadow-sm hover:scale-[1.02]",
-                                  statusColors[shift.status],
-                                  statusBg[shift.status]
+                                  shiftColors.border,
+                                  shiftColors.bg
                                 )}
                               >
                                 <div className="flex items-center gap-1 min-w-0">

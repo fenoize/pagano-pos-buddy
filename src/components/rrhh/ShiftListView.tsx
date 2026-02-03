@@ -9,6 +9,7 @@ import { HRShift, HRShiftStatus, HREmployee, HRShiftType, HRShiftRole, HRSchedul
 import { Check, CheckCheck, Trash2, Eye, Pencil } from 'lucide-react';
 import { getRoleIcon, getRoleColorClass } from '@/lib/roleIcons';
 import { ShiftDetailModal } from './ShiftDetailModal';
+import { getShiftColors } from '@/lib/shiftColors';
 
 interface ShiftListViewProps {
   shifts: HRShift[];
@@ -138,13 +139,16 @@ export function ShiftListView({
                     const isSelected = selectedIds.includes(shift.id);
                     const RoleIcon = getRoleIcon(shift.role?.name || '');
                     const roleColorClass = getRoleColorClass(shift.role?.name || '');
+                    const shiftColors = getShiftColors(shift);
 
                     return (
                       <div
                         key={shift.id}
                         className={cn(
-                          "px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors",
-                          isSelected && "bg-primary/5"
+                          "px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors border-l-4",
+                          shiftColors.border,
+                          shiftColors.bg,
+                          isSelected && "ring-2 ring-primary/30"
                         )}
                       >
                         {/* Checkbox */}
