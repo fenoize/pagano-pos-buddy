@@ -1,210 +1,101 @@
 
 
-## Plan: Sesiones Permanentes para Staff en PWA Móvil
+## Plan: Escala de Colores por Respuesta del Empleado en Gestión de Turnos
 
-### Resumen Ejecutivo
+### Contexto
 
-Se implementará un sistema de sesiones duales donde:
-- **Navegador web**: Mantiene la seguridad actual (4 horas de expiración)
-- **PWA móvil instalada**: Sesión permanente que no expira mientras el dispositivo esté activo
+Actualmente los turnos en el calendario de gestión usan colores basados en el estado administrativo (`status`: draft, confirmed, approved, paid). El usuario necesita una escala visual basada en la **respuesta del empleado** (`employee_response`) para identificar rápidamente:
 
-Esto permitirá que el personal del staff reciba notificaciones push y acceda a la app sin necesidad de iniciar sesión cada vez que la abran.
+- Quién ha aceptado su turno
+- Quién aún no ha respondido
+- Qué turnos ya fueron realizados (aprobados)
 
----
+### Nueva Escala de Colores
 
-### Arquitectura de la Solución
+| Estado | Color | Significado |
+|--------|-------|-------------|
+| `employee_response = null/pending` | **Amarillo** | Programado, pendiente de aceptación |
+| `employee_response = accepted` | **Verde** | Turno aceptado por el empleado |
+| `status = approved` | **Gris** | Turno aprobado (ya se realizó) |
+| `employee_response = rejected` | **Rojo** (adicional) | Turno rechazado por el empleado |
+
+### Lógica de Prioridad
+
+El color se determinará con la siguiente prioridad:
+1. Si `status === 'approved'` → **Gris** (turno realizado, sin importar respuesta)
+2. Si `employee_response === 'rejected'` → **Rojo** (rechazado)
+3. Si `employee_response === 'accepted'` → **Verde** (aceptado)
+4. Cualquier otro caso → **Amarillo** (pendiente)
+
+### Cambios a Realizar
+
+#### 1. Modificar ShiftCalendar.tsx
+
+Actualizar los estilos de color para reflejar la nueva escala basada en `employee_response`:
+
+```typescript
+// Nueva función para determinar el color del turno
+const getShiftColors = (shift: HRShift) => {
+  // Prioridad 1: Turno aprobado (ya realizado)
+  if (shift.status === 'approved' || shift.status === 'paid') {
+    return {
+      border: 'border-l-gray-400',
+      bg: 'bg-gray-100 dark:bg-gray-800/40',
+    };
+  }
+  
+  // Prioridad 2: Rechazado por empleado
+  if (shift.employee_response === 'rejected') {
+    return {
+      border: 'border-l-red-500',
+      bg: 'bg-red-50 dark:bg-red-950/30',
+    };
+  }
+  
+  // Prioridad 3: Aceptado por empleado
+  if (shift.employee_response === 'accepted') {
+    return {
+      border: 'border-l-green-500',
+      bg: 'bg-green-50 dark:bg-green-950/30',
+    };
+  }
+  
+  // Default: Pendiente (amarillo)
+  return {
+    border: 'border-l-amber-500',
+    bg: 'bg-amber-50 dark:bg-amber-950/30',
+  };
+};
+```
+
+#### 2. Modificar ShiftListView.tsx
+
+Aplicar la misma lógica de colores en la vista de lista, mostrando un indicador visual del estado de respuesta junto al badge de estado administrativo.
+
+#### 3. Agregar Leyenda Visual (Opcional)
+
+Añadir una pequeña leyenda en la cabecera del calendario para que el usuario entienda el código de colores:
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                         STAFF LOGIN                              │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   ┌──────────────────┐              ┌──────────────────┐        │
-│   │   NAVEGADOR WEB  │              │   PWA INSTALADA  │        │
-│   │                  │              │   (Standalone)   │        │
-│   │  expires_at:     │              │  expires_at:     │        │
-│   │  NOW + 4 hours   │              │  NOW + 365 days  │        │
-│   │                  │              │                  │        │
-│   │  Auto-refresh:   │              │  Auto-refresh:   │        │
-│   │  Cada 10 min     │              │  Cada 6 horas    │        │
-│   │  cuando < 1hr    │              │  cuando < 7 días │        │
-│   │                  │              │                  │        │
-│   │  Modal expiry:   │              │  Sin modal       │        │
-│   │  Sí (45 seg)     │              │  (silencioso)    │        │
-│   └──────────────────┘              └──────────────────┘        │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+● Pendiente  ● Aceptado  ● Aprobado  ● Rechazado
+  (amarillo)   (verde)     (gris)      (rojo)
 ```
-
----
-
-### Cambios Requeridos
-
-#### 1. Base de Datos (Migraciones SQL)
-
-**Modificar `create_staff_session`** para aceptar un parámetro `is_pwa`:
-
-```sql
-CREATE OR REPLACE FUNCTION create_staff_session(
-  _user_id uuid,
-  _is_pwa boolean DEFAULT false
-)
-RETURNS TABLE(token text, expires_at timestamptz)
-AS $$
-DECLARE
-  v_expires_at timestamptz := CASE 
-    WHEN _is_pwa THEN NOW() + INTERVAL '365 days'  -- PWA: 1 año
-    ELSE NOW() + INTERVAL '4 hours'                -- Web: 4 horas
-  END;
-BEGIN
-  -- ... lógica existente con v_expires_at dinámico
-END;
-$$;
-```
-
-**Modificar `refresh_staff_token`** para sesiones PWA:
-
-```sql
-CREATE OR REPLACE FUNCTION refresh_staff_token(
-  _token text,
-  _is_pwa boolean DEFAULT false
-)
-RETURNS TABLE(new_token text, expires_at timestamptz)
-AS $$
-  -- Extiende 365 días si es PWA, 4 horas si no
-$$;
-```
-
-**Agregar columna `is_pwa`** a `staff_sessions`:
-
-```sql
-ALTER TABLE staff_sessions 
-ADD COLUMN is_pwa boolean DEFAULT false;
-```
-
----
-
-#### 2. Frontend - Hook de Autenticación
-
-**Modificar `useAuth.ts`**:
-
-- Detectar si la app está en modo standalone (PWA instalada)
-- Pasar el flag `is_pwa` al crear la sesión
-
-```typescript
-const login = async (username: string, password: string) => {
-  // Detectar si es PWA standalone
-  const isPWA = window.matchMedia('(display-mode: standalone)').matches 
-    || (window.navigator as any).standalone === true;
-  
-  // Crear sesión con flag PWA
-  const { data } = await supabase.rpc('create_staff_session', {
-    _user_id: userId,
-    _is_pwa: isPWA
-  });
-  
-  // Guardar flag en localStorage para renovaciones
-  if (isPWA) {
-    localStorage.setItem(STORAGE_KEYS.STAFF_IS_PWA, 'true');
-  }
-};
-```
-
----
-
-#### 3. Frontend - Hook de Keep-Alive
-
-**Modificar `useSessionKeepAlive.ts`**:
-
-- Detectar si es sesión PWA
-- Ajustar intervalos y umbrales según el tipo
-
-```typescript
-const isPWA = localStorage.getItem(STORAGE_KEYS.STAFF_IS_PWA) === 'true';
-
-// Intervalos diferenciados
-const REFRESH_INTERVAL = isPWA 
-  ? 6 * 60 * 60 * 1000   // 6 horas para PWA
-  : 10 * 60 * 1000;      // 10 minutos para web
-
-const AUTO_REFRESH_THRESHOLD = isPWA
-  ? 7 * 24 * 60 * 60 * 1000  // 7 días para PWA
-  : 60 * 60 * 1000;          // 1 hora para web
-
-// Desactivar modal de expiración para PWA
-if (isPWA) {
-  // Renovar silenciosamente sin mostrar modal
-  await refreshToken(true);
-  return;
-}
-```
-
----
-
-#### 4. Storage Keys
-
-**Agregar nueva key en `storageKeys.ts`**:
-
-```typescript
-export const STORAGE_KEYS = {
-  // ... existentes
-  STAFF_IS_PWA: 'paganos_staff_is_pwa',
-} as const;
-
-export const clearStaffStorage = () => {
-  // ... existentes
-  localStorage.removeItem(STORAGE_KEYS.STAFF_IS_PWA);
-};
-```
-
----
-
-### Consideraciones de Seguridad
-
-| Aspecto | Web (4h) | PWA (365d) |
-|---------|----------|------------|
-| Logout manual | ✅ Siempre disponible | ✅ Siempre disponible |
-| Token único por usuario | ✅ | ✅ |
-| Invalidación remota | ✅ Admin puede invalidar | ✅ Admin puede invalidar |
-| Riesgo de robo | Bajo (expira rápido) | Medio (mitigado por estar en app nativa) |
-
-**Mitigaciones adicionales:**
-- El token se invalida si el usuario es desactivado en el sistema
-- El administrador puede forzar cierre de sesión desde el panel
-- La sesión se verifica en cada operación crítica
-
----
 
 ### Archivos a Modificar
 
 | Archivo | Cambio |
 |---------|--------|
-| `supabase/migrations/XXXXX.sql` | Nuevas funciones SQL |
-| `src/lib/storageKeys.ts` | Nueva key `STAFF_IS_PWA` |
-| `src/hooks/useAuth.ts` | Detectar PWA y pasar flag |
-| `src/hooks/useSessionKeepAlive.ts` | Lógica diferenciada |
-| `src/integrations/supabase/types.ts` | Tipos actualizados (auto) |
+| `src/components/rrhh/ShiftCalendar.tsx` | Nueva lógica de colores por `employee_response` |
+| `src/components/rrhh/ShiftListView.tsx` | Consistencia visual en vista lista |
+| `src/pages/rrhh/RRHHTurnos.tsx` | Leyenda opcional de colores |
 
----
+### Resultado Visual Esperado
 
-### Complejidad y Tiempo Estimado
+En el calendario:
+- Los turnos **amarillos** son los que necesitan atención (el empleado no ha respondido)
+- Los turnos **verdes** están confirmados por el empleado
+- Los turnos **grises** ya se realizaron
+- Los turnos **rojos** fueron rechazados y necesitan reasignación
 
-| Aspecto | Evaluación |
-|---------|------------|
-| **Complejidad** | Media - cambios localizados |
-| **Riesgo** | Bajo - no afecta sesiones web existentes |
-| **Tiempo estimado** | 20-30 minutos |
-| **Pruebas requeridas** | Login desde PWA, verificar persistencia, logout |
-
----
-
-### Flujo de Usuario Final
-
-1. Usuario instala la PWA en su celular
-2. Abre la app e inicia sesión
-3. Sistema detecta modo standalone → crea sesión de 365 días
-4. Usuario cierra la app
-5. Al reabrir (incluso días después) → sesión sigue activa
-6. Notificaciones push funcionan sin interrupciones
-7. Token se renueva automáticamente cada semana
+Esto permitirá al administrador identificar rápidamente qué acciones tomar.
 
