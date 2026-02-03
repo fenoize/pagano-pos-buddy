@@ -6172,6 +6172,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_user_active_session: { Args: { p_user_id: string }; Returns: boolean }
       hr_generate_payroll_run_v1: {
         Args: {
           p_end_date: string
