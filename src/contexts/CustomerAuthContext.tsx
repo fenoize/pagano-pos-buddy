@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import type { User, Session } from '@supabase/supabase-js';
@@ -13,12 +13,15 @@ interface CustomerAuthContextType {
   session: Session | null;
   customer: Customer | null;
   loading: boolean;
+  needsProfileCompletion: boolean;
   signUp: (email: string, password: string, nombre: string, apellido: string, phone?: string, birthDate?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ error: Error | null }>;
   resetPassword: (newPassword: string) => Promise<{ error: Error | null }>;
   refreshCustomerData: () => Promise<void>;
+  completeProfile: (data: { nombres: string; apellidos: string; phone: string; fecha_nacimiento: string }) => Promise<{ error: Error | null }>;
 }
 
 const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(undefined);
@@ -28,6 +31,7 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [session, setSession] = useState<Session | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
 
   const loadCustomerData = async (userId: string) => {
     try {
@@ -40,6 +44,12 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (customerError) throw customerError;
       
       setCustomer(customerData);
+      
+      // Verificar si necesita completar perfil (Google sign-in sin phone o fecha)
+      if (customerData) {
+        const missingData = !customerData.phone || !customerData.fecha_nacimiento;
+        setNeedsProfileCompletion(missingData);
+      }
       
       // CRITICAL: Establecer contexto DB si tenemos datos del customer
       if (customerData && customerData.account_id) {
@@ -76,6 +86,7 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         } else {
           clearCustomerStorage();
           setCustomer(null);
+          setNeedsProfileCompletion(false);
         }
       }
     );
@@ -176,6 +187,26 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/login`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const signOut = async () => {
     // Limpiar contexto DB antes del signout
     await clearDBContext();
@@ -192,6 +223,7 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setSession(null);
     setUser(null);
     setCustomer(null);
+    setNeedsProfileCompletion(false);
   };
 
   const requestPasswordReset = async (email: string) => {
@@ -226,17 +258,50 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
+  const completeProfile = async (data: { nombres: string; apellidos: string; phone: string; fecha_nacimiento: string }) => {
+    try {
+      if (!customer?.id) {
+        throw new Error('No hay cliente asociado');
+      }
+
+      const { error } = await supabase
+        .from('customers')
+        .update({
+          nombres: data.nombres,
+          apellidos: data.apellidos,
+          name: data.nombres, // mantener legacy sincronizado
+          apellido: data.apellidos, // mantener legacy sincronizado
+          phone: data.phone,
+          fecha_nacimiento: data.fecha_nacimiento,
+        })
+        .eq('id', customer.id);
+
+      if (error) throw error;
+
+      // Refrescar datos del cliente
+      await refreshCustomerData();
+      setNeedsProfileCompletion(false);
+
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const value = {
     user,
     session,
     customer,
     loading,
+    needsProfileCompletion,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     requestPasswordReset,
     resetPassword,
     refreshCustomerData,
+    completeProfile,
   };
 
   return (

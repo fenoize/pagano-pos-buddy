@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, User, Coins, X } from 'lucide-react';
+import { Search, Plus, User, Coins } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
@@ -103,7 +103,8 @@ export function CustomerModal({
 
   const selectCustomer = (selectedCustomer: Customer) => {
     onCustomerChange(selectedCustomer);
-    setSearchTerm(`${selectedCustomer.name} ${selectedCustomer.apellido || ''}`.trim());
+    const displayName = getDisplayName(selectedCustomer);
+    setSearchTerm(displayName);
     setSearchResults([]);
     setShowNewCustomerForm(false);
   };
@@ -135,6 +136,13 @@ export function CustomerModal({
     Math.floor(totalAmount / runaRewardValue)
   );
 
+  // Helper para obtener nombre completo
+  const getDisplayName = (c: Customer | Partial<Customer>) => {
+    const nombre = c.nombres || c.name || '';
+    const apellido = c.apellidos || c.apellido || '';
+    return `${nombre} ${apellido}`.trim();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -153,7 +161,7 @@ export function CustomerModal({
           <div className="relative">
             <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por RUT, correo o teléfono..."
+              placeholder="Buscar por correo o teléfono..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -171,11 +179,10 @@ export function CustomerModal({
                 >
                   <div className="flex-1">
                     <div className="font-medium">
-                      {result.name} {result.apellido}
+                      {getDisplayName(result)}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {result.phone && `📞 ${result.phone}`}
-                      {result.rut && ` • RUT: ${result.rut}`}
                       {result.email && ` • ${result.email}`}
                     </div>
                   </div>
@@ -201,20 +208,28 @@ export function CustomerModal({
             </div>
           )}
 
-          {/* New Customer Form */}
+          {/* New Customer Form - sin RUT */}
           {showNewCustomerForm && (
             <div className="space-y-3 border rounded-lg p-4 bg-muted/5">
               <h4 className="font-medium">Nuevo Cliente</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Input
-                  placeholder="Nombre *"
-                  value={customer.name || ''}
-                  onChange={(e) => onCustomerChange({ ...customer, name: e.target.value })}
+                  placeholder="Nombres *"
+                  value={customer.nombres || customer.name || ''}
+                  onChange={(e) => onCustomerChange({ 
+                    ...customer, 
+                    nombres: e.target.value,
+                    name: e.target.value 
+                  })}
                 />
                 <Input
-                  placeholder="Apellido"
-                  value={customer.apellido || ''}
-                  onChange={(e) => onCustomerChange({ ...customer, apellido: e.target.value })}
+                  placeholder="Apellidos"
+                  value={customer.apellidos || customer.apellido || ''}
+                  onChange={(e) => onCustomerChange({ 
+                    ...customer, 
+                    apellidos: e.target.value,
+                    apellido: e.target.value 
+                  })}
                 />
                 <Input
                   placeholder="Teléfono"
@@ -222,15 +237,9 @@ export function CustomerModal({
                   onChange={(e) => onCustomerChange({ ...customer, phone: e.target.value })}
                 />
                 <Input
-                  placeholder="RUT (opcional)"
-                  value={customer.rut || ''}
-                  onChange={(e) => onCustomerChange({ ...customer, rut: e.target.value })}
-                />
-                <Input
                   placeholder="Email (opcional)"
                   value={customer.email || ''}
                   onChange={(e) => onCustomerChange({ ...customer, email: e.target.value })}
-                  className="md:col-span-2"
                 />
               </div>
             </div>
@@ -243,9 +252,9 @@ export function CustomerModal({
               <div className="border rounded-lg p-4 bg-primary/5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">{customer.name} {customer.apellido}</h4>
+                    <h4 className="font-medium">{getDisplayName(customer)}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {customer.phone} • {customer.rut}
+                      {customer.phone} • {customer.email}
                     </p>
                   </div>
                   <Button

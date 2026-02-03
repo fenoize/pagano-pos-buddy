@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { User, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 interface CustomerFormProps {
   customer: Partial<Customer>;
@@ -48,7 +48,7 @@ export default function CustomerForm({ customer, onCustomerChange }: CustomerFor
       const { data } = await supabase
         .from('customers')
         .select('*')
-        .or(`name.ilike.%${searchTerm}%,phone.like.%${searchTerm}%,rut.like.%${searchTerm}%`)
+        .or(`name.ilike.%${searchTerm}%,nombres.ilike.%${searchTerm}%,phone.like.%${searchTerm}%,email.ilike.%${searchTerm}%`)
         .limit(5);
       
       if (data) {
@@ -63,6 +63,13 @@ export default function CustomerForm({ customer, onCustomerChange }: CustomerFor
     onCustomerChange(selectedCustomer);
     setSearchTerm('');
     setExistingCustomers([]);
+  };
+
+  // Obtener nombre completo para display
+  const getDisplayName = (c: Customer) => {
+    const nombre = c.nombres || c.name || '';
+    const apellido = c.apellidos || c.apellido || '';
+    return `${nombre} ${apellido}`.trim();
   };
 
   return (
@@ -80,7 +87,7 @@ export default function CustomerForm({ customer, onCustomerChange }: CustomerFor
           <div className="relative">
             <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nombre, teléfono o RUT..."
+              placeholder="Buscar por nombre, teléfono o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -96,9 +103,9 @@ export default function CustomerForm({ customer, onCustomerChange }: CustomerFor
                   onClick={() => selectCustomer(cust)}
                 >
                   <div>
-                    <div className="font-medium">{cust.name} {cust.apellido}</div>
+                    <div className="font-medium">{getDisplayName(cust)}</div>
                     <div className="text-sm text-muted-foreground">
-                      {cust.phone} • {cust.rut}
+                      {cust.phone} • {cust.email}
                     </div>
                   </div>
                 </Button>
@@ -109,19 +116,27 @@ export default function CustomerForm({ customer, onCustomerChange }: CustomerFor
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label>Nombre</Label>
+            <Label>Nombres</Label>
             <Input
-              value={customer.name || ''}
-              onChange={(e) => onCustomerChange({ ...customer, name: e.target.value })}
-              placeholder="Nombre"
+              value={customer.nombres || customer.name || ''}
+              onChange={(e) => onCustomerChange({ 
+                ...customer, 
+                nombres: e.target.value,
+                name: e.target.value // mantener legacy sincronizado
+              })}
+              placeholder="Nombres"
             />
           </div>
           <div>
-            <Label>Apellido</Label>
+            <Label>Apellidos</Label>
             <Input
-              value={customer.apellido || ''}
-              onChange={(e) => onCustomerChange({ ...customer, apellido: e.target.value })}
-              placeholder="Apellido"
+              value={customer.apellidos || customer.apellido || ''}
+              onChange={(e) => onCustomerChange({ 
+                ...customer, 
+                apellidos: e.target.value,
+                apellido: e.target.value // mantener legacy sincronizado
+              })}
+              placeholder="Apellidos"
             />
           </div>
         </div>
@@ -181,15 +196,6 @@ export default function CustomerForm({ customer, onCustomerChange }: CustomerFor
               placeholder="+56 9 1234 5678"
             />
           </div>
-        </div>
-
-        <div>
-          <Label>RUT</Label>
-          <Input
-            value={customer.rut || ''}
-            onChange={(e) => onCustomerChange({ ...customer, rut: e.target.value })}
-            placeholder="12.345.678-9"
-          />
         </div>
 
         {customer.cantidad_runas !== undefined && (
