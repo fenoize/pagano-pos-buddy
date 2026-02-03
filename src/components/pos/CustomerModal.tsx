@@ -4,11 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, User, Coins } from 'lucide-react';
+import { Search, Plus, User, Coins, ScanLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import RunasCalculator from './RunasCalculator';
+import { QRScannerModal } from './QRScannerModal';
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ export function CustomerModal({
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -167,6 +169,22 @@ export function CustomerModal({
               className="pl-10"
             />
           </div>
+
+          {/* QR Scanner Button */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 border-t border-border" />
+            <span className="text-xs text-muted-foreground px-2">o</span>
+            <div className="flex-1 border-t border-border" />
+          </div>
+          
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setShowQRScanner(true)}
+          >
+            <ScanLine className="w-4 h-4 mr-2" />
+            Escanear QR del cliente
+          </Button>
 
           {/* Search Results */}
           {searchResults.length > 0 && (
@@ -319,13 +337,22 @@ export function CustomerModal({
             </div>
           )}
 
-          {/* Action Buttons */}
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={onClose}>
               Cerrar
             </Button>
           </div>
         </div>
+
+        {/* QR Scanner Modal */}
+        <QRScannerModal
+          isOpen={showQRScanner}
+          onClose={() => setShowQRScanner(false)}
+          onCustomerFound={(foundCustomer) => {
+            selectCustomer(foundCustomer);
+            setShowQRScanner(false);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

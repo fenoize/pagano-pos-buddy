@@ -19,7 +19,8 @@ import {
   ArrowLeft,
   Save,
   CheckCircle,
-  LogOut
+  LogOut,
+  QrCode
 } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { configuredSupabase } from '@/lib/supabaseClient';
@@ -33,6 +34,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { CustomerQRModal } from '@/components/customer/CustomerQRModal';
 
 export default function CustomerProfile() {
   const navigate = useNavigate();
@@ -57,6 +59,9 @@ export default function CustomerProfile() {
   // Update check state
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateChecked, setUpdateChecked] = useState(false);
+  
+  // QR Modal state
+  const [showQRModal, setShowQRModal] = useState(false);
 
   const quickLinks = [
     { label: 'Mis Pedidos', icon: ShoppingBag, path: '/my-orders' },
@@ -349,6 +354,27 @@ export default function CustomerProfile() {
           </CardContent>
         </Card>
 
+        {/* QR Code Button */}
+        <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
+          <CardContent className="p-0">
+            <button
+              onClick={() => setShowQRModal(true)}
+              className="w-full flex items-center justify-between p-4 hover:bg-primary/10 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <QrCode className="h-6 w-6 text-primary" />
+                </div>
+                <div className="text-left">
+                  <span className="font-semibold text-foreground block">Mi Código QR</span>
+                  <span className="text-xs text-muted-foreground">Identifícate en caja sin dar datos</span>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-primary" />
+            </button>
+          </CardContent>
+        </Card>
+
         {/* Quick Links */}
         <Card className="border-border bg-card">
           <CardContent className="p-0">
@@ -515,6 +541,16 @@ export default function CustomerProfile() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* QR Modal */}
+      {customer && (
+        <CustomerQRModal
+          isOpen={showQRModal}
+          onClose={() => setShowQRModal(false)}
+          customerId={customer.id}
+          customerName={[customer.name || customer.nombres, customer.apellido || customer.apellidos].filter(Boolean).join(' ')}
+        />
+      )}
 
       <CustomerBottomNav />
     </div>
