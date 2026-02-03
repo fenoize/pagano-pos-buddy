@@ -1,186 +1,153 @@
 
 
-## Plan: Nuevo Tab "Resumen" en Módulo RRHH
+## Plan: Sesiones Múltiples para Administradores y Persistencia PWA
 
 ### Objetivo
 
-Crear una nueva vista de resumen que permita al administrador tener una visión consolidada de:
-- Cantidad de turnos por trabajador
-- Monto a pagar por trabajador
-- Total general de sueldos proyectados
-
-Con filtros por trabajador, fechas y tipo de turno.
-
----
-
-### Vista Previa de la Interfaz
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  Resumen de Turnos y Pagos                                      │
-│  Vista consolidada del período                                   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  [Filtros]  Empleado ▼  Desde [____] Hasta [____]  Turno ▼      │
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │ KPIs                                                     │    │
-│  │ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐      │    │
-│  │ │   45         │ │    8         │ │  $1.250.000  │      │    │
-│  │ │ Total Turnos │ │ Empleados    │ │ Total a Pagar│      │    │
-│  │ └──────────────┘ └──────────────┘ └──────────────┘      │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │ Tabla Detalle por Empleado                               │    │
-│  │ ──────────────────────────────────────────────────────── │    │
-│  │ Empleado        │ Turnos │ Pend │ Aprob │ Monto Estimado │    │
-│  │ ───────────────────────────────────────────────────────  │    │
-│  │ Juan Pérez      │   12   │   2  │  10   │    $312.000    │    │
-│  │ María González  │    8   │   1  │   7   │    $208.000    │    │
-│  │ Carlos López    │   15   │   3  │  12   │    $390.000    │    │
-│  │ Ana Martínez    │   10   │   0  │  10   │    $340.000    │    │
-│  │ ───────────────────────────────────────────────────────  │    │
-│  │ TOTAL           │   45   │   6  │  39   │  $1.250.000    │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                  │
-│                              [Exportar CSV] [Exportar PDF]       │
-└─────────────────────────────────────────────────────────────────┘
-```
+Modificar el sistema de sesiones del staff para:
+1. **Administradores**: Permitir hasta 3 sesiones simultáneas (en lugar de invalidar todas al crear una nueva)
+2. **Otros roles**: Mantener el comportamiento actual (1 sesión activa)
+3. **PWA de Administradores**: Garantizar que las sesiones PWA nunca se desconecten automáticamente para recibir notificaciones push siempre
 
 ---
 
 ### Cambios Requeridos
 
-#### 1. Nueva Página: `src/pages/rrhh/RRHHResumen.tsx`
+#### 1. Modificar función `create_staff_session` (SQL)
 
-Componente principal que incluirá:
-- **Filtros**: Selector de empleado, rango de fechas, tipo de turno
-- **KPIs Cards**: Total turnos, empleados activos, total proyectado a pagar
-- **Tabla de resumen**: Desglose por empleado con:
-  - Nombre del empleado
-  - Total de turnos en el período
-  - Turnos pendientes (draft/confirmed)
-  - Turnos aprobados (approved)
-  - Monto estimado a pagar (calculado con `hr_pay_rules`)
-- **Exportación**: Botones para CSV y PDF
+La lógica actual invalida **todas** las sesiones anteriores. La nueva lógica será:
 
-#### 2. Nuevo Hook: `src/hooks/useHRShiftsSummary.ts`
-
-Hook personalizado para calcular los datos de resumen:
-
-```typescript
-interface ShiftSummaryItem {
-  employee_id: string;
-  employee_name: string;
-  employee_rut: string | null;
-  total_shifts: number;
-  pending_shifts: number;    // draft + confirmed
-  approved_shifts: number;   // approved + paid
-  estimated_pay: number;     // calculado con pay_rules
-}
-
-interface ShiftSummaryTotals {
-  total_shifts: number;
-  total_employees: number;
-  total_pending: number;
-  total_approved: number;
-  total_estimated_pay: number;
-}
+```text
+SI el usuario es Administrador:
+  1. Contar sesiones activas
+  2. Si hay >= 3 sesiones activas:
+     - Invalidar la sesión más antigua (solo 1)
+  3. Crear nueva sesión (ahora hay máximo 3)
+SINO (otros roles):
+  - Mantener comportamiento actual: invalidar todas las sesiones anteriores
+  - Crear nueva sesión (máximo 1)
 ```
 
-La lógica de cálculo:
-1. Obtener todos los turnos del período filtrado
-2. Agrupar por empleado
-3. Para cada turno, buscar el `pay_per_shift` en `hr_pay_rules` según el `shift_type_id`
-4. Sumar los montos para el estimado total
+#### 2. Modificar función `refresh_staff_token` (SQL)
 
-#### 3. Agregar Ruta en `src/App.tsx`
+Para Administradores con sesión PWA, asegurar que la renovación siempre funcione sin límites de tiempo, extendiendo 365 días cada vez.
 
-```typescript
-const RRHHResumen = lazy(() => import("@/pages/rrhh/RRHHResumen"));
+#### 3. Hook `useSessionKeepAlive` - Comportamiento PWA Administrador
 
-// En las rutas:
-<Route 
-  path="/pos/rrhh/resumen" 
-  element={
-    <StaffProtectedRoute>
-      <StaffLayout><RRHHResumen /></StaffLayout>
-    </StaffProtectedRoute>
-  } 
-/>
-```
-
-#### 4. Agregar Item en Sidebar `src/components/AppSidebar.tsx`
-
-```typescript
-const rrhhItems = [
-  { title: "Resumen", url: "/pos/rrhh/resumen", icon: BarChart3, roles: ['Administrador'] },  // NUEVO
-  { title: "Turnos", url: "/pos/rrhh/turnos", icon: Users, roles: ['Administrador'] },
-  { title: "Liquidaciones", url: "/pos/rrhh/liquidaciones", icon: DollarSign, roles: ['Administrador'] },
-  { title: "Ajustes", url: "/pos/rrhh/ajustes", icon: TrendingUpIcon, roles: ['Administrador'] },
-  { title: "Configuración", url: "/pos/rrhh/configuracion", icon: SettingsIcon, roles: ['Administrador'] },
-];
-```
-
-#### 5. Funciones de Exportación en `src/lib/hrExport.ts`
-
-Agregar nuevas funciones:
-- `exportShiftsSummaryCSV(items, totals, dateRange)`
-- `exportShiftsSummaryPDF(items, totals, dateRange)`
+Para Administradores en PWA:
+- Mantener renovación silenciosa automática sin modal de expiración
+- Garantizar que la sesión se renueve incluso en background
 
 ---
 
-### Detalle Técnico de Cálculo
+### Detalle Técnico: Nueva Función SQL
 
-El monto estimado se calcula así:
+```sql
+CREATE OR REPLACE FUNCTION public.create_staff_session(
+  _user_id uuid,
+  _is_pwa boolean DEFAULT false
+)
+RETURNS TABLE(token text, expires_at timestamptz)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_token text;
+  v_expires_at timestamptz;
+  v_user_role text;
+  v_active_session_count int;
+  v_max_sessions int;
+BEGIN
+  -- Obtener el rol del usuario
+  SELECT role INTO v_user_role FROM public.users WHERE id = _user_id;
+  
+  -- Determinar máximo de sesiones según rol
+  IF v_user_role = 'Administrador' THEN
+    v_max_sessions := 3;
+  ELSE
+    v_max_sessions := 1;
+  END IF;
+  
+  -- Contar sesiones activas actuales
+  SELECT COUNT(*) INTO v_active_session_count
+  FROM public.staff_sessions s
+  WHERE s.user_id = _user_id
+    AND s.expires_at > now();
+  
+  -- Si ya tiene el máximo de sesiones, invalidar las más antiguas
+  IF v_active_session_count >= v_max_sessions THEN
+    -- Invalidar las sesiones más antiguas para dejar espacio a la nueva
+    UPDATE public.staff_sessions
+    SET expires_at = now()
+    WHERE id IN (
+      SELECT id 
+      FROM public.staff_sessions
+      WHERE user_id = _user_id
+        AND expires_at > now()
+      ORDER BY created_at ASC
+      LIMIT (v_active_session_count - v_max_sessions + 1)
+    );
+  END IF;
+  
+  -- Generar token
+  v_token := replace(gen_random_uuid()::text, '-', '') || 
+             replace(gen_random_uuid()::text, '-', '');
 
-```typescript
-// Para cada turno
-const getShiftPayAmount = (shift: HRShift, payRules: HRPayRule[]) => {
-  const rule = payRules.find(r => 
-    r.shift_type_id === shift.shift_type_id && r.is_active
-  );
-  return rule?.pay_per_shift || 0;
-};
+  -- Duración según PWA
+  v_expires_at := CASE
+    WHEN _is_pwa THEN now() + interval '365 days'
+    ELSE now() + interval '4 hours'
+  END;
 
-// Para cada empleado
-const employeePay = employeeShifts.reduce((sum, shift) => {
-  return sum + getShiftPayAmount(shift, payRules);
-}, 0);
+  -- Crear nueva sesión
+  INSERT INTO public.staff_sessions (user_id, token, expires_at, is_pwa)
+  VALUES (_user_id, v_token, v_expires_at, _is_pwa);
+
+  RETURN QUERY SELECT v_token, v_expires_at;
+END;
+$$;
 ```
-
-**Nota importante**: Este es un monto **estimado** basado en los turnos actuales. Los ajustes (bonos, adelantos, descuentos) se aplican solo en las liquidaciones.
 
 ---
 
-### Archivos a Crear/Modificar
+### Matriz de Comportamiento
+
+| Rol | Dispositivo | Max Sesiones | Duración Sesión | Renovación |
+|-----|-------------|--------------|-----------------|------------|
+| Administrador | Web | 3 | 4 horas | Modal + auto |
+| Administrador | PWA | 3 | 365 días | Silenciosa siempre |
+| Cajero | Web | 1 | 4 horas | Modal + auto |
+| Cajero | PWA | 1 | 365 días | Silenciosa siempre |
+| Cocina | Web/PWA | 1 | 4h / 365d | Igual que Cajero |
+| Reparto | Web/PWA | 1 | 4h / 365d | Igual que Cajero |
+
+---
+
+### Escenario de Ejemplo: Administrador
+
+1. **Sesión 1**: Login desde PC oficina (web) → Sesión de 4 horas
+2. **Sesión 2**: Login desde teléfono (PWA) → Sesión de 365 días
+3. **Sesión 3**: Login desde tablet (PWA) → Sesión de 365 días
+4. **Sesión 4**: Login desde otro PC → **Invalida la sesión 1 (la más antigua)**, crea sesión 4
+
+Las sesiones PWA siguen activas, recibiendo notificaciones push sin problemas.
+
+---
+
+### Archivos a Modificar
 
 | Archivo | Acción | Descripción |
 |---------|--------|-------------|
-| `src/pages/rrhh/RRHHResumen.tsx` | Crear | Nueva página de resumen |
-| `src/hooks/useHRShiftsSummary.ts` | Crear | Hook para cálculo de datos |
-| `src/App.tsx` | Modificar | Agregar ruta |
-| `src/components/AppSidebar.tsx` | Modificar | Agregar item al menú |
-| `src/lib/hrExport.ts` | Modificar | Funciones de exportación |
+| Nueva migración SQL | Crear | `create_staff_session` con lógica de sesiones múltiples |
+| `src/hooks/useSessionKeepAlive.ts` | Verificar | Confirmar que PWA siempre renueva sin mostrar modal |
 
 ---
 
-### Desglose de Columnas de la Tabla
+### Consideraciones de Seguridad
 
-| Columna | Descripción |
-|---------|-------------|
-| **Empleado** | Nombre completo del trabajador |
-| **Turnos Totales** | Cantidad total de turnos en el período |
-| **Pendientes** | Turnos en estado `draft` o `confirmed` (aún no aprobados) |
-| **Aprobados** | Turnos en estado `approved` o `paid` |
-| **Monto Estimado** | Suma de `pay_per_shift` de cada turno según su tipo |
-
----
-
-### Consideraciones
-
-1. **Performance**: El hook usará los mismos filtros que `useHRShifts` pero procesará los datos en el cliente para agrupar y calcular
-2. **Consistencia**: Los datos serán coherentes con lo que se ve en "Turnos" ya que usan la misma fuente
-3. **Diferencia con Liquidaciones**: Este es un resumen "en vivo" - las liquidaciones son snapshots formales que incluyen ajustes
+1. **Solo Administradores** tienen privilegio de sesiones múltiples
+2. El límite de 3 sesiones previene abuse (compartir credenciales masivamente)
+3. Las sesiones PWA tienen renovación automática para garantizar notificaciones
+4. Las sesiones web siguen teniendo el modal de expiración como fallback
 
