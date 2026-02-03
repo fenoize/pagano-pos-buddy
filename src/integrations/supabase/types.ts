@@ -5881,21 +5881,13 @@ export type Database = {
         Args: { p_order_data: Json; p_user_id: string }
         Returns: Json
       }
-      create_staff_session:
-        | {
-            Args: { _user_id: string }
-            Returns: {
-              expires_at: string
-              token: string
-            }[]
-          }
-        | {
-            Args: { _is_pwa?: boolean; _user_id: string }
-            Returns: {
-              expires_at: string
-              token: string
-            }[]
-          }
+      create_staff_session: {
+        Args: { _is_pwa?: boolean; _user_id: string }
+        Returns: {
+          expires_at: string
+          token: string
+        }[]
+      }
       deduct_from_recipe: {
         Args: {
           p_order_id: string
