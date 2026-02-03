@@ -1,101 +1,186 @@
 
 
-## Plan: Escala de Colores por Respuesta del Empleado en Gestión de Turnos
+## Plan: Nuevo Tab "Resumen" en Módulo RRHH
 
-### Contexto
+### Objetivo
 
-Actualmente los turnos en el calendario de gestión usan colores basados en el estado administrativo (`status`: draft, confirmed, approved, paid). El usuario necesita una escala visual basada en la **respuesta del empleado** (`employee_response`) para identificar rápidamente:
+Crear una nueva vista de resumen que permita al administrador tener una visión consolidada de:
+- Cantidad de turnos por trabajador
+- Monto a pagar por trabajador
+- Total general de sueldos proyectados
 
-- Quién ha aceptado su turno
-- Quién aún no ha respondido
-- Qué turnos ya fueron realizados (aprobados)
+Con filtros por trabajador, fechas y tipo de turno.
 
-### Nueva Escala de Colores
+---
 
-| Estado | Color | Significado |
-|--------|-------|-------------|
-| `employee_response = null/pending` | **Amarillo** | Programado, pendiente de aceptación |
-| `employee_response = accepted` | **Verde** | Turno aceptado por el empleado |
-| `status = approved` | **Gris** | Turno aprobado (ya se realizó) |
-| `employee_response = rejected` | **Rojo** (adicional) | Turno rechazado por el empleado |
-
-### Lógica de Prioridad
-
-El color se determinará con la siguiente prioridad:
-1. Si `status === 'approved'` → **Gris** (turno realizado, sin importar respuesta)
-2. Si `employee_response === 'rejected'` → **Rojo** (rechazado)
-3. Si `employee_response === 'accepted'` → **Verde** (aceptado)
-4. Cualquier otro caso → **Amarillo** (pendiente)
-
-### Cambios a Realizar
-
-#### 1. Modificar ShiftCalendar.tsx
-
-Actualizar los estilos de color para reflejar la nueva escala basada en `employee_response`:
-
-```typescript
-// Nueva función para determinar el color del turno
-const getShiftColors = (shift: HRShift) => {
-  // Prioridad 1: Turno aprobado (ya realizado)
-  if (shift.status === 'approved' || shift.status === 'paid') {
-    return {
-      border: 'border-l-gray-400',
-      bg: 'bg-gray-100 dark:bg-gray-800/40',
-    };
-  }
-  
-  // Prioridad 2: Rechazado por empleado
-  if (shift.employee_response === 'rejected') {
-    return {
-      border: 'border-l-red-500',
-      bg: 'bg-red-50 dark:bg-red-950/30',
-    };
-  }
-  
-  // Prioridad 3: Aceptado por empleado
-  if (shift.employee_response === 'accepted') {
-    return {
-      border: 'border-l-green-500',
-      bg: 'bg-green-50 dark:bg-green-950/30',
-    };
-  }
-  
-  // Default: Pendiente (amarillo)
-  return {
-    border: 'border-l-amber-500',
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-  };
-};
-```
-
-#### 2. Modificar ShiftListView.tsx
-
-Aplicar la misma lógica de colores en la vista de lista, mostrando un indicador visual del estado de respuesta junto al badge de estado administrativo.
-
-#### 3. Agregar Leyenda Visual (Opcional)
-
-Añadir una pequeña leyenda en la cabecera del calendario para que el usuario entienda el código de colores:
+### Vista Previa de la Interfaz
 
 ```text
-● Pendiente  ● Aceptado  ● Aprobado  ● Rechazado
-  (amarillo)   (verde)     (gris)      (rojo)
+┌─────────────────────────────────────────────────────────────────┐
+│  Resumen de Turnos y Pagos                                      │
+│  Vista consolidada del período                                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [Filtros]  Empleado ▼  Desde [____] Hasta [____]  Turno ▼      │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ KPIs                                                     │    │
+│  │ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐      │    │
+│  │ │   45         │ │    8         │ │  $1.250.000  │      │    │
+│  │ │ Total Turnos │ │ Empleados    │ │ Total a Pagar│      │    │
+│  │ └──────────────┘ └──────────────┘ └──────────────┘      │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ Tabla Detalle por Empleado                               │    │
+│  │ ──────────────────────────────────────────────────────── │    │
+│  │ Empleado        │ Turnos │ Pend │ Aprob │ Monto Estimado │    │
+│  │ ───────────────────────────────────────────────────────  │    │
+│  │ Juan Pérez      │   12   │   2  │  10   │    $312.000    │    │
+│  │ María González  │    8   │   1  │   7   │    $208.000    │    │
+│  │ Carlos López    │   15   │   3  │  12   │    $390.000    │    │
+│  │ Ana Martínez    │   10   │   0  │  10   │    $340.000    │    │
+│  │ ───────────────────────────────────────────────────────  │    │
+│  │ TOTAL           │   45   │   6  │  39   │  $1.250.000    │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│                              [Exportar CSV] [Exportar PDF]       │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Archivos a Modificar
+---
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/components/rrhh/ShiftCalendar.tsx` | Nueva lógica de colores por `employee_response` |
-| `src/components/rrhh/ShiftListView.tsx` | Consistencia visual en vista lista |
-| `src/pages/rrhh/RRHHTurnos.tsx` | Leyenda opcional de colores |
+### Cambios Requeridos
 
-### Resultado Visual Esperado
+#### 1. Nueva Página: `src/pages/rrhh/RRHHResumen.tsx`
 
-En el calendario:
-- Los turnos **amarillos** son los que necesitan atención (el empleado no ha respondido)
-- Los turnos **verdes** están confirmados por el empleado
-- Los turnos **grises** ya se realizaron
-- Los turnos **rojos** fueron rechazados y necesitan reasignación
+Componente principal que incluirá:
+- **Filtros**: Selector de empleado, rango de fechas, tipo de turno
+- **KPIs Cards**: Total turnos, empleados activos, total proyectado a pagar
+- **Tabla de resumen**: Desglose por empleado con:
+  - Nombre del empleado
+  - Total de turnos en el período
+  - Turnos pendientes (draft/confirmed)
+  - Turnos aprobados (approved)
+  - Monto estimado a pagar (calculado con `hr_pay_rules`)
+- **Exportación**: Botones para CSV y PDF
 
-Esto permitirá al administrador identificar rápidamente qué acciones tomar.
+#### 2. Nuevo Hook: `src/hooks/useHRShiftsSummary.ts`
+
+Hook personalizado para calcular los datos de resumen:
+
+```typescript
+interface ShiftSummaryItem {
+  employee_id: string;
+  employee_name: string;
+  employee_rut: string | null;
+  total_shifts: number;
+  pending_shifts: number;    // draft + confirmed
+  approved_shifts: number;   // approved + paid
+  estimated_pay: number;     // calculado con pay_rules
+}
+
+interface ShiftSummaryTotals {
+  total_shifts: number;
+  total_employees: number;
+  total_pending: number;
+  total_approved: number;
+  total_estimated_pay: number;
+}
+```
+
+La lógica de cálculo:
+1. Obtener todos los turnos del período filtrado
+2. Agrupar por empleado
+3. Para cada turno, buscar el `pay_per_shift` en `hr_pay_rules` según el `shift_type_id`
+4. Sumar los montos para el estimado total
+
+#### 3. Agregar Ruta en `src/App.tsx`
+
+```typescript
+const RRHHResumen = lazy(() => import("@/pages/rrhh/RRHHResumen"));
+
+// En las rutas:
+<Route 
+  path="/pos/rrhh/resumen" 
+  element={
+    <StaffProtectedRoute>
+      <StaffLayout><RRHHResumen /></StaffLayout>
+    </StaffProtectedRoute>
+  } 
+/>
+```
+
+#### 4. Agregar Item en Sidebar `src/components/AppSidebar.tsx`
+
+```typescript
+const rrhhItems = [
+  { title: "Resumen", url: "/pos/rrhh/resumen", icon: BarChart3, roles: ['Administrador'] },  // NUEVO
+  { title: "Turnos", url: "/pos/rrhh/turnos", icon: Users, roles: ['Administrador'] },
+  { title: "Liquidaciones", url: "/pos/rrhh/liquidaciones", icon: DollarSign, roles: ['Administrador'] },
+  { title: "Ajustes", url: "/pos/rrhh/ajustes", icon: TrendingUpIcon, roles: ['Administrador'] },
+  { title: "Configuración", url: "/pos/rrhh/configuracion", icon: SettingsIcon, roles: ['Administrador'] },
+];
+```
+
+#### 5. Funciones de Exportación en `src/lib/hrExport.ts`
+
+Agregar nuevas funciones:
+- `exportShiftsSummaryCSV(items, totals, dateRange)`
+- `exportShiftsSummaryPDF(items, totals, dateRange)`
+
+---
+
+### Detalle Técnico de Cálculo
+
+El monto estimado se calcula así:
+
+```typescript
+// Para cada turno
+const getShiftPayAmount = (shift: HRShift, payRules: HRPayRule[]) => {
+  const rule = payRules.find(r => 
+    r.shift_type_id === shift.shift_type_id && r.is_active
+  );
+  return rule?.pay_per_shift || 0;
+};
+
+// Para cada empleado
+const employeePay = employeeShifts.reduce((sum, shift) => {
+  return sum + getShiftPayAmount(shift, payRules);
+}, 0);
+```
+
+**Nota importante**: Este es un monto **estimado** basado en los turnos actuales. Los ajustes (bonos, adelantos, descuentos) se aplican solo en las liquidaciones.
+
+---
+
+### Archivos a Crear/Modificar
+
+| Archivo | Acción | Descripción |
+|---------|--------|-------------|
+| `src/pages/rrhh/RRHHResumen.tsx` | Crear | Nueva página de resumen |
+| `src/hooks/useHRShiftsSummary.ts` | Crear | Hook para cálculo de datos |
+| `src/App.tsx` | Modificar | Agregar ruta |
+| `src/components/AppSidebar.tsx` | Modificar | Agregar item al menú |
+| `src/lib/hrExport.ts` | Modificar | Funciones de exportación |
+
+---
+
+### Desglose de Columnas de la Tabla
+
+| Columna | Descripción |
+|---------|-------------|
+| **Empleado** | Nombre completo del trabajador |
+| **Turnos Totales** | Cantidad total de turnos en el período |
+| **Pendientes** | Turnos en estado `draft` o `confirmed` (aún no aprobados) |
+| **Aprobados** | Turnos en estado `approved` o `paid` |
+| **Monto Estimado** | Suma de `pay_per_shift` de cada turno según su tipo |
+
+---
+
+### Consideraciones
+
+1. **Performance**: El hook usará los mismos filtros que `useHRShifts` pero procesará los datos en el cliente para agrupar y calcular
+2. **Consistencia**: Los datos serán coherentes con lo que se ve en "Turnos" ya que usan la misma fuente
+3. **Diferencia con Liquidaciones**: Este es un resumen "en vivo" - las liquidaciones son snapshots formales que incluyen ajustes
 
