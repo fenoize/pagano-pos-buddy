@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useCustomerLevel } from '@/hooks/useCustomerLevel';
@@ -7,19 +7,20 @@ import { trackPromoView, trackPromoClick } from '@/hooks/usePromoAnalytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Flame, ShoppingBag, Award, User, UtensilsCrossed, ArrowRight, RefreshCw } from 'lucide-react';
+import { Flame, ShoppingBag, Award, QrCode, UtensilsCrossed, ArrowRight, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PWAInstallPrompt } from '@/components/customer/PWAInstallPrompt';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
+import { CustomerQRModal } from '@/components/customer/CustomerQRModal';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { toast } from 'sonner';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-
 export default function CustomerPortal() {
   const navigate = useNavigate();
   const { user, customer, loading, signOut, refreshCustomerData } = useCustomerAuth();
   const { data: customerLevel, isLoading: levelLoading, refetch: refetchLevel } = useCustomerLevel(customer?.id);
   const { data: activePromos = [], isLoading: promoLoading } = useActivePromotions();
+  const [showQRModal, setShowQRModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -197,19 +198,24 @@ export default function CustomerPortal() {
         <Card className="border-border bg-card">
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
-              <button 
-                className="flex items-center gap-4 text-left hover:opacity-80 transition-opacity"
-                onClick={() => navigate('/profile')}
-              >
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center ring-2 ring-primary/30">
-                  <User className="h-8 w-8 text-primary" />
-                </div>
-                <div>
+              <div className="flex items-center gap-4">
+                {/* QR Button - replaces user icon */}
+                <button 
+                  className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center ring-2 ring-primary/30 hover:bg-primary/30 transition-colors"
+                  onClick={() => setShowQRModal(true)}
+                  aria-label="Mostrar mi código QR"
+                >
+                  <QrCode className="h-8 w-8 text-primary" />
+                </button>
+                <button 
+                  className="text-left hover:opacity-80 transition-opacity"
+                  onClick={() => navigate('/profile')}
+                >
                   <h2 className="text-2xl font-bold text-foreground">{customer.name || customer.nombres}</h2>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                   <p className="text-xs text-primary font-medium mt-1">Ver mi perfil →</p>
-                </div>
-              </button>
+                </button>
+              </div>
             </div>
 
             {/* Runas y Nivel */}
@@ -345,6 +351,14 @@ export default function CustomerPortal() {
       
       <PWAInstallPrompt />
       <CustomerBottomNav />
+      
+      {/* QR Modal */}
+      <CustomerQRModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        customerId={customer.id}
+        customerName={customer.name || customer.nombres || undefined}
+      />
     </div>
   );
 }
