@@ -3211,6 +3211,7 @@ export type Database = {
           app_orders_enabled: boolean
           app_pickup_enabled: boolean
           created_at: string
+          google_signin_enabled: boolean
           id: string
           mp_client_id: string | null
           mp_client_secret: string | null
@@ -3226,6 +3227,7 @@ export type Database = {
           app_orders_enabled?: boolean
           app_pickup_enabled?: boolean
           created_at?: string
+          google_signin_enabled?: boolean
           id?: string
           mp_client_id?: string | null
           mp_client_secret?: string | null
@@ -3241,6 +3243,7 @@ export type Database = {
           app_orders_enabled?: boolean
           app_pickup_enabled?: boolean
           created_at?: string
+          google_signin_enabled?: boolean
           id?: string
           mp_client_id?: string | null
           mp_client_secret?: string | null

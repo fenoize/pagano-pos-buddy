@@ -9,6 +9,7 @@ import { Puzzle, Save, CheckCircle2, XCircle, Loader2, ExternalLink, Eye, EyeOff
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OneSignalConfig } from './OneSignalConfig';
+import { GoogleSignInConfig } from './GoogleSignInConfig';
 
 export const IntegrationsConfig: React.FC = () => {
   const [mapboxToken, setMapboxToken] = useState('');
@@ -221,6 +222,9 @@ export const IntegrationsConfig: React.FC = () => {
             </ul>
           </div>
         </div>
+
+        {/* Google Sign-In Integration */}
+        <GoogleSignInConfig />
 
         {/* OneSignal Integration */}
         <OneSignalConfig />
