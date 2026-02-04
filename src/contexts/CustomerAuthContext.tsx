@@ -16,7 +16,7 @@ interface CustomerAuthContextType {
   needsProfileCompletion: boolean;
   signUp: (email: string, password: string, nombre: string, apellido: string, phone?: string, birthDate?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithGoogle: (skipBrowserRedirect?: boolean) => Promise<{ error: Error | null; data?: { url: string } | null }>;
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ error: Error | null }>;
   resetPassword: (newPassword: string) => Promise<{ error: Error | null }>;
@@ -187,12 +187,13 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (skipBrowserRedirect = false) => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/login`,
+          skipBrowserRedirect,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -201,9 +202,9 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
 
       if (error) throw error;
-      return { error: null };
+      return { error: null, data: data?.url ? { url: data.url } : null };
     } catch (error) {
-      return { error: error as Error };
+      return { error: error as Error, data: null };
     }
   };
 

@@ -147,9 +147,35 @@ export default function CustomerLogin() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    const { error } = await signInWithGoogle();
     
-    if (error) {
+    try {
+      // Detectar si estamos en un dominio custom (no lovable.app ni lovableproject.com)
+      const isCustomDomain = 
+        !window.location.hostname.includes('lovable.app') &&
+        !window.location.hostname.includes('lovableproject.com') &&
+        !window.location.hostname.includes('localhost');
+
+      if (isCustomDomain) {
+        // Bypass auth-bridge para dominios custom
+        const { data, error } = await signInWithGoogle(true); // skipBrowserRedirect = true
+        
+        if (error) throw error;
+        
+        // Validar URL de OAuth antes de redirigir
+        if (data?.url) {
+          const oauthUrl = new URL(data.url);
+          const allowedHosts = ['accounts.google.com'];
+          if (!allowedHosts.some(host => oauthUrl.hostname === host)) {
+            throw new Error('URL de OAuth inválida');
+          }
+          window.location.href = data.url;
+        }
+      } else {
+        // Para dominios Lovable, usar flujo normal
+        const { error } = await signInWithGoogle();
+        if (error) throw error;
+      }
+    } catch (error: any) {
       toast.error('Error con Google', {
         description: error.message,
       });
