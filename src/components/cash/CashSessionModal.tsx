@@ -51,7 +51,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [syncToFinance, setSyncToFinance] = useState(true);
+  
   
   const { openSession, closeSession, addCashMovement } = useCashSession();
   const { accounts } = useFinanceAccounts();
@@ -71,7 +71,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
       setMovementType('ingreso');
       setSelectedCategory('');
       setSelectedAccountId('');
-      setSyncToFinance(true);
+      
     }
   }, [isOpen]);
 
@@ -125,30 +125,53 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
           break;
         
         case 'movement':
-          // Validar que egresos tengan categoría si se sincroniza a finanzas
-          if (movementType === 'egreso' && syncToFinance && !selectedCategory) {
+          // Validar campos obligatorios
+          if (!note.trim()) {
             toast({
               title: "Error",
-              description: "Selecciona una categoría para el egreso.",
+              description: "El concepto es obligatorio.",
               variant: "destructive"
             });
             setLoading(false);
             return;
           }
 
+          // Validaciones específicas para egresos
+          if (movementType === 'egreso') {
+            if (!selectedCategory) {
+              toast({
+                title: "Error",
+                description: "Selecciona una categoría para el egreso.",
+                variant: "destructive"
+              });
+              setLoading(false);
+              return;
+            }
+            
+            if (!selectedAccountId && cashAccounts.length > 0) {
+              toast({
+                title: "Error",
+                description: "Selecciona una cuenta contable para el egreso.",
+                variant: "destructive"
+              });
+              setLoading(false);
+              return;
+            }
+          }
+
           await addCashMovement(
             movementType,
             amountValue,
-            note,
+            note.trim(),
             movementType === 'egreso' ? selectedCategory : undefined,
-            movementType === 'egreso' && syncToFinance ? selectedAccountId || undefined : undefined,
-            movementType === 'egreso' ? syncToFinance : false
+            movementType === 'egreso' ? selectedAccountId || undefined : undefined,
+            movementType === 'egreso' // Siempre sincronizar egresos a finanzas
           );
           
           toast({
             title: "Movimiento registrado",
             description: `${movementType === 'ingreso' ? 'Ingreso' : 'Egreso'} de ${formatCurrency(amountValue)} registrado.${
-              movementType === 'egreso' && syncToFinance ? ' Sincronizado a Finanzas.' : ''
+              movementType === 'egreso' ? ' Sincronizado a Finanzas.' : ''
             }`
           });
           break;
@@ -309,9 +332,9 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
           {type === 'movement' && movementType === 'egreso' && (
             <>
               <div className="space-y-2">
-                <Label>Categoría del egreso</Label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger>
+                <Label>Categoría del egreso <span className="text-destructive">*</span></Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory} required>
+                  <SelectTrigger className={!selectedCategory ? "border-destructive/50" : ""}>
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
                   <SelectContent>
@@ -324,28 +347,22 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
                 </Select>
               </div>
 
-              <div className="flex items-center space-x-2 p-3 border rounded-md bg-muted/30">
-                <Checkbox
-                  id="sync_to_finance"
-                  checked={syncToFinance}
-                  onCheckedChange={(checked) => setSyncToFinance(checked as boolean)}
-                />
+              {/* Info de sincronización automática - ya no es opcional */}
+              <div className="flex items-center space-x-2 p-3 border rounded-md bg-primary/5 border-primary/20">
+                <Wallet className="h-4 w-4 text-primary" />
                 <div className="space-y-1">
-                  <Label htmlFor="sync_to_finance" className="flex items-center gap-2 cursor-pointer">
-                    <Wallet className="h-4 w-4" />
-                    Sincronizar a Finanzas / Egresos
-                  </Label>
+                  <p className="text-sm font-medium">Sincronización automática a Finanzas</p>
                   <p className="text-xs text-muted-foreground">
-                    Registra automáticamente este egreso en el módulo de Finanzas
+                    Todos los egresos se registran automáticamente en el módulo de Finanzas
                   </p>
                 </div>
               </div>
 
-              {syncToFinance && cashAccounts.length > 0 && (
+              {cashAccounts.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Cuenta contable (opcional)</Label>
-                  <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-                    <SelectTrigger>
+                  <Label>Cuenta contable <span className="text-destructive">*</span></Label>
+                  <Select value={selectedAccountId} onValueChange={setSelectedAccountId} required>
+                    <SelectTrigger className={!selectedAccountId ? "border-destructive/50" : ""}>
                       <SelectValue placeholder="Selecciona una cuenta" />
                     </SelectTrigger>
                     <SelectContent>
@@ -364,7 +381,9 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
           {(type === 'movement' || type === 'close') && (
             <div className="space-y-2">
               <Label htmlFor="note">
-                {type === 'close' ? 'Observaciones (opcional)' : 'Concepto'}
+                {type === 'close' ? 'Observaciones (opcional)' : (
+                  <>Concepto <span className="text-destructive">*</span></>
+                )}
               </Label>
               <Textarea
                 id="note"
@@ -378,6 +397,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
                 disabled={loading}
                 rows={3}
                 required={type === 'movement'}
+                className={type === 'movement' && !note.trim() ? "border-destructive/50" : ""}
               />
             </div>
           )}
