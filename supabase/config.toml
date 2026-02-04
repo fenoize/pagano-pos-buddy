@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.send-staff-push]
 verify_jwt = false
+
+[functions.admin-manage-customer-auth]
+verify_jwt = false
