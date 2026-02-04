@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Loader2, Flame, Eye, EyeOff } from 'lucide-react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useCustomerPortalConfig } from '@/hooks/useCustomerPortalConfig';
+import { useGoogleSignInEnabled } from '@/hooks/useGoogleSignInEnabled';
 
 // Google icon component
 const GoogleIcon = () => (
@@ -40,6 +41,7 @@ export default function CustomerLogin() {
   const navigate = useNavigate();
   const { signIn, signUp, signInWithGoogle, needsProfileCompletion, customer, user, completeProfile } = useCustomerAuth();
   const { config: portalConfig } = useCustomerPortalConfig();
+  const { enabled: googleSignInEnabled } = useGoogleSignInEnabled();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -306,29 +308,32 @@ export default function CustomerLogin() {
                   Iniciar Sesión
                 </Button>
 
-                {/* Separador */}
-                <div className="relative my-4">
-                  <Separator />
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                    o
-                  </span>
-                </div>
+                {/* Separador y Google Sign-In - solo si está habilitado */}
+                {googleSignInEnabled && (
+                  <>
+                    <div className="relative my-4">
+                      <Separator />
+                      <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                        o
+                      </span>
+                    </div>
 
-                {/* Google Sign-In */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleGoogleSignIn}
-                  disabled={googleLoading || loading}
-                >
-                  {googleLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <GoogleIcon />
-                  )}
-                  Continuar con Google
-                </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleGoogleSignIn}
+                      disabled={googleLoading || loading}
+                    >
+                      {googleLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <GoogleIcon />
+                      )}
+                      Continuar con Google
+                    </Button>
+                  </>
+                )}
 
                 <p className="text-xs text-muted-foreground text-center mt-2">
                   Este sitio está protegido por reCAPTCHA y aplican la{' '}
@@ -500,29 +505,32 @@ export default function CustomerLogin() {
                   Crear Cuenta
                 </Button>
 
-                {/* Separador */}
-                <div className="relative my-4">
-                  <Separator />
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                    o
-                  </span>
-                </div>
+                {/* Separador y Google Sign-In - solo si está habilitado */}
+                {googleSignInEnabled && (
+                  <>
+                    <div className="relative my-4">
+                      <Separator />
+                      <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                        o
+                      </span>
+                    </div>
 
-                {/* Google Sign-In */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleGoogleSignIn}
-                  disabled={googleLoading || loading}
-                >
-                  {googleLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <GoogleIcon />
-                  )}
-                  Registrarse con Google
-                </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleGoogleSignIn}
+                      disabled={googleLoading || loading}
+                    >
+                      {googleLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <GoogleIcon />
+                      )}
+                      Registrarse con Google
+                    </Button>
+                  </>
+                )}
 
                 <p className="text-xs text-muted-foreground text-center mt-2">
                   Este sitio está protegido por reCAPTCHA y aplican la{' '}
