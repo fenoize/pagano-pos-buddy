@@ -10,8 +10,6 @@
    const { count, totalAmount, loading } = usePendingPaymentOrders();
    const [showPanel, setShowPanel] = useState(false);
  
-   if (loading) return null;
-   
    const hasOrders = count > 0;
  
    return (
@@ -22,9 +20,10 @@
          className="relative"
          onClick={() => setShowPanel(true)}
          title={hasOrders ? `${count} pedidos pendientes por ${formatCurrency(totalAmount)}` : 'Sin pedidos pendientes de pago'}
+        disabled={loading}
        >
          <CircleDollarSign 
-           className={`h-5 w-5 ${hasOrders ? 'text-amber-500' : 'text-muted-foreground'}`} 
+          className={`h-5 w-5 ${loading ? 'text-muted-foreground animate-pulse' : hasOrders ? 'text-amber-500' : 'text-muted-foreground'}`} 
          />
          {hasOrders && (
            <Badge 
