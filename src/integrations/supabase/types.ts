@@ -3506,6 +3506,7 @@ export type Database = {
           payment_mp: number | null
           payment_pos: number | null
           payment_runas: number | null
+          payment_status: string | null
           pickup_mode: string | null
           source: string | null
           status: Database["public"]["Enums"]["order_status"] | null
@@ -3546,6 +3547,7 @@ export type Database = {
           payment_mp?: number | null
           payment_pos?: number | null
           payment_runas?: number | null
+          payment_status?: string | null
           pickup_mode?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
@@ -3586,6 +3588,7 @@ export type Database = {
           payment_mp?: number | null
           payment_pos?: number | null
           payment_runas?: number | null
+          payment_status?: string | null
           pickup_mode?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
@@ -5880,10 +5883,17 @@ export type Database = {
         }
         Returns: number
       }
-      create_order_with_context: {
-        Args: { p_order_data: Json; p_user_id: string }
-        Returns: Json
-      }
+      create_order_with_context:
+        | {
+            Args: {
+              p_customer_id?: string
+              p_items: Json
+              p_order_data: Json
+              p_staff_user_id?: string
+            }
+            Returns: Json
+          }
+        | { Args: { p_order_data: Json; p_user_id: string }; Returns: Json }
       create_staff_session: {
         Args: { _is_pwa?: boolean; _user_id: string }
         Returns: {
@@ -6398,6 +6408,7 @@ export type Database = {
         | "mixto"
         | "aplicacion"
         | "runas"
+        | "pendiente"
       po_status:
         | "draft"
         | "sent"
@@ -6572,7 +6583,15 @@ export const Constants = {
         "En camino",
       ],
       origen_movimiento: ["POS", "Web", "Manual", "Edición"],
-      payment_method: ["efectivo", "mp", "pos", "mixto", "aplicacion", "runas"],
+      payment_method: [
+        "efectivo",
+        "mp",
+        "pos",
+        "mixto",
+        "aplicacion",
+        "runas",
+        "pendiente",
+      ],
       po_status: [
         "draft",
         "sent",

@@ -172,7 +172,8 @@ export function usePaymentMethods() {
         { name: 'pos', display_name: 'POS', icon: 'CreditCard', requires_change: false, counts_as_real_sale: true, display_order: 2, is_active: true },
         { name: 'transferencia', display_name: 'Transferencia/MP', icon: 'Smartphone', requires_change: false, counts_as_real_sale: true, display_order: 3, is_active: true },
         { name: 'aplicacion', display_name: 'Aplicación', icon: 'AppWindow', requires_change: false, counts_as_real_sale: true, display_order: 4, is_active: true },
-        { name: 'runas', display_name: 'Runas', icon: 'Sparkles', requires_change: false, counts_as_real_sale: false, display_order: 5, is_active: true }
+        { name: 'runas', display_name: 'Runas', icon: 'Sparkles', requires_change: false, counts_as_real_sale: false, display_order: 5, is_active: true },
+        { name: 'pendiente', display_name: 'Pendiente', icon: 'Clock', requires_change: false, counts_as_real_sale: false, display_order: 6, is_active: true }
       ];
 
       await supabase.from('payment_methods').insert(defaultMethods);

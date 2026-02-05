@@ -13,6 +13,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { setStaffContext } from '@/lib/dbContext';
 import { StaffNotificationBell } from '@/components/notifications/StaffNotificationBell';
+import { PendingPaymentsIndicator } from '@/components/pos/PendingPaymentsIndicator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -146,6 +147,9 @@ export function CashSessionTopBar() {
       <div className="flex items-center gap-3">
         {/* Notificaciones para administradores */}
         {user?.role === 'Administrador' && <StaffNotificationBell />}
+
+        {/* Indicador de pagos pendientes */}
+        <PendingPaymentsIndicator />
 
         {/* Icono de efectivo de delivery con badge */}
         <Button
