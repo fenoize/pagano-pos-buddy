@@ -15,7 +15,7 @@ import {
   Palette
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { APP_VERSION, APP_BUILD_DATE, APP_NAME } from '@/config/version.ts';
+ import { APP_VERSION, APP_BUILD_DATE, APP_NAME, CHANGELOG } from '@/config/version.ts';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 export function SystemLogConfig() {
@@ -217,20 +217,49 @@ export function SystemLogConfig() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Terminal className="h-5 w-5" />
-            Log de Actividad
+             Log de Actualizaciones
           </CardTitle>
           <CardDescription>
-            Registro de actividad reciente del sistema
+             Historial de cambios y mejoras del sistema
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Terminal className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h4 className="font-medium text-muted-foreground">Próximamente</h4>
-            <p className="text-sm text-muted-foreground mt-1 max-w-md">
-              El registro detallado de actividad estará disponible en una próxima actualización.
-              Incluirá: logins, cambios de configuración, y acciones importantes del sistema.
-            </p>
+           <div className="space-y-6">
+             {CHANGELOG.map((release, index) => (
+               <div key={release.version} className="relative">
+                 {index < CHANGELOG.length - 1 && (
+                   <div className="absolute left-[11px] top-8 bottom-0 w-0.5 bg-border" />
+                 )}
+                 <div className="flex items-start gap-3">
+                   <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                     index === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                   }`}>
+                     <CheckCircle2 className="h-3.5 w-3.5" />
+                   </div>
+                   <div className="flex-1 min-w-0">
+                     <div className="flex items-center gap-2 flex-wrap">
+                       <h4 className="font-semibold text-sm">v{release.version}</h4>
+                       <Badge variant={index === 0 ? "default" : "secondary"} className="text-xs">
+                         {release.date}
+                       </Badge>
+                       {index === 0 && (
+                          <Badge variant="outline" className="text-xs text-primary border-primary">
+                           Actual
+                         </Badge>
+                       )}
+                     </div>
+                     <ul className="mt-2 space-y-1">
+                       {release.changes.map((change, i) => (
+                         <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                           <span className="text-primary mt-1">•</span>
+                           <span>{change}</span>
+                         </li>
+                       ))}
+                     </ul>
+                   </div>
+                 </div>
+               </div>
+             ))}
           </div>
         </CardContent>
       </Card>

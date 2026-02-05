@@ -3,6 +3,31 @@
  * Actualizar este archivo en cada release
  */
 
-export const APP_VERSION = "1.2.8 (beta)";
-export const APP_BUILD_DATE = "2026-01-22";
+ export const APP_VERSION = "1.3.0 (beta)";
+ export const APP_BUILD_DATE = "2026-02-05";
 export const APP_NAME = "Paganos POS";
+
+ // Changelog de versiones
+ export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.3.0 (beta)",
+     date: "2026-02-05",
+     changes: [
+       "Nuevo sistema de Pagos Pendientes: permite enviar pedidos a cocina sin pago inmediato",
+       "Indicador visual en el header mostrando pedidos pendientes de cobro",
+       "Panel lateral para gestionar y cobrar pedidos pendientes",
+       "Alertas al cerrar turno con pedidos sin pagar",
+       "Notificación al abrir turno sobre pedidos heredados de turnos anteriores",
+       "Nuevo método de pago 'Pendiente' en el flujo de venta",
+       "Modal dedicado para cobrar pedidos pendientes con cualquier método de pago"
+     ]
+   },
+   {
+     version: "1.2.8 (beta)",
+     date: "2026-01-22",
+     changes: [
+       "Mejoras de estabilidad general",
+       "Correcciones de errores menores"
+     ]
+   }
+ ];
