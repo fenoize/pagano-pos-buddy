@@ -18,6 +18,7 @@ import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
 import { useCustomerOrderSettings } from '@/hooks/useCustomerOrderSettings';
 import { useDeliveryZones } from '@/hooks/useDeliveryZones';
+import { useDeliveryGeo, DeliveryZoneWithGeo } from '@/hooks/useDeliveryGeo';
 import { createRunasOrder } from '@/lib/integrations/runasPayment';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -33,6 +34,8 @@ interface CustomerAddress {
   comuna_id?: string | null;
   observaciones?: string | null;
   is_default: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export default function CustomerCheckout() {
@@ -42,6 +45,7 @@ export default function CustomerCheckout() {
   const { loading: mpLoading, createPaymentAndRedirect } = useMercadoPago();
   const { settings: paymentSettings, loading: settingsLoading } = useCustomerOrderSettings();
   const { zones: deliveryZones, loading: zonesLoading } = useDeliveryZones();
+  const { findZoneByCoordinates } = useDeliveryGeo();
   
   const [notes, setNotes] = useState('');
   const [canOrder, setCanOrder] = useState(true);
@@ -103,19 +107,47 @@ export default function CustomerCheckout() {
       return;
     }
 
-    // For now, use a simple fee from the first active zone
-    // In production, you'd calculate based on the address location
-    const activeZones = deliveryZones.filter(z => z.active);
-    if (activeZones.length > 0) {
-      const zone = activeZones[0];
-      if (zone.calculation_mode === 'fixed') {
-        setDeliveryFee(zone.delivery_fee);
-      } else {
-        // For distance-based, use min_fee as fallback
-        setDeliveryFee(zone.min_fee || zone.delivery_fee);
-      }
+    // Find selected address with coordinates
+    const address = customerAddresses.find(a => a.id === selectedAddressId);
+    if (!address?.latitude || !address?.longitude) {
+      // No coordinates, use minimum fee as fallback
+      const activeZones = deliveryZones.filter(z => z.active);
+      const minFee = activeZones.reduce((min, z) => Math.min(min, z.delivery_fee), Infinity);
+      setDeliveryFee(minFee === Infinity ? 0 : minFee);
+      return;
     }
-  }, [fulfillmentType, selectedAddressId, deliveryZones]);
+
+    // Convert zones to format expected by findZoneByCoordinates
+    const activeZonesWithGeo: DeliveryZoneWithGeo[] = deliveryZones
+      .filter(z => z.active && z.polygon)
+      .map(z => ({
+        id: z.id,
+        name: z.name,
+        delivery_fee: z.delivery_fee,
+        polygon: z.polygon,
+        price_per_km: z.price_per_km || 0,
+        min_fee: z.min_fee || 0,
+        calculation_mode: z.calculation_mode || 'fixed',
+        active: z.active
+      }));
+
+    // Find matching zone based on coordinates
+    const matchedZone = findZoneByCoordinates(
+      { lat: address.latitude, lng: address.longitude },
+      activeZonesWithGeo
+    );
+
+    if (matchedZone) {
+      setDeliveryFee(matchedZone.delivery_fee);
+    } else {
+      // No zone matched - use fallback or show error
+      const fallbackFee = deliveryZones.filter(z => z.active).reduce(
+        (max, z) => Math.max(max, z.delivery_fee), 
+        0
+      );
+      setDeliveryFee(fallbackFee);
+    }
+  }, [fulfillmentType, selectedAddressId, deliveryZones, customerAddresses, findZoneByCoordinates]);
 
   useEffect(() => {
     if (items.length === 0) {
