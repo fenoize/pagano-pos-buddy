@@ -4,6 +4,36 @@
  import { useAuthContext } from '@/contexts/AuthContext';
  import { useToast } from '@/hooks/use-toast';
  import { setStaffContext } from '@/lib/dbContext';
+
+// ID único para la suscripción compartida
+let globalSubscriptionId = 0;
+const listeners = new Set<() => void>();
+let globalChannel: any = null;
+
+// Función para notificar a todos los listeners
+const notifyListeners = () => {
+  listeners.forEach(listener => listener());
+};
+
+// Inicializar suscripción global si no existe
+const initGlobalSubscription = () => {
+  if (globalChannel) return;
+  
+  globalChannel = supabase
+    .channel('pending-payments-global')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'orders'
+      },
+      () => {
+        notifyListeners();
+      }
+    )
+    .subscribe();
+};
  
  export interface PendingPaymentOrder {
    id: string;
@@ -36,8 +66,8 @@
    const { toast } = useToast();
  
    const fetchPendingOrders = useCallback(async () => {
-     setLoading(true);
      try {
+      setLoading(true);
        // Obtener pedidos con payment_status = 'unpaid'
        // Incluir: del turno actual + huérfanos (sin cash_session_id o con sesión cerrada)
        const { data, error } = await supabase
@@ -155,24 +185,14 @@
    useEffect(() => {
      fetchPendingOrders();
  
-     const channel = supabase
-       .channel('pending-payments-changes')
-       .on(
-         'postgres_changes',
-         {
-           event: '*',
-           schema: 'public',
-          table: 'orders'
-         },
-        (payload) => {
-          // Refetch cuando cambie payment_status o se cree/elimine una orden
-           fetchPendingOrders();
-         }
-       )
-       .subscribe();
+    // Registrar este hook como listener
+    listeners.add(fetchPendingOrders);
+    
+    // Inicializar suscripción global
+    initGlobalSubscription();
  
      return () => {
-       supabase.removeChannel(channel);
+      listeners.delete(fetchPendingOrders);
      };
    }, [fetchPendingOrders]);
  

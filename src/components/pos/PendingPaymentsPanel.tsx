@@ -34,7 +34,8 @@
      inheritedOrders, 
      count, 
      totalAmount, 
-     loading 
+    loading,
+    collectPayment
    } = usePendingPaymentOrders();
    const [selectedOrder, setSelectedOrder] = useState<PendingPaymentOrder | null>(null);
    const [showCollectModal, setShowCollectModal] = useState(false);
@@ -44,6 +45,18 @@
      setShowCollectModal(true);
    };
  
+  const handlePaymentComplete = async (orderId: string, paymentData: any): Promise<boolean> => {
+    const success = await collectPayment(orderId, paymentData);
+    if (success) {
+      // Si no quedan más pedidos pendientes, cerrar el panel
+      const remainingOrders = [...currentSessionOrders, ...inheritedOrders].filter(o => o.id !== orderId);
+      if (remainingOrders.length === 0) {
+        onOpenChange(false);
+      }
+    }
+    return success;
+  };
+
    const formatTime = (dateString: string) => {
      return new Date(dateString).toLocaleTimeString('es-CL', {
        hour: '2-digit',
@@ -222,6 +235,7 @@
              setSelectedOrder(null);
            }}
            order={selectedOrder}
+          onCollectPayment={handlePaymentComplete}
          />
        )}
      </>
