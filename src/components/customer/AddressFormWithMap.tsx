@@ -59,6 +59,45 @@ export function AddressFormWithMap({
     !!(initialData?.latitude && initialData?.longitude)
   );
 
+  // Sync state when initialData changes (for editing)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        alias: initialData.alias || '',
+        calle: initialData.calle || '',
+        numero: initialData.numero || '',
+        depto: initialData.depto || '',
+        comuna: initialData.comuna || '',
+        observaciones: initialData.observaciones || '',
+        is_default: initialData.is_default || false,
+        latitude: initialData.latitude,
+        longitude: initialData.longitude,
+        formatted_address: initialData.formatted_address || ''
+      });
+      setAddressSearch(
+        initialData.formatted_address || 
+        (initialData.calle && initialData.numero ? `${initialData.calle} ${initialData.numero}` : '')
+      );
+      setHasValidLocation(!!(initialData.latitude && initialData.longitude));
+    } else {
+      // Reset form when creating new
+      setFormData({
+        alias: '',
+        calle: '',
+        numero: '',
+        depto: '',
+        comuna: '',
+        observaciones: '',
+        is_default: false,
+        latitude: undefined,
+        longitude: undefined,
+        formatted_address: ''
+      });
+      setAddressSearch('');
+      setHasValidLocation(false);
+    }
+  }, [initialData]);
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);

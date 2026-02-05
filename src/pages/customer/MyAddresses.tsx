@@ -314,7 +314,7 @@ export default function MyAddresses() {
 
       {/* Dialog Agregar/Editar con Mapbox */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="customer-app max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingAddress ? 'Editar Dirección' : 'Agregar Dirección'}
@@ -348,7 +348,7 @@ export default function MyAddresses() {
 
       {/* Dialog de confirmación de eliminación */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="customer-app">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar dirección?</AlertDialogTitle>
             <AlertDialogDescription>

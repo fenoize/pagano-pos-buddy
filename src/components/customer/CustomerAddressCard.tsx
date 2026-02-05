@@ -19,7 +19,7 @@ interface Address {
 
 interface CustomerAddressCardProps {
   address: Address;
-  onEdit: (id: string) => void;
+  onEdit: (address: Address) => void;
   onDelete: (id: string) => void;
   onSetDefault: (id: string) => void;
 }
@@ -62,7 +62,7 @@ export function CustomerAddressCard({
         </div>
 
         <div className="flex gap-2 mt-4">
-          <Button variant="outline" size="sm" onClick={() => onEdit(address.id)}>
+          <Button variant="outline" size="sm" onClick={() => onEdit(address)}>
             <Pencil className="w-3 h-3 mr-1" />
             Editar
           </Button>
