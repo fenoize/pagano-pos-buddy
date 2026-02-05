@@ -1,372 +1,156 @@
 
-# Plan: Sistema de Aceptacion de Pedidos Remotos + Asignacion de Repartidor
+# Plan: Corregir Flujo de Pedidos Remotos para Estado PendienteAceptacion
 
-## Objetivo
+## Diagnostico del Problema
 
-Implementar un sistema donde los pedidos realizados desde la app del cliente (pagados online) queden "en espera de aceptacion" por parte del cajero. El cajero podra:
-- **Retiro**: Aceptar directamente y el pedido pasa a cocina
-- **Delivery**: Asignar un repartidor antes de que pase a cocina (si esta en modo manual)
+Los pedidos #1545 y #1546 no aparecieron en el banner del cajero porque **nunca tuvieron el estado `PendienteAceptacion`**.
 
----
+**Causa raiz:** La funcion SQL `create_order_with_context` tiene **hardcodeado** el estado `'Pendiente'`:
 
-## Diagnostico del Sistema Actual
-
-### Flujo actual (problema)
-1. Cliente paga con MercadoPago → webhook actualiza orden a `Pendiente`
-2. Cliente paga con Runas → orden se crea con `status: 'Pendiente'`
-3. La orden aparece **inmediatamente** en Cocina (KDS)
-4. El cajero no tiene control sobre cuando entra el pedido
-
-### Flujo deseado (solucion)
-1. Cliente paga → orden queda en estado `PendienteAceptacion`
-2. Cajero ve alerta visual (banner + sonido)
-3. Si es **Retiro**: Cajero acepta → pasa a `Pendiente` → Cocina
-4. Si es **Delivery**:
-   - Modo Manual: Cajero asigna repartidor → Acepta → pasa a `Pendiente`
-   - Modo Pool: Acepta directamente → repartidores ven el pedido en su lista
-
----
-
-## Configuracion de Delivery
-
-El sistema ya tiene `assignment_mode` en la tabla `delivery_settings`:
-- `'assigned'` (manual): El cajero debe seleccionar un repartidor al aceptar
-- `'pool'`: Los repartidores "toman" pedidos de un pool comun
-
----
-
-## Cambios a Implementar
-
-### 1. Migracion SQL: Nuevo Estado
-
-Se agrega `'PendienteAceptacion'` al enum `order_status`:
-
-```text
-Enum order_status (despues del cambio):
-  PendientePago → PendienteAceptacion → Pendiente → En preparacion → ...
+```sql
+'Pendiente'::order_status,  -- Linea 67 de la funcion
 ```
 
-La migracion:
-- Agrega el nuevo valor al enum
-- No afecta ordenes existentes (son estados diferentes)
+Esto significa que aunque `runasPayment.ts` pasa `status: 'PendienteAceptacion'` en el JSON, la funcion **ignora** ese valor y siempre inserta con `'Pendiente'`.
+
+**Resultado:**
+- El pedido se crea con estado `Pendiente` (salta directamente a cocina)
+- El `IncomingOrderBanner` solo busca pedidos con `status = 'PendienteAceptacion'`
+- El banner nunca muestra nada porque no existen pedidos con ese estado
 
 ---
 
-### 2. Modificar Destino de Pagos Aprobados
+## Solucion Propuesta
 
-**Webhook MercadoPago** (`supabase/functions/mp-webhook/index.ts`)
-- Cambiar: `status: 'Pendiente'` → `status: 'PendienteAceptacion'`
-- Solo para pagos aprobados desde customer_app (source = 'customer_app')
+Modificar la funcion `create_order_with_context` para que **respete** el status pasado en `p_order_data`, con un valor por defecto de `'Pendiente'` para mantener compatibilidad con el POS.
 
-**Pagos con Runas** (`src/lib/integrations/runasPayment.ts`)
-- Cambiar: `status: 'Pendiente'` → `status: 'PendienteAceptacion'`
+### Cambio en la funcion SQL
 
----
-
-### 3. Actualizar Tipos TypeScript
-
-**Archivo:** `src/types/index.ts`
-
-Agregar `'PendienteAceptacion'` al tipo `OrderStatus`:
-```typescript
-export type OrderStatus = 
-  | 'PendientePago' 
-  | 'PendienteAceptacion'  // ← NUEVO
-  | 'Pendiente' 
-  | 'En preparacion' 
-  | ... 
+La linea actual:
+```sql
+'Pendiente'::order_status,
 ```
 
-**Archivo:** `src/types/staffNotifications.ts`
+Debe cambiar a:
+```sql
+COALESCE((p_order_data->>'status')::order_status, 'Pendiente'::order_status),
+```
 
-Agregar nuevo tipo de notificacion:
-```typescript
-export type StaffNotificationType = 
-  | ...existing...
-  | 'incoming_app_order';  // ← NUEVO
+Esto permite:
+1. **Pedidos desde app cliente**: Pasan `status: 'PendienteAceptacion'` → se respeta
+2. **Pedidos desde POS**: No pasan status → usa default `'Pendiente'`
+
+---
+
+## Cambios a Realizar
+
+### 1. Migracion SQL
+
+Crear nueva migracion para actualizar la funcion:
+
+```sql
+-- Actualizar create_order_with_context para respetar el status del p_order_data
+CREATE OR REPLACE FUNCTION public.create_order_with_context(
+  p_user_id uuid,
+  p_order_data jsonb
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_order record;
+BEGIN
+  -- Establecer contexto dentro de la transaccion
+  PERFORM set_config('app.user_id', COALESCE(p_user_id::text, ''), false);
+  PERFORM set_config('app.customer_id', '', false);
+  PERFORM set_config('app.customer_account_id', '', false);
+  
+  -- Insertar la orden y capturar el registro completo
+  INSERT INTO public.orders (
+    customer_id, fulfillment, pickup_mode, items, subtotal,
+    delivery_fee, discount, total, payment_efectivo, payment_mp,
+    payment_pos, payment_aplicacion, payment_runas, payment_method,
+    status,  -- Ahora respeta el valor del JSON
+    created_by_user_id, nombre_resumen, notes, source,
+    delivery_zone_id, delivery_zone_name, delivery_address,
+    delivery_number, delivery_comuna_id, delivery_comuna,
+    delivery_reference, delivery_person_id, delivery_person_name,
+    combo_data, delivery_distance, cash_session_id
+  )
+  VALUES (
+    NULLIF((p_order_data->>'customer_id'), '')::uuid,
+    (p_order_data->>'fulfillment')::fulfillment_type,
+    NULLIF((p_order_data->>'pickup_mode'), '')::text,
+    (p_order_data->'items')::jsonb,
+    (p_order_data->>'subtotal')::integer,
+    COALESCE((p_order_data->>'delivery_fee')::integer, 0),
+    COALESCE((p_order_data->>'discount')::integer, 0),
+    (p_order_data->>'total')::integer,
+    COALESCE((p_order_data->>'payment_efectivo')::integer, 0),
+    COALESCE((p_order_data->>'payment_mp')::integer, 0),
+    COALESCE((p_order_data->>'payment_pos')::integer, 0),
+    COALESCE((p_order_data->>'payment_aplicacion')::integer, 0),
+    COALESCE((p_order_data->>'payment_runas')::integer, 0),
+    (p_order_data->>'payment_method')::payment_method,
+    -- CAMBIO: Ahora respeta el status del JSON, con default 'Pendiente'
+    COALESCE((p_order_data->>'status')::order_status, 'Pendiente'::order_status),
+    p_user_id,
+    p_order_data->>'nombre_resumen',
+    p_order_data->>'notes',
+    COALESCE(p_order_data->>'source', 'pos'),
+    NULLIF((p_order_data->>'delivery_zone_id'), '')::uuid,
+    p_order_data->>'delivery_zone_name',
+    p_order_data->>'delivery_address',
+    p_order_data->>'delivery_number',
+    NULLIF((p_order_data->>'delivery_comuna_id'), '')::uuid,
+    p_order_data->>'delivery_comuna',
+    p_order_data->>'delivery_reference',
+    NULLIF((p_order_data->>'delivery_person_id'), '')::uuid,
+    p_order_data->>'delivery_person_name',
+    (p_order_data->'combo_data')::jsonb,
+    NULLIF((p_order_data->>'delivery_distance'), '')::numeric,
+    NULLIF((p_order_data->>'cash_session_id'), '')::uuid
+  )
+  RETURNING * INTO v_order;
+  
+  RETURN row_to_json(v_order)::jsonb;
+END;
+$$;
 ```
 
 ---
-
-### 4. Hook: useIncomingOrders
-
-**Archivo nuevo:** `src/hooks/useIncomingOrders.ts`
-
-Responsabilidades:
-- Suscripcion realtime a orders con `status = 'PendienteAceptacion'`
-- Solo activo si el usuario tiene sesion de caja con `accept_app_orders = true`
-- Consulta `delivery_settings.assignment_mode` para saber si requiere asignacion manual
-- Expone:
-  - `orders`: lista de pedidos pendientes de aceptacion
-  - `deliveryAssignmentMode`: 'assigned' | 'pool'
-  - `repartidores`: lista de repartidores disponibles (para asignacion)
-  - `acceptOrder(orderId, deliveryPersonId?)`: funcion para aceptar
-  - `loading`
-
-Logica de `acceptOrder`:
-```text
-1. Si es DELIVERY y assignment_mode === 'assigned':
-   - Requiere delivery_person_id
-   - UPDATE orders SET 
-       status = 'Pendiente', 
-       delivery_person_id = X,
-       delivery_person_name = Y,
-       cash_session_id = current_session_id
-
-2. Si es RETIRO o assignment_mode === 'pool':
-   - UPDATE orders SET 
-       status = 'Pendiente',
-       cash_session_id = current_session_id
-
-3. Enviar notificacion push al cliente: "Tu pedido fue aceptado"
-```
-
----
-
-### 5. Componente: IncomingOrderBanner
-
-**Archivo nuevo:** `src/components/pos/IncomingOrderBanner.tsx`
-
-Diseño del banner (parte superior del layout, debajo del header):
-
-```text
-+----------------------------------------------------------+
-|  🟢 NUEVO PEDIDO #1234  |  RETIRO  |  3 items  |  $12.500 |
-|                        [VER DETALLES]     [ACEPTAR]       |
-+----------------------------------------------------------+
-```
-
-Caracteristicas:
-- Fondo verde con animacion de pulso
-- Posicion: debajo del header, encima del contenido principal
-- Si hay multiples pedidos: mostrar el mas reciente con contador "+X mas"
-- No bloquea la interfaz: el cajero puede seguir trabajando
-- Sonido distintivo al aparecer nuevo pedido
-- Boton "ACEPTAR" visible solo si:
-  - Es RETIRO, o
-  - Es DELIVERY pero assignment_mode === 'pool'
-- Si es DELIVERY con assignment_mode === 'assigned':
-  - Boton dice "ASIGNAR Y ACEPTAR" y abre modal
-
----
-
-### 6. Componente: IncomingOrderModal
-
-**Archivo nuevo:** `src/components/pos/IncomingOrderModal.tsx`
-
-Modal con detalles completos del pedido:
-
-```text
-+------------------------------------------+
-|         NUEVO PEDIDO #1234               |
-|                                          |
-|   +----------------------------------+   |
-|   |          RETIRO                  |   |   ← En verde grande
-|   |       Para Llevar                |   |
-|   +----------------------------------+   |
-|                                          |
-|   Cliente: Juan Perez                    |
-|   Telefono: +56 9 1234 5678              |
-|                                          |
-|   +----------------------------------+   |
-|   | 2x Smash Doble Combo     $15.000 |   |
-|   |    + Extra Tocino         $1.500 |   |
-|   |    - Sin cebolla                 |   |
-|   | 1x Papas Fritas           $3.500 |   |
-|   +----------------------------------+   |
-|                                          |
-|   Subtotal:              $20.000         |
-|   Total:                 $20.000         |
-|   Pago: MercadoPago (pagado)             |
-|                                          |
-|   [MINIMIZAR]            [ACEPTAR]       |
-+------------------------------------------+
-```
-
-Para pedidos DELIVERY con asignacion manual:
-
-```text
-+------------------------------------------+
-|         NUEVO PEDIDO #1234               |
-|                                          |
-|   +----------------------------------+   |
-|   |        🚚 DELIVERY               |   |   ← En azul grande
-|   |   Av. Providencia 1234, Nunoa    |   |
-|   +----------------------------------+   |
-|                                          |
-|   Cliente: Juan Perez                    |
-|   Telefono: +56 9 1234 5678              |
-|                                          |
-|   ... items ...                          |
-|                                          |
-|   +----------------------------------+   |
-|   | Asignar Repartidor:              |   |
-|   | [▾ Seleccionar repartidor     ]  |   |
-|   +----------------------------------+   |
-|                                          |
-|   Subtotal:      $18.000                 |
-|   Delivery:       $2.000 (Zona Centro)   |
-|   Total:         $20.000                 |
-|   Pago: Runas (pagado)                   |
-|                                          |
-|   [MINIMIZAR]     [ACEPTAR Y ASIGNAR]    |
-+------------------------------------------+
-```
-
-Comportamiento:
-- "MINIMIZAR": Cierra el modal pero deja el banner visible
-- "ACEPTAR": 
-  - Si delivery con modo manual y sin repartidor: mostrar error "Debes asignar un repartidor"
-  - Si valido: ejecutar `acceptOrder()` y cerrar
-
----
-
-### 7. Componente: IncomingOrderSound
-
-**Archivo nuevo:** `src/components/pos/IncomingOrderSound.tsx`
-
-Similar a `KitchenSounds.tsx` pero con sonido distintivo:
-- Frecuencia mas baja y doble beep para diferenciarse de cocina
-- Se activa cuando aparece un nuevo pedido en `PendienteAceptacion`
-- Configurable (on/off) desde el banner
-
----
-
-### 8. Integracion en StaffLayout
-
-**Archivo:** `src/App.tsx`
-
-Agregar el banner en `StaffLayout`, justo despues del header:
-
-```tsx
-<header>...</header>
-
-{/* Banner de pedidos entrantes - solo visible si hay sesion activa */}
-<IncomingOrderBanner />
-
-<main>...</main>
-```
-
-El banner internamente verifica:
-- Usuario tiene sesion de caja activa
-- Sesion tiene `accept_app_orders = true`
-- Hay pedidos en estado `PendienteAceptacion`
-
----
-
-### 9. Actualizar Filtro de Cocina (KDS)
-
-**Archivo:** `src/hooks/useKitchenOrders.ts`
-
-El KDS ya filtra ordenes por status. Verificar que **NO** muestre ordenes en `PendienteAceptacion`:
-- Actualmente muestra: Pendiente, En preparacion, En pausa, Listo
-- Esto ya excluye `PendienteAceptacion` naturalmente
-
----
-
-### 10. Notificacion Push al Cliente
-
-Al aceptar el pedido, enviar push notification al cliente:
-- Titulo: "Tu pedido fue aceptado ✅"
-- Cuerpo: "Pedido #1234 - Ya estamos preparandolo"
-- Reutilizar infraestructura de OneSignal existente
-
----
-
-## Flujo Completo (Ejemplo)
-
-### Caso 1: RETIRO
-1. Cliente paga → orden en `PendienteAceptacion`
-2. Cajero ve banner verde: "NUEVO PEDIDO #1234 | RETIRO | 2 items | $15.000"
-3. Cajero presiona [ACEPTAR]
-4. Orden pasa a `Pendiente` → aparece en Cocina
-5. Cliente recibe push: "Tu pedido fue aceptado"
-
-### Caso 2: DELIVERY (modo asignado)
-1. Cliente paga → orden en `PendienteAceptacion`
-2. Cajero ve banner: "NUEVO PEDIDO #1234 | DELIVERY | Av. Prov. 123"
-3. Cajero presiona [VER DETALLES]
-4. Modal muestra detalles + selector de repartidor
-5. Cajero selecciona "Carlos Martinez" y presiona [ACEPTAR Y ASIGNAR]
-6. Orden pasa a `Pendiente` con delivery_person asignado → Cocina
-7. Cliente recibe push: "Tu pedido fue aceptado"
-8. Repartidor recibe push: "Nuevo pedido asignado"
-
-### Caso 3: DELIVERY (modo pool)
-1. Cliente paga → orden en `PendienteAceptacion`
-2. Cajero ve banner y presiona [ACEPTAR] (sin asignar)
-3. Orden pasa a `Pendiente` sin delivery_person
-4. Repartidores ven el pedido en su lista y lo "toman"
-
----
-
-## Archivos a Crear
-
-| Archivo | Descripcion |
-|---------|-------------|
-| `src/hooks/useIncomingOrders.ts` | Hook para suscripcion realtime y aceptacion |
-| `src/components/pos/IncomingOrderBanner.tsx` | Banner flotante de notificacion |
-| `src/components/pos/IncomingOrderModal.tsx` | Modal con detalles y asignacion |
-| `src/components/pos/IncomingOrderSound.tsx` | Sonido de alerta |
 
 ## Archivos a Modificar
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/types/index.ts` | Agregar 'PendienteAceptacion' a OrderStatus |
-| `src/types/staffNotifications.ts` | Agregar tipo 'incoming_app_order' |
-| `src/lib/staffNotificationTriggers.ts` | Agregar trigger para notificar al cliente |
-| `supabase/functions/mp-webhook/index.ts` | Cambiar destino a PendienteAceptacion |
-| `src/lib/integrations/runasPayment.ts` | Cambiar destino a PendienteAceptacion |
-| `src/App.tsx` | Integrar IncomingOrderBanner en StaffLayout |
+| Nueva migracion SQL | Actualizar funcion `create_order_with_context` para usar `COALESCE((p_order_data->>'status')::order_status, 'Pendiente')` |
 
-## Migracion SQL
-
-```sql
--- Agregar nuevo estado al enum order_status
-ALTER TYPE order_status ADD VALUE 'PendienteAceptacion' AFTER 'PendientePago';
-```
+**No se requieren cambios en el codigo TypeScript** - el archivo `runasPayment.ts` ya envia `status: 'PendienteAceptacion'` correctamente (linea 167).
 
 ---
 
-## Consideraciones de UX
+## Impacto y Compatibilidad
 
-1. **No invasivo**: El banner no bloquea la interfaz de venta
-2. **Visible pero no molesto**: Posicion fija arriba, animacion sutil
-3. **Accion rapida**: ACEPTAR directo desde el banner para retiros
-4. **Flujo completo**: Modal para delivery con asignacion cuando es necesario
-5. **Audio distintivo**: Diferente al sonido de cocina para identificar el origen
-6. **Contador**: Si hay multiples pedidos, mostrar cuantos hay pendientes
+| Flujo | Antes | Despues |
+|-------|-------|---------|
+| POS (cajero crea orden) | Usa `'Pendiente'` hardcodeado | Usa default `'Pendiente'` (sin cambio funcional) |
+| App cliente con Runas | Ignora status, usa `'Pendiente'` | Respeta `'PendienteAceptacion'` del JSON |
+| App cliente con MP (webhook) | N/A (webhook actualiza el status) | Sin cambio (webhook ya actualiza a `PendienteAceptacion`) |
 
 ---
 
 ## Plan de Prueba (QA)
 
-1. Hacer pedido RETIRO desde app, pagar con MP
-   - Verificar que aparezca banner en POS
-   - Aceptar → debe aparecer en cocina
-   - Cliente debe recibir push
+1. Hacer pedido desde app cliente con pago de Runas
+   - Verificar que el status inicial sea `PendienteAceptacion`
+   - Verificar que aparezca el banner verde en el POS
+   - Aceptar pedido y verificar que pase a `Pendiente` y aparezca en cocina
 
-2. Hacer pedido DELIVERY con modo 'assigned'
-   - Verificar que aparezca banner
-   - Abrir modal → selector de repartidor visible
-   - Intentar aceptar sin repartidor → error
-   - Asignar repartidor → aceptar → cocina + notificacion a repartidor
+2. Hacer pedido desde POS (cajero)
+   - Verificar que el status sea `Pendiente` (como siempre)
+   - No debe aparecer en el banner de pedidos entrantes
+   - Debe aparecer directamente en cocina
 
-3. Hacer pedido DELIVERY con modo 'pool'
-   - Banner muestra boton ACEPTAR directo (sin asignar)
-   - Aceptar → cocina (sin delivery_person)
-   - Repartidor ve pedido en su lista de "disponibles"
-
-4. Verificar que el cajero puede seguir armando pedidos mientras hay alertas
-
----
-
-## Riesgos y Mitigaciones
-
-| Riesgo | Mitigacion |
-|--------|------------|
-| Cajero no ve la alerta | Sonido + animacion de pulso |
-| Pedido queda sin aceptar mucho tiempo | Posible timeout/recordatorio futuro |
-| Conexion realtime falla | Polling de respaldo cada 30s |
-| Multiples cajeros con sesiones | Cualquiera puede aceptar; el primero gana |
+3. Verificar que los pedidos existentes no se vean afectados
