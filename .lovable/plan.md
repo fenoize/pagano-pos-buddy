@@ -1,156 +1,365 @@
 
-# Plan: Corregir Flujo de Pedidos Remotos para Estado PendienteAceptacion
 
-## Diagnostico del Problema
+# Plan: Sistema de Pedidos con Pago Pendiente
 
-Los pedidos #1545 y #1546 no aparecieron en el banner del cajero porque **nunca tuvieron el estado `PendienteAceptacion`**.
+## Resumen Ejecutivo
 
-**Causa raiz:** La funcion SQL `create_order_with_context` tiene **hardcodeado** el estado `'Pendiente'`:
-
-```sql
-'Pendiente'::order_status,  -- Linea 67 de la funcion
-```
-
-Esto significa que aunque `runasPayment.ts` pasa `status: 'PendienteAceptacion'` en el JSON, la funcion **ignora** ese valor y siempre inserta con `'Pendiente'`.
-
-**Resultado:**
-- El pedido se crea con estado `Pendiente` (salta directamente a cocina)
-- El `IncomingOrderBanner` solo busca pedidos con `status = 'PendienteAceptacion'`
-- El banner nunca muestra nada porque no existen pedidos con ese estado
+Implementar un sistema completo que permita enviar pedidos a cocina **sin pago inmediato** usando el metodo de pago "Pendiente". Esta funcion es crucial para operaciones donde el cliente pide en mesa o solicita preparar el pedido para pagar al retirarlo.
 
 ---
 
-## Solucion Propuesta
+## Diagnostico Actual
 
-Modificar la funcion `create_order_with_context` para que **respete** el status pasado en `p_order_data`, con un valor por defecto de `'Pendiente'` para mantener compatibilidad con el POS.
+### Estado del sistema
 
-### Cambio en la funcion SQL
+1. **Metodo de pago "Pendiente" ya existe** en la tabla `payment_methods`:
+   - `name: 'pendiente'`
+   - `display_name: 'Pendiente'`
+   - `counts_as_real_sale: false` (correcto)
+   - `is_active: true`
 
-La linea actual:
-```sql
-'Pendiente'::order_status,
-```
+2. **Problema critico**: El enum `payment_method` en PostgreSQL **NO incluye 'pendiente'**
+   - Valores actuales: `aplicacion, efectivo, mixto, mp, pos, runas`
+   - Esto impide crear ordenes con `payment_method = 'pendiente'`
 
-Debe cambiar a:
-```sql
-COALESCE((p_order_data->>'status')::order_status, 'Pendiente'::order_status),
-```
-
-Esto permite:
-1. **Pedidos desde app cliente**: Pasan `status: 'PendienteAceptacion'` → se respeta
-2. **Pedidos desde POS**: No pasan status → usa default `'Pendiente'`
+3. **No existe logica para**:
+   - Identificar pedidos pendientes de pago visualmente
+   - Alertar al cierre de caja sobre pedidos sin pagar
+   - Indicar al siguiente cajero que hay pedidos heredados
+   - Permitir cobrar pedidos pendientes posteriormente
 
 ---
 
-## Cambios a Realizar
+## Arquitectura de la Solucion
+
+### Flujo General
+
+```text
+CREACION:
+Cliente pide en mesa → Cajero selecciona "Pendiente" → Pedido va a Cocina
+                                                    → Status: 'Pendiente' (normal)
+                                                    → payment_method: 'pendiente'
+                                                    → payment_status: 'unpaid' (nuevo campo)
+
+COBRO POSTERIOR:
+Cajero ve icono de pendientes → Abre lista → Selecciona pedido → Registra pago real
+                                                                → payment_status: 'paid'
+                                                                → Actualiza payment_efectivo/pos/mp/etc
+
+CIERRE DE CAJA:
+Si hay pedidos pendientes en el turno:
+  → Mostrar alerta: "Hay X pedidos sin pagar por $Y"
+  → Permitir cerrar pero con confirmacion explicita
+  → Los pedidos quedan "huerfanos" para el siguiente turno
+
+APERTURA DE TURNO:
+Si hay pedidos pendientes sin session_id asignado:
+  → Banner: "Tienes X pedidos pendientes heredados"
+  → El cajero puede ver y cobrarlos
+```
+
+---
+
+## Cambios a Implementar
 
 ### 1. Migracion SQL
 
-Crear nueva migracion para actualizar la funcion:
+#### 1.1 Agregar 'pendiente' al enum payment_method
 
 ```sql
--- Actualizar create_order_with_context para respetar el status del p_order_data
-CREATE OR REPLACE FUNCTION public.create_order_with_context(
-  p_user_id uuid,
-  p_order_data jsonb
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_order record;
-BEGIN
-  -- Establecer contexto dentro de la transaccion
-  PERFORM set_config('app.user_id', COALESCE(p_user_id::text, ''), false);
-  PERFORM set_config('app.customer_id', '', false);
-  PERFORM set_config('app.customer_account_id', '', false);
-  
-  -- Insertar la orden y capturar el registro completo
-  INSERT INTO public.orders (
-    customer_id, fulfillment, pickup_mode, items, subtotal,
-    delivery_fee, discount, total, payment_efectivo, payment_mp,
-    payment_pos, payment_aplicacion, payment_runas, payment_method,
-    status,  -- Ahora respeta el valor del JSON
-    created_by_user_id, nombre_resumen, notes, source,
-    delivery_zone_id, delivery_zone_name, delivery_address,
-    delivery_number, delivery_comuna_id, delivery_comuna,
-    delivery_reference, delivery_person_id, delivery_person_name,
-    combo_data, delivery_distance, cash_session_id
-  )
-  VALUES (
-    NULLIF((p_order_data->>'customer_id'), '')::uuid,
-    (p_order_data->>'fulfillment')::fulfillment_type,
-    NULLIF((p_order_data->>'pickup_mode'), '')::text,
-    (p_order_data->'items')::jsonb,
-    (p_order_data->>'subtotal')::integer,
-    COALESCE((p_order_data->>'delivery_fee')::integer, 0),
-    COALESCE((p_order_data->>'discount')::integer, 0),
-    (p_order_data->>'total')::integer,
-    COALESCE((p_order_data->>'payment_efectivo')::integer, 0),
-    COALESCE((p_order_data->>'payment_mp')::integer, 0),
-    COALESCE((p_order_data->>'payment_pos')::integer, 0),
-    COALESCE((p_order_data->>'payment_aplicacion')::integer, 0),
-    COALESCE((p_order_data->>'payment_runas')::integer, 0),
-    (p_order_data->>'payment_method')::payment_method,
-    -- CAMBIO: Ahora respeta el status del JSON, con default 'Pendiente'
-    COALESCE((p_order_data->>'status')::order_status, 'Pendiente'::order_status),
-    p_user_id,
-    p_order_data->>'nombre_resumen',
-    p_order_data->>'notes',
-    COALESCE(p_order_data->>'source', 'pos'),
-    NULLIF((p_order_data->>'delivery_zone_id'), '')::uuid,
-    p_order_data->>'delivery_zone_name',
-    p_order_data->>'delivery_address',
-    p_order_data->>'delivery_number',
-    NULLIF((p_order_data->>'delivery_comuna_id'), '')::uuid,
-    p_order_data->>'delivery_comuna',
-    p_order_data->>'delivery_reference',
-    NULLIF((p_order_data->>'delivery_person_id'), '')::uuid,
-    p_order_data->>'delivery_person_name',
-    (p_order_data->'combo_data')::jsonb,
-    NULLIF((p_order_data->>'delivery_distance'), '')::numeric,
-    NULLIF((p_order_data->>'cash_session_id'), '')::uuid
-  )
-  RETURNING * INTO v_order;
-  
-  RETURN row_to_json(v_order)::jsonb;
-END;
-$$;
+ALTER TYPE payment_method ADD VALUE 'pendiente';
+```
+
+#### 1.2 Agregar campo payment_status a orders
+
+```sql
+-- Nuevo campo para distinguir ordenes pagadas de pendientes
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status text 
+  DEFAULT 'paid' CHECK (payment_status IN ('paid', 'unpaid', 'partial'));
+
+-- Indice para consultas rapidas de pedidos pendientes
+CREATE INDEX IF NOT EXISTS idx_orders_payment_status 
+  ON orders(payment_status) WHERE payment_status = 'unpaid';
+```
+
+### 2. Actualizar Tipos TypeScript
+
+**Archivo:** `src/types/index.ts`
+
+```typescript
+// Agregar 'pendiente' al tipo PaymentMethod
+export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'aplicacion' | 'runas' | 'mixto' | 'pendiente';
+
+// Agregar tipo para status de pago
+export type PaymentStatus = 'paid' | 'unpaid' | 'partial';
 ```
 
 ---
+
+### 3. Hook: usePendingPaymentOrders
+
+**Archivo nuevo:** `src/hooks/usePendingPaymentOrders.ts`
+
+Responsabilidades:
+- Obtener pedidos con `payment_method = 'pendiente'` y `payment_status = 'unpaid'`
+- Filtrar por sesion de caja activa + pedidos huerfanos (sin cash_session_id)
+- Suscripcion realtime para actualizaciones
+- Funcion para cobrar un pedido pendiente
+- Exponer contador para el icono del header
+
+```typescript
+interface PendingPaymentOrder {
+  id: string;
+  order_number: number;
+  total: number;
+  customer_name?: string;
+  fulfillment: string;
+  created_at: string;
+  cash_session_id: string | null;
+  items: OrderItem[];
+}
+
+export function usePendingPaymentOrders() {
+  // ...
+  return {
+    pendingOrders: PendingPaymentOrder[],
+    count: number,
+    totalAmount: number,
+    loading: boolean,
+    collectPayment: (orderId: string, paymentData: PaymentData) => Promise<void>,
+    refetch: () => void
+  }
+}
+```
+
+---
+
+### 4. Componente: PendingPaymentsIndicator
+
+**Archivo nuevo:** `src/components/pos/PendingPaymentsIndicator.tsx`
+
+Icono en el header (al lado de notificaciones) que muestra:
+- Badge con cantidad de pedidos pendientes
+- Color amarillo/naranja para destacar
+- Click abre panel/modal con lista de pedidos
+
+Diseno:
+
+```text
+[Campana Notif.] [💰 3] [🚚 2] [Switch App] [Menu Turno]
+                  ^
+                  Indicador de pagos pendientes
+```
+
+---
+
+### 5. Componente: PendingPaymentsPanel
+
+**Archivo nuevo:** `src/components/pos/PendingPaymentsPanel.tsx`
+
+Panel lateral (Sheet/Drawer) con:
+- Lista de pedidos pendientes de pago
+- Filtro: "Mi turno" / "Heredados"
+- Para cada pedido:
+  - Numero de orden
+  - Cliente (si existe)
+  - Total a cobrar
+  - Items resumidos
+  - Boton "Cobrar"
+- Al presionar "Cobrar": abre modal de pago (reutiliza PaymentModal modificado)
+
+---
+
+### 6. Componente: CollectPaymentModal
+
+**Archivo nuevo:** `src/components/pos/CollectPaymentModal.tsx`
+
+Modal simplificado para cobrar un pedido existente:
+- Muestra resumen del pedido (items, total)
+- Seleccion de metodo de pago (excepto "Pendiente")
+- Al confirmar:
+  - Actualiza `payment_status = 'paid'`
+  - Actualiza campos `payment_efectivo/mp/pos/etc` segun corresponda
+  - Vincula a sesion de caja activa si no tenia
+
+---
+
+### 7. Modificar PaymentModal
+
+**Archivo:** `src/components/pos/PaymentModal.tsx`
+
+Cambios:
+- Al seleccionar metodo "Pendiente":
+  - Deshabilitar campo de monto (no se requiere)
+  - Mostrar advertencia: "El pedido ira a cocina sin pago"
+  - Al confirmar: enviar orden con `payment_method: 'pendiente'` y `payment_status: 'unpaid'`
+
+---
+
+### 8. Modificar NewSale.tsx
+
+**Archivo:** `src/pages/NewSale.tsx`
+
+Cambios en `processOrderInBackground`:
+- Detectar si el metodo de pago es "Pendiente"
+- Si es pendiente:
+  - `payment_method: 'pendiente'`
+  - `payment_status: 'unpaid'`
+  - Todos los campos `payment_*` quedan en 0
+- Si no es pendiente: flujo normal
+
+---
+
+### 9. Modificar CashSessionModal (Cierre de Caja)
+
+**Archivo:** `src/components/cash/CashSessionModal.tsx`
+
+Cambios al cerrar turno:
+- Antes de mostrar modal, consultar pedidos pendientes del turno
+- Si hay pedidos pendientes:
+  - Mostrar seccion de alerta en el modal
+  - Texto: "⚠️ Hay X pedidos sin pagar por un total de $Y"
+  - Checkbox de confirmacion: "Entiendo que estos pedidos pasaran al siguiente turno"
+  - Solo habilitar boton "Cerrar Turno" si el checkbox esta marcado
+
+---
+
+### 10. Modificar Apertura de Turno
+
+**Archivo:** `src/components/cash/CashSessionModal.tsx`
+
+Al abrir turno:
+- Consultar pedidos con `payment_status = 'unpaid'` y sin `cash_session_id` asignado
+- Si existen:
+  - Mostrar seccion informativa
+  - "📋 Hay X pedidos pendientes de turnos anteriores"
+  - Opcional: asignarlos automaticamente al nuevo turno
+
+---
+
+### 11. Integrar Indicador en Header
+
+**Archivo:** `src/components/cash/CashSessionTopBar.tsx`
+
+Agregar el componente `PendingPaymentsIndicator` junto a los otros iconos:
+
+```tsx
+<div className="flex items-center gap-3">
+  {user?.role === 'Administrador' && <StaffNotificationBell />}
+  
+  {/* NUEVO: Indicador de pagos pendientes */}
+  <PendingPaymentsIndicator />
+  
+  {/* Icono de efectivo de delivery */}
+  <Button>...</Button>
+  
+  {/* Switch de pedidos desde app */}
+  <div>...</div>
+</div>
+```
+
+---
+
+### 12. Actualizar create_order_with_context
+
+**Archivo:** Migracion SQL
+
+La funcion SQL debe aceptar el nuevo campo `payment_status`:
+
+```sql
+-- En el INSERT, agregar:
+COALESCE((p_order_data->>'payment_status')::text, 'paid')
+```
+
+---
+
+## Archivos a Crear
+
+| Archivo | Descripcion |
+|---------|-------------|
+| `src/hooks/usePendingPaymentOrders.ts` | Hook para gestionar pedidos pendientes de pago |
+| `src/components/pos/PendingPaymentsIndicator.tsx` | Icono con badge en el header |
+| `src/components/pos/PendingPaymentsPanel.tsx` | Panel lateral con lista de pedidos |
+| `src/components/pos/CollectPaymentModal.tsx` | Modal para cobrar pedido existente |
 
 ## Archivos a Modificar
 
 | Archivo | Cambio |
 |---------|--------|
-| Nueva migracion SQL | Actualizar funcion `create_order_with_context` para usar `COALESCE((p_order_data->>'status')::order_status, 'Pendiente')` |
-
-**No se requieren cambios en el codigo TypeScript** - el archivo `runasPayment.ts` ya envia `status: 'PendienteAceptacion'` correctamente (linea 167).
+| Migracion SQL | Agregar 'pendiente' al enum + campo payment_status |
+| `src/types/index.ts` | Agregar 'pendiente' y tipo PaymentStatus |
+| `src/components/pos/PaymentModal.tsx` | Logica especial para metodo Pendiente |
+| `src/pages/NewSale.tsx` | Crear orden con payment_status segun metodo |
+| `src/components/cash/CashSessionModal.tsx` | Alertas en cierre y apertura de turno |
+| `src/components/cash/CashSessionTopBar.tsx` | Integrar indicador de pendientes |
+| `src/hooks/usePaymentMethods.ts` | Agregar 'pendiente' a defaults |
 
 ---
 
-## Impacto y Compatibilidad
+## Consideraciones Importantes
 
-| Flujo | Antes | Despues |
-|-------|-------|---------|
-| POS (cajero crea orden) | Usa `'Pendiente'` hardcodeado | Usa default `'Pendiente'` (sin cambio funcional) |
-| App cliente con Runas | Ignora status, usa `'Pendiente'` | Respeta `'PendienteAceptacion'` del JSON |
-| App cliente con MP (webhook) | N/A (webhook actualiza el status) | Sin cambio (webhook ya actualiza a `PendienteAceptacion`) |
+### Seguridad
+- Los pedidos pendientes solo pueden ser cobrados por Cajero o Administrador
+- El cobro debe actualizar la sesion de caja correctamente
+- Los montos deben reflejarse en el cierre correspondiente
+
+### Consistencia
+- Un pedido con `payment_status = 'unpaid'` NO debe sumarse a las estadisticas de ventas reales
+- Al cobrarse, debe actualizarse el `cash_session_id` al turno donde se cobra
+- Los reportes deben distinguir entre fecha de creacion vs fecha de cobro
+
+### UX
+- El indicador debe ser visible pero no molesto
+- El flujo de cobro debe ser rapido (pocos clics)
+- Las alertas de cierre deben ser claras pero no bloqueantes
 
 ---
 
 ## Plan de Prueba (QA)
 
-1. Hacer pedido desde app cliente con pago de Runas
-   - Verificar que el status inicial sea `PendienteAceptacion`
-   - Verificar que aparezca el banner verde en el POS
-   - Aceptar pedido y verificar que pase a `Pendiente` y aparezca en cocina
+1. **Crear pedido pendiente**
+   - Seleccionar productos, elegir metodo "Pendiente"
+   - Verificar que va a cocina sin montos en payment_*
+   - Verificar que aparece en el indicador del header
 
-2. Hacer pedido desde POS (cajero)
-   - Verificar que el status sea `Pendiente` (como siempre)
-   - No debe aparecer en el banner de pedidos entrantes
-   - Debe aparecer directamente en cocina
+2. **Cobrar pedido pendiente**
+   - Abrir panel de pendientes
+   - Seleccionar pedido y presionar "Cobrar"
+   - Elegir metodo de pago real (efectivo, POS, etc.)
+   - Verificar que desaparece del indicador
+   - Verificar que los montos se actualizan correctamente
 
-3. Verificar que los pedidos existentes no se vean afectados
+3. **Cierre de turno con pendientes**
+   - Crear un pedido pendiente sin cobrarlo
+   - Intentar cerrar turno
+   - Verificar alerta y checkbox de confirmacion
+   - Cerrar turno y verificar que el pedido queda sin cash_session_id
+
+4. **Apertura de turno con heredados**
+   - Abrir nuevo turno despues de cerrar con pendientes
+   - Verificar mensaje informativo sobre pedidos heredados
+   - Verificar que se pueden cobrar desde el nuevo turno
+
+5. **Estadisticas**
+   - Verificar que pedidos pendientes NO suman en dashboard
+   - Al cobrarse, verificar que suman en el turno correspondiente
+
+---
+
+## Observaciones y Recomendaciones
+
+### Recomendacion 1: Timeout de Pedidos Pendientes
+Considerar implementar a futuro un sistema de "limpieza" o alerta para pedidos pendientes que llevan mas de X horas sin cobrarse. Esto evitaria acumulacion de pedidos olvidados.
+
+### Recomendacion 2: Historial de Cobros
+Agregar un log de cuando y por quien fue cobrado un pedido pendiente, util para auditorias.
+
+### Recomendacion 3: Notificaciones
+Enviar notificacion al administrador si un turno cierra con muchos pedidos pendientes (ej: mas de 5 o mas de $50.000).
+
+### Recomendacion 4: Limitar Uso
+Considerar agregar un toggle en configuracion para habilitar/deshabilitar el metodo de pago "Pendiente" segun las necesidades del negocio. Ya existe (`is_active`), solo asegurar que funcione correctamente.
+
+### Recomendacion 5: Modo "Mesa"
+En futuras versiones, vincular este sistema con un modulo de mesas para restaurantes, donde el pedido pendiente se asocia a una mesa especifica.
+
