@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Loader2, X } from 'lucide-react';
 import { useDeliveryGeo } from '@/hooks/useDeliveryGeo';
 import { cn } from '@/lib/utils';
-import { flushSync } from 'react-dom';
 
 interface AddressResult {
   address: string;
@@ -33,7 +32,8 @@ export function AddressAutocomplete({
   const [isOpen, setIsOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [justSelected, setJustSelected] = useState(false);
+  const justSelectedRef = useRef(false);
+  const lastSelectedAddressRef = useRef<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
@@ -43,8 +43,13 @@ export function AddressAutocomplete({
   // Search for addresses with debounce
   const performSearch = useCallback(async (query: string) => {
     // Skip search if we just selected an address
-    if (justSelected) {
-      setJustSelected(false);
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+
+    // Skip if query matches what we just selected
+    if (query === lastSelectedAddressRef.current) {
       return;
     }
     
@@ -66,7 +71,7 @@ export function AddressAutocomplete({
     } finally {
       setIsSearching(false);
     }
-  }, [searchAddresses, justSelected]);
+  }, [searchAddresses]);
 
   // Debounced search
   useEffect(() => {
@@ -98,14 +103,22 @@ export function AddressAutocomplete({
   }, []);
 
   const handleSelect = useCallback((result: AddressResult) => {
-    // Mark that we just selected to prevent search from reopening dropdown
-    setJustSelected(true);
-    // Clear suggestions and close dropdown synchronously
-    flushSync(() => {
-      setSuggestions([]);
-      setIsOpen(false);
-      setSelectedIndex(-1);
-    });
+    // Cancel any pending debounce
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = undefined;
+    }
+
+    // Mark that we just selected to prevent search from reopening
+    justSelectedRef.current = true;
+    lastSelectedAddressRef.current = result.address;
+
+    // Close dropdown immediately
+    setSuggestions([]);
+    setIsOpen(false);
+    setSelectedIndex(-1);
+
+    // Notify parent
     onChange(result.address);
     onSelect(result);
   }, [onChange, onSelect]);
