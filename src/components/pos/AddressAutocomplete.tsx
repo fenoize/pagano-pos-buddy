@@ -193,20 +193,20 @@ export function AddressAutocomplete({
 
       {/* Suggestions Dropdown */}
       {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground border rounded-md shadow-lg max-h-60 overflow-auto">
           {suggestions.map((result, index) => (
             <button
               key={index}
               type="button"
               className={cn(
-                "w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground flex items-start gap-2 transition-colors",
+                "w-full px-3 py-2 text-left text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground flex items-start gap-2 transition-colors",
                 selectedIndex === index && "bg-accent text-accent-foreground"
               )}
               onClick={() => handleSelect(result)}
             >
               <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
               <div className="flex-1 min-w-0">
-                <p className="truncate">{result.address}</p>
+                <p className="truncate text-foreground">{result.address}</p>
                 {result.comuna && (
                   <p className="text-xs text-muted-foreground">{result.comuna}</p>
                 )}

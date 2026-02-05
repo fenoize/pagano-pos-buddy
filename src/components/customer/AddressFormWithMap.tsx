@@ -322,7 +322,7 @@ export function AddressFormWithMap({
           variant="outline"
           onClick={onCancel}
           disabled={isLoading}
-          className="flex-1"
+          className="flex-1 text-foreground border-border hover:bg-accent hover:text-accent-foreground"
         >
           Cancelar
         </Button>
