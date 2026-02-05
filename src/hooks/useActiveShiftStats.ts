@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { OrderStatus } from '@/types';
 
 interface ActiveShiftStats {
   totalSales: number;
@@ -9,6 +10,9 @@ interface ActiveShiftStats {
   sessionStart: string | null;
   sessionId: string | null;
 }
+
+// Estados que representan ventas reales (orden entregada)
+const COMPLETED_STATUSES: OrderStatus[] = ['Entregado'];
 
 export function useActiveShiftStats() {
   const [stats, setStats] = useState<ActiveShiftStats>({
@@ -69,18 +73,32 @@ export function useActiveShiftStats() {
       // This ensures each shift only sees its own sales
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('*')
+        .select('id, total, fulfillment, status, payment_runas')
         .or(`cash_session_id.eq.${activeSession.id},and(cash_session_id.is.null,created_by_user_id.eq.${user.id})`)
-        .gte('created_at', activeSession.opened_at);
+        .gte('created_at', activeSession.opened_at)
+        .in('status', COMPLETED_STATUSES);
 
       if (ordersError) {
         throw ordersError;
       }
 
-      const completedOrders = orders || [];
-      const totalSales = completedOrders.reduce((sum, order) => sum + order.total, 0);
-      const salesCount = completedOrders.length;
-      const deliveryCount = completedOrders.filter(order => order.fulfillment === 'delivery').length;
+      // Filtrar órdenes: excluir las que fueron pagadas 100% con runas
+      const realSalesOrders = (orders || []).filter(order => {
+        // Calcular el monto real de la venta (excluyendo runas)
+        const runasAmount = order.payment_runas || 0;
+        const realPayment = order.total - runasAmount;
+        // Solo contar como venta si hay pago real (no solo runas)
+        return realPayment > 0;
+      });
+
+      // El total de ventas es el monto real pagado (sin runas)
+      const totalSales = realSalesOrders.reduce((sum, order) => {
+        const runasAmount = order.payment_runas || 0;
+        return sum + (order.total - runasAmount);
+      }, 0);
+      
+      const salesCount = realSalesOrders.length;
+      const deliveryCount = realSalesOrders.filter(order => order.fulfillment === 'delivery').length;
 
       setStats({
         totalSales,
