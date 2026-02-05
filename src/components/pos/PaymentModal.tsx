@@ -11,6 +11,8 @@ import {
   CreditCard, Banknote, Smartphone, Coins, Bike, Plus, X,
   AppWindow, Sparkles, DollarSign, Wallet
 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DeliveryData } from './FulfillmentStep';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
@@ -185,6 +187,7 @@ export default function PaymentModal({
       case 'Coins': return <Coins className="w-5 h-5" />;
       case 'DollarSign': return <DollarSign className="w-5 h-5" />;
       case 'Wallet': return <Wallet className="w-5 h-5" />;
+      case 'Clock': return <Clock className="w-5 h-5" />;
       default: return <CreditCard className="w-5 h-5" />;
     }
   };
@@ -247,7 +250,21 @@ export default function PaymentModal({
     const amount = parseFloat(currentAmount) || 0;
     const methodConfig = getCurrentMethodConfig();
     
-    if (currentMethod !== 'runas' && amount <= 0) {
+    // Para método pendiente, no se requiere monto
+    if (currentMethod === 'pendiente') {
+      const newPayment: SinglePayment = {
+        method: methodConfig?.display_name || 'Pendiente',
+        amount: 0,
+      };
+      setPayments([newPayment]);
+      toast({
+        title: "Pago pendiente",
+        description: "El pedido irá a cocina sin pago inmediato"
+      });
+      return;
+    }
+
+    if (currentMethod !== 'runas' && currentMethod !== 'pendiente' && amount <= 0) {
       toast({
         title: "Error",
         description: "Ingrese un monto válido",
@@ -348,8 +365,14 @@ export default function PaymentModal({
       const amount = parseFloat(currentAmount) || 0;
       const methodConfig = getCurrentMethodConfig();
       
-      // Validar método actual
-      if (currentMethod !== 'runas' && amount <= 0) {
+      // Para método pendiente, crear pago directamente
+      if (currentMethod === 'pendiente') {
+        finalPayments = [{
+          method: methodConfig?.display_name || 'Pendiente',
+          amount: 0,
+        }];
+      } else if (currentMethod !== 'runas' && amount <= 0) {
+        // Validar método actual
         toast({
           title: "Error",
           description: "Ingrese un monto válido",
@@ -358,8 +381,7 @@ export default function PaymentModal({
         setIsSubmitting(false);
         return;
       }
-
-      if (methodConfig?.requires_receipt && !currentReceiptNumber.trim()) {
+      else if (methodConfig?.requires_receipt && !currentReceiptNumber.trim()) {
         toast({
           title: "Error",
           description: "Ingrese el número de boleta",
@@ -368,8 +390,7 @@ export default function PaymentModal({
         setIsSubmitting(false);
         return;
       }
-
-      if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
+      else if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
         toast({
           title: "Error",
           description: "Ingrese el número de operación",
@@ -379,7 +400,7 @@ export default function PaymentModal({
         return;
       }
 
-      if (currentMethod === 'runas') {
+      else if (currentMethod === 'runas') {
         const runasNum = parseFloat(currentRunas) || 0;
         if (runasNum <= 0) {
           toast({
@@ -413,23 +434,29 @@ export default function PaymentModal({
         }
       }
       
-      // Crear el pago actual
-      const currentPayment: SinglePayment = {
-        method: methodConfig?.display_name || currentMethod,
-        amount: currentMethod === 'runas' 
-          ? 0 
-          : (methodConfig?.requires_change 
-              ? Math.min(amount, total) 
-              : amount),
-        receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
-        operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
-        runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
-      };
-      
-      finalPayments = [currentPayment];
+      // Crear el pago actual (si no es pendiente que ya se creó arriba)
+      if (currentMethod !== 'pendiente') {
+        const currentPayment: SinglePayment = {
+          method: methodConfig?.display_name || currentMethod,
+          amount: currentMethod === 'runas' 
+            ? 0 
+            : (methodConfig?.requires_change 
+                ? Math.min(amount, total) 
+                : amount),
+          receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
+          operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
+          runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
+        };
+        
+        finalPayments = [currentPayment];
+      }
     }
     
-    // Validar total pagado
+    // Validar total pagado (excepto para método pendiente)
+    const isPendingPayment = finalPayments.some(p => 
+      p.method === 'Pendiente' || p.method === 'pendiente'
+    );
+
     const totalPaid = finalPayments.reduce((sum, payment) => {
       if (payment.method === 'runas' || payment.method === 'Runas') {
         return sum + (payment.runas || 0) * runaRewardValue;
@@ -437,7 +464,7 @@ export default function PaymentModal({
       return sum + payment.amount;
     }, 0);
     
-    if (totalPaid < total) {
+    if (!isPendingPayment && totalPaid < total) {
       toast({
         title: "Error",
         description: "El total pagado es menor al total de la venta",
@@ -468,8 +495,17 @@ export default function PaymentModal({
   };
 
   const isValidPayment = () => {
-    // Si hay pagos en la lista, validar como antes
+    // Si es método pendiente, siempre es válido
+    if (currentMethod === 'pendiente') {
+      return true;
+    }
+    
+    // Si hay pagos en la lista y uno es pendiente, es válido
     if (payments.length > 0) {
+      const hasPendingPayment = payments.some(p => 
+        p.method === 'Pendiente' || p.method === 'pendiente'
+      );
+      if (hasPendingPayment) return true;
       return getTotalPaid() >= total;
     }
     
@@ -882,12 +918,24 @@ export default function PaymentModal({
                 </div>
               )}
 
+              {currentMethod === 'pendiente' && (
+                <div className="space-y-3">
+                  <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
+                    <Clock className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-700 dark:text-amber-400">
+                      <strong>Pago Pendiente:</strong> El pedido irá a cocina sin pago inmediato. 
+                      Podrás cobrarlo posteriormente desde el indicador de "Pagos Pendientes" en la barra superior.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
               <Button
                 type="button"
                 variant="secondary"
                 className="w-full"
                 onClick={handleAddPayment}
-                disabled={!currentAmount && !currentRunas}
+                disabled={!currentAmount && !currentRunas && currentMethod !== 'pendiente'}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 {payments.length > 0 ? 'Agregar otro método de pago' : 'Agregar método de pago (para pago mixto)'}

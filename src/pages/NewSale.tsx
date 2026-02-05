@@ -485,7 +485,7 @@ export default function NewSale() {
       );
 
       // Determine payment method
-      const paymentMethod: 'efectivo' | 'pos' | 'mp' | 'aplicacion' | 'mixto' | 'runas' =
+      const paymentMethod: 'efectivo' | 'pos' | 'mp' | 'aplicacion' | 'mixto' | 'runas' | 'pendiente' =
         paymentData.payments.length === 1
           ? (() => {
               const method = paymentData.payments[0].method;
@@ -494,9 +494,14 @@ export default function NewSale() {
               if (method === 'Transferencia') return 'mp';
               if (method === 'Aplicación') return 'aplicacion';
               if (method === 'Runas') return 'runas';
+              if (method === 'Pendiente') return 'pendiente';
               return 'efectivo';
             })()
           : 'mixto';
+
+      // Determinar payment_status según el método
+      const isPendingPayment = paymentMethod === 'pendiente';
+      const paymentStatus = isPendingPayment ? 'unpaid' : 'paid';
 
       const orderData = {
         customer_id: customerId,
@@ -510,12 +515,13 @@ export default function NewSale() {
         delivery_fee: orderSnapshot.deliveryFee,
         discount: orderSnapshot.totalDiscount,
         total: orderSnapshot.total,
-        payment_efectivo: totals.efectivo,
-        payment_mp: totals.mp,
-        payment_pos: totals.pos,
-        payment_aplicacion: totals.aplicacion,
-        payment_runas: totals.runas,
+        payment_efectivo: isPendingPayment ? 0 : totals.efectivo,
+        payment_mp: isPendingPayment ? 0 : totals.mp,
+        payment_pos: isPendingPayment ? 0 : totals.pos,
+        payment_aplicacion: isPendingPayment ? 0 : totals.aplicacion,
+        payment_runas: isPendingPayment ? 0 : totals.runas,
         payment_method: paymentMethod,
+        payment_status: paymentStatus,
         status: 'Pendiente' as const,
         notes: paymentData.notes || null,
         // Delivery snapshot fields

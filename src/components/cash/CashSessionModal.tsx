@@ -20,12 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatCurrency } from '@/lib/utils';
 import { useCashSession } from '@/hooks/useCashSession';
 import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { useDeliveryCashPending } from '@/hooks/useDeliveryCashPending';
+import { usePendingPaymentOrders } from '@/hooks/usePendingPaymentOrders';
 import { useToast } from '@/hooks/use-toast';
-import { Smartphone, Wallet } from 'lucide-react';
+import { Smartphone, Wallet, AlertTriangle, CircleDollarSign } from 'lucide-react';
 import { DeliveryCashPreview } from './DeliveryCashPreview';
 
 interface CashSessionModalProps {
@@ -51,11 +53,13 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [acknowledgedPendingPayments, setAcknowledgedPendingPayments] = useState(false);
   
   
   const { openSession, closeSession, addCashMovement } = useCashSession();
   const { accounts } = useFinanceAccounts();
   const { pendingByPerson, loading: pendingLoading } = useDeliveryCashPending();
+  const { count: pendingPaymentsCount, totalAmount: pendingPaymentsTotal, inheritedOrders } = usePendingPaymentOrders();
   const { toast } = useToast();
 
   // Filtrar cuentas activas tipo efectivo/caja
@@ -71,6 +75,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
       setMovementType('ingreso');
       setSelectedCategory('');
       setSelectedAccountId('');
+      setAcknowledgedPendingPayments(false);
       
     }
   }, [isOpen]);
@@ -228,44 +233,86 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
 
         {/* Preview de efectivo pendiente al abrir turno */}
         {type === 'open' && (
-          <DeliveryCashPreview pendingByPerson={pendingByPerson} loading={pendingLoading} />
+          <>
+            <DeliveryCashPreview pendingByPerson={pendingByPerson} loading={pendingLoading} />
+            
+            {/* Alerta de pedidos heredados pendientes de pago */}
+            {inheritedOrders.length > 0 && (
+              <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
+                <CircleDollarSign className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-700 dark:text-amber-400">
+                  <strong>📋 {inheritedOrders.length} pedido(s) pendiente(s) de pago</strong> de turnos anteriores 
+                  por un total de <strong>{formatCurrency(inheritedOrders.reduce((sum, o) => sum + o.total, 0))}</strong>.
+                  Podrás cobrarlos desde el indicador de "Pagos Pendientes".
+                </AlertDescription>
+              </Alert>
+            )}
+          </>
         )}
 
         {type === 'close' && sessionSummary && (
-          <Card className="mb-4">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Resumen del Turno</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Efectivo inicial:</span>
-                <span className="font-medium">{formatCurrency(sessionSummary.session.opening_cash)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Ventas en efectivo:</span>
-                <span className="font-medium">{formatCurrency(sessionSummary.summary.totalCash)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Ingresos adicionales:</span>
-                <span className="font-medium text-green-600">{formatCurrency(sessionSummary.summary.ingresos)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Egresos:</span>
-                <span className="font-medium text-red-600">-{formatCurrency(sessionSummary.summary.egresos)}</span>
-              </div>
-              {sessionSummary.summary.totalCashDeliveryPending > 0 && (
-                <div className="flex justify-between text-amber-600">
-                  <span>⚠️ Efectivo con repartidores:</span>
-                  <span className="font-medium">{formatCurrency(sessionSummary.summary.totalCashDeliveryPending)}</span>
+          <>
+            <Card className="mb-4">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Resumen del Turno</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Efectivo inicial:</span>
+                  <span className="font-medium">{formatCurrency(sessionSummary.session.opening_cash)}</span>
                 </div>
-              )}
-              <hr />
-              <div className="flex justify-between font-semibold">
-                <span>Efectivo esperado en caja:</span>
-                <span>{formatCurrency(sessionSummary.summary.expectedCash)}</span>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex justify-between">
+                  <span>Ventas en efectivo:</span>
+                  <span className="font-medium">{formatCurrency(sessionSummary.summary.totalCash)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Ingresos adicionales:</span>
+                  <span className="font-medium text-emerald-600">{formatCurrency(sessionSummary.summary.ingresos)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Egresos:</span>
+                  <span className="font-medium text-destructive">-{formatCurrency(sessionSummary.summary.egresos)}</span>
+                </div>
+                {sessionSummary.summary.totalCashDeliveryPending > 0 && (
+                  <div className="flex justify-between text-amber-600">
+                    <span>⚠️ Efectivo con repartidores:</span>
+                    <span className="font-medium">{formatCurrency(sessionSummary.summary.totalCashDeliveryPending)}</span>
+                  </div>
+                )}
+                <hr />
+                <div className="flex justify-between font-semibold">
+                  <span>Efectivo esperado en caja:</span>
+                  <span>{formatCurrency(sessionSummary.summary.expectedCash)}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Alerta de pedidos pendientes de pago */}
+            {pendingPaymentsCount > 0 && (
+              <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 mb-4">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-700 dark:text-amber-400 space-y-2">
+                  <p>
+                    <strong>⚠️ Hay {pendingPaymentsCount} pedido(s) sin pagar</strong> por un total de{' '}
+                    <strong>{formatCurrency(pendingPaymentsTotal)}</strong>.
+                  </p>
+                  <p className="text-sm">
+                    Estos pedidos pasarán al siguiente turno si cierras ahora.
+                  </p>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Checkbox
+                      id="acknowledge_pending"
+                      checked={acknowledgedPendingPayments}
+                      onCheckedChange={(checked) => setAcknowledgedPendingPayments(checked as boolean)}
+                    />
+                    <Label htmlFor="acknowledge_pending" className="text-sm cursor-pointer">
+                      Entiendo que estos pedidos pasarán al siguiente turno
+                    </Label>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+          </>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -406,7 +453,10 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button 
+              type="submit" 
+              disabled={loading || (type === 'close' && pendingPaymentsCount > 0 && !acknowledgedPendingPayments)}
+            >
               {loading ? 'Procesando...' : (
                 type === 'open' ? 'Abrir Turno' : 
                 type === 'close' ? 'Cerrar Turno' : 
