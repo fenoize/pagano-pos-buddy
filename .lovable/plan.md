@@ -1,261 +1,134 @@
 
+## Diagnóstico (qué está pasando y por qué)
 
-## Plan: Sistema de Identificación de Cliente por QR
+### 1) Error al editar: “ID de dirección inválido”
+- **Causa real**: `CustomerAddressCard` llama `onEdit(address.id)` (envía un string), pero en `MyAddresses` se está pasando `handleOpenDialog` que espera recibir **el objeto address completo**.
+- Resultado:
+  - `editingAddress` termina siendo un **string** (el uuid), no un objeto.
+  - Luego `handleSaveAddress` intenta validar `editingAddress.id` ⇒ `undefined` ⇒ dispara el error “ID de dirección inválido”.
+  - Además, `initialData` se construye desde `editingAddress.alias`, etc. ⇒ todo queda `undefined` ⇒ el formulario aparece “en blanco”.
 
-### Objetivo
+### 2) Modal “Editar dirección” aparece claro (no oscuro)
+- En el Customer App la UI se oscurece usando la clase `.customer-app` (variables CSS).
+- **Pero** el `Dialog` de Radix renderiza en un **Portal** (cuelga del `<body>`), por lo que **no hereda** las variables de `.customer-app`.
+- Por eso el modal se ve con los colores del tema global (claro).
 
-Permitir que los clientes se identifiquen en el POS mediante el escaneo de un código QR único, agilizando el proceso de asignación de pedidos sin necesidad de dar datos personales.
+### 3) Dropdown de sugerencias sigue apareciendo después de seleccionar
+- `AddressAutocomplete` ya intenta evitarlo con `justSelected`, pero aún puede reabrirse por:
+  - un `setTimeout` de debounce que quedó programado antes de la selección, o
+  - foco en el input con `suggestions` no completamente reseteadas por un ciclo de render/async.
+- Necesitamos “cancelar” el debounce al seleccionar y blindar el estado para que no vuelva a abrir.
 
----
-
-### Vista Previa: QR en Perfil de Cliente
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  ← Mi Perfil                                                    │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│     ┌─────────┐                                                  │
-│     │  Foto   │   Juan Pérez                                     │
-│     │ Usuario │   juan@email.com                                 │
-│     └─────────┘                                                  │
-│                                                                  │
-│     ┌─────────────────────────────────────────┐                  │
-│     │  [QR]  Mostrar mi QR de identificación  │  ← NUEVO BOTÓN   │
-│     └─────────────────────────────────────────┘                  │
-│                                                                  │
-│     ┌─────────────────────────────────────────┐                  │
-│     │  [📦] Mis Pedidos                       │                  │
-│     └─────────────────────────────────────────┘                  │
-│     ┌─────────────────────────────────────────┐                  │
-│     │  [📍] Mis Direcciones                   │                  │
-│     └─────────────────────────────────────────┘                  │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Vista Previa: Modal QR del Cliente
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    Mi Código QR                                  │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│                    ┌───────────────┐                             │
-│                    │               │                             │
-│                    │   QR CODE     │                             │
-│                    │   [cliente    │                             │
-│                    │     UUID]     │                             │
-│                    │               │                             │
-│                    └───────────────┘                             │
-│                                                                  │
-│         Muestra este código en caja para                         │
-│         identificarte y acumular runas                           │
-│                                                                  │
-│                    [ Cerrar ]                                    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Vista Previa: Escáner en POS
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│           Cliente (opcional)                                     │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │  [🔍] Buscar por correo o teléfono...                       ││
-│  └─────────────────────────────────────────────────────────────┘│
-│                                                                  │
-│           ─────────── o ───────────                              │
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │    [📷]  Escanear QR del cliente                            ││ ← NUEVO BOTÓN
-│  └─────────────────────────────────────────────────────────────┘│
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Vista Previa: Modal de Escáner
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│               Escanear QR del Cliente                            │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│     ┌─────────────────────────────────────────────────┐          │
-│     │                                                 │          │
-│     │              [Vista de cámara]                  │          │
-│     │                                                 │          │
-│     │           ┌─────────────────┐                   │          │
-│     │           │   Área de       │                   │          │
-│     │           │   escaneo       │                   │          │
-│     │           └─────────────────┘                   │          │
-│     │                                                 │          │
-│     └─────────────────────────────────────────────────┘          │
-│                                                                  │
-│     Apunta al código QR del cliente                              │
-│                                                                  │
-│     [Seleccionar cámara ▼]           [ Cancelar ]                │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+### 4) Al editar una dirección guardada, el formulario no muestra los datos
+- Aunque `MyAddresses` pasa `initialData`, `AddressFormWithMap` inicializa `useState(...)` solo una vez.
+- Cuando abres el modal y cambia `initialData`, el estado interno **no se sincroniza** automáticamente.
+- Debe agregarse un `useEffect` que actualice `formData`, `addressSearch` y `hasValidLocation` cuando cambie `initialData`.
 
 ---
 
-### Flujo de Usuario
+## Cambios propuestos (solución)
 
-**Lado Cliente (App)**:
-1. Cliente abre su perfil
-2. Hace clic en "Mostrar mi QR"
-3. Se abre modal con QR generado a partir de su `customer.id`
-4. Muestra el QR al cajero
+### A) Corregir el flujo de “Editar” para pasar el objeto correcto
+**Archivos:**  
+- `src/components/customer/CustomerAddressCard.tsx`  
+- `src/pages/customer/MyAddresses.tsx`
 
-**Lado Cajero (POS)**:
-1. En el modal de cliente, hace clic en "Escanear QR"
-2. Se activa la cámara del dispositivo
-3. Escanea el QR del cliente
-4. El sistema busca el cliente por UUID
-5. Si existe, lo asigna automáticamente al pedido
-6. Se cierra el escáner y se muestra el cliente seleccionado
+**Acción:**
+1. Cambiar la prop `onEdit` para que reciba el objeto completo:
+   - De: `onEdit: (id: string) => void`
+   - A: `onEdit: (address: Address) => void`
+2. En `CustomerAddressCard`, cambiar el botón:
+   - De: `onClick={() => onEdit(address.id)}`
+   - A: `onClick={() => onEdit(address)}`
+3. En `MyAddresses`, mantener `handleOpenDialog(address?: any)` tal como está (ya soporta recibir el objeto) y pasarla correctamente:
+   - `onEdit={handleOpenDialog}` quedará coherente (recibe address object).
 
----
-
-### Cambios Técnicos Requeridos
-
-#### 1. Nuevas Dependencias NPM
-
-| Librería | Versión | Propósito |
-|----------|---------|-----------|
-| `qrcode.react` | ^4.0.1 | Generar códigos QR como componentes React |
-| `html5-qrcode` | ^2.3.8 | Escanear QR usando la cámara del dispositivo |
-
-#### 2. Nuevos Componentes
-
-| Componente | Ubicación | Descripción |
-|------------|-----------|-------------|
-| `CustomerQRModal.tsx` | `src/components/customer/` | Modal que muestra el QR del cliente |
-| `QRScannerModal.tsx` | `src/components/pos/` | Modal con el escáner de cámara para el POS |
-
-#### 3. Archivos a Modificar
-
-| Archivo | Cambios |
-|---------|---------|
-| `src/pages/customer/CustomerProfile.tsx` | Agregar botón "Mostrar mi QR" + integrar `CustomerQRModal` |
-| `src/components/pos/CustomerModal.tsx` | Agregar botón "Escanear QR" + integrar `QRScannerModal` |
+**Resultado esperado:**
+- `editingAddress` vuelve a ser un objeto con `.id`, `.alias`, etc.
+- Se elimina el error “ID de dirección inválido” al editar.
+- `initialData` se llena correctamente.
 
 ---
 
-### Detalle de Implementación
+### B) Hacer que el modal de Editar Dirección sea oscuro (solo en Customer App)
+**Archivo:** `src/pages/customer/MyAddresses.tsx`
 
-#### Componente: `CustomerQRModal.tsx`
+**Acción:**
+- Forzar el “scope” de tema en el contenido del Dialog agregando la clase `.customer-app` al `DialogContent`:
+  - Ejemplo: `className="customer-app max-w-md ..."`
 
-Este componente muestra un código QR con el UUID del cliente.
+**Por qué así:**
+- `.customer-app` define variables CSS para fondo, card, popover, etc. y funciona aunque el modal esté en un Portal.
 
-Características:
-- Usa `qrcode.react` para generar el QR
-- El contenido del QR es `PAGANOS:${customer.id}` (prefijo para validación)
-- Diseño centrado con instrucciones claras
-- Tamaño optimizado para escaneo (256x256)
-
-#### Componente: `QRScannerModal.tsx`
-
-Este componente activa la cámara y escanea códigos QR.
-
-Características:
-- Usa `html5-qrcode` para el escaneo
-- Soporte para múltiples cámaras (selector)
-- Validación del formato `PAGANOS:{uuid}`
-- Al detectar QR válido, busca cliente en Supabase
-- Manejo de errores (cliente no encontrado, QR inválido)
-- Limpieza correcta de recursos de cámara al cerrar
+**Resultado esperado:**
+- El modal se verá oscuro (mismo look del Customer App), sin cambiar el tema global del resto del sistema.
 
 ---
 
-### Flujo Técnico: Escaneo QR
+### C) Evitar que el dropdown siga mostrando sugerencias después de seleccionar
+**Archivo:** `src/components/pos/AddressAutocomplete.tsx`
 
-```text
-1. Usuario hace clic en "Escanear QR"
-   |
-2. Se abre QRScannerModal
-   -> Solicita permiso de cámara
-   -> Inicializa html5-qrcode
-   |
-3. Usuario escanea QR
-   |
-4. onScanSuccess recibe: "PAGANOS:abc123-uuid-..."
-   |
-5. Validar formato con regex
-   -> Si inválido: mostrar error "QR no válido"
-   |
-6. Extraer customer_id del QR
-   |
-7. Buscar cliente en Supabase
-   -> SELECT * FROM customers WHERE id = 'abc123-uuid-...'
-   |
-8. Si encontrado:
-   -> onCustomerChange(customer)
-   -> Cerrar modal
-   -> Mostrar toast "Cliente identificado"
-   |
-9. Si no encontrado:
-   -> Mostrar error "Cliente no encontrado"
-   -> Permitir reintentar
-```
+**Acciones:**
+1. En `handleSelect`:
+   - Cancelar cualquier búsqueda pendiente: `clearTimeout(debounceRef.current)`
+   - Resetear `debounceRef.current`
+2. Endurecer la lógica para cerrar:
+   - Asegurar `setSuggestions([])` + `setIsOpen(false)` antes de disparar `onChange`/`onSelect` (o mantener el `flushSync` pero agregando el clearTimeout).
+3. Ajustar `performSearch`:
+   - Si `justSelected === true`, retornar sin reabrir; y opcionalmente evitar que se dispare en el siguiente tick con un “guard” adicional (por ejemplo, si `query === lastSelectedValue`).
+
+**Resultado esperado:**
+- Al tocar una sugerencia, el dropdown desaparece y no vuelve a abrirse inmediatamente.
 
 ---
 
-### Consideraciones de Seguridad
+### D) Al editar, precargar correctamente los datos en el formulario y en el buscador
+**Archivo:** `src/components/customer/AddressFormWithMap.tsx`
 
-1. **UUID como identificador**: Los UUIDs v4 son prácticamente imposibles de adivinar (122 bits de entropía)
+**Acciones:**
+1. Agregar `useEffect` que re-sincronice estado cuando cambie `initialData`:
+   - `setFormData(...)` con los valores iniciales
+   - `setAddressSearch(...)` con `formatted_address` o `${calle} ${numero}`
+   - `setHasValidLocation(!!lat && !!lng)`
+2. (Recomendado) Cuando se abra para editar y existan coordenadas:
+   - Hacer que el mapa muestre el marcador desde el inicio (ya lo hace si `hasValidLocation` y lat/lng están seteados; con la sincronización quedará consistente).
 
-2. **Prefijo de validación**: El formato `PAGANOS:{uuid}` evita que se confunda con otros QR codes
-
-3. **Solo lectura**: El QR solo permite identificar al cliente, no modificar datos
-
-4. **Sin datos sensibles**: El QR no contiene nombre, email ni teléfono
-
-5. **Permisos de cámara**: El navegador solicitará permiso explícito
-
----
-
-### Compatibilidad de Dispositivos
-
-| Dispositivo | Cámara | Soporte |
-|-------------|--------|---------|
-| Laptop/PC | Webcam integrada | Completo |
-| Monitor externo + webcam USB | Webcam USB | Completo |
-| Terminal POS con cámara | Cámara integrada | Completo |
-| Tablet Android/iPad | Cámara frontal/trasera | Completo |
-| Smartphone | Cámara frontal/trasera | Completo |
-
-La librería `html5-qrcode` soporta cambiar entre cámaras disponibles.
+**Resultado esperado:**
+- Al abrir “Editar dirección”, el formulario muestra alias, depto, comuna, referencias y el addressSearch precargado.
+- Se comporta como edición real, no como “agregar nueva”.
 
 ---
 
-### Archivos Nuevos
-
-| Archivo | Propósito |
-|---------|-----------|
-| `src/components/customer/CustomerQRModal.tsx` | Modal para mostrar QR del cliente |
-| `src/components/pos/QRScannerModal.tsx` | Modal con escáner de cámara |
-
-### Archivos a Modificar
-
-| Archivo | Cambios |
-|---------|---------|
-| `package.json` | Agregar `qrcode.react` y `html5-qrcode` |
-| `src/pages/customer/CustomerProfile.tsx` | Agregar botón QR y modal |
-| `src/components/pos/CustomerModal.tsx` | Agregar botón escanear y modal |
+## Validaciones y seguridad (para evitar errores futuros)
+- Mantener la validación UUID en `MyAddresses`, pero al arreglar el `onEdit`, el caso “editingAddress.id undefined” desaparece.
+- Agregar un “guard” adicional en `handleSaveAddress`:
+  - Si `editingAddress` existe pero no tiene forma de objeto (por alguna razón), mostrar toast y no llamar a Supabase.
 
 ---
 
-### Beneficios Esperados
+## Plan de prueba (QA rápido)
+1. Entrar al Customer App, ir a **Perfil → Mis Direcciones**.
+2. Crear una dirección nueva:
+   - Seleccionar sugerencia, verificar que el dropdown se cierre y no reabra.
+   - Guardar.
+3. Editar esa dirección:
+   - Abrir modal: debe verse **oscuro**.
+   - Campos deben venir precargados (alias, depto, comuna, referencias).
+   - Guardar cambios: debe actualizar y reflejarse en la lista.
+4. Marcar “Hacer principal” y verificar que solo una quede como Principal.
+5. Repetir selección de dirección y confirmar que las sugerencias no queden “pegadas”.
 
-1. **Rapidez**: El cliente no necesita dictar su teléfono o email
-2. **Precisión**: Elimina errores de tipeo o búsqueda incorrecta
-3. **Experiencia premium**: Moderniza el proceso de identificación
-4. **Acumulación de runas**: Garantiza que el cliente siempre esté vinculado a su pedido
-5. **Sin fricción**: Funciona sin conexión a internet del lado del cliente (el QR está en su app)
+---
+
+## Archivos que se tocarán
+- `src/components/customer/CustomerAddressCard.tsx` (ajustar onEdit para pasar objeto address)
+- `src/pages/customer/MyAddresses.tsx` (DialogContent con `.customer-app`, wiring correcto de onEdit)
+- `src/components/pos/AddressAutocomplete.tsx` (cancelación de debounce + cierre robusto del dropdown)
+- `src/components/customer/AddressFormWithMap.tsx` (sincronizar estados cuando cambia `initialData`)
+
+---
+
+## Riesgos / consideraciones
+- Cambiar la firma de `onEdit` requiere revisar si `CustomerAddressCard` se usa en otro lugar. Antes de implementar, haré una búsqueda de referencias y ajustaré cualquier uso adicional si existiera.
+- Forzar `.customer-app` en el `DialogContent` solo afectará ese modal (no cambia tema global).
 
