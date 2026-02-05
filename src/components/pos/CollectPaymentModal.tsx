@@ -20,7 +20,7 @@
    Package,
    CircleDollarSign
  } from 'lucide-react';
- import { usePendingPaymentOrders, PendingPaymentOrder } from '@/hooks/usePendingPaymentOrders';
+import { PendingPaymentOrder, PaymentCollectionData } from '@/hooks/usePendingPaymentOrders';
  import { formatCurrency } from '@/lib/utils';
  import { useToast } from '@/hooks/use-toast';
  import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,7 @@
    isOpen: boolean;
    onClose: () => void;
    order: PendingPaymentOrder;
+  onCollectPayment: (orderId: string, paymentData: PaymentCollectionData) => Promise<boolean>;
  }
  
  interface PaymentMethodOption {
@@ -40,14 +41,13 @@
    requires_operation_number?: boolean;
  }
  
- export function CollectPaymentModal({ isOpen, onClose, order }: CollectPaymentModalProps) {
+export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }: CollectPaymentModalProps) {
    const [selectedMethod, setSelectedMethod] = useState('efectivo');
    const [amount, setAmount] = useState(order.total.toString());
    const [receiptNumber, setReceiptNumber] = useState('');
    const [operationNumber, setOperationNumber] = useState('');
    const [loading, setLoading] = useState(false);
    const [paymentMethods, setPaymentMethods] = useState<PaymentMethodOption[]>([]);
-   const { collectPayment } = usePendingPaymentOrders();
    const { toast } = useToast();
  
    useEffect(() => {
@@ -122,7 +122,7 @@
  
      setLoading(true);
      
-     const success = await collectPayment(order.id, {
+    const success = await onCollectPayment(order.id, {
        method: methodConfig?.display_name || selectedMethod,
        amount: order.total,
        receiptNumber: receiptNumber || undefined,
