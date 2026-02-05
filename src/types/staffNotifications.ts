@@ -8,7 +8,8 @@ export type StaffNotificationType =
   | 'order_delivered'
   | 'shift_assigned'
   | 'shift_accepted'
-  | 'shift_rejected';
+   | 'shift_rejected'
+   | 'incoming_app_order';
 
 export interface StaffNotification {
   id: string;
@@ -76,5 +77,10 @@ export const NOTIFICATION_TYPE_CONFIG: Record<StaffNotificationType, {
     icon: 'XCircle',
     color: 'text-red-600',
     category: 'Turno'
-  }
+   },
+   incoming_app_order: {
+     icon: 'Bell',
+     color: 'text-green-600',
+     category: 'Pedido'
+   }
 };

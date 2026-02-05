@@ -24,6 +24,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { POSThemeProvider } from "@/components/theme/POSThemeProvider";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { StaffPushBanner } from "@/components/notifications/StaffPushBanner";
+ import { IncomingOrderBanner } from "@/components/pos/IncomingOrderBanner";
 
 // Guards
 import { CustomerProtectedRoute } from "@/components/guards/CustomerProtectedRoute";
@@ -186,6 +187,10 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
                 <CashSessionTopBar />
               </div>
             </header>
+             
+             {/* Banner de pedidos entrantes - solo visible si hay sesión con accept_app_orders */}
+             <IncomingOrderBanner />
+             
             <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
               {children}
             </main>

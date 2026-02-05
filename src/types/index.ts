@@ -1,6 +1,6 @@
 export type AppRole = 'Administrador' | 'Cajero' | 'Cocinero' | 'Preparador' | 'Reparto' | 'Viewer' | 'TV';
 
-export type OrderStatus = 'PendientePago' | 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'En camino' | 'Entregado' | 'Cancelado';
+ export type OrderStatus = 'PendientePago' | 'PendienteAceptacion' | 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'En camino' | 'Entregado' | 'Cancelado';
 
 export type FulfillmentType = 'retiro' | 'delivery';
 

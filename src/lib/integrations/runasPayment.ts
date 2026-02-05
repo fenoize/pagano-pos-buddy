@@ -164,7 +164,7 @@ export async function createRunasOrder(
           payment_aplicacion: 0,
           payment_runas: discount_amount,
           payment_method: 'runas',
-          status: 'Pendiente',
+         status: 'PendienteAceptacion',
           notes: notes || 'Pedido pagado con runas desde app cliente',
           source: 'customer_app'
         }

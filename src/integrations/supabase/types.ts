@@ -6382,6 +6382,7 @@ export type Database = {
       fulfillment_type: "retiro" | "delivery"
       order_status:
         | "PendientePago"
+        | "PendienteAceptacion"
         | "Pendiente"
         | "En preparación"
         | "En pausa"
@@ -6561,6 +6562,7 @@ export const Constants = {
       fulfillment_type: ["retiro", "delivery"],
       order_status: [
         "PendientePago",
+        "PendienteAceptacion",
         "Pendiente",
         "En preparación",
         "En pausa",
