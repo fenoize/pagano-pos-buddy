@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -10,7 +9,16 @@ import {
   Plus, 
   Minus,
   CalendarDays,
-  AlertCircle 
+  AlertCircle,
+  Banknote,
+  CreditCard,
+  Smartphone,
+  AppWindow,
+  Star,
+  Wallet,
+  CircleDollarSign,
+  Receipt,
+  LucideIcon
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCashSession } from '@/hooks/useCashSession';
@@ -19,28 +27,60 @@ import { CashSessionModal } from '@/components/cash/CashSessionModal';
 import { DeliveryCashPendingWidget } from '@/components/cash/DeliveryCashPendingWidget';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { usePaymentMethods, PaymentMethod } from '@/hooks/usePaymentMethods';
+
+// Mapeo de iconos dinámicos
+const iconMap: Record<string, LucideIcon> = {
+  Banknote,
+  CreditCard,
+  Smartphone,
+  AppWindow,
+  Sparkles: Star,
+  Star,
+  Wallet,
+  CircleDollarSign,
+  Receipt,
+  DollarSign,
+};
+
+// Mapeo de colores por método
+const colorMap: Record<string, string> = {
+  efectivo: 'bg-green-500',
+  pos: 'bg-purple-500',
+  transferencia: 'bg-blue-500',
+  aplicacion: 'bg-orange-500',
+  runas: 'bg-amber-400',
+};
+
+// Mapeo de campos de pago en orders
+const paymentFieldMap: Record<string, string> = {
+  efectivo: 'payment_efectivo',
+  pos: 'payment_pos',
+  transferencia: 'payment_mp',
+  aplicacion: 'payment_aplicacion',
+  runas: 'payment_runas',
+};
 
 interface CashierStats {
   todaysSales: number;
   todaysOrders: number;
   sessionSales: number;
   sessionOrders: number;
-  cashTotal: number;
-  mpTotal: number;
-  posTotal: number;
+  paymentTotals: Record<string, number>;
+  pendingOrders: number;
 }
 
 export function CajeroDashboard() {
   const { user } = useAuthContext();
   const { currentSession, hasActiveSession, getSessionSummary } = useCashSession();
+  const { paymentMethods } = usePaymentMethods();
   const [stats, setStats] = useState<CashierStats>({
     todaysSales: 0,
     todaysOrders: 0,
     sessionSales: 0,
     sessionOrders: 0,
-    cashTotal: 0,
-    mpTotal: 0,
-    posTotal: 0,
+    paymentTotals: {},
+    pendingOrders: 0,
   });
   const [sessionSummary, setSessionSummary] = useState<any>(null);
   const [showMovementModal, setShowMovementModal] = useState(false);
@@ -48,7 +88,7 @@ export function CajeroDashboard() {
 
   useEffect(() => {
     loadCashierStats();
-  }, [currentSession]);
+  }, [currentSession, paymentMethods]);
 
   const loadCashierStats = async () => {
     if (!user?.id) return;
@@ -56,42 +96,68 @@ export function CajeroDashboard() {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // Get today's orders created by this user
+      // Get today's orders created by this user (only delivered = real sales)
       const { data: todaysOrders, error: todaysError } = await supabase
         .from('orders')
-        .select('*')
+        .select('id, total, payment_efectivo, payment_mp, payment_pos, payment_aplicacion, payment_runas, status')
         .eq('created_by_user_id', user.id)
         .gte('created_at', `${today}T00:00:00`)
-        .lt('created_at', `${today}T23:59:59`)
-        .eq('status', 'Entregado');
+        .lt('created_at', `${today}T23:59:59`);
 
       if (todaysError) throw todaysError;
 
-      // Calculate today's totals
-      const todaysSales = todaysOrders?.reduce((sum, order) => sum + order.total, 0) || 0;
-      const todaysCount = todaysOrders?.length || 0;
+      // Filter for delivered orders (real sales) and exclude runas from totals
+      const deliveredOrders = todaysOrders?.filter(o => o.status === 'Entregado') || [];
+      const pendingOrders = todaysOrders?.filter(o => 
+        o.status !== 'Entregado' && o.status !== 'Cancelado'
+      ).length || 0;
+
+      // Calculate today's totals (excluding runas from total sales)
+      const todaysSales = deliveredOrders.reduce((sum, order) => {
+        const runasAmount = order.payment_runas || 0;
+        return sum + (order.total - runasAmount);
+      }, 0);
+      const todaysCount = deliveredOrders.length;
 
       let sessionSales = 0;
       let sessionCount = 0;
-      let cashTotal = 0;
-      let mpTotal = 0;
-      let posTotal = 0;
+      let paymentTotals: Record<string, number> = {};
+
+      // Initialize all payment methods with 0
+      paymentMethods.forEach(method => {
+        paymentTotals[method.name] = 0;
+      });
 
       if (hasActiveSession() && currentSession) {
         // Get session summary
         const summary = await getSessionSummary();
         setSessionSummary(summary);
         
-        sessionSales = summary?.summary.totalSales || 0;
-        sessionCount = summary?.orders.length || 0;
-        cashTotal = summary?.summary.totalCash || 0;
-        mpTotal = summary?.summary.totalMP || 0;
-        posTotal = summary?.summary.totalPOS || 0;
+        // Filter only delivered orders from session
+        const sessionDeliveredOrders = (summary?.orders || []).filter(
+          (o: any) => o.status === 'Entregado'
+        );
+        
+        // Calculate session sales excluding runas
+        sessionSales = sessionDeliveredOrders.reduce((sum: number, order: any) => {
+          const runasAmount = order.payment_runas || 0;
+          return sum + (order.total - runasAmount);
+        }, 0);
+        sessionCount = sessionDeliveredOrders.length;
+        
+        // Calculate totals per payment method
+        paymentTotals.efectivo = sessionDeliveredOrders.reduce((sum: number, o: any) => sum + (o.payment_efectivo || 0), 0);
+        paymentTotals.transferencia = sessionDeliveredOrders.reduce((sum: number, o: any) => sum + (o.payment_mp || 0), 0);
+        paymentTotals.pos = sessionDeliveredOrders.reduce((sum: number, o: any) => sum + (o.payment_pos || 0), 0);
+        paymentTotals.aplicacion = sessionDeliveredOrders.reduce((sum: number, o: any) => sum + (o.payment_aplicacion || 0), 0);
+        paymentTotals.runas = sessionDeliveredOrders.reduce((sum: number, o: any) => sum + (o.payment_runas || 0), 0);
       } else {
         // Calculate from today's orders if no active session
-        cashTotal = todaysOrders?.reduce((sum, order) => sum + order.payment_efectivo, 0) || 0;
-        mpTotal = todaysOrders?.reduce((sum, order) => sum + order.payment_mp, 0) || 0;
-        posTotal = todaysOrders?.reduce((sum, order) => sum + order.payment_pos, 0) || 0;
+        paymentTotals.efectivo = deliveredOrders.reduce((sum, o) => sum + (o.payment_efectivo || 0), 0);
+        paymentTotals.transferencia = deliveredOrders.reduce((sum, o) => sum + (o.payment_mp || 0), 0);
+        paymentTotals.pos = deliveredOrders.reduce((sum, o) => sum + (o.payment_pos || 0), 0);
+        paymentTotals.aplicacion = deliveredOrders.reduce((sum, o) => sum + (o.payment_aplicacion || 0), 0);
+        paymentTotals.runas = deliveredOrders.reduce((sum, o) => sum + (o.payment_runas || 0), 0);
       }
 
       setStats({
@@ -99,9 +165,8 @@ export function CajeroDashboard() {
         todaysOrders: todaysCount,
         sessionSales,
         sessionOrders: sessionCount,
-        cashTotal,
-        mpTotal,
-        posTotal,
+        paymentTotals,
+        pendingOrders,
       });
     } catch (error) {
       console.error('Error loading cashier stats:', error);
@@ -110,36 +175,13 @@ export function CajeroDashboard() {
     }
   };
 
-  const statCards = [
-    {
-      title: 'Ventas del Turno',
-      value: formatCurrency(stats.sessionSales),
-      description: `${stats.sessionOrders} pedidos en este turno`,
-      icon: DollarSign,
-      color: 'text-primary',
-    },
-    {
-      title: 'Ventas del Día',
-      value: formatCurrency(stats.todaysSales),
-      description: `${stats.todaysOrders} pedidos hoy`,
-      icon: TrendingUp,
-      color: 'text-success',
-    },
-    {
-      title: 'Efectivo',
-      value: formatCurrency(stats.cashTotal),
-      description: 'En el turno actual',
-      icon: DollarSign,
-      color: 'text-green-600',
-    },
-    {
-      title: 'Digital (MP + POS)',
-      value: formatCurrency(stats.mpTotal + stats.posTotal),
-      description: `MP: ${formatCurrency(stats.mpTotal)} | POS: ${formatCurrency(stats.posTotal)}`,
-      icon: ShoppingCart,
-      color: 'text-blue-600',
-    },
-  ];
+  // Calculate total real sales (excluding runas)
+  const totalRealSales = Object.entries(stats.paymentTotals)
+    .filter(([key]) => key !== 'runas')
+    .reduce((sum, [, value]) => sum + value, 0);
+
+  // Get active payment methods for display
+  const activePaymentMethods = paymentMethods.filter(m => m.is_active);
 
   return (
     <div className="space-y-6">
@@ -175,26 +217,111 @@ export function CajeroDashboard() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold currency">
-                {loading ? '...' : stat.value}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {stat.description}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ventas del Día</CardTitle>
+            <DollarSign className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loading ? '...' : formatCurrency(stats.todaysSales)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {stats.todaysOrders} ventas realizadas
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ventas Semanales</CardTitle>
+            <CalendarDays className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loading ? '...' : formatCurrency(stats.sessionSales)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {stats.sessionOrders} ventas (turno actual)
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ticket Promedio</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loading ? '...' : formatCurrency(stats.todaysOrders > 0 ? stats.todaysSales / stats.todaysOrders : 0)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Promedio por venta
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pedidos Pendientes</CardTitle>
+            <Clock className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loading ? '...' : stats.pendingOrders}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              En cocina y preparación
+            </p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Ventas por Método de Pago */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">Ventas por Método de Pago</CardTitle>
+          <CardDescription>Desglose del día</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {activePaymentMethods.map((method) => {
+            const IconComponent = iconMap[method.icon] || DollarSign;
+            const bgColor = colorMap[method.name] || 'bg-gray-500';
+            const amount = stats.paymentTotals[method.name] || 0;
+            const isRunas = method.name === 'runas';
+            
+            return (
+              <div 
+                key={method.id} 
+                className={`flex items-center justify-between py-2 ${isRunas ? 'opacity-60 border-t pt-3 mt-2' : ''}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full ${bgColor}`} />
+                  <span className="text-sm font-medium">{method.display_name}</span>
+                </div>
+                <span className={`font-semibold ${isRunas ? 'text-muted-foreground' : ''}`}>
+                  {loading ? '...' : formatCurrency(amount)}
+                </span>
+              </div>
+            );
+          })}
+          
+          {/* Total */}
+          <div className="flex items-center justify-between pt-3 border-t">
+            <div>
+              <span className="font-bold">Total</span>
+              <p className="text-xs text-muted-foreground">
+                {stats.todaysOrders} ventas • {stats.pendingOrders} pendientes
+              </p>
+            </div>
+            <span className="text-lg font-bold">
+              {loading ? '...' : formatCurrency(totalRealSales)}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Session Summary */}
       {hasActiveSession() && sessionSummary && (
