@@ -30,7 +30,7 @@
  
  export function usePendingPaymentOrders() {
    const [pendingOrders, setPendingOrders] = useState<PendingPaymentOrder[]>([]);
-   const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
    const { currentSession } = useCashSession();
    const { user } = useAuthContext();
    const { toast } = useToast();
@@ -162,10 +162,10 @@
          {
            event: '*',
            schema: 'public',
-           table: 'orders',
-           filter: 'payment_status=eq.unpaid'
+          table: 'orders'
          },
-         () => {
+        (payload) => {
+          // Refetch cuando cambie payment_status o se cree/elimine una orden
            fetchPendingOrders();
          }
        )
