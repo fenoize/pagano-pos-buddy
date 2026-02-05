@@ -104,8 +104,16 @@ serve(async (req) => {
     let updateData: any = {};
     
     if (payment.status === 'approved') {
-      console.log('✅ Payment approved - updating order to Pendiente (visible en cocina)');
-      newStatus = 'Pendiente';
+     // Check if order is from customer_app - these need cashier acceptance
+     const isCustomerAppOrder = currentOrder.source === 'customer_app';
+     
+     if (isCustomerAppOrder) {
+       console.log('✅ Payment approved - updating order to PendienteAceptacion (awaiting cashier acceptance)');
+       newStatus = 'PendienteAceptacion';
+     } else {
+       console.log('✅ Payment approved - updating order to Pendiente (POS order, visible en cocina)');
+       newStatus = 'Pendiente';
+     }
       updateData = {
         status: newStatus,
         payment_mp: payment.transaction_amount,
