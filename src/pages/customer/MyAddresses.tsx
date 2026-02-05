@@ -11,6 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 import { MapPin, Plus } from 'lucide-react';
 import { AddressFormWithMap } from '@/components/customer/AddressFormWithMap';
 
+// Helper to validate UUID format
+const isValidUUID = (value: unknown): value is string => {
+  if (typeof value !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+};
+
 interface AddressFormData {
   alias: string;
   calle: string;
@@ -80,7 +87,16 @@ export default function MyAddresses() {
   };
 
   const handleSaveAddress = async (formData: AddressFormData) => {
-    if (!customer?.id) return;
+    // Validar que customer.id sea un UUID válido
+    if (!customer?.id || !isValidUUID(customer.id)) {
+      console.error('Invalid customer ID:', customer?.id);
+      toast({
+        title: 'Error',
+        description: 'No se pudo identificar tu cuenta. Por favor, cierra sesión e inicia nuevamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     // Validar máximo 5 direcciones
     if (!editingAddress && addresses.length >= 5) {
@@ -103,6 +119,12 @@ export default function MyAddresses() {
       }
 
       if (editingAddress) {
+        // Validar que editingAddress.id sea un UUID válido
+        if (!editingAddress.id || !isValidUUID(editingAddress.id)) {
+          console.error('Invalid address ID for update:', editingAddress.id);
+          throw new Error('ID de dirección inválido');
+        }
+        
         // Update existing address
         const { error } = await supabase
           .from('addresses')
@@ -191,7 +213,26 @@ export default function MyAddresses() {
   };
 
   const handleSetDefault = async (id: string) => {
-    if (!customer?.id) return;
+    // Validar ambos UUIDs
+    if (!customer?.id || !isValidUUID(customer.id)) {
+      console.error('Invalid customer ID:', customer?.id);
+      toast({
+        title: 'Error',
+        description: 'No se pudo identificar tu cuenta',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!isValidUUID(id)) {
+      console.error('Invalid address ID:', id);
+      toast({
+        title: 'Error',
+        description: 'ID de dirección inválido',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       // Unset all defaults first
