@@ -569,16 +569,9 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         <Textarea
           placeholder="Ej: Sin cebolla, más salsa..."
           value={specialNotes}
-          onChange={(e) => {
-            e.stopPropagation();
-            setSpecialNotes(e.target.value);
-          }}
-          onFocus={(e) => {
-            // Prevent scroll to top on focus
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          className="min-h-[80px] rounded-xl resize-none bg-card text-white border-border placeholder:text-muted-foreground"
+          onChange={(e) => setSpecialNotes(e.target.value)}
+          className="min-h-[80px] rounded-xl resize-none bg-card text-white border-border placeholder:text-muted-foreground text-base"
+          style={{ fontSize: '16px' }}
         />
       </div>
     </div>
