@@ -352,7 +352,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           {/* Variant Selection - New System */}
           {useNewVariantSystem && availableVariants.length > 0 && (
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Elige tu opción</Label>
+              <Label className="text-base font-semibold text-white">Elige tu opción</Label>
               <RadioGroup
                 value={selectedVariantOption?.id || ''}
                 onValueChange={(value) => {
@@ -389,7 +389,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           {!useNewVariantSystem && (
             <>
               <div className="space-y-3">
-                <Label className="text-base font-semibold">Tipo de pedido</Label>
+                <Label className="text-base font-semibold text-white">Tipo de pedido</Label>
                 <RadioGroup
                   value={selectedPriceType}
                   onValueChange={(value) => setSelectedPriceType(value as 'combo' | 'only')}
@@ -430,7 +430,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
               {/* Legacy System - Variants */}
               {legacyVariants.length > 1 && (
                 <div className="space-y-3">
-                  <Label className="text-base font-semibold">Tamaño</Label>
+                  <Label className="text-base font-semibold text-white">Tamaño</Label>
                   <RadioGroup
                     value={selectedVariant}
                     onValueChange={(value) => setSelectedVariant(value as Variant)}
@@ -467,7 +467,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       {/* Extras Section */}
       {extras.length > 0 && (
         <div className="space-y-3">
-          <Label className="text-base font-semibold">Extras</Label>
+          <Label className="text-base font-semibold text-white">Extras</Label>
           <div className="space-y-2">
             {extras.map((extra) => {
               const isSelected = !!selectedExtras[extra.id];
@@ -488,7 +488,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
                       onCheckedChange={() => handleExtraToggle(extra.id)}
                     />
                     <div>
-                      <p className="font-medium">{extra.name}</p>
+                      <p className="font-medium text-white">{extra.name}</p>
                       <p className="text-sm text-primary font-semibold">
                         +{formatPrice(extra.price)}
                       </p>
@@ -526,7 +526,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       {/* Modifiers Section */}
       {!useCombo && modifiers.length > 0 && (
         <div className="space-y-3">
-          <Label className="text-base font-semibold">Modificaciones</Label>
+          <Label className="text-base font-semibold text-white">Modificaciones</Label>
           <div className="space-y-2">
             {modifiers.map((modifier) => {
               const isSelected = selectedModifiers.includes(modifier.id);
@@ -549,7 +549,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
                     }`}>
                       {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                     </div>
-                    <span className="font-medium">{modifier.name}</span>
+                    <span className="font-medium text-white">{modifier.name}</span>
                   </div>
                   {modifier.price > 0 && (
                     <span className="text-sm text-primary font-semibold">
@@ -565,12 +565,20 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
 
       {/* Special Notes */}
       <div className="space-y-3">
-        <Label className="text-base font-semibold">Notas especiales</Label>
+        <Label className="text-base font-semibold text-white">Notas especiales</Label>
         <Textarea
           placeholder="Ej: Sin cebolla, más salsa..."
           value={specialNotes}
-          onChange={(e) => setSpecialNotes(e.target.value)}
-          className="min-h-[80px] rounded-xl resize-none"
+          onChange={(e) => {
+            e.stopPropagation();
+            setSpecialNotes(e.target.value);
+          }}
+          onFocus={(e) => {
+            // Prevent scroll to top on focus
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          className="min-h-[80px] rounded-xl resize-none bg-card text-white border-border placeholder:text-muted-foreground"
         />
       </div>
     </div>
@@ -581,7 +589,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     <div className="space-y-3">
       {/* Quantity */}
       <div className="flex items-center justify-between">
-        <Label className="text-base font-semibold">Cantidad</Label>
+        <Label className="text-base font-semibold text-white">Cantidad</Label>
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
@@ -592,7 +600,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           >
             <Minus className="h-4 w-4" />
           </Button>
-          <span className="text-xl font-bold w-8 text-center">{quantity}</span>
+          <span className="text-xl font-bold w-8 text-center text-white">{quantity}</span>
           <Button
             variant="outline"
             size="icon"
@@ -637,7 +645,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent className="max-h-[90vh] h-[90vh] flex flex-col">
+        <DrawerContent className="customer-app max-h-[90vh] h-[90vh] flex flex-col bg-background text-white">
           <div className="mx-auto w-full max-w-lg flex flex-col flex-1 overflow-hidden">
             {/* Scrollable content - includes image */}
             <div className="flex-1 overflow-y-auto overscroll-contain">
@@ -647,7 +655,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
                 
                 {/* Header */}
                 <div className="px-4 pt-4 pb-2">
-                  <h2 className="text-xl font-bold">{product.name}</h2>
+                  <h2 className="text-xl font-bold text-white">{product.name}</h2>
                   <p className="text-muted-foreground text-sm">
                     {(product as any).description || 'Personaliza tu pedido'}
                   </p>
@@ -661,7 +669,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
             </div>
 
             {/* Fixed bottom action bar */}
-            <div className="flex-shrink-0 border-t bg-background p-4">
+            <div className="flex-shrink-0 border-t border-border bg-background p-4">
               <ActionBar />
             </div>
           </div>
@@ -673,7 +681,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   // Desktop: Dialog with side-by-side layout (image 1:1 aspect ratio)
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden flex flex-row h-[80vh] max-h-[700px]">
+      <DialogContent className="customer-app max-w-4xl p-0 overflow-hidden flex flex-row h-[80vh] max-h-[700px] bg-background text-white border-border">
         {/* Left side - Product image with 1:1 aspect ratio */}
         <div className="w-[350px] flex-shrink-0 bg-muted relative overflow-hidden">
           <div className="w-full h-full flex items-center justify-center">
@@ -703,8 +711,8 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         {/* Right side - Customization */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header - fixed */}
-          <div className="px-6 pt-6 pb-4 border-b flex-shrink-0">
-            <h2 className="text-2xl font-bold">{product.name}</h2>
+          <div className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
+            <h2 className="text-2xl font-bold text-white">{product.name}</h2>
             <p className="text-muted-foreground mt-1">
               {(product as any).description || 'Personaliza tu pedido'}
             </p>
@@ -718,7 +726,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           </div>
 
           {/* Fixed bottom action bar - always visible */}
-          <div className="flex-shrink-0 border-t bg-background p-4">
+          <div className="flex-shrink-0 border-t border-border bg-background p-4">
             <ActionBar />
           </div>
         </div>
