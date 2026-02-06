@@ -570,8 +570,16 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           placeholder="Ej: Sin cebolla, más salsa..."
           value={specialNotes}
           onChange={(e) => setSpecialNotes(e.target.value)}
-          className="min-h-[80px] rounded-xl resize-none bg-card text-white border-border placeholder:text-muted-foreground text-base"
-          style={{ fontSize: '16px' }}
+          className="min-h-[80px] rounded-xl resize-none bg-card text-white border-border placeholder:text-muted-foreground"
+          style={{ 
+            fontSize: '16px',
+            WebkitTextSizeAdjust: '100%',
+            lineHeight: '1.5'
+          }}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="sentences"
+          spellCheck="true"
         />
       </div>
     </div>
@@ -641,7 +649,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         <DrawerContent className="customer-app max-h-[90vh] h-[90vh] flex flex-col bg-background text-white">
           <div className="mx-auto w-full max-w-lg flex flex-col flex-1 overflow-hidden">
             {/* Scrollable content - includes image */}
-            <div className="flex-1 overflow-y-auto overscroll-contain">
+            <div className="flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
               <div className="pb-4">
                 {/* Product image - now scrollable */}
                 <ProductImage className="h-48 w-full" />
