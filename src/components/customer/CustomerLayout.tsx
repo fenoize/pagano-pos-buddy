@@ -38,7 +38,12 @@ export function CustomerLayout({ children, title, showBackButton = true }: Custo
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
             {showBackButton && (
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate(-1)}
+                className="text-white hover:text-primary hover:bg-transparent"
+              >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             )}
@@ -55,7 +60,11 @@ export function CustomerLayout({ children, title, showBackButton = true }: Custo
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full text-white hover:text-primary hover:bg-transparent"
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={customer?.avatar_url || undefined} />
                     <AvatarFallback>
