@@ -154,12 +154,12 @@ export default function MyOrders() {
       <div className="mb-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Label className="text-foreground">Estado</Label>
+            <Label className="text-white mb-2 block">Estado</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-background text-foreground border-border">
+              <SelectTrigger className="bg-card text-white border-border">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
-              <SelectContent className="bg-background text-foreground border-border">
+              <SelectContent className="customer-app bg-card text-white border-border">
                 <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="Pendiente">Pendiente</SelectItem>
                 <SelectItem value="En preparación">En preparación</SelectItem>
@@ -170,21 +170,21 @@ export default function MyOrders() {
             </Select>
           </div>
           <div>
-            <Label className="text-foreground">Desde</Label>
+            <Label className="text-white mb-2 block">Desde</Label>
             <Input 
               type="date" 
               value={dateFrom} 
               onChange={(e) => setDateFrom(e.target.value)} 
-              className="bg-background text-foreground border-border [color-scheme:dark]"
+              className="bg-card text-white border-border [&::-webkit-calendar-picker-indicator]:invert"
             />
           </div>
           <div>
-            <Label className="text-foreground">Hasta</Label>
+            <Label className="text-white mb-2 block">Hasta</Label>
             <Input 
               type="date" 
               value={dateTo} 
               onChange={(e) => setDateTo(e.target.value)} 
-              className="bg-background text-foreground border-border [color-scheme:dark]"
+              className="bg-card text-white border-border [&::-webkit-calendar-picker-indicator]:invert"
             />
           </div>
         </div>

@@ -209,6 +209,35 @@ All colors MUST be HSL and themed for light/dark modes.
     @apply text-white;
   }
 
+  /* Inputs in customer app - ensure text visibility */
+  .customer-app input,
+  .customer-app select,
+  .customer-app textarea {
+    color: white !important;
+  }
+
+  .customer-app input::placeholder,
+  .customer-app textarea::placeholder {
+    color: hsl(210 6% 69%) !important;
+  }
+
+  /* Date inputs in customer app */
+  .customer-app input[type="date"],
+  .customer-app input[type="time"],
+  .customer-app input[type="datetime-local"] {
+    color-scheme: dark;
+  }
+
+  /* Select content items in customer app */
+  .customer-app [role="option"] {
+    @apply text-white;
+  }
+
+  .customer-app [role="option"]:hover,
+  .customer-app [role="option"][data-highlighted] {
+    @apply bg-muted text-white;
+  }
+
   /* Dark mode headings */
   .dark h1,
   .dark h2,
