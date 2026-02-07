@@ -7,7 +7,13 @@ const corsHeaders = {
 };
 
 interface ManageAuthRequest {
-  action: 'resend_verification' | 'confirm_email' | 'update_password' | 'update_email' | 'get_auth_status';
+  action:
+    | 'resend_verification'
+    | 'confirm_email'
+    | 'update_password'
+    | 'update_email'
+    | 'activate_credentials'
+    | 'get_auth_status';
   customer_id: string;
   new_password?: string;
   new_email?: string;
@@ -157,6 +163,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Validación extra: verificar que el usuario de Auth existe (evita estados “fantasma”)
+    const { data: existingAuthUser, error: existingAuthUserError } = await supabase.auth.admin.getUserById(customer.auth_user_id);
+    if (existingAuthUserError || !existingAuthUser?.user) {
+      return new Response(
+        JSON.stringify({ error: 'La cuenta de Auth vinculada no existe (auth_user_id inválido). Debes re-registrar al cliente o vincularlo nuevamente.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
     switch (action) {
       case 'resend_verification': {
         // Get the user's email
@@ -273,7 +288,11 @@ const handler = async (req: Request): Promise<Response> => {
 
         const { error: passwordError } = await supabase.auth.admin.updateUserById(
           customer.auth_user_id,
-          { password: new_password }
+          {
+            password: new_password,
+            // Asegura que quede activo y funcional en flujos donde el email confirmation bloquea al cliente
+            email_confirm: true,
+          }
         );
 
         if (passwordError) {
@@ -298,10 +317,12 @@ const handler = async (req: Request): Promise<Response> => {
           );
         }
 
+        const targetEmail = new_email.trim().toLowerCase();
+
         // Update email in Supabase Auth
         const { error: emailError } = await supabase.auth.admin.updateUserById(
           customer.auth_user_id,
-          { email: new_email, email_confirm: true }
+          { email: targetEmail, email_confirm: true }
         );
 
         if (emailError) {
@@ -315,16 +336,70 @@ const handler = async (req: Request): Promise<Response> => {
         // Also update email in customers table
         const { error: customerUpdateError } = await supabase
           .from('customers')
-          .update({ email: new_email })
+          .update({ email: targetEmail })
           .eq('id', customer_id);
 
         if (customerUpdateError) {
           console.error('Error updating customer email:', customerUpdateError);
-          // Don't fail - auth email was already updated
         }
 
         return new Response(
           JSON.stringify({ success: true, message: 'Email actualizado correctamente' }),
+          { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+
+      case 'activate_credentials': {
+        if (!new_email || !new_email.includes('@')) {
+          return new Response(
+            JSON.stringify({ error: 'Email inválido' }),
+            { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
+        }
+        if (!new_password || new_password.length < 6) {
+          return new Response(
+            JSON.stringify({ error: 'La contraseña debe tener al menos 6 caracteres' }),
+            { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
+        }
+
+        const targetEmail = new_email.trim().toLowerCase();
+
+        // Database-first check: re-leer usuario de Auth para evitar estados stale
+        const { data: freshAuthUser, error: freshAuthError } = await supabase.auth.admin.getUserById(customer.auth_user_id);
+        if (freshAuthError || !freshAuthUser?.user) {
+          return new Response(
+            JSON.stringify({ error: 'Cuenta de Auth no encontrada (posible eliminación previa)' }),
+            { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
+        }
+
+        const { error: updateError } = await supabase.auth.admin.updateUserById(customer.auth_user_id, {
+          email: targetEmail,
+          password: new_password,
+          email_confirm: true,
+        });
+
+        if (updateError) {
+          console.error('Error activating credentials:', updateError);
+          return new Response(
+            JSON.stringify({ error: 'Error al activar credenciales: ' + updateError.message }),
+            { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
+        }
+
+        // Mantener customers.email sincronizado
+        const { error: customerUpdateError } = await supabase
+          .from('customers')
+          .update({ email: targetEmail, estado_cliente: 'Activo' })
+          .eq('id', customer_id);
+
+        if (customerUpdateError) {
+          console.error('Error syncing customer after activate:', customerUpdateError);
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Acceso activado: email y contraseña actualizados, email verificado.' }),
           { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
         );
       }

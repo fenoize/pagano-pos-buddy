@@ -31,6 +31,8 @@ interface AuthStatus {
   message?: string;
 }
 
+type ManageAction = 'resend_verification' | 'confirm_email' | 'update_password' | 'update_email' | 'activate_credentials';
+
 interface CustomerAuthManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -49,6 +51,8 @@ export function CustomerAuthManagementModal({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const [activeTab, setActiveTab] = useState('status');
   const { toast } = useToast();
 
@@ -100,10 +104,12 @@ export function CustomerAuthManagementModal({
       setActiveTab('status');
       setPassword('');
       setShowPassword(false);
+      setNewEmail(customer.email || '');
+      setShowEmailForm(false);
     }
   }, [isOpen, customer?.id]);
 
-  const handleAction = async (action: 'resend_verification' | 'confirm_email' | 'update_password') => {
+  const handleAction = async (action: ManageAction) => {
     if (!customer?.id) return;
 
     setActionLoading(action);
@@ -116,7 +122,7 @@ export function CustomerAuthManagementModal({
         customer_id: customer.id,
       };
 
-      if (action === 'update_password') {
+      if (action === 'update_password' || action === 'activate_credentials') {
         if (!password || password.length < 6) {
           toast({
             title: "Error",
@@ -126,6 +132,18 @@ export function CustomerAuthManagementModal({
           return;
         }
         body.new_password = password;
+      }
+
+      if (action === 'update_email' || action === 'activate_credentials') {
+        if (!newEmail || !newEmail.includes('@')) {
+          toast({
+            title: "Error",
+            description: "Email inválido",
+            variant: "destructive"
+          });
+          return;
+        }
+        body.new_email = newEmail;
       }
 
       const response = await fetch(
@@ -153,10 +171,14 @@ export function CustomerAuthManagementModal({
 
       // Refresh auth status
       await fetchAuthStatus();
-      
-      if (action === 'update_password') {
+
+      if (action === 'update_password' || action === 'activate_credentials') {
         setPassword('');
         setShowPassword(false);
+      }
+
+      if (action === 'update_email' || action === 'activate_credentials') {
+        setShowEmailForm(false);
       }
 
       onAuthUpdated?.();
@@ -202,6 +224,8 @@ export function CustomerAuthManagementModal({
     setAuthStatus(null);
     setPassword('');
     setShowPassword(false);
+    setNewEmail(customer?.email || '');
+    setShowEmailForm(false);
     onClose();
   };
 
@@ -243,16 +267,34 @@ export function CustomerAuthManagementModal({
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="status">Estado</TabsTrigger>
               <TabsTrigger value="verification">Verificación</TabsTrigger>
-              <TabsTrigger value="password">Contraseña</TabsTrigger>
+              <TabsTrigger value="password">Acceso</TabsTrigger>
             </TabsList>
 
             {/* Status Tab */}
             <TabsContent value="status" className="space-y-4 mt-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <span className="text-sm font-medium">Email</span>
-                  <span className="text-sm text-muted-foreground">{authStatus.email || 'No disponible'}</span>
+                  <span className="text-sm font-medium">Email (Auth)</span>
+                  <span className="text-sm text-muted-foreground break-all text-right max-w-[60%]">
+                    {authStatus.email || 'No disponible'}
+                  </span>
                 </div>
+
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm font-medium">Email (Cliente)</span>
+                  <span className="text-sm text-muted-foreground break-all text-right max-w-[60%]">
+                    {customer?.email || 'No disponible'}
+                  </span>
+                </div>
+
+                {!!authStatus.email && !!customer?.email && authStatus.email.toLowerCase() !== customer.email.toLowerCase() && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Hay una inconsistencia: el email en Auth no coincide con el del cliente. Esto provoca “Invalid login credentials” aunque la contraseña sea correcta.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <span className="text-sm font-medium">Estado de verificación</span>
@@ -268,6 +310,50 @@ export function CustomerAuthManagementModal({
                     </Badge>
                   )}
                 </div>
+
+                {!showEmailForm ? (
+                  <Button
+                    onClick={() => setShowEmailForm(true)}
+                    disabled={actionLoading !== null}
+                    className="w-full justify-start"
+                    variant="outline"
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    Corregir email de acceso
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="new-email">Email de acceso</Label>
+                    <Input
+                      id="new-email"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="correo@dominio.com"
+                      disabled={actionLoading !== null}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleAction('update_email')}
+                        disabled={actionLoading !== null || !newEmail || !newEmail.includes('@')}
+                        className="flex-1"
+                      >
+                        Guardar email
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setNewEmail(customer?.email || '');
+                          setShowEmailForm(false);
+                        }}
+                        disabled={actionLoading !== null}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {authStatus.email_confirmed_at && (
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -359,6 +445,26 @@ export function CustomerAuthManagementModal({
             {/* Password Tab */}
             <TabsContent value="password" className="space-y-4 mt-4">
               <div className="space-y-4">
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Si el cliente viene de Google y/o el email en Auth está mal, usa “Activar acceso” para dejar email + contraseña + verificación consistentes.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-2">
+                  <Label htmlFor="new-email-inline">Email de acceso</Label>
+                  <Input
+                    id="new-email-inline"
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="correo@dominio.com"
+                    disabled={actionLoading !== null}
+                    className="bg-muted/50"
+                  />
+                </div>
+
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
@@ -373,7 +479,7 @@ export function CustomerAuthManagementModal({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">Nueva contraseña</Label>
+                  <Label htmlFor="new-password">Contraseña</Label>
                   <div className="relative">
                     <Input
                       id="new-password"
@@ -413,23 +519,45 @@ export function CustomerAuthManagementModal({
                 </div>
 
                 <Button
-                  onClick={() => handleAction('update_password')}
-                  disabled={actionLoading !== null || !password || password.length < 6}
+                  onClick={() => handleAction('activate_credentials')}
+                  disabled={
+                    actionLoading !== null ||
+                    !newEmail ||
+                    !newEmail.includes('@') ||
+                    !password ||
+                    password.length < 6
+                  }
                   className="w-full"
                 >
-                  {actionLoading === 'update_password' ? (
+                  {actionLoading === 'activate_credentials' ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
-                    <KeyRound className="w-4 h-4 mr-2" />
+                    <UserCheck className="w-4 h-4 mr-2" />
                   )}
-                  Aplicar nueva contraseña
+                  Activar acceso (email + contraseña)
                 </Button>
+
+                <div className="grid gap-2">
+                  <Button
+                    onClick={() => handleAction('update_password')}
+                    disabled={actionLoading !== null || !password || password.length < 6}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {actionLoading === 'update_password' ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <KeyRound className="w-4 h-4 mr-2" />
+                    )}
+                    Solo actualizar contraseña
+                  </Button>
+                </div>
 
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-xs">
-                    Al cambiar la contraseña, el cliente deberá usar la nueva contraseña para iniciar sesión.
-                    Se recomienda comunicarle la nueva contraseña de forma segura.
+                    Se recomienda comunicar la contraseña de forma segura. 
+                    Si el login sigue fallando, revisa que “Email (Auth)” sea el mismo que el email ingresado por el cliente.
                   </AlertDescription>
                 </Alert>
               </div>
