@@ -7,9 +7,10 @@ const corsHeaders = {
 };
 
 interface ManageAuthRequest {
-  action: 'resend_verification' | 'confirm_email' | 'update_password' | 'get_auth_status';
+  action: 'resend_verification' | 'confirm_email' | 'update_password' | 'update_email' | 'get_auth_status';
   customer_id: string;
   new_password?: string;
+  new_email?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -83,7 +84,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { action, customer_id, new_password }: ManageAuthRequest = await req.json();
+    const { action, customer_id, new_password, new_email }: ManageAuthRequest = await req.json();
 
     if (!action || !customer_id) {
       return new Response(
@@ -285,6 +286,45 @@ const handler = async (req: Request): Promise<Response> => {
 
         return new Response(
           JSON.stringify({ success: true, message: 'Contraseña actualizada correctamente' }),
+          { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+
+      case 'update_email': {
+        if (!new_email || !new_email.includes('@')) {
+          return new Response(
+            JSON.stringify({ error: 'Email inválido' }),
+            { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
+        }
+
+        // Update email in Supabase Auth
+        const { error: emailError } = await supabase.auth.admin.updateUserById(
+          customer.auth_user_id,
+          { email: new_email, email_confirm: true }
+        );
+
+        if (emailError) {
+          console.error('Error updating email:', emailError);
+          return new Response(
+            JSON.stringify({ error: 'Error al actualizar email en Auth: ' + emailError.message }),
+            { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
+        }
+
+        // Also update email in customers table
+        const { error: customerUpdateError } = await supabase
+          .from('customers')
+          .update({ email: new_email })
+          .eq('id', customer_id);
+
+        if (customerUpdateError) {
+          console.error('Error updating customer email:', customerUpdateError);
+          // Don't fail - auth email was already updated
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Email actualizado correctamente' }),
           { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
         );
       }
