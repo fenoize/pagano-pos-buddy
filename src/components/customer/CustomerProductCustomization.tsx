@@ -664,14 +664,14 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
 
                 {/* Customization content */}
                 <div className="px-4">
-                  <CustomizationContent />
+                  {CustomizationContent()}
                 </div>
               </div>
             </div>
 
             {/* Fixed bottom action bar */}
             <div className="flex-shrink-0 border-t border-border bg-background p-4">
-              <ActionBar />
+              {ActionBar()}
             </div>
           </div>
         </DrawerContent>
@@ -722,13 +722,13 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           {/* Scrollable customization content */}
           <div className="flex-1 overflow-y-auto min-h-0">
             <div className="px-6 py-4">
-              <CustomizationContent />
+              {CustomizationContent()}
             </div>
           </div>
 
           {/* Fixed bottom action bar - always visible */}
           <div className="flex-shrink-0 border-t border-border bg-background p-4">
-            <ActionBar />
+            {ActionBar()}
           </div>
         </div>
       </DialogContent>
