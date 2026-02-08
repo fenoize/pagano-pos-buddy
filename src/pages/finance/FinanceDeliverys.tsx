@@ -477,6 +477,7 @@ export default function FinanceDeliverys() {
                   <TableHead>Fecha</TableHead>
                   <TableHead>Orden</TableHead>
                   <TableHead>Repartidor</TableHead>
+                  <TableHead>Dirección</TableHead>
                   <TableHead className="text-right">Monto</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha Pago</TableHead>
@@ -507,6 +508,9 @@ export default function FinanceDeliverys() {
                       #{payment.order?.order_number}
                     </TableCell>
                     <TableCell>{payment.delivery_person?.full_name || 'Sin asignar'}</TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={payment.order?.delivery_address || '-'}>
+                      {payment.order?.delivery_address || '-'}
+                    </TableCell>
                     <TableCell className="text-right font-medium">
                       {formatCurrency(payment.base_amount)}
                     </TableCell>
