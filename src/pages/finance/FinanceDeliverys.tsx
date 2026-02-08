@@ -32,6 +32,7 @@ export default function FinanceDeliverys() {
 
   const { payments, loading, fetchPayments, processPayments, getPaymentStats } = useDeliveryPayments();
 
+  // Load repartidores list on mount
   useEffect(() => {
     const loadRepartidores = async () => {
       try {
@@ -55,6 +56,12 @@ export default function FinanceDeliverys() {
     };
 
     loadRepartidores();
+  }, []);
+
+  // Auto-load data on mount with initial filters
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
