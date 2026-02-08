@@ -114,6 +114,13 @@ export function useDeliveryPayments() {
         return true;
       });
 
+      // Ordenar por número de orden de forma correlativa (ascendente)
+      filtered.sort((a, b) => {
+        const orderNumA = parseInt(a.order?.order_number || '0', 10);
+        const orderNumB = parseInt(b.order?.order_number || '0', 10);
+        return orderNumA - orderNumB;
+      });
+
       setPayments(filtered);
     } catch (error) {
       console.error('Error fetching delivery payments:', error);
