@@ -29,6 +29,7 @@ export default function FinanceDeliverys() {
   const [repartidores, setRepartidores] = useState<Array<{id: string, name: string}>>([]);
   const [selectedPaymentIds, setSelectedPaymentIds] = useState<Set<string>>(new Set());
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   const { payments, loading, fetchPayments, processPayments, getPaymentStats } = useDeliveryPayments();
 
@@ -58,11 +59,48 @@ export default function FinanceDeliverys() {
     loadRepartidores();
   }, []);
 
-  // Auto-load data on mount with initial filters
+  // Auto-detect most recent data and load with adjusted date range
   useEffect(() => {
-    loadData();
+    const initializeWithLatestData = async () => {
+      if (initialLoadDone) return;
+      
+      try {
+        // Check for most recent delivery payment date
+        const { data } = await supabase
+          .from('delivery_payments')
+          .select('created_at')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (data && data.length > 0) {
+          const latestDate = new Date(data[0].created_at);
+          const latestWeekStart = startOfWeek(latestDate, { weekStartsOn: 1 });
+          const latestWeekEnd = endOfWeek(latestDate, { weekStartsOn: 1 });
+          
+          // If latest data is before current week, adjust the date range
+          const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+          if (latestWeekStart < currentWeekStart) {
+            setStartDate(latestWeekStart);
+            setEndDate(latestWeekEnd);
+          }
+        }
+      } catch (error) {
+        console.error('Error detecting latest data:', error);
+      } finally {
+        setInitialLoadDone(true);
+      }
+    };
+
+    initializeWithLatestData();
+  }, [initialLoadDone]);
+
+  // Load data when initial detection is done
+  useEffect(() => {
+    if (initialLoadDone) {
+      loadData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialLoadDone]);
 
   const loadData = async () => {
     const [startHour, startMinute] = startTime.split(':').map(Number);
