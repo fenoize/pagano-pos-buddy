@@ -185,7 +185,8 @@ export default function CustomerMenu() {
 
   // Filtrado avanzado con búsqueda y categorías
   const filteredProducts = useMemo(() => {
-    let filtered = products;
+    // Primero filtrar productos que tengan precio válido
+    let filtered = products.filter(p => getMinPrice(p) !== null);
 
     // Filtrar por búsqueda si hay término de búsqueda (mínimo 2 caracteres)
     if (searchTerm.trim().length >= 2) {
@@ -202,6 +203,13 @@ export default function CustomerMenu() {
       );
     }
 
+    // Ordenar por precio de menor a mayor
+    filtered.sort((a, b) => {
+      const priceA = getMinPrice(a) || 0;
+      const priceB = getMinPrice(b) || 0;
+      return priceA - priceB;
+    });
+
     return filtered;
   }, [products, searchTerm, selectedCategory]);
 
@@ -215,8 +223,11 @@ export default function CustomerMenu() {
     const groups: { category: Category; products: Product[] }[] = [];
     const productsByCategory = new Map<string, Product[]>();
 
+    // Filtrar solo productos con precio válido
+    const productsWithPrice = products.filter(p => getMinPrice(p) !== null);
+
     // Agrupar productos por categoría
-    products.forEach(product => {
+    productsWithPrice.forEach(product => {
       product.categories?.forEach(cat => {
         if (!productsByCategory.has(cat.id)) {
           productsByCategory.set(cat.id, []);
@@ -240,6 +251,12 @@ export default function CustomerMenu() {
     sortedCategories.forEach(category => {
       const categoryProducts = productsByCategory.get(category.id) || [];
       if (categoryProducts.length > 0) {
+        // Ordenar productos dentro de cada categoría por precio (menor a mayor)
+        categoryProducts.sort((a, b) => {
+          const priceA = getMinPrice(a) || 0;
+          const priceB = getMinPrice(b) || 0;
+          return priceA - priceB;
+        });
         groups.push({ category, products: categoryProducts });
       }
     });
