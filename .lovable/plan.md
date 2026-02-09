@@ -1,51 +1,73 @@
 
 
-# Mostrar TODOS los productos en el menu del cliente (sin ocultar ninguno)
+# Cargar precios de productos COMBO en el menu del cliente
 
-## Problema detectado
+## Problema
 
-El hook `useCustomerMenuProducts.ts` tiene **dos filtros** que ocultan productos:
+Los productos tipo COMBO (Promo Summer 2X, Promo Thor, Invok2) guardan su precio en la tabla `combo_products` (campo `base_price`), pero el hook `useCustomerMenuProducts` solo busca precios en:
+- `product_variant_options` (sistema de variantes)
+- Campo `prices` JSON del producto (sistema legacy)
 
-1. **Linea 137**: Filtra productos sin categoria visible --> oculta "Porciones Telelon" (0 categorias visibles)
-2. **Linea 139**: Filtra productos donde `getProductMinPrice()` retorna `null` --> oculta **Promo Summer 2X** y **Promo Thor** porque no tienen variantes ni precios legacy configurados
+Como resultado, `getProductMinPrice()` retorna `null` para estos productos y aparecen con "Ver opciones" en vez de su precio real.
 
-Productos afectados actualmente:
-- **Promo Summer 2X** - tiene categoria visible pero 0 variantes y precios vacios
-- **Promo Thor** - tiene categoria visible pero 0 variantes y precios vacios
-- **Porciones Telelon** - sin categoria visible (problema aparte)
+```text
+Tabla combo_products (datos actuales):
++-----------------+---------------+------------+
+| Producto        | pricing_mode  | base_price |
++-----------------+---------------+------------+
+| Promo Summer 2X | fixed         | $9.990     |
+| Promo Thor      | fixed         | $10.990    |
+| Invok2          | fixed         | $17.990    |
++-----------------+---------------+------------+
+```
 
 ## Solucion
 
-### Archivo: `src/hooks/useCustomerMenuProducts.ts`
+### 1. Hook: incluir datos de combo en la query (`useCustomerMenuProducts.ts`)
 
-1. **Eliminar el filtro de precio** (linea 139) - ya no se excluiran productos sin precio
-2. **Mantener el filtro de categoria visible** (linea 137) - un producto sin categoria no puede mostrarse en ninguna seccion
-
-### Archivo: `src/pages/customer/CustomerMenu.tsx`
-
-3. **Ajustar el formato de precio** - Cuando `getProductMinPrice()` retorne `null`, mostrar un texto alternativo como "Ver opciones" en vez de "Consultar", para que el cliente entienda que debe abrir el producto
-4. **Ajustar el ordenamiento** - Los productos sin precio se colocaran al final de cada categoria (despues de los que si tienen precio)
-
-## Detalles tecnicos
+Agregar `combo_products` al SELECT de productos mediante la relacion existente:
 
 ```text
-Antes (hook):
-  .filter(product => product.categories.length > 0)  // mantener
-  .filter(product => getProductMinPrice(product) !== null)  // ELIMINAR
-
-Despues (hook):
-  .filter(product => product.categories.length > 0)  // solo este filtro
-
-Ordenamiento dentro de categorias:
-  sort((a, b) => {
-    const priceA = getProductMinPrice(a);
-    const priceB = getProductMinPrice(b);
-    if (priceA === null && priceB === null) return 0;
-    if (priceA === null) return 1;  // sin precio al final
-    if (priceB === null) return -1;
-    return priceA - priceB;  // menor a mayor
-  })
+product_variant_options(...),
+combo_products(
+  base_price,
+  pricing_mode,
+  active
+)
 ```
 
-Esto garantiza que **ningun producto activo y visible en app** quede oculto, independientemente de si tiene precio configurado o no.
+### 2. Interfaz: agregar campo `comboPrice` al tipo `MenuProduct`
+
+Agregar un campo opcional `comboPrice: number | null` que almacene el `base_price` del combo activo.
+
+### 3. Funcion `getProductMinPrice`: considerar precio de combo
+
+Agregar una tercera fuente de precio:
+
+```text
+Orden de busqueda:
+1. Variantes activas (product_variant_options)
+2. Precios legacy (campo prices JSON)
+3. Precio de combo (combo_products.base_price)  <-- NUEVO
+
+Retorna el minimo de todos los encontrados.
+```
+
+### Detalles tecnicos
+
+**Archivo: `src/hooks/useCustomerMenuProducts.ts`**
+
+- En la query de productos, agregar `combo_products(base_price, pricing_mode, active)` al SELECT
+- En la transformacion del producto, extraer el `base_price` del primer combo activo y guardarlo como `comboPrice`
+- En `getProductMinPrice()`, si el producto tiene `comboPrice > 0`, incluirlo en la lista de precios candidatos
+- En la interfaz `MenuProduct`, agregar `comboPrice?: number | null`
+
+No se requieren cambios en `CustomerMenu.tsx` ya que este ya usa `getProductMinPrice()` para mostrar el precio.
+
+## Resultado esperado
+
+- Promo Summer 2X mostrara **$9.990**
+- Promo Thor mostrara **$10.990**
+- Invok2 mostrara **$17.990**
+- Todos los demas productos seguiran funcionando igual
 
