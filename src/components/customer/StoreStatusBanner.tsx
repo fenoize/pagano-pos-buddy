@@ -71,9 +71,9 @@ export function StoreStatusBanner({ onStatusChange }: StoreStatusBannerProps) {
   // Cash session is not accepting app orders (paused)
   if (!storeStatus.accept_app_orders) {
     return (
-      <Alert className="border-orange-500/50 bg-orange-500/10">
-        <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-        <AlertDescription className="text-orange-800 dark:text-orange-200">
+      <Alert className="border-amber-400 bg-amber-500/20">
+        <AlertCircle className="h-4 w-4 text-amber-300" />
+        <AlertDescription className="text-amber-100 font-medium">
           El local está en pausa y no está recibiendo pedidos en este momento. Por favor, intenta más tarde.
         </AlertDescription>
       </Alert>
