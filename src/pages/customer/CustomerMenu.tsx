@@ -1,59 +1,33 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { configuredSupabase } from '@/lib/supabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Plus, Flame, Search, X } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { useCart } from '@/contexts/CartContext';
 import { CustomerProductCustomization } from '@/components/customer/CustomerProductCustomization';
-import { toast } from 'sonner';
-
-interface Product {
-  id: string;
-  name: string;
-  image_url?: string;
-  category?: string;
-  active: boolean;
-  show_in_app?: boolean;
-  categories?: Array<{ id: string; name: string; }>;
-  prices?: any; // JSON de la DB con estructura { combo: {...}, only: {...} }
-  variants?: Array<{
-    price: number;
-    active: boolean;
-  }>;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  active: boolean;
-}
+import { useCustomerMenuProducts, getProductMinPrice, MenuProduct, MenuCategory } from '@/hooks/useCustomerMenuProducts';
 
 export default function CustomerMenu() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { data, isLoading } = useCustomerMenuProducts();
+  const products = data?.products || [];
+  const categories = data?.categories || [];
+  
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<MenuProduct | null>(null);
   const [showCustomization, setShowCustomization] = useState(false);
   const { addItem } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   // Deep linking: abrir producto automáticamente si viene desde una promoción
   useEffect(() => {
     const productId = searchParams.get('product');
-    if (productId && products.length > 0 && !loading) {
+    if (productId && products.length > 0 && !isLoading) {
       const product = products.find(p => p.id === productId);
       if (product) {
         setSelectedProduct(product);
@@ -63,105 +37,7 @@ export default function CustomerMenu() {
         setSearchParams(searchParams, { replace: true });
       }
     }
-  }, [searchParams, products, loading]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Fetch categories visible in app
-      const { data: categoriesData, error: categoriesError } = await configuredSupabase
-        .from('categories')
-        .select('*')
-        .eq('active', true)
-        .eq('show_in_app', true)
-        .order('display_order', { ascending: true });
-
-      if (categoriesError) throw categoriesError;
-
-      // Fetch products that are active and visible in app
-      const { data: productsData, error: productsError } = await configuredSupabase
-        .from('products')
-        .select(`
-          *,
-          product_categories(
-            category_id,
-            categories(
-              id,
-              name,
-              show_in_app,
-              active
-            )
-          ),
-          product_variant_options(
-            id,
-            price,
-            active
-          )
-        `)
-        .eq('active', true)
-        .eq('show_in_app', true)
-        .order('name', { ascending: true });
-
-      if (productsError) throw productsError;
-
-      setCategories(categoriesData || []);
-      
-      // Transform products data and filter by category visibility
-      const transformedProducts = productsData
-        ?.map(product => ({
-          ...product,
-          categories: product.product_categories
-            ?.map((pc: any) => ({
-              id: pc.categories?.id,
-              name: pc.categories?.name,
-              show_in_app: pc.categories?.show_in_app,
-              active: pc.categories?.active
-            }))
-            .filter((cat: any) => cat.active && cat.show_in_app) || [],
-          variants: product.product_variant_options || []
-        }))
-        // Only include products that have at least one visible category
-        .filter(product => product.categories && product.categories.length > 0) || [];
-      
-      setProducts(transformedProducts);
-    } catch (error: any) {
-      console.error('Error fetching menu data:', error);
-      toast.error('Error al cargar el menú');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Calcular precio mínimo de un producto
-  const getMinPrice = (product: Product): number | null => {
-    const prices: number[] = [];
-    
-    // Revisar sistema nuevo de variantes
-    if (product.variants && product.variants.length > 0) {
-      const variantPrices = product.variants
-        .filter(v => v.active)
-        .map(v => v.price)
-        .filter(p => p > 0);
-      prices.push(...variantPrices);
-    }
-    
-    // Revisar sistema legacy
-    if (product.prices && typeof product.prices === 'object') {
-      const priceObj = product.prices as any;
-      if (priceObj.combo) {
-        Object.values(priceObj.combo).forEach((price: any) => {
-          if (typeof price === 'number' && price > 0) prices.push(price);
-        });
-      }
-      if (priceObj.only) {
-        Object.values(priceObj.only).forEach((price: any) => {
-          if (typeof price === 'number' && price > 0) prices.push(price);
-        });
-      }
-    }
-    
-    return prices.length > 0 ? Math.min(...prices) : null;
-  };
+  }, [searchParams, products, isLoading]);
 
   // Formatear precio en CLP
   const formatPrice = (price: number | null): string => {
@@ -173,7 +49,7 @@ export default function CustomerMenu() {
     }).format(price);
   };
 
-  const handleProductClick = (product: Product) => {
+  const handleProductClick = (product: MenuProduct) => {
     setSelectedProduct(product);
     setShowCustomization(true);
   };
@@ -185,8 +61,8 @@ export default function CustomerMenu() {
 
   // Filtrado avanzado con búsqueda y categorías
   const filteredProducts = useMemo(() => {
-    // Primero filtrar productos que tengan precio válido
-    let filtered = products.filter(p => getMinPrice(p) !== null);
+    // Los productos ya vienen filtrados con precio válido desde el hook
+    let filtered = [...products];
 
     // Filtrar por búsqueda si hay término de búsqueda (mínimo 2 caracteres)
     if (searchTerm.trim().length >= 2) {
@@ -199,14 +75,14 @@ export default function CustomerMenu() {
     // Filtrar por categoría solo si no hay búsqueda activa
     if (searchTerm.trim().length < 2 && selectedCategory !== 'all') {
       filtered = filtered.filter(p => 
-        p.categories?.some(cat => cat.id === selectedCategory)
+        p.categories?.some((cat: { id: string }) => cat.id === selectedCategory)
       );
     }
 
     // Ordenar por precio de menor a mayor
     filtered.sort((a, b) => {
-      const priceA = getMinPrice(a) || 0;
-      const priceB = getMinPrice(b) || 0;
+      const priceA = getProductMinPrice(a) || 0;
+      const priceB = getProductMinPrice(b) || 0;
       return priceA - priceB;
     });
 
@@ -220,11 +96,11 @@ export default function CustomerMenu() {
       return null;
     }
 
-    const groups: { category: Category; products: Product[] }[] = [];
-    const productsByCategory = new Map<string, Product[]>();
+    const groups: { category: MenuCategory; products: MenuProduct[] }[] = [];
+    const productsByCategory = new Map<string, MenuProduct[]>();
 
-    // Filtrar solo productos con precio válido
-    const productsWithPrice = products.filter(p => getMinPrice(p) !== null);
+    // Los productos ya vienen filtrados con precio válido desde el hook
+    const productsWithPrice = [...products];
 
     // Agrupar productos por categoría
     productsWithPrice.forEach(product => {
@@ -253,8 +129,8 @@ export default function CustomerMenu() {
       if (categoryProducts.length > 0) {
         // Ordenar productos dentro de cada categoría por precio (menor a mayor)
         categoryProducts.sort((a, b) => {
-          const priceA = getMinPrice(a) || 0;
-          const priceB = getMinPrice(b) || 0;
+          const priceA = getProductMinPrice(a) || 0;
+          const priceB = getProductMinPrice(b) || 0;
           return priceA - priceB;
         });
         groups.push({ category, products: categoryProducts });
@@ -276,7 +152,7 @@ export default function CustomerMenu() {
     setSearchTerm('');
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="customer-app min-h-screen pb-20 bg-background">
         <div className="max-w-screen-xl mx-auto p-4 space-y-6">
@@ -416,7 +292,7 @@ export default function CustomerMenu() {
                           
                           <div className="flex items-center justify-between mt-auto">
                             <p className="text-primary font-bold text-lg">
-                              {formatPrice(getMinPrice(product))}
+                              {formatPrice(getProductMinPrice(product))}
                             </p>
                             <Button
                               size="icon"
@@ -483,7 +359,7 @@ export default function CustomerMenu() {
                     
                     <div className="flex items-center justify-between mt-auto">
                       <p className="text-primary font-bold text-lg">
-                        {formatPrice(getMinPrice(product))}
+                        {formatPrice(getProductMinPrice(product))}
                       </p>
                       <Button
                         size="icon"
