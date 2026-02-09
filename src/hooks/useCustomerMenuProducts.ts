@@ -142,9 +142,14 @@ export function useCustomerMenuProducts() {
               .filter((cat: any) => cat.active && cat.show_in_app),
             variants: product.product_variant_options || [],
             comboPrice: (() => {
-              const combos = product.combo_products || [];
-              const activeCombo = combos.find((c: any) => c.active);
-              return activeCombo ? activeCombo.base_price : null;
+              const combo = product.combo_products;
+              if (!combo) return null;
+              // PostgREST one-to-one returns object, not array
+              if (Array.isArray(combo)) {
+                const activeCombo = combo.find((c: any) => c.active);
+                return activeCombo ? activeCombo.base_price : null;
+              }
+              return combo.active ? combo.base_price : null;
             })()
           };
           return transformedProduct;
