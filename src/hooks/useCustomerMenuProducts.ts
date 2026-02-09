@@ -134,9 +134,7 @@ export function useCustomerMenuProducts() {
           return transformedProduct;
         })
         // Solo incluir productos con al menos una categoría visible
-        .filter(product => product.categories && product.categories.length > 0)
-        // Solo incluir productos con precio válido
-        .filter(product => getProductMinPrice(product) !== null);
+        .filter(product => product.categories && product.categories.length > 0);
 
       return { products, categories };
     },

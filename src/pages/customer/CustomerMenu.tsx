@@ -41,12 +41,21 @@ export default function CustomerMenu() {
 
   // Formatear precio en CLP
   const formatPrice = (price: number | null): string => {
-    if (price === null) return 'Consultar';
+    if (price === null) return 'Ver opciones';
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
       currency: 'CLP',
       minimumFractionDigits: 0
     }).format(price);
+  };
+
+  const sortByPrice = (a: MenuProduct, b: MenuProduct) => {
+    const priceA = getProductMinPrice(a);
+    const priceB = getProductMinPrice(b);
+    if (priceA === null && priceB === null) return 0;
+    if (priceA === null) return 1;
+    if (priceB === null) return -1;
+    return priceA - priceB;
   };
 
   const handleProductClick = (product: MenuProduct) => {
@@ -80,11 +89,7 @@ export default function CustomerMenu() {
     }
 
     // Ordenar por precio de menor a mayor
-    filtered.sort((a, b) => {
-      const priceA = getProductMinPrice(a) || 0;
-      const priceB = getProductMinPrice(b) || 0;
-      return priceA - priceB;
-    });
+    filtered.sort(sortByPrice);
 
     return filtered;
   }, [products, searchTerm, selectedCategory]);
@@ -128,11 +133,7 @@ export default function CustomerMenu() {
       const categoryProducts = productsByCategory.get(category.id) || [];
       if (categoryProducts.length > 0) {
         // Ordenar productos dentro de cada categoría por precio (menor a mayor)
-        categoryProducts.sort((a, b) => {
-          const priceA = getProductMinPrice(a) || 0;
-          const priceB = getProductMinPrice(b) || 0;
-          return priceA - priceB;
-        });
+        categoryProducts.sort(sortByPrice);
         groups.push({ category, products: categoryProducts });
       }
     });
