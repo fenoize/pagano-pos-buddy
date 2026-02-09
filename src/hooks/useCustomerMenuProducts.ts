@@ -9,6 +9,7 @@ export interface MenuProduct {
   active: boolean;
   show_in_app?: boolean;
   prices?: any;
+  comboPrice?: number | null;
   categories: Array<{ id: string; name: string }>;
   variants: Array<{ price: number; active: boolean }>;
 }
@@ -55,6 +56,11 @@ export function getProductMinPrice(product: MenuProduct): number | null {
     }
   }
   
+  // Sistema combo
+  if (product.comboPrice && product.comboPrice > 0) {
+    prices.push(product.comboPrice);
+  }
+
   return prices.length > 0 ? Math.min(...prices) : null;
 }
 
@@ -100,6 +106,11 @@ export function useCustomerMenuProducts() {
             id,
             price,
             active
+          ),
+          combo_products(
+            base_price,
+            pricing_mode,
+            active
           )
         `)
         .eq('active', true)
@@ -129,7 +140,12 @@ export function useCustomerMenuProducts() {
                 active: pc.categories?.active
               }))
               .filter((cat: any) => cat.active && cat.show_in_app),
-            variants: product.product_variant_options || []
+            variants: product.product_variant_options || [],
+            comboPrice: (() => {
+              const combos = product.combo_products || [];
+              const activeCombo = combos.find((c: any) => c.active);
+              return activeCombo ? activeCombo.base_price : null;
+            })()
           };
           return transformedProduct;
         })
