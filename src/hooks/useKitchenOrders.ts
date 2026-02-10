@@ -133,6 +133,7 @@ export function useKitchenOrders() {
           )
         `)
         .neq('status', 'PendientePago' as any)
+        .neq('status', 'PendienteAceptacion' as any)
         .neq('status', 'Entregado')
         .neq('status', 'Cancelado')
         .order('created_at', { ascending: true });
@@ -221,7 +222,7 @@ export function useKitchenOrders() {
 
       // Revisar si el pedido cambió de estado final a activo (debe volver al KDS)
       const wasInHistory = isInHistory(orderId);
-      const isNowActive = !['Entregado', 'Cancelado', 'PendientePago'].includes(orderWithItems.status);
+      const isNowActive = !['Entregado', 'Cancelado', 'PendientePago', 'PendienteAceptacion'].includes(orderWithItems.status);
 
       if (wasInHistory && isNowActive) {
         console.log(`[KDS] Order #${orderWithItems.order_number} changed from final to active status (${orderWithItems.status}), removing from history`);
@@ -236,10 +237,12 @@ export function useKitchenOrders() {
       }
 
       setOrders(prev => {
-        // Si el pedido está Entregado o Cancelado, agregarlo a history y removerlo del KDS
-        if (orderWithItems.status === 'Entregado' || orderWithItems.status === 'Cancelado') {
-          console.log(`[KDS] Order #${orderWithItems.order_number} marked as ${orderWithItems.status}, adding to history`);
-          addToHistory(orderId);
+        // Si el pedido está en estado final o pendiente de aceptación, no mostrarlo en KDS
+        if (['Entregado', 'Cancelado', 'PendienteAceptacion'].includes(orderWithItems.status)) {
+          if (['Entregado', 'Cancelado'].includes(orderWithItems.status)) {
+            console.log(`[KDS] Order #${orderWithItems.order_number} marked as ${orderWithItems.status}, adding to history`);
+            addToHistory(orderId);
+          }
           return prev.filter(order => order.id !== orderId);
         }
         
