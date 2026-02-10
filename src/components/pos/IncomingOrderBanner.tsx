@@ -68,11 +68,12 @@
    return (
      <>
        {/* Sound component */}
-       <IncomingOrderSound
-         enabled={soundEnabled}
-         newOrderArrived={newOrderArrived}
-         onSoundPlayed={clearNewOrderFlag}
-       />
+        <IncomingOrderSound
+          enabled={soundEnabled}
+          newOrderArrived={orders.length > 0}
+          onSoundPlayed={clearNewOrderFlag}
+          persistent
+        />
  
        {/* Banner */}
        <div
