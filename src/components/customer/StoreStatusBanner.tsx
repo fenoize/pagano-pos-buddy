@@ -47,9 +47,9 @@ export function StoreStatusBanner({ onStatusChange }: StoreStatusBannerProps) {
   // All good - orders are being accepted
   if (storeStatus.app_orders_enabled && storeStatus.accept_app_orders) {
     return (
-      <Alert className="border-green-500/50 bg-green-500/10">
-        <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-        <AlertDescription className="text-green-800 dark:text-green-200">
+      <Alert className="border-green-400 bg-green-500/20">
+        <CheckCircle className="h-4 w-4 text-green-300" />
+        <AlertDescription className="text-green-100 font-medium">
           ¡Estamos recibiendo pedidos! Haz tu orden ahora.
         </AlertDescription>
       </Alert>
