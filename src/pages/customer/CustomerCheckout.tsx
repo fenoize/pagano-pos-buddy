@@ -248,6 +248,25 @@ export default function CustomerCheckout() {
         });
 
         if (result.success) {
+          // Incrementar usage_count de suscripción de descuento
+          if (customer?.id && subscriptionDiscount > 0) {
+            try {
+              const { data: sub } = await supabase
+                .from('customer_discount_subscriptions')
+                .select('id, usage_count')
+                .eq('customer_id', customer.id)
+                .eq('is_active', true)
+                .maybeSingle();
+              if (sub) {
+                await supabase
+                  .from('customer_discount_subscriptions')
+                  .update({ usage_count: (sub.usage_count || 0) + 1 })
+                  .eq('id', sub.id);
+              }
+            } catch (err) {
+              console.error('Error incrementando usage_count:', err);
+            }
+          }
           clearCart();
           toast.success('¡Pedido confirmado exitosamente!');
           navigate(`/order-success?order=${result.order_number}`);

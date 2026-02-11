@@ -685,6 +685,27 @@ export default function NewSale() {
         }
       }
 
+      // Incrementar usage_count de suscripción de descuento
+      if (customerId && subscriptionDiscountPercent > 0) {
+        try {
+          const { data: sub } = await supabase
+            .from('customer_discount_subscriptions')
+            .select('id, usage_count')
+            .eq('customer_id', customerId)
+            .eq('is_active', true)
+            .maybeSingle();
+          if (sub) {
+            await supabase
+              .from('customer_discount_subscriptions')
+              .update({ usage_count: (sub.usage_count || 0) + 1 })
+              .eq('id', sub.id);
+            console.log('✅ usage_count de suscripción de descuento incrementado');
+          }
+        } catch (err) {
+          console.error('Error incrementando usage_count:', err);
+        }
+      }
+
       // Descontar inventario
       try {
         const inventoryResult = await deductInventoryFromOrder(fullOrderData.id);
