@@ -1144,6 +1144,60 @@ export type Database = {
           },
         ]
       }
+      customer_discount_subscriptions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          discount_percent: number
+          end_date: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          discount_percent: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          discount_percent?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_discount_subscriptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_discount_subscriptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_email_verifications: {
         Row: {
           created_at: string

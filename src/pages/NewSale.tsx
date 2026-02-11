@@ -23,6 +23,7 @@ import { CouponModal } from '@/components/pos/CouponModal';
 import { ArrowLeft, ArrowRight, User, Ticket, History } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
 import { usePOSConfig } from '@/hooks/usePOSConfig';
+import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { checkAndAwardBadges } from '@/lib/badgeAwarder';
 import { RecentOrdersModal } from '@/components/sales/RecentOrdersModal';
@@ -67,6 +68,7 @@ export default function NewSale() {
   const { hasActiveSession } = useCashSession();
   const { deductInventoryFromOrder } = useInventory();
   const { config: posConfig } = usePOSConfig();
+  const { discountPercent: subscriptionDiscountPercent } = useCustomerDiscountSubscription(customer?.id as string | undefined);
 
   const subtotal = cartItems.reduce((sum, item) => {
     const extrasTotal = item.extras.reduce((extraSum, extra) => extraSum + (extra.price * (extra.quantity || 1)), 0);
@@ -77,8 +79,9 @@ export default function NewSale() {
   const couponDiscount = appliedCoupons.reduce((sum, coupon) => 
     sum + Number(coupon.discount_products) + Number(coupon.discount_delivery), 0);
   const manualDiscountAmount = manualDiscount ? manualDiscount.amount : 0;
-  const runasDiscount = usedRunas * runaRewardValue; // Usar valor de canje
-  const totalDiscount = couponDiscount + manualDiscountAmount + runasDiscount;
+  const runasDiscount = usedRunas * runaRewardValue;
+  const subscriptionDiscountAmount = subscriptionDiscountPercent > 0 ? Math.round(subtotal * subscriptionDiscountPercent / 100) : 0;
+  const totalDiscount = couponDiscount + manualDiscountAmount + runasDiscount + subscriptionDiscountAmount;
   const totalBeforeDelivery = Math.max(0, subtotal - totalDiscount);
   const total = totalBeforeDelivery + deliveryFee;
 
@@ -755,6 +758,11 @@ export default function NewSale() {
                       <span className="truncate">
                         {customer.id ? customer.name : 'Cliente'}
                       </span>
+                      {subscriptionDiscountPercent > 0 && (
+                        <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-semibold">
+                          -{subscriptionDiscountPercent}%
+                        </span>
+                      )}
                     </Button>
                     <Button 
                       variant="outline" 

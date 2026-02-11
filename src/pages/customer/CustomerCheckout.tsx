@@ -23,6 +23,7 @@ import { createRunasOrder } from '@/lib/integrations/runasPayment';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 
 interface CustomerAddress {
   id: string;
@@ -46,6 +47,7 @@ export default function CustomerCheckout() {
   const { settings: paymentSettings, loading: settingsLoading } = useCustomerOrderSettings();
   const { zones: deliveryZones, loading: zonesLoading } = useDeliveryZones();
   const { findZoneByCoordinates } = useDeliveryGeo();
+  const { discountPercent: subscriptionDiscount } = useCustomerDiscountSubscription(customer?.id);
   
   const [notes, setNotes] = useState('');
   const [canOrder, setCanOrder] = useState(true);
@@ -171,7 +173,9 @@ export default function CustomerCheckout() {
   }, [items.length, mpEnabled, runasEnabled, deliveryEnabled, pickupEnabled, navigate]);
 
   const selectedAddress = customerAddresses.find(a => a.id === selectedAddressId);
-  const total = subtotal + (fulfillmentType === 'delivery' ? deliveryFee : 0);
+  const subscriptionDiscountAmount = subscriptionDiscount > 0 ? Math.round(subtotal * subscriptionDiscount / 100) : 0;
+  const subtotalAfterDiscount = Math.max(0, subtotal - subscriptionDiscountAmount);
+  const total = subtotalAfterDiscount + (fulfillmentType === 'delivery' ? deliveryFee : 0);
 
   const handlePayment = async () => {
     if (!canOrder) {
@@ -275,6 +279,16 @@ export default function CustomerCheckout() {
 
         {/* Store Status Banner */}
         <StoreStatusBanner onStatusChange={setCanOrder} />
+
+        {/* Subscription Discount Banner */}
+        {subscriptionDiscount > 0 && (
+          <Alert className="border-emerald-300 bg-emerald-50">
+            <Coins className="h-4 w-4 text-emerald-600" />
+            <AlertDescription className="text-emerald-800 font-medium">
+              ¡Tienes un {subscriptionDiscount}% de descuento aplicado automáticamente!
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Fulfillment Type */}
         <Card>
@@ -600,14 +614,24 @@ export default function CustomerCheckout() {
                 </div>
               ))}
             </div>
-            
-            {fulfillmentType === 'delivery' && deliveryFee > 0 && (
+
+            {subscriptionDiscountAmount > 0 && (
               <>
                 <Separator />
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
+                <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                  <span>Descuento suscripción ({subscriptionDiscount}%)</span>
+                  <span>-{formatCurrency(subscriptionDiscountAmount)}</span>
+                </div>
+              </>
+            )}
+            
+            {fulfillmentType === 'delivery' && deliveryFee > 0 && (
+              <>
+                <Separator />
                 <div className="flex justify-between text-sm">
                   <span>Delivery</span>
                   <span>{formatCurrency(deliveryFee)}</span>
