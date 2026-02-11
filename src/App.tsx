@@ -66,6 +66,7 @@ const Categorias = lazy(() => import("@/pages/Categorias"));
 const NivelesManagement = lazy(() => import("@/pages/NivelesManagement"));
 const FidelizacionHub = lazy(() => import("@/pages/FidelizacionHub"));
 const ConfiguracionPage = lazy(() => import("@/pages/ConfiguracionPage"));
+const MiConfiguracion = lazy(() => import("@/pages/MiConfiguracion"));
 const PermisosManagement = lazy(() => import("@/pages/PermisosManagement"));
 const CierresDiarios = lazy(() => import("@/pages/CierresDiarios"));
 const MarketingPromosApp = lazy(() => import("@/pages/MarketingPromosApp"));
@@ -648,6 +649,14 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <ConfiguracionPage />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/mi-configuracion" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <MiConfiguracion />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />

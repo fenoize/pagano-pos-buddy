@@ -75,6 +75,7 @@ const menuItems = [
   { title: "Usuarios", url: "/pos/usuarios", icon: User, roles: ['Administrador'] },
   { title: "Cierres Diarios", url: "/pos/cierres-diarios", icon: FileText, roles: ['Administrador'] },
   { title: "Configuración", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
+  { title: "Mi Configuración", url: "/pos/mi-configuracion", icon: Settings, roles: ['Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer'] },
   { title: "Mi Calendario", url: "/pos/mi-calendario", icon: Calendar, roles: ['Administrador', 'Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer'] },
 ];
 
