@@ -19,6 +19,7 @@ import {
 import { DeliveryOrder } from '@/hooks/useDeliveryOrders';
 import { MapProvider } from '@/hooks/useDeliverySettings';
 import { calculateDeliveryPaymentInfo } from '@/lib/deliveryHelpers';
+import { DeliveryCollectPaymentModal } from './DeliveryCollectPaymentModal';
 
 interface DeliveryOrderCardProps {
   order: DeliveryOrder;
@@ -26,6 +27,7 @@ interface DeliveryOrderCardProps {
   mapProvider: MapProvider;
   onMarkAsOnTheWay: (orderId: string) => void;
   onMarkAsDelivered: (orderId: string) => void;
+  onCollectAndDeliver?: (orderId: string, method: string, cashGiven?: number) => Promise<boolean>;
   showInPreparation?: boolean;
 }
 
@@ -35,9 +37,13 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
   mapProvider,
   onMarkAsOnTheWay,
   onMarkAsDelivered,
+  onCollectAndDeliver,
   showInPreparation = false
 }) => {
   const [showDeliveredConfirm, setShowDeliveredConfirm] = useState(false);
+  const [showCollectModal, setShowCollectModal] = useState(false);
+
+  const isPendingPayment = order.payment_method?.toLowerCase() === 'pendiente';
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -101,6 +107,21 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
   const handleDeliveredConfirm = () => {
     onMarkAsDelivered(order.id);
     setShowDeliveredConfirm(false);
+  };
+
+  const handleDeliveredClick = () => {
+    if (isPendingPayment && onCollectAndDeliver) {
+      setShowCollectModal(true);
+    } else {
+      setShowDeliveredConfirm(true);
+    }
+  };
+
+  const handleCollectConfirm = async (method: string, cashGiven?: number) => {
+    if (onCollectAndDeliver) {
+      const success = await onCollectAndDeliver(order.id, method, cashGiven);
+      if (success) setShowCollectModal(false);
+    }
   };
 
   // Calcular información de pago
@@ -296,7 +317,7 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
                 <Button
                   className="col-span-2"
                   variant="default"
-                  onClick={() => setShowDeliveredConfirm(true)}
+                  onClick={handleDeliveredClick}
                   disabled={isUpdating}
                 >
                   {isUpdating ? (
@@ -334,6 +355,16 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de cobro para pagos pendientes */}
+      <DeliveryCollectPaymentModal
+        open={showCollectModal}
+        onOpenChange={setShowCollectModal}
+        orderNumber={order.order_number || 0}
+        amountToCollect={paymentInfo.amountToCollect}
+        onConfirm={handleCollectConfirm}
+        isProcessing={isUpdating}
+      />
     </>
   );
 };

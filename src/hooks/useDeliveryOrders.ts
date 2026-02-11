@@ -281,6 +281,73 @@ export const useDeliveryOrders = () => {
     }
   };
 
+  /**
+   * Cobrar pedido con pago pendiente y marcar como entregado
+   */
+  const collectAndDeliver = async (orderId: string, paymentMethodUsed: string, cashGiven?: number): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      setUpdatingOrders(prev => new Set(prev).add(orderId));
+
+      const order = orders.find(o => o.id === orderId);
+      if (!order) throw new Error('Pedido no encontrado');
+
+      const total = order.total || 0;
+      const methodLower = paymentMethodUsed.toLowerCase();
+
+      // Build payment fields based on selected method
+      const paymentFields: Record<string, any> = {
+        payment_method: paymentMethodUsed,
+        payment_status: 'paid',
+        payment_efectivo: 0,
+        payment_mp: 0,
+        payment_pos: 0,
+        payment_aplicacion: 0,
+      };
+
+      if (methodLower === 'efectivo') {
+        paymentFields.payment_efectivo = cashGiven || total;
+      } else if (['mp', 'mercadopago', 'transferencia'].includes(methodLower)) {
+        paymentFields.payment_mp = total;
+      } else if (methodLower === 'pos') {
+        paymentFields.payment_pos = total;
+      } else if (methodLower === 'aplicacion') {
+        paymentFields.payment_aplicacion = total;
+      } else {
+        // Fallback: set as mp
+        paymentFields.payment_mp = total;
+      }
+
+      // Update order payment info
+      const { error: payError } = await supabase
+        .from('orders')
+        .update(paymentFields)
+        .eq('id', orderId);
+
+      if (payError) throw payError;
+
+      // Now mark as delivered using existing flow
+      const result = await markAsDelivered(orderId);
+
+      // If cash was collected, the markAsDelivered already handles delivery_cash_pending
+      // But we need to ensure it uses the correct cash amount from our payment
+      // markAsDelivered reads payment_efectivo from the order, which we just updated
+
+      return result;
+    } catch (error: any) {
+      console.error('Error collecting payment and delivering:', error);
+      toast.error('Error al cobrar y entregar pedido');
+      return false;
+    } finally {
+      setUpdatingOrders(prev => {
+        const next = new Set(prev);
+        next.delete(orderId);
+        return next;
+      });
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
 
@@ -313,6 +380,7 @@ export const useDeliveryOrders = () => {
     updatingOrders,
     markAsOnTheWay,
     markAsDelivered,
+    collectAndDeliver,
     refetch: fetchOrders
   };
 };

@@ -107,7 +107,8 @@ export const calculateDeliveryPaymentInfo = (
     pos: 'POS',
     aplicacion: 'App',
     runas: 'Runas',
-    mixto: 'Mixto'
+    mixto: 'Mixto',
+    pendiente: 'Pendiente de cobro'
   };
   
   if (payment_method) {
@@ -122,20 +123,19 @@ export const calculateDeliveryPaymentInfo = (
   if (payment_runas > 0 && !methods.includes('Runas')) methods.push('Runas');
 
   // LÓGICA PARA DELIVERY:
-  // Si payment_method es 'efectivo' y el pedido NO está entregado, significa que debe cobrar
-  // El campo payment_efectivo en estos casos representa el dinero dado en el local (con vuelto),
-  // NO indica que el delivery está pagado
-  const isEffectivoMethod = payment_method?.toLowerCase() === 'efectivo';
-  const isPaidInFull = isEffectivoMethod 
-    ? status === 'Entregado' && payment_efectivo >= total  // Solo pagado si ya fue entregado
-    : nonCashPayments >= total;  // Otros métodos: verificar pagos no efectivo
+  const normalizedPaymentMethod = payment_method?.toLowerCase() || '';
+  const isEffectivoMethod = normalizedPaymentMethod === 'efectivo';
+  const isPendienteMethod = normalizedPaymentMethod === 'pendiente';
+  const needsCollection = isEffectivoMethod || isPendienteMethod;
+
+  const isPaidInFull = needsCollection
+    ? status === 'Entregado' && (order.payment_status === 'paid')
+    : nonCashPayments >= total;
 
   // Calcular monto a cobrar
-  // Para efectivo: cobrar el total completo (si no está entregado)
-  // Para otros métodos: cobrar lo que falta después de pagos no efectivo
-  const amountToCollect = isEffectivoMethod 
-    ? (status === 'Entregado' ? 0 : total)  // Si es efectivo y no entregado, cobrar todo
-    : Math.max(0, total - nonCashPayments);  // Otros métodos: cobrar lo que falta
+  const amountToCollect = needsCollection
+    ? (status === 'Entregado' && order.payment_status === 'paid' ? 0 : total)
+    : Math.max(0, total - nonCashPayments);
 
   // Calcular vuelto estimado SOLO si:
   // 1. Ya está entregado (para efectivo) o hay payment_efectivo > 0
