@@ -14,7 +14,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Edit, Trash2, Tag, BarChart3, Download, Users } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Plus, Edit, Trash2, Tag, BarChart3, Download, Users, MoreVertical } from 'lucide-react';
 import { useCoupons } from '@/hooks/useCoupons';
 import { useCouponStats, CouponApplicationDetail } from '@/hooks/useCouponStats';
 import { Coupon, CouponType, Category, DeliveryMode } from '@/types';
@@ -590,20 +591,30 @@ export default function CouponsManagement() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => handleOpenReport(coupon)} title="Ver informe">
-                            <BarChart3 className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(coupon.id, coupon.is_active)}>
-                            {coupon.is_active ? 'Desactivar' : 'Activar'}
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(coupon)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(coupon.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-popover z-50">
+                            <DropdownMenuItem onClick={() => handleOpenReport(coupon)}>
+                              <BarChart3 className="w-4 h-4 mr-2" />
+                              Ver Informe
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(coupon)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleStatus(coupon.id, coupon.is_active)}>
+                              {coupon.is_active ? 'Desactivar' : 'Activar'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(coupon.id)} className="text-destructive">
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   );
