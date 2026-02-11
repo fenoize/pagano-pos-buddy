@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DeliveryDashboard() {
-  const { orders, loading, updatingOrders, markAsOnTheWay, markAsDelivered, refetch } = useDeliveryOrders();
+  const { orders, loading, updatingOrders, markAsOnTheWay, markAsDelivered, collectAndDeliver, refetch } = useDeliveryOrders();
   const { settings } = useDeliverySettings();
 
   // Separar pedidos por estado
@@ -115,6 +115,7 @@ export default function DeliveryDashboard() {
                   mapProvider={settings?.map_provider || 'google_maps'}
                   onMarkAsOnTheWay={markAsOnTheWay}
                   onMarkAsDelivered={markAsDelivered}
+                  onCollectAndDeliver={collectAndDeliver}
                   showInPreparation
                 />
               ))}
@@ -150,6 +151,7 @@ export default function DeliveryDashboard() {
                   mapProvider={settings?.map_provider || 'google_maps'}
                   onMarkAsOnTheWay={markAsOnTheWay}
                   onMarkAsDelivered={markAsDelivered}
+                  onCollectAndDeliver={collectAndDeliver}
                 />
               ))}
             </div>
@@ -184,6 +186,7 @@ export default function DeliveryDashboard() {
                   mapProvider={settings?.map_provider || 'google_maps'}
                   onMarkAsOnTheWay={markAsOnTheWay}
                   onMarkAsDelivered={markAsDelivered}
+                  onCollectAndDeliver={collectAndDeliver}
                 />
               ))}
             </div>
