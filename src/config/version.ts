@@ -13,6 +13,7 @@ export const APP_NAME = "Paganos POS";
      version: "1.3.2 (beta)",
      date: "2026-02-11",
      changes: [
+       "Reloj en tiempo real visible en Cocina KDS, incluyendo modo pantalla completa",
        "Nuevo sistema de Suscripción de Descuento Permanente para clientes",
        "Los clientes con suscripción reciben descuento automático en cada compra",
        "Gestión de descuentos desde la pestaña Suscripciones en Clientes",
