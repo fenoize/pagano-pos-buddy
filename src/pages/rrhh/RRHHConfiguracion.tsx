@@ -562,30 +562,42 @@ function RRHHConfiguracion() {
             <DialogTitle>{editingEmployee ? 'Editar Empleado' : 'Agregar Usuario como Empleado'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {!editingEmployee && (
-              <div>
-                <Label>Seleccionar Usuario *</Label>
-                <Select 
-                  value={selectedUserId || '__none__'} 
-                  onValueChange={(val) => val !== '__none__' && handleUserSelect(val)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un usuario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__" disabled>Selecciona un usuario</SelectItem>
-                    {availableUsers.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>{u.full_name} ({u.username})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {availableUsers.length === 0 && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    No hay usuarios disponibles. Todos ya están registrados como empleados.
-                  </p>
-                )}
-              </div>
-            )}
+            <div>
+              <Label>{editingEmployee ? 'Usuario Vinculado' : 'Seleccionar Usuario *'}</Label>
+              <Select 
+                value={selectedUserId || '__none__'} 
+                onValueChange={(val) => {
+                  if (val === '__none__') return;
+                  if (editingEmployee) {
+                    setSelectedUserId(val);
+                    const u = users.find(u => u.id === val);
+                    if (u) {
+                      setEmployeeForm(f => ({ ...f, user_id: val, full_name: u.full_name || f.full_name, email: u.email || f.email }));
+                    }
+                  } else {
+                    handleUserSelect(val);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un usuario" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__" disabled>Selecciona un usuario</SelectItem>
+                  {(editingEmployee
+                    ? users.filter(u => u.id && (u.id === selectedUserId || !employees.some(emp => emp.user_id === u.id)))
+                    : availableUsers
+                  ).map((u) => (
+                    <SelectItem key={u.id} value={u.id}>{u.full_name} ({u.username})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!editingEmployee && availableUsers.length === 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  No hay usuarios disponibles. Todos ya están registrados como empleados.
+                </p>
+              )}
+            </div>
             
             {(editingEmployee || selectedUserId) && (
               <>
