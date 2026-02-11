@@ -17,6 +17,7 @@ import CustomerForm from '@/components/clientes/CustomerForm';
 import CustomerAddresses from '@/components/clientes/CustomerAddresses';
 import CustomerRunes from '@/components/clientes/CustomerRunes';
 import CustomerRunaSubscriptions from '@/components/clientes/CustomerRunaSubscriptions';
+import CustomerDiscountSubscription from '@/components/clientes/CustomerDiscountSubscription';
 import CustomerOrders from '@/components/clientes/CustomerOrders';
 import DeleteCustomerModal from '@/components/clientes/DeleteCustomerModal';
 import { CustomerAuthManagementModal } from '@/components/clientes/CustomerAuthManagementModal';
@@ -507,7 +508,8 @@ export default function Clientes() {
                 />
               </TabsContent>
               
-              <TabsContent value="suscripciones" className="space-y-4">
+              <TabsContent value="suscripciones" className="space-y-6">
+                <CustomerDiscountSubscription customerId={selectedCustomer.id} />
                 <CustomerRunaSubscriptions 
                   customerId={selectedCustomer.id} 
                   customerBirthday={selectedCustomer.fecha_nacimiento}

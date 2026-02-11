@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Flame, Award, Star, TrendingUp } from 'lucide-react';
+import { Flame, Award, Star, TrendingUp, Percent } from 'lucide-react';
 import { CustomerLayout } from '@/components/customer/CustomerLayout';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useCustomerLevel } from '@/hooks/useCustomerLevel';
+import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 import { LevelProgress } from '@/components/customer/LevelProgress';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -12,6 +13,7 @@ export default function CustomerBenefits() {
   const navigate = useNavigate();
   const { customer } = useCustomerAuth();
   const { data: customerLevel, isLoading } = useCustomerLevel(customer?.id);
+  const { discountPercent } = useCustomerDiscountSubscription(customer?.id);
 
   if (isLoading) {
     return (
@@ -66,6 +68,23 @@ export default function CustomerBenefits() {
             )}
           </CardContent>
         </Card>
+
+        {/* Discount Subscription */}
+        {discountPercent > 0 && (
+          <Card className="border-emerald-300 bg-emerald-50">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0">
+                <Percent className="h-6 w-6 text-emerald-700" />
+              </div>
+              <div>
+                <h3 className="font-bold text-emerald-800 text-lg">{discountPercent}% de descuento</h3>
+                <p className="text-sm text-emerald-700">
+                  Se aplica automáticamente en todas tus compras
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <div className="grid gap-4 md:grid-cols-2">
