@@ -1,85 +1,60 @@
 
+# Plan: Mostrar cantidad de Runas en vez de monto en pesos
 
-# Plan: Cobro de pedidos "Pendiente" por el repartidor en Delivery
+## Problema
 
-## Contexto
+Cuando un pedido se paga con Runas, en la app del cliente se muestra el equivalente en dinero (ej: "$24.600") en lugar de la cantidad de runas utilizadas (ej: "41 Runas"). Esto confunde al cliente porque parece un descuento monetario, no un canje de runas.
 
-Actualmente, los pedidos con pago "Pendiente" solo se cobran desde el POS del cajero. Cuando un pedido delivery tiene este estado, el repartidor no ve indicaciones claras de cobro en su tarjeta. Se necesita que el repartidor pueda cobrar estos pedidos al entregar, igual que con los pedidos en efectivo.
+**Causa raiz:** El campo `payment_runas` en la base de datos almacena el valor monetario equivalente (ej: 24600), no la cantidad de runas (ej: 41). Todos los componentes muestran ese valor directamente como dinero.
 
-## Cambios a realizar
+## Solucion
 
-### 1. Actualizar logica de pago en `src/lib/deliveryHelpers.ts`
+Calcular la cantidad real de runas a partir del valor monetario usando la configuracion del sistema: `cantidad_runas = payment_runas / runa_reward_value` (actualmente $600 por runa).
 
-Modificar `calculateDeliveryPaymentInfo` para reconocer `payment_method = 'pendiente'` (o `Pendiente`) como un caso donde el repartidor debe cobrar el total:
+## Archivos a modificar
 
-- `isPaidInFull = false` (hasta que se entregue y se registre el pago)
-- `amountToCollect = total` (el repartidor debe cobrar el monto completo)
-- Mostrar el metodo como "Pendiente de cobro" en la tarjeta
+### 1. CustomerOrderCard.tsx (tarjeta de pedido en "Mis Pedidos")
+- **Linea 113**: Cuando `payment_method === 'runas'`, mostrar "Pagado con X Runas" en vez de `formatCLP(order.total)`
+- **Linea 195**: Calcular la cantidad real de runas: `Math.ceil(payment_runas / runaRedemptionValue)` en vez de mostrar `payment_runas` directamente
 
-### 2. Actualizar la tarjeta del repartidor en `src/components/delivery/DeliveryOrderCard.tsx`
+### 2. CustomerOrderSuccess.tsx (pantalla de exito post-compra)
+- **Linea ~113**: Donde muestra "Total pagado", si es runas, mostrar "X Runas" en vez del monto en pesos
+- **Linea ~120-125**: Corregir el calculo de runas utilizadas (actualmente usa una formula incorrecta con valores hardcodeados)
+- **Linea ~128**: "Runas restantes" ya usa `cantidad_runas` del cliente, esta bien
 
-- Cuando el pedido es "Pendiente", mostrar un banner destacado (similar al de efectivo) indicando que debe cobrar al cliente.
-- Agregar un paso de confirmacion de cobro al marcar como "Entregado": antes de confirmar la entrega, pedir al repartidor que seleccione el metodo de cobro utilizado (efectivo, transferencia, POS portatil, etc.).
-- Si cobra en efectivo, registrar el monto como "efectivo en transito" en `delivery_cash_pending`, igual que se hace hoy con pedidos en efectivo.
+### 3. CustomerOrderTracking.tsx (seguimiento de pedido)
+- **Linea 416-419**: En el total del pedido, si es pago con runas, mostrar "X Runas" en vez del precio en pesos
 
-### 3. Actualizar el flujo de entrega en `src/hooks/useDeliveryOrders.ts`
-
-- Al confirmar entrega de un pedido con pago pendiente, actualizar:
-  - `payment_method` al metodo real utilizado (ej: "Efectivo")
-  - `payment_status` de `unpaid` a `paid`
-  - Los campos `payment_efectivo`, `payment_mp`, etc. segun corresponda
-- Si el cobro fue en efectivo, crear registro en `delivery_cash_pending` para trazabilidad.
-
-### 4. Sincronizar con el panel de pagos pendientes del cajero
-
-- Cuando el repartidor cobra y marca como entregado, el pedido debe desaparecer automaticamente del panel de "Pagos Pendientes" del cajero (ya que `payment_status` cambia a `paid`).
-- El canal realtime `pending-payments-global` ya existente propagara este cambio.
-
----
+### 4. RunasPaymentSection.tsx (seccion de pago en checkout)
+- Ya muestra runas correctamente, no requiere cambios
 
 ## Seccion tecnica
 
-### Archivos a modificar
-
-| Archivo | Cambio |
-|---|---|
-| `src/lib/deliveryHelpers.ts` | Agregar caso `pendiente` en `calculateDeliveryPaymentInfo` |
-| `src/components/delivery/DeliveryOrderCard.tsx` | Agregar modal de cobro al confirmar entrega cuando pago es pendiente |
-| `src/hooks/useDeliveryOrders.ts` | Agregar funcion `collectAndDeliver` que actualiza pago + estado |
-| `src/hooks/useDeliveryPersonCash.ts` | Sin cambios (ya soporta registros de efectivo en transito) |
-
-### Flujo resultante
+### Logica de conversion
 
 ```text
-Pedido Delivery con pago "Pendiente"
-    |
-    v
-Repartidor ve tarjeta con banner "Cobrar $X al cliente"
-    |
-    v
-Repartidor llega y presiona "Marcar como entregado"
-    |
-    v
-Se abre modal: "¿Como cobro el cliente?"
-  - Efectivo (con campo "con cuanto paga" + calculo vuelto)
-  - Transferencia / MercadoPago
-  - POS portatil
-    |
-    v
-Confirma --> Se actualiza:
-  - payment_method = metodo real
-  - payment_status = 'paid'
-  - payment_efectivo / payment_mp / etc.
-  - Si efectivo: se crea registro en delivery_cash_pending
-  - status = 'Entregado'
-    |
-    v
-Desaparece del panel "Pagos Pendientes" del cajero (realtime)
+runa_reward_value = 600 (desde config)
+runas_count = Math.ceil(payment_runas / runa_reward_value)
+
+Ejemplo: payment_runas = 24600 -> 24600 / 600 = 41 runas
 ```
 
-### Consideraciones
+### Patron de implementacion
 
-- Se reutilizara la lista de metodos de pago activos desde `payment_methods` (excluyendo "pendiente" y "runas")
-- El modal de cobro del repartidor sera mas simple que el del POS: un solo metodo por cobro, sin pagos mixtos
-- El calculo de vuelto para efectivo usara la misma formula existente
+Cada componente que muestre montos de pedidos con runas usara el hook `useRunasConfig()` para obtener `runaRedemptionValue` y calcular la cantidad:
 
+```text
+const { runaRedemptionValue } = useRunasConfig();
+const runasCount = Math.ceil(order.payment_runas / runaRedemptionValue);
+// Mostrar: "41 Runas" en vez de "$24.600"
+```
+
+### Formato de visualizacion
+
+- **Total del pedido (runas):** "41 Runas" con icono de moneda, en color primario
+- **Detalle expandido:** "Pagaste con 41 Runas"
+- **Pantalla de exito:** "41 Runas utilizadas" + saldo restante
+
+### Compatibilidad con datos existentes
+
+Los pedidos antiguos almacenan el monto monetario en `payment_runas`. La conversion `payment_runas / runa_reward_value` funciona para todos los registros existentes. Si el valor de configuracion cambia en el futuro, los pedidos antiguos mostraran un calculo ligeramente distinto, pero esto es aceptable.
