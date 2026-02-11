@@ -32,19 +32,22 @@ export default function CustomerDiscountSubscription({ customerId }: Props) {
     percent: 10,
     notes: '',
     startDate: new Date().toISOString().split('T')[0],
-    endDate: ''
+    endDate: '',
+    usageLimit: '' as string
   });
 
   const handleCreate = async () => {
+    const usageLimit = formData.usageLimit ? parseInt(formData.usageLimit) : null;
     const success = await createSubscription(
       formData.percent,
       formData.notes,
       formData.startDate || null,
-      formData.endDate || null
+      formData.endDate || null,
+      usageLimit
     );
     if (success) {
       setIsCreateModalOpen(false);
-      setFormData({ percent: 10, notes: '', startDate: new Date().toISOString().split('T')[0], endDate: '' });
+      setFormData({ percent: 10, notes: '', startDate: new Date().toISOString().split('T')[0], endDate: '', usageLimit: '' });
     }
   };
 
@@ -54,18 +57,21 @@ export default function CustomerDiscountSubscription({ customerId }: Props) {
       percent: subscription.discount_percent,
       notes: subscription.notes || '',
       startDate: subscription.start_date || '',
-      endDate: subscription.end_date || ''
+      endDate: subscription.end_date || '',
+      usageLimit: subscription.usage_limit !== null ? String(subscription.usage_limit) : ''
     });
     setIsEditModalOpen(true);
   };
 
   const handleUpdate = async () => {
     if (!subscription) return;
+    const usageLimit = formData.usageLimit ? parseInt(formData.usageLimit) : null;
     const success = await updateSubscription(subscription.id, {
       discount_percent: formData.percent,
       notes: formData.notes || null,
       start_date: formData.startDate || null,
-      end_date: formData.endDate || null
+      end_date: formData.endDate || null,
+      usage_limit: usageLimit
     });
     if (success) setIsEditModalOpen(false);
   };
@@ -117,6 +123,18 @@ export default function CustomerDiscountSubscription({ customerId }: Props) {
           />
           <p className="text-xs text-muted-foreground">Vacío = sin término</p>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Cantidad de Usos (opcional)</Label>
+        <Input
+          type="number"
+          min="1"
+          value={formData.usageLimit}
+          onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
+          placeholder="Ilimitado"
+        />
+        <p className="text-xs text-muted-foreground">Vacío = usos ilimitados</p>
       </div>
 
       <div className="space-y-2">
@@ -184,6 +202,16 @@ export default function CustomerDiscountSubscription({ customerId }: Props) {
                     ) : subscription.start_date ? (
                       <span className="ml-2 text-emerald-600">· Sin fecha de término</span>
                     ) : null}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {subscription.usage_limit !== null ? (
+                      <span>
+                        Usos: <span className={subscription.usage_count >= subscription.usage_limit ? 'text-destructive font-semibold' : 'font-semibold'}>{subscription.usage_count}/{subscription.usage_limit}</span>
+                        {subscription.usage_count >= subscription.usage_limit && ' (agotado)'}
+                      </span>
+                    ) : (
+                      <span>Usos: {subscription.usage_count} (ilimitado)</span>
+                    )}
                   </div>
                   {subscription.notes && (
                     <p className="text-xs text-muted-foreground mt-1">{subscription.notes}</p>
