@@ -153,6 +153,27 @@ serve(async (req) => {
       }
       
       console.log(`✅ Order ${orderId} updated to status: ${newStatus}`);
+      
+      // Incrementar usage_count de suscripción de descuento si el pago fue aprobado
+      if (payment.status === 'approved' && currentOrder.customer_id && currentOrder.discount > 0) {
+        try {
+          const { data: sub } = await supabase
+            .from('customer_discount_subscriptions')
+            .select('id, usage_count')
+            .eq('customer_id', currentOrder.customer_id)
+            .eq('is_active', true)
+            .maybeSingle();
+          if (sub) {
+            await supabase
+              .from('customer_discount_subscriptions')
+              .update({ usage_count: (sub.usage_count || 0) + 1 })
+              .eq('id', sub.id);
+            console.log('✅ Discount subscription usage_count incremented');
+          }
+        } catch (err) {
+          console.error('Error incrementing discount usage_count:', err);
+        }
+      }
     }
     
     return new Response(
