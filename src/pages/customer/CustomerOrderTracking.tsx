@@ -20,6 +20,7 @@ import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { OrderFeedbackModal } from '@/components/customer/OrderFeedbackModal';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
+import { useRunasConfig } from '@/hooks/useRunasConfig';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useOrderFeedback } from '@/hooks/useOrderFeedback';
@@ -43,6 +44,8 @@ interface OrderData {
   delivery_address?: string;
   delivery_comuna?: string;
   notes?: string;
+  payment_method?: string;
+  payment_runas?: number;
 }
 
 export default function CustomerOrderTracking() {
@@ -60,6 +63,7 @@ export default function CustomerOrderTracking() {
   const [hasFeedback, setHasFeedback] = useState<boolean | null>(null);
   const { getFeedbackForOrder } = useOrderFeedback();
   const { customer } = useCustomerAuth();
+  const { runaRedemptionValue } = useRunasConfig();
 
   // Check if order already has feedback
   const checkExistingFeedback = useCallback(async () => {
@@ -415,7 +419,11 @@ export default function CustomerOrderTracking() {
             <Separator />
             <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
-              <span>{formatCurrency(order.total)}</span>
+              <span>
+                {order.payment_method === 'runas'
+                  ? `${Math.ceil((order.payment_runas || 0) / runaRedemptionValue)} Runas ✨`
+                  : formatCurrency(order.total)}
+              </span>
             </div>
           </CardContent>
         </Card>

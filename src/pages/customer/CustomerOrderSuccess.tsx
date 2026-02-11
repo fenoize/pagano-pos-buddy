@@ -6,6 +6,7 @@ import { CheckCircle2, ShoppingBag, Home, Coins } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatRunas } from '@/lib/utils';
+import { useRunasConfig } from '@/hooks/useRunasConfig';
 
 export default function CustomerOrderSuccess() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export default function CustomerOrderSuccess() {
   const orderId = searchParams.get('order');
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { runaRedemptionValue } = useRunasConfig();
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -67,6 +69,7 @@ export default function CustomerOrderSuccess() {
   }
 
   const isPaidWithRunas = orderDetails.payment_method === 'runas';
+  const runasUsed = isPaidWithRunas ? Math.ceil((orderDetails.payment_runas || 0) / runaRedemptionValue) : 0;
 
   return (
     <div className="customer-app min-h-screen pb-20 bg-background">
@@ -93,7 +96,9 @@ export default function CustomerOrderSuccess() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total pagado:</span>
-                <span className="font-bold">{formatCurrency(orderDetails.total)}</span>
+                <span className="font-bold">
+                  {isPaidWithRunas ? `${runasUsed} Runas ✨` : formatCurrency(orderDetails.total)}
+                </span>
               </div>
 
               {isPaidWithRunas && (
@@ -104,7 +109,7 @@ export default function CustomerOrderSuccess() {
                       Runas utilizadas:
                     </span>
                     <span className="font-bold text-primary">
-                      {formatRunas(Math.ceil((orderDetails.payment_runas * 3) / 2000))}
+                      {formatRunas(runasUsed)}
                     </span>
                   </div>
 

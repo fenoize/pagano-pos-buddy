@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, Store, Truck, RefreshCw, MapPin, Eye, Star, CheckCircle } from 'lucide-react';
 import { formatCLP } from '@/lib/utils';
+import { useRunasConfig } from '@/hooks/useRunasConfig';
 import { formatDateTime } from '@/lib/dateUtils';
 import { OrderFeedbackModal } from './OrderFeedbackModal';
 import { useOrderFeedback } from '@/hooks/useOrderFeedback';
@@ -40,6 +41,7 @@ interface Order {
   delivery_comuna?: string | null;
   delivery_reference?: string | null;
   payment_runas?: number;
+  payment_method?: string;
 }
 
 interface CustomerOrderCardProps {
@@ -71,6 +73,10 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
   const navigate = useNavigate();
   const { getFeedbackForOrder } = useOrderFeedback();
   const { customer } = useCustomerAuth();
+  const { runaRedemptionValue } = useRunasConfig();
+
+  const isPaidWithRunas = order.payment_method === 'runas';
+  const runasUsed = isPaidWithRunas ? Math.ceil((order.payment_runas || 0) / runaRedemptionValue) : 0;
 
   const isOrderActive = !['Entregado', 'Cancelado'].includes(order.status);
   const isDelivered = order.status === 'Entregado';
@@ -110,7 +116,9 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
       <CardContent>
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">{formatDateTime(order.created_at)}</p>
-          <p className="text-2xl font-bold text-foreground">{formatCLP(order.total)}</p>
+          <p className="text-2xl font-bold text-foreground">
+            {isPaidWithRunas ? `${runasUsed} Runas ✨` : formatCLP(order.total)}
+          </p>
         </div>
 
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -189,10 +197,10 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
               )}
 
               {/* Runas usadas */}
-              {order.payment_runas && order.payment_runas > 0 && (
+              {isPaidWithRunas && runasUsed > 0 && (
                 <div className="pt-2">
                   <p className="text-sm text-primary font-medium">
-                    ✨ Usaste {order.payment_runas} runas en este pedido
+                    ✨ Pagaste con {runasUsed} Runas
                   </p>
                 </div>
               )}
