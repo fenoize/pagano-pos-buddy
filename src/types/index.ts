@@ -465,6 +465,12 @@ export interface Coupon {
   delivery_amount?: number;
   affects_tip: boolean;
   
+  // Comisión
+  commission_enabled?: boolean;
+  commission_type?: 'percentage' | 'fixed';
+  commission_value?: number;
+  commission_contact?: string;
+  
   // Alcance (cargar dinámicamente)
   allowed_categories?: string[];
   excluded_categories?: string[];
@@ -484,6 +490,8 @@ export interface Coupon {
   
   // Stats (calculados)
   total_used?: number;
+  total_discounted?: number;
+  total_sales?: number;
 }
 
 export interface CouponApplication {

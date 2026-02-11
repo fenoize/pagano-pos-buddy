@@ -950,6 +950,10 @@ export type Database = {
           apply_to_combo_children: boolean
           apply_to_discounted: boolean
           code: string
+          commission_contact: string | null
+          commission_enabled: boolean | null
+          commission_type: string | null
+          commission_value: number | null
           created_at: string
           created_by: string | null
           date_end: string | null
@@ -977,6 +981,10 @@ export type Database = {
           apply_to_combo_children?: boolean
           apply_to_discounted?: boolean
           code: string
+          commission_contact?: string | null
+          commission_enabled?: boolean | null
+          commission_type?: string | null
+          commission_value?: number | null
           created_at?: string
           created_by?: string | null
           date_end?: string | null
@@ -1004,6 +1012,10 @@ export type Database = {
           apply_to_combo_children?: boolean
           apply_to_discounted?: boolean
           code?: string
+          commission_contact?: string | null
+          commission_enabled?: boolean | null
+          commission_type?: string | null
+          commission_value?: number | null
           created_at?: string
           created_by?: string | null
           date_end?: string | null
