@@ -1,73 +1,85 @@
 
 
-# Cargar precios de productos COMBO en el menu del cliente
+# Plan: Cobro de pedidos "Pendiente" por el repartidor en Delivery
 
-## Problema
+## Contexto
 
-Los productos tipo COMBO (Promo Summer 2X, Promo Thor, Invok2) guardan su precio en la tabla `combo_products` (campo `base_price`), pero el hook `useCustomerMenuProducts` solo busca precios en:
-- `product_variant_options` (sistema de variantes)
-- Campo `prices` JSON del producto (sistema legacy)
+Actualmente, los pedidos con pago "Pendiente" solo se cobran desde el POS del cajero. Cuando un pedido delivery tiene este estado, el repartidor no ve indicaciones claras de cobro en su tarjeta. Se necesita que el repartidor pueda cobrar estos pedidos al entregar, igual que con los pedidos en efectivo.
 
-Como resultado, `getProductMinPrice()` retorna `null` para estos productos y aparecen con "Ver opciones" en vez de su precio real.
+## Cambios a realizar
+
+### 1. Actualizar logica de pago en `src/lib/deliveryHelpers.ts`
+
+Modificar `calculateDeliveryPaymentInfo` para reconocer `payment_method = 'pendiente'` (o `Pendiente`) como un caso donde el repartidor debe cobrar el total:
+
+- `isPaidInFull = false` (hasta que se entregue y se registre el pago)
+- `amountToCollect = total` (el repartidor debe cobrar el monto completo)
+- Mostrar el metodo como "Pendiente de cobro" en la tarjeta
+
+### 2. Actualizar la tarjeta del repartidor en `src/components/delivery/DeliveryOrderCard.tsx`
+
+- Cuando el pedido es "Pendiente", mostrar un banner destacado (similar al de efectivo) indicando que debe cobrar al cliente.
+- Agregar un paso de confirmacion de cobro al marcar como "Entregado": antes de confirmar la entrega, pedir al repartidor que seleccione el metodo de cobro utilizado (efectivo, transferencia, POS portatil, etc.).
+- Si cobra en efectivo, registrar el monto como "efectivo en transito" en `delivery_cash_pending`, igual que se hace hoy con pedidos en efectivo.
+
+### 3. Actualizar el flujo de entrega en `src/hooks/useDeliveryOrders.ts`
+
+- Al confirmar entrega de un pedido con pago pendiente, actualizar:
+  - `payment_method` al metodo real utilizado (ej: "Efectivo")
+  - `payment_status` de `unpaid` a `paid`
+  - Los campos `payment_efectivo`, `payment_mp`, etc. segun corresponda
+- Si el cobro fue en efectivo, crear registro en `delivery_cash_pending` para trazabilidad.
+
+### 4. Sincronizar con el panel de pagos pendientes del cajero
+
+- Cuando el repartidor cobra y marca como entregado, el pedido debe desaparecer automaticamente del panel de "Pagos Pendientes" del cajero (ya que `payment_status` cambia a `paid`).
+- El canal realtime `pending-payments-global` ya existente propagara este cambio.
+
+---
+
+## Seccion tecnica
+
+### Archivos a modificar
+
+| Archivo | Cambio |
+|---|---|
+| `src/lib/deliveryHelpers.ts` | Agregar caso `pendiente` en `calculateDeliveryPaymentInfo` |
+| `src/components/delivery/DeliveryOrderCard.tsx` | Agregar modal de cobro al confirmar entrega cuando pago es pendiente |
+| `src/hooks/useDeliveryOrders.ts` | Agregar funcion `collectAndDeliver` que actualiza pago + estado |
+| `src/hooks/useDeliveryPersonCash.ts` | Sin cambios (ya soporta registros de efectivo en transito) |
+
+### Flujo resultante
 
 ```text
-Tabla combo_products (datos actuales):
-+-----------------+---------------+------------+
-| Producto        | pricing_mode  | base_price |
-+-----------------+---------------+------------+
-| Promo Summer 2X | fixed         | $9.990     |
-| Promo Thor      | fixed         | $10.990    |
-| Invok2          | fixed         | $17.990    |
-+-----------------+---------------+------------+
+Pedido Delivery con pago "Pendiente"
+    |
+    v
+Repartidor ve tarjeta con banner "Cobrar $X al cliente"
+    |
+    v
+Repartidor llega y presiona "Marcar como entregado"
+    |
+    v
+Se abre modal: "¿Como cobro el cliente?"
+  - Efectivo (con campo "con cuanto paga" + calculo vuelto)
+  - Transferencia / MercadoPago
+  - POS portatil
+    |
+    v
+Confirma --> Se actualiza:
+  - payment_method = metodo real
+  - payment_status = 'paid'
+  - payment_efectivo / payment_mp / etc.
+  - Si efectivo: se crea registro en delivery_cash_pending
+  - status = 'Entregado'
+    |
+    v
+Desaparece del panel "Pagos Pendientes" del cajero (realtime)
 ```
 
-## Solucion
+### Consideraciones
 
-### 1. Hook: incluir datos de combo en la query (`useCustomerMenuProducts.ts`)
-
-Agregar `combo_products` al SELECT de productos mediante la relacion existente:
-
-```text
-product_variant_options(...),
-combo_products(
-  base_price,
-  pricing_mode,
-  active
-)
-```
-
-### 2. Interfaz: agregar campo `comboPrice` al tipo `MenuProduct`
-
-Agregar un campo opcional `comboPrice: number | null` que almacene el `base_price` del combo activo.
-
-### 3. Funcion `getProductMinPrice`: considerar precio de combo
-
-Agregar una tercera fuente de precio:
-
-```text
-Orden de busqueda:
-1. Variantes activas (product_variant_options)
-2. Precios legacy (campo prices JSON)
-3. Precio de combo (combo_products.base_price)  <-- NUEVO
-
-Retorna el minimo de todos los encontrados.
-```
-
-### Detalles tecnicos
-
-**Archivo: `src/hooks/useCustomerMenuProducts.ts`**
-
-- En la query de productos, agregar `combo_products(base_price, pricing_mode, active)` al SELECT
-- En la transformacion del producto, extraer el `base_price` del primer combo activo y guardarlo como `comboPrice`
-- En `getProductMinPrice()`, si el producto tiene `comboPrice > 0`, incluirlo en la lista de precios candidatos
-- En la interfaz `MenuProduct`, agregar `comboPrice?: number | null`
-
-No se requieren cambios en `CustomerMenu.tsx` ya que este ya usa `getProductMinPrice()` para mostrar el precio.
-
-## Resultado esperado
-
-- Promo Summer 2X mostrara **$9.990**
-- Promo Thor mostrara **$10.990**
-- Invok2 mostrara **$17.990**
-- Todos los demas productos seguiran funcionando igual
+- Se reutilizara la lista de metodos de pago activos desde `payment_methods` (excluyendo "pendiente" y "runas")
+- El modal de cobro del repartidor sera mas simple que el del POS: un solo metodo por cobro, sin pagos mixtos
+- El calculo de vuelto para efectivo usara la misma formula existente
 
