@@ -70,10 +70,6 @@ export default function Kitchen() {
         <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-bold text-primary">KDS</h1>
-            <div className="flex items-center gap-1.5 text-sm font-mono text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              {currentTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </div>
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium">{activeOrders.length}</span>
@@ -97,14 +93,20 @@ export default function Kitchen() {
               Historial
             </Button>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={exitExpanded}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-lg font-mono font-bold text-white">
+              <Clock className="w-5 h-5" />
+              {currentTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={exitExpanded}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Orders Grid - Full Screen */}
