@@ -180,8 +180,16 @@ export const useDeliveryOrders = () => {
 
       if (error) throw error;
 
-      // Setear delivery_delivered_at y asegurar que el repartidor está asignado
-      const order = orders.find(o => o.id === orderId);
+      // Re-leer payment_efectivo desde la DB para obtener valores actualizados (ej. tras collectAndDeliver)
+      const localOrder = orders.find(o => o.id === orderId);
+      const { data: freshOrder } = await supabase
+        .from('orders')
+        .select('payment_efectivo')
+        .eq('id', orderId)
+        .single();
+
+      const cashAmountFromDB = freshOrder?.payment_efectivo ?? localOrder?.payment_efectivo ?? 0;
+      const order = localOrder;
       const deliveryPersonId = order?.delivery_person_id || user.id;
       
       const deliveryUpdates: any = {
@@ -201,8 +209,8 @@ export const useDeliveryOrders = () => {
 
       if (deliveryError) throw deliveryError;
 
-      // Si el pedido tiene pago en efectivo, crear registro de efectivo pendiente
-      const cashAmount = order?.payment_efectivo || 0;
+      // Solo crear registro de efectivo pendiente si el pago fue en efectivo
+      const cashAmount = cashAmountFromDB;
       if (cashAmount > 0) {
         const { error: pendingCashError } = await supabase
           .from('delivery_cash_pending')
