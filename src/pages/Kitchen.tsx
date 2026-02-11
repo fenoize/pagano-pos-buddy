@@ -18,6 +18,12 @@ export default function Kitchen() {
   const isMobile = useIsMobile();
   const [lastOrderCount, setLastOrderCount] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (orders.length > lastOrderCount) {
@@ -64,6 +70,10 @@ export default function Kitchen() {
         <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-bold text-primary">KDS</h1>
+            <div className="flex items-center gap-1.5 text-sm font-mono text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              {currentTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </div>
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium">{activeOrders.length}</span>
@@ -148,6 +158,10 @@ export default function Kitchen() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl md:text-3xl font-bold">Cocina - KDS</h1>
+          <div className="flex items-center gap-1.5 text-base font-mono text-muted-foreground">
+            <Clock className="w-5 h-5" />
+            {currentTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </div>
           <Button
             variant="outline"
             size="sm"
