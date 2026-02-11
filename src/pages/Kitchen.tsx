@@ -155,9 +155,8 @@ export default function Kitchen() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="space-y-3">
         <div className="flex items-center gap-4">
-          
           <div className="flex items-center gap-1.5 text-base font-mono text-muted-foreground">
             <Clock className="w-5 h-5" />
             {currentTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -191,26 +190,23 @@ export default function Kitchen() {
           </Button>
         </div>
         
-        {/* Stats */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
             <span className="text-sm md:text-base font-medium">{activeOrders.length} pedidos activos</span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="text-xs">
-              Pendientes: {pendingOrders.length}
-            </Badge>
-            <Badge variant="default" className="text-xs">
-              En preparación: {inProgressOrders.length}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              En pausa: {pausedOrders.length}
-            </Badge>
-            <Badge variant="destructive" className="text-xs">
-              Listos: {readyOrders.length}
-            </Badge>
-          </div>
+          <Badge variant="secondary" className="text-xs">
+            Pendientes: {pendingOrders.length}
+          </Badge>
+          <Badge variant="default" className="text-xs">
+            En preparación: {inProgressOrders.length}
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            En pausa: {pausedOrders.length}
+          </Badge>
+          <Badge variant="destructive" className="text-xs">
+            Listos: {readyOrders.length}
+          </Badge>
         </div>
       </div>
 
