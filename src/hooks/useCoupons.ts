@@ -21,18 +21,11 @@ export const useCoupons = () => {
       const couponsWithScope = await Promise.all(
         (data || []).map(async (coupon) => {
           const scope = await fetchCouponScope(coupon.id);
-          
-          // Calcular uso total
-          const { count } = await supabase
-            .from('coupon_applications')
-            .select('*', { count: 'exact', head: true })
-            .eq('coupon_id', coupon.id);
 
           return {
             ...coupon,
             time_windows: coupon.time_windows as Record<string, string[]> | undefined,
             ...scope,
-            total_used: count || 0,
           } as Coupon;
         })
       );
@@ -125,6 +118,9 @@ export const useCoupons = () => {
         excluded_extras,
         allowed_modifiers,
         excluded_modifiers,
+        total_used,
+        total_discounted,
+        total_sales,
         ...couponFields
       } = couponData;
 
@@ -198,6 +194,9 @@ export const useCoupons = () => {
         excluded_extras,
         allowed_modifiers,
         excluded_modifiers,
+        total_used,
+        total_discounted,
+        total_sales,
         ...couponFields
       } = couponData;
 
