@@ -156,38 +156,40 @@ export default function Kitchen() {
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="space-y-3">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-base font-mono text-muted-foreground">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleExpanded}
+              className="flex items-center gap-2"
+            >
+              <Maximize2 className="w-4 h-4" />
+              {isMobile ? "Expandir" : "Modo Pantalla Completa"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refetch}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Actualizar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHistory(true)}
+              className="flex items-center gap-2"
+            >
+              <History className="w-4 h-4" />
+              Historial
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 text-lg font-mono font-semibold text-foreground">
             <Clock className="w-5 h-5" />
             {currentTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleExpanded}
-            className="flex items-center gap-2"
-          >
-            <Maximize2 className="w-4 h-4" />
-            {isMobile ? "Expandir" : "Modo Pantalla Completa"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refetch}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Actualizar
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowHistory(true)}
-            className="flex items-center gap-2"
-          >
-            <History className="w-4 h-4" />
-            Historial
-          </Button>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
