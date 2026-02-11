@@ -13,6 +13,8 @@ export interface DiscountSubscription {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  usage_limit: number | null;
+  usage_count: number;
 }
 
 export function useDiscountSubscription(customerId?: string) {
@@ -47,7 +49,8 @@ export function useDiscountSubscription(customerId?: string) {
     discountPercent: number,
     notes?: string,
     startDate?: string | null,
-    endDate?: string | null
+    endDate?: string | null,
+    usageLimit?: number | null
   ): Promise<boolean> => {
     if (!customerId) return false;
     try {
@@ -59,7 +62,9 @@ export function useDiscountSubscription(customerId?: string) {
           is_active: true,
           start_date: startDate || new Date().toISOString().split('T')[0],
           end_date: endDate || null,
-          notes: notes || null
+          notes: notes || null,
+          usage_limit: usageLimit ?? null,
+          usage_count: 0
         });
 
       if (error) {
@@ -83,7 +88,7 @@ export function useDiscountSubscription(customerId?: string) {
 
   const updateSubscription = async (
     id: string,
-    updates: Partial<Pick<DiscountSubscription, 'discount_percent' | 'is_active' | 'notes' | 'start_date' | 'end_date'>>
+    updates: Partial<Pick<DiscountSubscription, 'discount_percent' | 'is_active' | 'notes' | 'start_date' | 'end_date' | 'usage_limit'>>
   ): Promise<boolean> => {
     try {
       const { error } = await supabase

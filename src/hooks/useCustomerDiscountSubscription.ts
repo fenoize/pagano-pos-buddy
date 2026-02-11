@@ -20,7 +20,7 @@ export function useCustomerDiscountSubscription(customerId?: string | null) {
       try {
         const { data, error } = await supabase
           .from('customer_discount_subscriptions')
-          .select('discount_percent, start_date, end_date')
+          .select('discount_percent, start_date, end_date, usage_limit, usage_count')
           .eq('customer_id', customerId)
           .eq('is_active', true)
           .maybeSingle();
@@ -39,6 +39,12 @@ export function useCustomerDiscountSubscription(customerId?: string | null) {
           return;
         }
         if (data.end_date && today > data.end_date) {
+          setDiscountPercent(0);
+          return;
+        }
+
+        // Validate usage limit
+        if (data.usage_limit !== null && data.usage_count >= data.usage_limit) {
           setDiscountPercent(0);
           return;
         }
