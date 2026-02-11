@@ -157,7 +157,7 @@ export default function Kitchen() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold">Cocina - KDS</h1>
+          
           <div className="flex items-center gap-1.5 text-base font-mono text-muted-foreground">
             <Clock className="w-5 h-5" />
             {currentTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
