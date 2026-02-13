@@ -2,6 +2,16 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 
+// Map database role names to the names used in role_permissions table
+const mapRoleForPermissions = (dbRole: string): string => {
+  const mapping: Record<string, string> = {
+    'Caja': 'Cajero',
+    'Cocina': 'Cocina',
+    'Reparto': 'Reparto',
+  };
+  return mapping[dbRole] || dbRole;
+};
+
 /**
  * Hook para gestionar permisos de usuario de forma centralizada
  * Conecta con la tabla role_permissions en Supabase
@@ -36,11 +46,11 @@ export function usePermissions() {
         }
 
         // Obtener permisos de esos roles
-        const roles = userRoles.map(r => r.role);
+        const roles = userRoles.map(r => mapRoleForPermissions(r.role));
         const { data: rolePermissions, error: permsError } = await supabase
           .from('role_permissions')
           .select('permission')
-          .in('role', roles);
+          .in('role', roles as any);
 
         if (permsError) throw permsError;
 
