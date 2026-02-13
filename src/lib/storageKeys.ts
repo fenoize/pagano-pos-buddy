@@ -15,6 +15,9 @@ export const STORAGE_KEYS = {
   // Customer (Portal) authentication
   CUSTOMER_SESSION: 'paganos_customer_session',
   CUSTOMER_USER: 'paganos_customer_user',
+
+  // TV Screen
+  TV_SCREEN_ID: 'paganos_tv_screen_id',
 } as const;
 
 /**
