@@ -4,12 +4,13 @@ import type { Order, OrderItem, OrderStatus } from '@/types';
 
 interface UseReadyOrdersOptions {
   visibleStatuses?: string[];
+  enabled?: boolean;
 }
 
 const DEFAULT_STATUSES: OrderStatus[] = ['En preparación', 'Listo', 'Entregado'];
 
 export function useReadyOrders(options: UseReadyOrdersOptions = {}) {
-  const { visibleStatuses = DEFAULT_STATUSES } = options;
+  const { visibleStatuses = DEFAULT_STATUSES, enabled = true } = options;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,6 +42,8 @@ export function useReadyOrders(options: UseReadyOrdersOptions = {}) {
   }, [visibleStatuses]);
 
   useEffect(() => {
+    if (!enabled) return;
+
     fetchReadyOrders();
     
     // Real-time subscription
@@ -60,7 +63,7 @@ export function useReadyOrders(options: UseReadyOrdersOptions = {}) {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [fetchReadyOrders]);
+  }, [fetchReadyOrders, enabled]);
 
   return { readyOrders: orders, loading, refetch: fetchReadyOrders };
 }
