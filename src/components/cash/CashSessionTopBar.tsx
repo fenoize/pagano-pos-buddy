@@ -49,8 +49,8 @@ export function CashSessionTopBar() {
     }
   }, [currentSession]);
 
-  // Only show for Cajero and Administrador roles
-  if (!user || !['Cajero', 'Administrador'].includes(user.role)) {
+  // Only show for Cajero/Caja and Administrador roles
+  if (!user || !['Cajero', 'Caja', 'Administrador'].includes(user.role)) {
     return null;
   }
 
