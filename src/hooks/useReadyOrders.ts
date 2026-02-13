@@ -7,7 +7,7 @@ interface UseReadyOrdersOptions {
   enabled?: boolean;
 }
 
-const DEFAULT_STATUSES: OrderStatus[] = ['En preparación', 'Listo', 'Entregado'];
+const DEFAULT_STATUSES: OrderStatus[] = ['En preparación', 'Listo'];
 
 export function useReadyOrders(options: UseReadyOrdersOptions = {}) {
   const { visibleStatuses = DEFAULT_STATUSES, enabled = true } = options;

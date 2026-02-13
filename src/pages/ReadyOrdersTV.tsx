@@ -39,7 +39,7 @@ export default function ReadyOrdersTV() {
     font_size: 'medium',
     theme: 'light',
     hide_header_fullscreen: false,
-    visible_statuses: ['En preparación', 'Listo', 'Entregado'],
+    visible_statuses: ['En preparación', 'Listo'],
   });
 
   // Cargar configuración de pantalla de espera (idle screen)
