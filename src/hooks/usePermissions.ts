@@ -4,8 +4,8 @@ import { useAuthContext } from '@/contexts/AuthContext';
 
 // Map database role names to the names used in role_permissions table
 const mapRoleForPermissions = (dbRole: string): string => {
+  // 'Caja' was unified to 'Cajero' in the DB; keep mapping for safety
   const mapping: Record<string, string> = {
-    'Caja': 'Cajero',
     'Cocina': 'Cocina',
     'Reparto': 'Reparto',
   };
