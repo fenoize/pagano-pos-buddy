@@ -64,7 +64,9 @@ serve(async (req) => {
       .select("role")
       .eq("user_id", userId);
 
-    const roleList = (roles || []).map((r: any) => r.role);
+    // Map DB role names to permission table role names
+    const roleMapping: Record<string, string> = { 'Caja': 'Cajero' };
+    const roleList = (roles || []).map((r: any) => roleMapping[r.role] || r.role);
     const isAdmin = roleList.includes("Administrador");
 
     let canView = isAdmin;
