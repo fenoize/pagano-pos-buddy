@@ -8,9 +8,7 @@ import { withStaffContext } from '@/lib/dbContext';
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
   const mapping: Record<string, AppRole> = {
-    'Caja': 'Cajero',
     'Cocina': 'Cocinero',
-    'Reparto': 'Reparto'
   };
   return mapping[dbRole] as AppRole || dbRole as AppRole;
 };
@@ -18,11 +16,10 @@ const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
 // Map new app role names to database role names
 const mapAppRoleToDatabase = (appRole: AppRole): string => {
   const mapping: Record<AppRole, string> = {
-    'Cajero': 'Caja',
+    'Cajero': 'Cajero',
     'Cocinero': 'Cocina',
     'Reparto': 'Reparto',
     'Administrador': 'Administrador',
-    // No existe "Preparador" en el enum de la BD; lo mapeamos a Cocina por compatibilidad
     'Preparador': 'Cocina',
     'Viewer': 'Viewer',
     'TV': 'TV'
