@@ -1,12 +1,13 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useActiveTVScreenContent } from '@/hooks/useTVScreenContent';
 import { cn } from '@/lib/utils';
+import { getCachedImageUrl } from '@/lib/imageCache';
 
 interface PromoSliderProps {
   interval?: number; // ms
   className?: string;
   screenConfigId?: string;
-  fallbackScreenId?: string; // ID de pantalla alternativa si la principal no tiene contenido
+  fallbackScreenId?: string;
 }
 
 interface PromoConfig {
@@ -26,13 +27,34 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
   const { data: mainPromotions = [] } = useActiveTVScreenContent(screenConfigId);
   const { data: fallbackPromotions = [] } = useActiveTVScreenContent(fallbackScreenId);
   
-  // Usar contenido principal, si está vacío usar fallback
   const promotions = mainPromotions.length > 0 ? mainPromotions : fallbackPromotions;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [cachedUrls, setCachedUrls] = useState<Record<string, string>>({});
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const FADE_DURATION = 3000; // 3 seconds fade
+  const FADE_DURATION = 3000;
+
+  // Pre-cache all promotion images when promotions change
+  const cacheImages = useCallback(async () => {
+    const urlMap: Record<string, string> = {};
+    for (const promo of promotions) {
+      if (promo.image_url) {
+        urlMap[promo.image_url] = await getCachedImageUrl(promo.image_url);
+      }
+    }
+    setCachedUrls(urlMap);
+  }, [promotions]);
+
+  useEffect(() => {
+    cacheImages();
+    // Cleanup blob URLs on unmount
+    return () => {
+      Object.values(cachedUrls).forEach(url => {
+        if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+      });
+    };
+  }, [cacheImages]);
 
   // Auto-advance slides
   useEffect(() => {
@@ -73,6 +95,11 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
   const config = parsePromoConfig(currentPromo?.description);
   const showTitle = config.show_title !== false;
 
+  // Use cached URL if available, otherwise fall back to original
+  const imageUrl = currentPromo?.image_url
+    ? (cachedUrls[currentPromo.image_url] || currentPromo.image_url)
+    : '';
+
   return (
     <div className={cn("relative overflow-hidden bg-black", className)}>
       {/* Background media */}
@@ -94,7 +121,7 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
           />
         ) : hasImage ? (
           <img
-            src={currentPromo.image_url!}
+            src={imageUrl}
             alt={currentPromo.title}
             className="w-full h-full object-contain"
           />
@@ -103,7 +130,7 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
         )}
       </div>
 
-      {/* Content overlay - only show if showTitle is true */}
+      {/* Content overlay */}
       {showTitle && (
         <div 
           className={cn(
@@ -111,7 +138,6 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
             isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
           )}
         >
-          {/* Overlay gradient for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent -z-10" />
           {currentPromo.title && (
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 drop-shadow-lg">

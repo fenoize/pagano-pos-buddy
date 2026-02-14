@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { STORAGE_KEYS } from "@/lib/storageKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { clearTVImageCache } from "@/lib/imageCache";
 
 export default function ReadyOrdersTV() {
   const [searchParams] = useSearchParams();
@@ -123,13 +124,14 @@ export default function ReadyOrdersTV() {
     }
   };
 
-  // Force full refresh: config + content + orders
-  const handleForceRefresh = useCallback(() => {
+  // Force full refresh: config + content + orders + image cache
+  const handleForceRefresh = useCallback(async () => {
+    await clearTVImageCache();
     queryClient.invalidateQueries({ queryKey: ['tv-screen-config'] });
     queryClient.invalidateQueries({ queryKey: ['tv-screen-configs'] });
     queryClient.invalidateQueries({ queryKey: ['active-tv-screen-content'] });
     refetch();
-    toast.success('Actualización completa forzada');
+    toast.success('Actualización completa forzada (caché de imágenes limpiada)');
   }, [queryClient, refetch]);
 
   const formatTime = (date: Date) =>
