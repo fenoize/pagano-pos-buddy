@@ -253,13 +253,7 @@ export default function Categorias() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Categorías</h1>
-          <p className="text-muted-foreground">
-            Administra las categorías de productos y sus variantes
-          </p>
-        </div>
+      <div className="flex justify-end items-center mb-8">
         <Button onClick={openNewDialog}>
           <Plus className="mr-2 h-4 w-4" />
           Nueva Categoría

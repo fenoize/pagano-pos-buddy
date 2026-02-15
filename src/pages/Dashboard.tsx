@@ -67,14 +67,6 @@ function OperationalDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground">
-          Escritorio
-        </h1>
-        <p className="text-muted-foreground">
-          Bienvenido, {user?.username} ({user?.role})
-        </p>
-      </div>
 
       {/* Active Shift Widget - Own shift */}
       <ActiveShiftWidget />
@@ -318,14 +310,6 @@ function DefaultDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground">
-          Escritorio
-        </h1>
-        <p className="text-muted-foreground">
-          Bienvenido, {user?.username} ({user?.role})
-        </p>
-      </div>
 
       {/* Active Shift Widget - Own shift */}
       <ActiveShiftWidget />

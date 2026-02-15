@@ -178,12 +178,6 @@ export default function Users() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground">Gestión de Usuarios</h1>
-        <p className="text-muted-foreground">
-          Administra los usuarios del sistema y sus permisos
-        </p>
-      </div>
 
       {/* Controls */}
       <Card>

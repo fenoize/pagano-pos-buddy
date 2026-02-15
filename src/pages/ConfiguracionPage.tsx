@@ -36,12 +36,6 @@ export default function ConfiguracionPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground">Configuración</h1>
-        <p className="text-muted-foreground">
-          Administra los ajustes del sistema
-        </p>
-      </div>
 
       <Tabs defaultValue="online-orders" className="flex gap-6" orientation="vertical">
         <TabsList className="flex flex-col h-fit w-56 bg-muted/50 p-2 gap-1">
