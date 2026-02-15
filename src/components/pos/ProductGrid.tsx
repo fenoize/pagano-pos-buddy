@@ -494,7 +494,9 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
       <div 
         className="grid gap-4"
         style={{
-          gridTemplateColumns: `repeat(${config.gridColumns}, minmax(0, 1fr))`
+          gridTemplateColumns: isMobile 
+            ? 'repeat(2, minmax(0, 1fr))' 
+            : `repeat(${config.gridColumns}, minmax(0, 1fr))`
         }}
       >
         {filteredProducts.map((product) => (
