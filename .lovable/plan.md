@@ -1,51 +1,90 @@
 
 
-## Mejoras al Modulo Pedido Listo (TV)
+## Buscador de Productos Mejorado - Nueva Venta
 
 ### Problema actual
-1. **Carga lenta al inicio**: La pantalla carga todos los pedidos con configuracion por defecto antes de recibir la configuracion guardada, causando una doble consulta.
-2. **No recuerda configuracion**: Si se recarga la pagina sin parametro `?screen=`, pierde la configuracion seleccionada.
-3. **Sin boton de forzar actualizacion**: El boton de refresh actual solo recarga pedidos, no la configuracion ni el contenido promocional.
+El buscador solo filtra por el nombre del producto. Si buscas "Coca Cola", no encuentra el producto "Lata" aunque tenga esa variante configurada.
 
 ### Solucion
 
-#### 1. Persistir configuracion en localStorage
-- Al cargar o cambiar una configuracion de pantalla, guardar el `screen_config_id` en `localStorage` con clave `paganos_tv_screen_id`.
-- Al iniciar la pagina, la prioridad sera:
-  1. Parametro URL `?screen=` (si existe)
-  2. ID guardado en `localStorage`
-  3. Configuracion marcada como `is_default` en la base de datos
+**1. Busqueda por variantes**
 
-#### 2. Evitar carga innecesaria de pedidos
-- No ejecutar la consulta de pedidos (`useReadyOrders`) hasta que la configuracion este cargada (para usar los `visible_statuses` correctos desde el inicio).
-- Mostrar un spinner mientras se resuelve la configuracion, evitando la doble consulta.
+Modificar la logica de filtrado en `src/components/pos/ProductGrid.tsx` (linea 372-392) para que ademas del nombre del producto, busque dentro de los nombres de las variantes asociadas (`productVariants`).
 
-#### 3. Boton de forzar actualizacion completa
-- Agregar un boton dedicado (con icono diferenciado) que invalide las queries de:
-  - Configuracion de pantalla (`tv-screen-config`)
-  - Contenido TV (`active-tv-screen-content`)
-  - Pedidos (`ready-orders`)
-- Mostrar un toast confirmando la actualizacion.
+La logica sera:
+- Buscar en `product.name`
+- Buscar en los nombres de las variantes del producto (`productVariants[product.id]`)
+- Si alguna coincide, el producto aparece en los resultados
+- Cuando el match es por variante (no por nombre), mostrar un indicador visual (badge) debajo del producto indicando que variante coincidio (ej: "Coca Cola" destacado)
 
-### Archivos a modificar
+**2. Mejoras de UX/UI del buscador**
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/pages/ReadyOrdersTV.tsx` | Logica de persistencia en localStorage, esperar config antes de cargar pedidos, boton de forzar actualizacion completa |
-| `src/hooks/useReadyOrders.ts` | Agregar opcion `enabled` para no ejecutar la consulta hasta que la config este lista |
-| `src/lib/storageKeys.ts` | Agregar clave `TV_SCREEN_ID` |
+- **Resultados instantaneos (1 caracter minimo en vez de 2)**: Reducir el umbral de busqueda de 2 a 1 caracter para respuesta mas rapida.
+- **Highlight de coincidencia por variante**: Cuando un producto aparece porque una variante coincide, mostrar un badge o texto debajo indicando "Variante: Coca Cola" para que el cajero entienda por que aparece ese resultado.
+- **Icono X mas limpio**: Reemplazar el caracter "X" por el icono `X` de lucide-react que ya esta importado en el proyecto.
+- **Autofocus**: Al cargar la pagina, enfocar automaticamente el buscador para agilizar la operacion del cajero.
+- **Contador de resultados mejorado**: Indicar si los resultados incluyen coincidencias por variante.
 
-### Detalle tecnico
+### Detalles tecnicos
 
-**localStorage key**: `paganos_tv_screen_id`
+**Archivo**: `src/components/pos/ProductGrid.tsx`
 
-**Flujo de inicio optimizado**:
-```text
-Inicio -> Resolver screenId (URL > localStorage > default)
-       -> Cargar config desde DB con ese ID
-       -> Una vez cargada -> activar useReadyOrders con visible_statuses correctos
-       -> Renderizar layout
+**Cambios en el filtrado** (linea ~372):
+```typescript
+const filteredProducts = useMemo(() => {
+  let filtered = products;
+
+  if (searchTerm.trim().length >= 1) {
+    const searchLower = searchTerm.toLowerCase().trim();
+    filtered = filtered.filter(product => {
+      // Match por nombre de producto
+      if (product.name.toLowerCase().includes(searchLower)) return true;
+      // Match por nombre de variante
+      const variants = productVariants[product.id!] || [];
+      return variants.some(v => 
+        v.variant_value?.toLowerCase().includes(searchLower) ||
+        v.variant?.name?.toLowerCase().includes(searchLower)
+      );
+    });
+  }
+
+  if (searchTerm.trim().length < 1 && activeCategory !== 'all') {
+    filtered = filtered.filter(p => 
+      p.categories?.some(cat => cat.id === activeCategory)
+    );
+  }
+
+  return filtered;
+}, [products, searchTerm, activeCategory, productVariants]);
 ```
 
-**Boton forzar actualizacion**: Usara `queryClient.invalidateQueries` para invalidar todas las queries relevantes de una vez, forzando re-fetch desde Supabase.
+**Funcion helper para obtener variantes que coinciden** (nueva):
+```typescript
+const getMatchingVariants = (product: Product): string[] => {
+  if (searchTerm.trim().length < 1) return [];
+  const searchLower = searchTerm.toLowerCase().trim();
+  if (product.name.toLowerCase().includes(searchLower)) return [];
+  const variants = productVariants[product.id!] || [];
+  return variants
+    .filter(v => v.variant_value?.toLowerCase().includes(searchLower))
+    .map(v => v.variant_value);
+};
+```
+
+**UI del producto en resultados** - agregar debajo del nombre del producto:
+```tsx
+{getMatchingVariants(product).length > 0 && (
+  <div className="flex flex-wrap gap-1">
+    {getMatchingVariants(product).map((name, i) => (
+      <Badge key={i} variant="outline" className="text-xs bg-primary/10">
+        Variante: {name}
+      </Badge>
+    ))}
+  </div>
+)}
+```
+
+**Icono X**: Reemplazar el boton con texto "X" por el componente `X` de lucide-react (ya importado en otros archivos).
+
+**Autofocus**: Agregar `autoFocus` al Input de busqueda, pero solo en desktop (verificar con `useIsMobile()`), para no molestar en movil donde el teclado virtual ocupa espacio.
 
