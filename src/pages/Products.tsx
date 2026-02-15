@@ -327,7 +327,13 @@ export default function Products() {
       />
 
       <div className="grid gap-4">
-        {filteredAndSortedProducts.map((product) => (
+        {filteredAndSortedProducts.map((product) => {
+          // Filter variants to only show those belonging to the product's assigned categories
+          const assignedCategoryIds = new Set((product.categories || []).map((c: any) => c.id));
+          const relevantVariants = (productVariants[product.id] || []).filter(
+            (v: any) => assignedCategoryIds.has(v.variant?.category_id)
+          );
+          return (
           <Card key={product.id} className={`${!product.active ? 'opacity-60' : ''}`}>
             <CardContent className="p-6">
               <div className="flex gap-4">
@@ -369,10 +375,10 @@ export default function Products() {
                   {/* Variantes configuradas */}
                   <div>
                     <h4 className="font-medium text-muted-foreground mb-2">Variantes Configuradas</h4>
-                    {productVariants[product.id] && productVariants[product.id].length > 0 ? (
+                    {relevantVariants.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {productVariants[product.id]
-                          .filter(variant => variant.variant?.name !== 'Default') // Ocultar variante Default
+                        {relevantVariants
+                          .filter(variant => variant.variant?.name !== 'Default')
                           .map((variant) => (
                           <div
                             key={variant.id}
@@ -481,7 +487,8 @@ export default function Products() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {filteredAndSortedProducts.length === 0 && products.length > 0 && (
