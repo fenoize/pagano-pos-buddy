@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePOSConfig } from '@/hooks/usePOSConfig';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ProductExtra {
   id: string;
@@ -57,6 +58,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
   const [productModifiers, setProductModifiers] = useState<ProductModifier[]>([]);
   const [productCombos, setProductCombos] = useState<Record<string, any>>({});
   const { config } = usePOSConfig();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Load categories from database
@@ -372,29 +374,40 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
   const filteredProducts = useMemo(() => {
     let filtered = products;
 
-    // Filtrar por búsqueda si hay término de búsqueda (mínimo 2 caracteres)
-    if (searchTerm.trim().length >= 2) {
+    if (searchTerm.trim().length >= 1) {
       const searchLower = searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchLower)
-      );
+      filtered = filtered.filter(product => {
+        if (product.name.toLowerCase().includes(searchLower)) return true;
+        const variants = productVariants[product.id!] || [];
+        return variants.some(v =>
+          v.variant?.name?.toLowerCase().includes(searchLower)
+        );
+      });
     }
 
-    // Filtrar por categoría solo si no hay búsqueda activa
-    if (searchTerm.trim().length < 2 && activeCategory !== 'all') {
-      // Filter by category ID - check if product has this category assigned
+    if (searchTerm.trim().length < 1 && activeCategory !== 'all') {
       filtered = filtered.filter(p => 
         p.categories?.some(cat => cat.id === activeCategory)
       );
     }
 
     return filtered;
-  }, [products, searchTerm, activeCategory]);
+  }, [products, searchTerm, activeCategory, productVariants]);
+
+  const getMatchingVariants = (product: Product): string[] => {
+    if (searchTerm.trim().length < 1) return [];
+    const searchLower = searchTerm.toLowerCase().trim();
+    if (product.name.toLowerCase().includes(searchLower)) return [];
+    const variants = productVariants[product.id!] || [];
+    return variants
+      .filter(v => v.variant?.name?.toLowerCase().includes(searchLower))
+      .map(v => v.variant?.name)
+      .filter(Boolean) as string[];
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    // Si hay búsqueda activa, cambiar a "all" para mostrar resultados de todas las categorías
-    if (e.target.value.trim().length >= 2) {
+    if (e.target.value.trim().length >= 1) {
       setActiveCategory('all');
     }
   };
@@ -426,10 +439,11 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
           type="text"
-          placeholder="Buscar productos..."
+          placeholder="Buscar productos o variantes..."
           value={searchTerm}
           onChange={handleSearchChange}
-          className="pl-10 pr-4 py-2 text-base"
+          className="pl-10 pr-10 py-2 text-base"
+          autoFocus={!isMobile}
         />
         {searchTerm && (
           <Button
@@ -438,23 +452,23 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
             onClick={clearSearch}
             className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
           >
-            ✕
+            <X className="h-4 w-4" />
           </Button>
         )}
       </div>
 
       {/* Search Results Info */}
-      {searchTerm.trim().length >= 2 && (
+      {searchTerm.trim().length >= 1 && (
         <div className="text-sm text-muted-foreground">
           {filteredProducts.length > 0 
-            ? `${filteredProducts.length} producto${filteredProducts.length !== 1 ? 's' : ''} encontrado${filteredProducts.length !== 1 ? 's' : ''} para "${searchTerm}"`
-            : `No se encontraron productos para "${searchTerm}"`
+            ? `${filteredProducts.length} resultado${filteredProducts.length !== 1 ? 's' : ''} para "${searchTerm}"`
+            : `No se encontraron resultados para "${searchTerm}"`
           }
         </div>
       )}
 
       {/* Category Filters - Solo mostrar si no hay búsqueda activa */}
-      {searchTerm.trim().length < 2 && categories.length > 0 && (
+      {searchTerm.trim().length < 1 && categories.length > 0 && (
         <Tabs value={activeCategory} onValueChange={setActiveCategory}>
           <TabsList className="inline-flex h-auto flex-wrap gap-2 bg-transparent p-0">
             <TabsTrigger 
@@ -524,6 +538,16 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
                 <h3 className="font-semibold text-lg leading-tight line-clamp-2">
                   {product.name}
                 </h3>
+
+                {getMatchingVariants(product).length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {getMatchingVariants(product).map((name, i) => (
+                      <Badge key={i} variant="outline" className="text-xs bg-primary/10 text-primary">
+                        {name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 
                 {/* Price */}
                 <div>
@@ -542,16 +566,16 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
       {filteredProducts.length === 0 && (
         <div className="text-center py-12">
           <div className="text-muted-foreground mb-4">
-            {searchTerm.trim().length >= 2 
+            {searchTerm.trim().length >= 1 
               ? `No se encontraron productos que coincidan con "${searchTerm}"`
               : `No hay productos en la categoría "${getCategoryDisplayName(activeCategory)}"`
             }
           </div>
           <Button 
             variant="outline" 
-            onClick={searchTerm.trim().length >= 2 ? clearSearch : () => setActiveCategory('all')}
+            onClick={searchTerm.trim().length >= 1 ? clearSearch : () => setActiveCategory('all')}
           >
-            {searchTerm.trim().length >= 2 ? 'Limpiar búsqueda' : 'Ver todos los productos'}
+            {searchTerm.trim().length >= 1 ? 'Limpiar búsqueda' : 'Ver todos los productos'}
           </Button>
         </div>
       )}
