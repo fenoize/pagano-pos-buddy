@@ -568,7 +568,7 @@ export interface ProductVariantOption {
 export interface ComboProduct {
   id: string;
   product_id: string;
-  pricing_mode: 'fixed' | 'individual'; // Changed from 'dynamic' to 'individual'
+  pricing_mode: PricingMode;
   base_price: number;
   combo_discount: number;
   included_variants: boolean;
