@@ -331,7 +331,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                 <span className="text-sm">El precio base debe ser mayor a $0 en modo precio fijo</span>
               </div>
             )}
-            {comboConfig.pricing_mode === 'individual' && (
+            {comboConfig.pricing_mode === 'dynamic' && (
               <div className="flex items-center space-x-2 p-3 bg-primary/10 text-primary rounded-lg">
                 <Settings className="h-4 w-4" />
                 <span className="text-sm">Modo dinámico: el precio será la suma de los productos seleccionados en cada slot, menos el descuento configurado. El precio base es opcional y se suma al total.</span>
@@ -350,7 +350,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                     <Label htmlFor="fixed">Precio Fijo</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="individual" id="dynamic" />
+                    <RadioGroupItem value="dynamic" id="dynamic" />
                     <Label htmlFor="dynamic">Precio Dinámico (suma de productos)</Label>
                   </div>
                 </RadioGroup>
@@ -365,7 +365,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {formatPrice(comboConfig.base_price)}
-                  {comboConfig.pricing_mode === 'individual' && comboConfig.base_price === 0 && ' (solo suma de productos)'}
+                  {comboConfig.pricing_mode === 'dynamic' && comboConfig.base_price === 0 && ' (solo suma de productos)'}
                 </p>
               </div>
             </div>

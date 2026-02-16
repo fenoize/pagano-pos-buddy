@@ -821,7 +821,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                 )}
 
                 {/* Price Information */}
-                {comboConfig.pricing_mode === 'individual' && selection.selectedProduct && (
+                {comboConfig.pricing_mode === 'dynamic' && selection.selectedProduct && (
                   <div className="text-xs text-muted-foreground">
                     Precio individual: {formatPrice(
                       selection.selectedVariant?.price || 
