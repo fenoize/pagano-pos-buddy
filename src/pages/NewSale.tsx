@@ -1053,11 +1053,6 @@ export default function NewSale() {
         onClose={() => setIsCustomerModalOpen(false)}
         customer={customer}
         onCustomerChange={setCustomer}
-        totalAmount={total}
-        runaValue={runaValue}
-        runaRewardValue={runaRewardValue}
-        onRunasChange={setUsedRunas}
-        usedRunas={usedRunas}
       />
 
       {/* Recent Orders Modal */}
