@@ -156,114 +156,18 @@ export default function CustomerSearchStep({ customer, onCustomerChange, orderNa
             </p>
           </div>
 
-          {/* Search Input */}
-          <div>
-            <Label>Cliente (opcional)</Label>
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar cliente por nombre, RUT o teléfono..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="space-y-2 border rounded-lg p-2 bg-muted/5">
-              {searchResults.map((result) => (
-                <div
-                  key={result.id}
-                  className="flex items-center justify-between p-3 bg-background rounded border hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => selectCustomer(result)}
-                >
-                  <div className="flex-1">
-                    <div className="font-medium">
-                      {result.name} {result.apellido}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {result.phone && `📞 ${result.phone}`}
-                      {result.rut && ` • RUT: ${result.rut}`}
-                    </div>
-                  </div>
-                  {result.cantidad_runas && result.cantidad_runas > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {formatRunas(result.cantidad_runas)} Runas
-                      <span className="text-xs ml-1">
-                        ({formatPrice((result.cantidad_runas || 0) * runaValue)})
-                      </span>
-                    </Badge>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* No Results */}
-          {searchTerm.length >= 3 && searchResults.length === 0 && !isSearching && (
-            <div className="text-center p-4 border rounded-lg bg-muted/5">
-              <p className="text-muted-foreground mb-2">No se encontraron clientes</p>
-              <Button onClick={handleNewCustomer} variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Crear nuevo cliente
-              </Button>
-            </div>
-          )}
-
-          {/* New Customer Form */}
-          {showNewCustomerForm && (
-            <div className="space-y-3 border rounded-lg p-4 bg-muted/5">
-              <h4 className="font-medium">Nuevo Cliente</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="name">Nombre</Label>
-                  <Input
-                    id="name"
-                    value={customer.name || ''}
-                    onChange={(e) => onCustomerChange({ ...customer, name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="apellido">Apellido</Label>
-                  <Input
-                    id="apellido"
-                    value={customer.apellido || ''}
-                    onChange={(e) => onCustomerChange({ ...customer, apellido: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Teléfono</Label>
-                  <Input
-                    id="phone"
-                    value={customer.phone || ''}
-                    onChange={(e) => onCustomerChange({ ...customer, phone: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="rut">RUT (opcional)</Label>
-                  <Input
-                    id="rut"
-                    value={customer.rut || ''}
-                    onChange={(e) => onCustomerChange({ ...customer, rut: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Selected Customer Info */}
-          {customer.id && (
+          {/* Cliente section - conditional */}
+          {customer.id ? (
             <div className="border rounded-lg p-4 bg-primary/5">
+              <Label className="text-xs text-muted-foreground mb-2 block">Cliente asociado</Label>
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">{customer.name} {customer.apellido}</h4>
+                  <h4 className="font-medium">{customer.nombres || customer.name} {customer.apellidos || customer.apellido}</h4>
                   <p className="text-sm text-muted-foreground">
-                    {customer.phone} • {customer.rut}
+                    {[customer.phone, customer.email].filter(Boolean).join(' · ')}
                   </p>
                 </div>
-                {customer.cantidad_runas && customer.cantidad_runas > 0 && (
+                {customer.cantidad_runas != null && customer.cantidad_runas > 0 && (
                   <Badge variant="default">
                     {formatRunas(customer.cantidad_runas)} Runas disponibles
                   </Badge>
@@ -293,6 +197,100 @@ export default function CustomerSearchStep({ customer, onCustomerChange, orderNa
                 </Button>
               </div>
             </div>
+          ) : (
+            <>
+              <div>
+                <Label>Cliente (opcional)</Label>
+                <div className="relative mt-1">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar cliente por nombre o teléfono..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Search Results */}
+              {searchResults.length > 0 && (
+                <div className="space-y-2 border rounded-lg p-2 bg-muted/5">
+                  {searchResults.map((result) => (
+                    <div
+                      key={result.id}
+                      className="flex items-center justify-between p-3 bg-background rounded border hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => selectCustomer(result)}
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium">
+                          {result.nombres || result.name} {result.apellidos || result.apellido}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {[result.phone, result.email].filter(Boolean).join(' · ')}
+                        </div>
+                      </div>
+                      {result.cantidad_runas != null && result.cantidad_runas > 0 && (
+                        <Badge variant="secondary" className="ml-2">
+                          {formatRunas(result.cantidad_runas)} Runas
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* No Results */}
+              {searchTerm.length >= 3 && searchResults.length === 0 && !isSearching && (
+                <div className="text-center p-4 border rounded-lg bg-muted/5">
+                  <p className="text-muted-foreground mb-2">No se encontraron clientes</p>
+                  <Button onClick={handleNewCustomer} variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Crear nuevo cliente
+                  </Button>
+                </div>
+              )}
+
+              {/* New Customer Form */}
+              {showNewCustomerForm && (
+                <div className="space-y-3 border rounded-lg p-4 bg-muted/5">
+                  <h4 className="font-medium">Nuevo Cliente</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="name">Nombre</Label>
+                      <Input
+                        id="name"
+                        value={customer.nombres || customer.name || ''}
+                        onChange={(e) => onCustomerChange({ ...customer, nombres: e.target.value, name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="apellido">Apellido</Label>
+                      <Input
+                        id="apellido"
+                        value={customer.apellidos || customer.apellido || ''}
+                        onChange={(e) => onCustomerChange({ ...customer, apellidos: e.target.value, apellido: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Teléfono</Label>
+                      <Input
+                        id="phone"
+                        value={customer.phone || ''}
+                        onChange={(e) => onCustomerChange({ ...customer, phone: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email (opcional)</Label>
+                      <Input
+                        id="email"
+                        value={customer.email || ''}
+                        onChange={(e) => onCustomerChange({ ...customer, email: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Continue Button */}
