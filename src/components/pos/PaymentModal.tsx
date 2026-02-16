@@ -547,12 +547,13 @@ export default function PaymentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle>Procesar Pago {payments.length > 1 ? '(Mixto)' : ''}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 pb-2">
+          <div className="space-y-6">
           {/* Order Name */}
           {orderName && (
             <Card>
@@ -961,20 +962,21 @@ export default function PaymentModal({
               </div>
             </CardContent>
           </Card>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleConfirm} 
-              disabled={!isValidPayment() || isSubmitting}
-              className="flex-1"
-            >
-              {isSubmitting ? 'Procesando...' : (payments.length === 0 ? 'Confirmar Pago' : `Confirmar Pago Mixto (${payments.length} métodos)`)}
-            </Button>
           </div>
+        </div>
+
+        {/* Fixed Footer */}
+        <div className="shrink-0 border-t px-6 py-4 flex gap-3 bg-background">
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleConfirm} 
+            disabled={!isValidPayment() || isSubmitting}
+            className="flex-1"
+          >
+            {isSubmitting ? 'Procesando...' : (payments.length === 0 ? 'Confirmar Pago' : `Confirmar Pago Mixto (${payments.length} métodos)`)}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
