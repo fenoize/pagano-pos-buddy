@@ -39,6 +39,7 @@ interface ProductCustomizationModalEnhancedProps {
   preloadedModifiers?: ProductModifier[];
   preloadedComboData?: any;
   showVariantStock?: boolean;
+  preselectedVariantId?: string;
 }
 
 export function ProductCustomizationModalEnhanced({ 
@@ -52,7 +53,8 @@ export function ProductCustomizationModalEnhanced({
   preloadedExtras = [],
   preloadedModifiers = [],
   preloadedComboData = null,
-  showVariantStock = false
+  showVariantStock = false,
+  preselectedVariantId
 }: ProductCustomizationModalEnhancedProps) {
   // Variant system state
   const [availableVariants, setAvailableVariants] = useState<ProductVariantOption[]>([]);
@@ -120,6 +122,10 @@ export function ProductCustomizationModalEnhanced({
             const defaultVariant = preloadedVariants.find(v => v.is_default) || preloadedVariants[0];
             setSelectedVariantOption(defaultVariant);
           }
+        } else if (preselectedVariantId) {
+          // If a variant was matched from search, pre-select it
+          const matchedVariant = preloadedVariants.find(v => v.id === preselectedVariantId);
+          setSelectedVariantOption(matchedVariant || preloadedVariants.find(v => v.is_default) || preloadedVariants[0]);
         } else {
           const defaultVariant = preloadedVariants.find(v => v.is_default) || preloadedVariants[0];
           setSelectedVariantOption(defaultVariant);

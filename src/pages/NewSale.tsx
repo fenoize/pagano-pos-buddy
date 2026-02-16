@@ -174,8 +174,11 @@ export default function NewSale() {
     handleCheckout();
   };
 
-  const handleProductClick = (product: Product) => {
+  const [matchedVariantId, setMatchedVariantId] = useState<string | undefined>();
+
+  const handleProductClick = (product: Product, variantId?: string) => {
     setSelectedProduct(product);
+    setMatchedVariantId(variantId);
     setShowCustomizationModal(true);
   };
 
@@ -998,6 +1001,7 @@ export default function NewSale() {
             setShowCustomizationModal(false);
             setSelectedProduct(null);
             setEditingItemIndex(undefined);
+            setMatchedVariantId(undefined);
           }}
           onAddToCart={handleAddToCart}
           product={selectedProduct}
@@ -1008,6 +1012,7 @@ export default function NewSale() {
           preloadedModifiers={preloadedData.modifiers.filter(m => m.product_id === selectedProduct.id)}
           preloadedComboData={preloadedData.combos[selectedProduct.id!]}
           showVariantStock={posConfig.showVariantStock}
+          preselectedVariantId={matchedVariantId}
         />
       )}
 
