@@ -8,7 +8,6 @@ import { Search, Plus, User, Coins, ScanLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
-import RunasCalculator from './RunasCalculator';
 import { QRScannerModal } from './QRScannerModal';
 
 interface CustomerModalProps {
@@ -16,11 +15,6 @@ interface CustomerModalProps {
   onClose: () => void;
   customer: Partial<Customer>;
   onCustomerChange: (customer: Partial<Customer>) => void;
-  totalAmount: number;
-  runaValue: number;
-  runaRewardValue: number;
-  onRunasChange?: (runas: number) => void;
-  usedRunas: number;
 }
 
 export function CustomerModal({ 
@@ -28,11 +22,6 @@ export function CustomerModal({
   onClose,
   customer, 
   onCustomerChange, 
-  totalAmount, 
-  runaValue,
-  runaRewardValue,
-  onRunasChange,
-  usedRunas = 0
 }: CustomerModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
@@ -40,6 +29,17 @@ export function CustomerModal({
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const { toast } = useToast();
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (!customer.id) {
+        setSearchTerm('');
+        setSearchResults([]);
+        setShowNewCustomerForm(false);
+      }
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (searchTerm.length >= 3) {
@@ -52,35 +52,19 @@ export function CustomerModal({
   const searchCustomers = async () => {
     setIsSearching(true);
     try {
-      // Obtener token de sesión
       const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
-      if (!token) {
-        throw new Error('No hay sesión activa');
-      }
+      if (!token) throw new Error('No hay sesión activa');
 
-      // Construir URL de Edge Function
       const supabaseUrl = (supabase as any).supabaseUrl || 'https://lxxfhayifyiioglfbsyj.supabase.co';
-      
-      // Llamar Edge Function con búsqueda
-      const params = new URLSearchParams({
-        q: searchTerm,
-        limit: '5',
-        offset: '0',
-      });
+      const params = new URLSearchParams({ q: searchTerm, limit: '5', offset: '0' });
 
       const response = await fetch(
         `${supabaseUrl}/functions/v1/staff-list-customers?${params}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        }
+        { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
       );
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Token inválido/expirado - forzar logout
           clearStaffStorage();
           window.location.href = '/pos/login';
           return;
@@ -92,11 +76,7 @@ export function CustomerModal({
       setSearchResults(result.data || []);
     } catch (error) {
       console.error('Error searching customers:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "No se pudieron buscar clientes",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: error instanceof Error ? error.message : "No se pudieron buscar clientes", variant: "destructive" });
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -105,246 +85,171 @@ export function CustomerModal({
 
   const selectCustomer = (selectedCustomer: Customer) => {
     onCustomerChange(selectedCustomer);
-    const displayName = getDisplayName(selectedCustomer);
-    setSearchTerm(displayName);
+    setSearchTerm('');
     setSearchResults([]);
     setShowNewCustomerForm(false);
   };
 
-  const handleNewCustomer = () => {
-    setShowNewCustomerForm(true);
-    setSearchResults([]);
+  const handleClearCustomer = () => {
+    onCustomerChange({});
+    setSearchTerm('');
+    setShowNewCustomerForm(false);
   };
 
-  const formatRunas = (runas: number) => {
-    return new Intl.NumberFormat('es-CL').format(runas);
-  };
+  const formatRunas = (runas: number) => new Intl.NumberFormat('es-CL').format(runas);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP'
-    }).format(price);
-  };
-
-  const handleRunasUse = (runas: number) => {
-    if (onRunasChange) {
-      onRunasChange(runas);
-    }
-  };
-
-  const maxRunasToUse = Math.min(
-    customer.cantidad_runas || 0,
-    Math.floor(totalAmount / runaRewardValue)
-  );
-
-  // Helper para obtener nombre completo
   const getDisplayName = (c: Customer | Partial<Customer>) => {
     const nombre = c.nombres || c.name || '';
     const apellido = c.apellidos || c.apellido || '';
     return `${nombre} ${apellido}`.trim();
   };
 
+  const hasSelectedCustomer = !!customer.id;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
             Cliente (opcional)
           </DialogTitle>
           <DialogDescription>
-            Busca un cliente existente o crea uno nuevo
+            {hasSelectedCustomer ? 'Cliente vinculado a esta venta' : 'Busca o escanea un cliente'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por correo o teléfono..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* QR Scanner Button */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 border-t border-border" />
-            <span className="text-xs text-muted-foreground px-2">o</span>
-            <div className="flex-1 border-t border-border" />
-          </div>
-          
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setShowQRScanner(true)}
-          >
-            <ScanLine className="w-4 h-4 mr-2" />
-            Escanear QR del cliente
-          </Button>
-
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="space-y-2 border rounded-lg p-2 bg-muted/5">
-              {searchResults.map((result) => (
-                <div
-                  key={result.id}
-                  className="flex items-center justify-between p-3 bg-background rounded border hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => selectCustomer(result)}
-                >
-                  <div className="flex-1">
-                    <div className="font-medium">
-                      {getDisplayName(result)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {result.phone && `📞 ${result.phone}`}
-                      {result.email && ` • ${result.email}`}
-                    </div>
-                  </div>
-                  {result.cantidad_runas && result.cantidad_runas > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      <Coins className="w-3 h-3 mr-1" />
-                      {formatRunas(result.cantidad_runas)} Runas
-                    </Badge>
-                  )}
+        {/* === SELECTED CUSTOMER VIEW === */}
+        {hasSelectedCustomer ? (
+          <div className="space-y-3">
+            <div className="border rounded-lg p-4 bg-primary/5">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium truncate">{getDisplayName(customer)}</h4>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {[customer.phone, customer.email].filter(Boolean).join(' · ')}
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Create Customer Button */}
-          {searchTerm.length >= 3 && searchResults.length === 0 && !isSearching && (
-            <div className="text-center p-4 border rounded-lg bg-muted/5">
-              <p className="text-muted-foreground mb-2">No se encontraron clientes</p>
-              <Button onClick={handleNewCustomer} variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Crear cliente
-              </Button>
-            </div>
-          )}
-
-          {/* New Customer Form - sin RUT */}
-          {showNewCustomerForm && (
-            <div className="space-y-3 border rounded-lg p-4 bg-muted/5">
-              <h4 className="font-medium">Nuevo Cliente</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Input
-                  placeholder="Nombres *"
-                  value={customer.nombres || customer.name || ''}
-                  onChange={(e) => onCustomerChange({ 
-                    ...customer, 
-                    nombres: e.target.value,
-                    name: e.target.value 
-                  })}
-                />
-                <Input
-                  placeholder="Apellidos"
-                  value={customer.apellidos || customer.apellido || ''}
-                  onChange={(e) => onCustomerChange({ 
-                    ...customer, 
-                    apellidos: e.target.value,
-                    apellido: e.target.value 
-                  })}
-                />
-                <Input
-                  placeholder="Teléfono"
-                  value={customer.phone || ''}
-                  onChange={(e) => onCustomerChange({ ...customer, phone: e.target.value })}
-                />
-                <Input
-                  placeholder="Email (opcional)"
-                  value={customer.email || ''}
-                  onChange={(e) => onCustomerChange({ ...customer, email: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Selected Customer & Runas */}
-          {customer.id && (
-            <div className="space-y-4">
-              {/* Customer Info */}
-              <div className="border rounded-lg p-4 bg-primary/5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">{getDisplayName(customer)}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {customer.phone} • {customer.email}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      onCustomerChange({});
-                      setSearchTerm('');
-                      setShowNewCustomerForm(false);
-                      if (onRunasChange) onRunasChange(0);
-                    }}
-                  >
-                    Cambiar
-                  </Button>
-                </div>
-              </div>
-
-              {/* Runas System */}
-              <div className="space-y-4">
-                <RunasCalculator
-                  totalAmount={totalAmount}
-                  runaValue={runaValue}
-                  customerRunas={customer.cantidad_runas}
-                />
-                
-                {/* Runas Usage Control */}
-                {maxRunasToUse > 0 && (
-                  <div className="border rounded-lg p-4 space-y-3">
-                    <h4 className="font-medium flex items-center gap-2">
-                      <Coins className="w-4 h-4 text-primary" />
-                      Canje de Runas
-                    </h4>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <label className="text-sm text-muted-foreground">
-                          Runas a usar (máx. {formatRunas(maxRunasToUse)})
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max={maxRunasToUse}
-                          value={usedRunas}
-                          onChange={(e) => handleRunasUse(Math.min(maxRunasToUse, Math.max(0, parseInt(e.target.value) || 0)))}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-muted-foreground">Descuento</div>
-                        <div className="font-medium text-primary">
-                          {formatPrice(usedRunas * runaRewardValue)}
-                        </div>
-                      </div>
-                    </div>
-                    {usedRunas > 0 && (
-                      <div className="text-xs text-muted-foreground">
-                        Quedarás con {formatRunas((customer.cantidad_runas || 0) - usedRunas)} Runas después de este canje
-                      </div>
-                    )}
-                  </div>
+                {customer.cantidad_runas != null && customer.cantidad_runas > 0 && (
+                  <Badge variant="secondary" className="ml-3 shrink-0">
+                    <Coins className="w-3 h-3 mr-1" />
+                    {formatRunas(customer.cantidad_runas)}
+                  </Badge>
                 )}
               </div>
             </div>
-          )}
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={onClose}>
-              Cerrar
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={handleClearCustomer}>
+                Cambiar cliente
+              </Button>
+              <Button className="flex-1" onClick={onClose}>
+                Confirmar
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          /* === SEARCH VIEW === */
+          <div className="space-y-3">
+            {/* Search + QR inline */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Correo, teléfono o nombre..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  autoFocus
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={() => setShowQRScanner(true)}
+                title="Escanear QR"
+              >
+                <ScanLine className="w-4 h-4" />
+              </Button>
+            </div>
 
-        {/* QR Scanner Modal */}
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {searchResults.map((result) => (
+                  <div
+                    key={result.id}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => selectCustomer(result)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{getDisplayName(result)}</div>
+                      <div className="text-sm text-muted-foreground truncate">
+                        {[result.phone, result.email].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                    {result.cantidad_runas != null && result.cantidad_runas > 0 && (
+                      <Badge variant="secondary" className="ml-2 shrink-0 text-xs">
+                        <Coins className="w-3 h-3 mr-1" />
+                        {formatRunas(result.cantidad_runas)}
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* No results */}
+            {searchTerm.length >= 3 && searchResults.length === 0 && !isSearching && (
+              <div className="text-center py-4 border rounded-lg">
+                <p className="text-sm text-muted-foreground mb-2">Sin resultados</p>
+                <Button onClick={() => { setShowNewCustomerForm(true); setSearchResults([]); }} variant="outline" size="sm">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Crear cliente
+                </Button>
+              </div>
+            )}
+
+            {/* New Customer Form */}
+            {showNewCustomerForm && (
+              <div className="space-y-3 border rounded-lg p-4">
+                <h4 className="font-medium text-sm">Nuevo Cliente</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    placeholder="Nombres *"
+                    value={customer.nombres || customer.name || ''}
+                    onChange={(e) => onCustomerChange({ ...customer, nombres: e.target.value, name: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Apellidos"
+                    value={customer.apellidos || customer.apellido || ''}
+                    onChange={(e) => onCustomerChange({ ...customer, apellidos: e.target.value, apellido: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Teléfono"
+                    value={customer.phone || ''}
+                    onChange={(e) => onCustomerChange({ ...customer, phone: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Email"
+                    value={customer.email || ''}
+                    onChange={(e) => onCustomerChange({ ...customer, email: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Close */}
+            <div className="flex justify-end pt-1">
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* QR Scanner */}
         <QRScannerModal
           isOpen={showQRScanner}
           onClose={() => setShowQRScanner(false)}
