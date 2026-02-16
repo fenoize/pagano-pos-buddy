@@ -153,7 +153,8 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
             *,
             variant:category_variants(*)
           `)
-          .eq('active', true),
+          .eq('active', true)
+          .order('variant(display_order)'),
         
         supabase
           .from('product_extras')

@@ -289,7 +289,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
             variant:category_variants(*)
           `)
           .in('product_id', productIds)
-          .eq('active', true),
+          .eq('active', true)
+          .order('variant(display_order)'),
         supabase
           .from('stock_balances')
           .select('raw_material_id, qty_on_hand')
