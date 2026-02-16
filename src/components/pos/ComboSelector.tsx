@@ -169,9 +169,11 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               ? categoryProducts.find((p: Product) => p.id === slot.default_product_id)
               : categoryProducts[0];
 
-            const productVariants = defaultProduct ? preloadedComboData.productVariants[defaultProduct.id!] || [] : [];
+            const allVariants = defaultProduct ? preloadedComboData.productVariants[defaultProduct.id!] || [] : [];
+            // Filter variants to only those belonging to the slot's category
+            const productVariants = allVariants.filter((v: ProductVariantOption) => v.variant?.category_id === slot.category_id);
             const defaultVariant = slot.default_variant_id
-              ? productVariants.find((v: ProductVariantOption) => v.id === slot.default_variant_id)
+              ? productVariants.find((v: ProductVariantOption) => v.category_variant_id === slot.default_variant_id)
               : productVariants.find((v: ProductVariantOption) => v.is_default) || productVariants[0];
 
             console.log('[ComboSelector] Default selection for slot:', {
@@ -369,9 +371,11 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           ? categoryProducts.find(p => p.id === slot.default_product_id)
           : categoryProducts[0];
 
-        const productVariants = defaultProduct ? groupedVariants[defaultProduct.id!] || [] : [];
+        const allVariants = defaultProduct ? groupedVariants[defaultProduct.id!] || [] : [];
+        // Filter variants to only those belonging to the slot's category
+        const productVariants = allVariants.filter(v => v.variant?.category_id === slot.category_id);
         const defaultVariant = slot.default_variant_id
-          ? productVariants.find(v => v.id === slot.default_variant_id)
+          ? productVariants.find(v => v.category_variant_id === slot.default_variant_id)
           : productVariants.find(v => v.is_default) || productVariants[0];
 
         return {
@@ -427,7 +431,9 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     const product = categoryProducts.find(p => p.id === productId);
     
     if (product) {
-      const variants = productVariants[productId] || [];
+      const allVariants = productVariants[productId] || [];
+      // Filter variants to only those belonging to the slot's category
+      const variants = allVariants.filter(v => v.variant?.category_id === selection.comboSlot.category_id);
       const defaultVariant = variants.find(v => v.is_default) || variants[0];
       
       updateSelection(slotIndex, {
@@ -457,9 +463,10 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       selections.forEach(selection => {
         if (selection.selectedVariant) {
           const slot = selection.comboSlot;
-          const availableVariants = selection.selectedProduct ? variantsData[selection.selectedProduct.id!] || [] : [];
+          const allVariants = selection.selectedProduct ? variantsData[selection.selectedProduct.id!] || [] : [];
+          const availableVariants = allVariants.filter(v => v.variant?.category_id === slot.category_id);
           const defaultVariant = slot.default_variant_id
-            ? availableVariants.find(v => v.id === slot.default_variant_id)
+            ? availableVariants.find(v => v.category_variant_id === slot.default_variant_id)
             : availableVariants.find(v => v.is_default);
           
           if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
@@ -510,9 +517,10 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         if (selection.selectedVariant) {
           // Find the default variant for this combo slot
           const slot = selection.comboSlot;
-          const availableVariants = selection.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
+          const allVariants = selection.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
+          const availableVariants = allVariants.filter(v => v.variant?.category_id === slot.category_id);
           const defaultVariant = slot.default_variant_id
-            ? availableVariants.find(v => v.id === slot.default_variant_id)
+            ? availableVariants.find(v => v.category_variant_id === slot.default_variant_id)
             : availableVariants.find(v => v.is_default);
           
           // If there's a default variant and the selected variant is different, add the price
@@ -661,9 +669,11 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         {selections.map((selection, index) => {
           const slot = selection.comboSlot;
           const availableProducts = slotProducts[slot.category_id] || [];
-          const availableVariants = selection.selectedProduct 
+          const allProductVariants = selection.selectedProduct 
             ? productVariants[selection.selectedProduct.id!] || []
             : [];
+          // Filter variants to only those belonging to the slot's category
+          const availableVariants = allProductVariants.filter(v => v.variant?.category_id === slot.category_id);
           const availableExtras = productExtras[slot.category_id] || [];
           const availableModifiers = selection.selectedProduct 
             ? productModifiers[selection.selectedProduct.id!] || []
