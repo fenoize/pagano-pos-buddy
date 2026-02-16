@@ -141,20 +141,22 @@ export default function CustomerSearchStep({ customer, onCustomerChange, orderNa
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Order Name Field */}
-          <div>
-            <Label htmlFor="order-name">Nombre del pedido</Label>
-            <Input
-              id="order-name"
-              placeholder="Ej: Mesa 5, Pedido Juan, etc."
-              value={orderName}
-              onChange={(e) => onOrderNameChange(e.target.value)}
-              className="mt-1"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Este nombre aparecerá en la cocina y en los tickets
-            </p>
-          </div>
+          {/* Order Name Field - solo si no hay cliente asociado */}
+          {!customer.id && (
+            <div>
+              <Label htmlFor="order-name">Nombre del pedido</Label>
+              <Input
+                id="order-name"
+                placeholder="Ej: Mesa 5, Pedido Juan, etc."
+                value={orderName}
+                onChange={(e) => onOrderNameChange(e.target.value)}
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Este nombre aparecerá en la cocina y en los tickets
+              </p>
+            </div>
+          )}
 
           {/* Cliente section - conditional */}
           {customer.id ? (
