@@ -40,7 +40,7 @@ interface ProductModifier {
 
 interface ProductGridProps {
   products: Product[];
-  onProductClick: (product: Product) => void;
+  onProductClick: (product: Product, matchedVariantId?: string) => void;
   onDataPreloaded?: (data: {
     variants: Record<string, ProductVariantOption[]>;
     extras: ProductExtra[];
@@ -409,6 +409,15 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
       .filter(Boolean) as string[];
   };
 
+  const getFirstMatchingVariantId = (product: Product): string | undefined => {
+    if (searchTerm.trim().length < 1) return undefined;
+    const searchLower = searchTerm.toLowerCase().trim();
+    if (product.name.toLowerCase().includes(searchLower)) return undefined;
+    const variants = productVariants[product.id!] || [];
+    const match = variants.find(v => v.variant?.name?.toLowerCase().includes(searchLower));
+    return match?.id;
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     if (e.target.value.trim().length >= 1) {
@@ -507,7 +516,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           <Card 
             key={product.id} 
             className="pos-card cursor-pointer hover:shadow-lg transition-all duration-200 group"
-            onClick={() => onProductClick(product)}
+            onClick={() => onProductClick(product, getFirstMatchingVariantId(product))}
           >
             {/* Product Image */}
             <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
