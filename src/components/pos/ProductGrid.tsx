@@ -348,11 +348,14 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
     }).format(price);
   };
 
-  const getMinPrice = (product: Product) => {
+   const getMinPrice = (product: Product) => {
     // Check if product has combo configuration
     const comboData = productCombos[product.id!];
-    if (comboData?.config?.base_price) {
-      return comboData.config.base_price;
+    if (comboData?.config) {
+      if (comboData.config.pricing_mode === 'fixed' && comboData.config.base_price > 0) {
+        return comboData.config.base_price;
+      }
+      // For dynamic mode or base_price=0, fall through to variant prices
     }
 
     const variants = productVariants[product.id!] || [];

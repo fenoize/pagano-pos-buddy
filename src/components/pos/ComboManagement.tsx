@@ -324,11 +324,17 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
         </CardHeader>
         {isCombo && comboConfig && (
           <CardContent className="space-y-4">
-            {/* Validación de precio base */}
-            {comboConfig.base_price <= 0 && (
+            {/* Validación de precio base - solo en modo fijo */}
+            {comboConfig.pricing_mode === 'fixed' && comboConfig.base_price <= 0 && (
               <div className="flex items-center space-x-2 p-3 bg-destructive/10 text-destructive rounded-lg">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm">El precio base debe ser mayor a $0 para que el combo sea válido</span>
+                <span className="text-sm">El precio base debe ser mayor a $0 en modo precio fijo</span>
+              </div>
+            )}
+            {comboConfig.pricing_mode === 'individual' && (
+              <div className="flex items-center space-x-2 p-3 bg-primary/10 text-primary rounded-lg">
+                <Settings className="h-4 w-4" />
+                <span className="text-sm">Modo dinámico: el precio será la suma de los productos seleccionados en cada slot, menos el descuento configurado. El precio base es opcional y se suma al total.</span>
               </div>
             )}
             
@@ -344,21 +350,22 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                     <Label htmlFor="fixed">Precio Fijo</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="dynamic" id="dynamic" />
-                    <Label htmlFor="dynamic">Precio Dinámico</Label>
+                    <RadioGroupItem value="individual" id="dynamic" />
+                    <Label htmlFor="dynamic">Precio Dinámico (suma de productos)</Label>
                   </div>
                 </RadioGroup>
               </div>
               <div>
-                <Label>Precio Base *</Label>
+                <Label>{comboConfig.pricing_mode === 'fixed' ? 'Precio Base *' : 'Precio Base (opcional)'}</Label>
                 <Input
                   type="number"
                   value={comboConfig.base_price}
                   onChange={(e) => updateComboConfig('base_price', parseInt(e.target.value) || 0)}
-                  min="1"
+                  min="0"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {formatPrice(comboConfig.base_price)}
+                  {comboConfig.pricing_mode === 'individual' && comboConfig.base_price === 0 && ' (solo suma de productos)'}
                 </p>
               </div>
             </div>
