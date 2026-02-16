@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProductVariantOption } from "@/types";
@@ -11,8 +10,8 @@ interface VariantSelectorProps {
   disabled?: boolean;
   defaultVariantId?: string;
   showExtraCost?: boolean;
-  hideOutOfStockBadge?: boolean; // Ocultar badge "Agotado" (para app cliente)
-  showStockCount?: boolean; // Mostrar cantidad de stock disponible
+  hideOutOfStockBadge?: boolean;
+  showStockCount?: boolean;
 }
 
 const VariantSelector: React.FC<VariantSelectorProps> = ({
@@ -45,7 +44,8 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
     );
   }
 
-  // Determine grid layout based on number of variants
+  const hasAnyImage = variants.some(v => v.variant?.image_url);
+
   const getGridCols = () => {
     if (variants.length <= 2) return 'grid-cols-2';
     if (variants.length <= 3) return 'grid-cols-3';
@@ -62,6 +62,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
           const isSelected = selectedVariantId === variant.id;
           const isDefault = defaultVariantId ? variant.id === defaultVariantId : variant.is_default;
           const hasExtraCost = showExtraCost && defaultVariantId && !isDefault;
+          const imageUrl = variant.variant?.image_url;
           
           return (
             <Card
@@ -75,6 +76,20 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
             >
               <CardContent className="p-3">
                 <div className="text-center space-y-2">
+                  {imageUrl && (
+                    <div className="w-full aspect-square rounded-md overflow-hidden border mb-1">
+                      <img
+                        src={imageUrl}
+                        alt={variant.variant?.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  {!imageUrl && hasAnyImage && (
+                    <div className="w-full aspect-square rounded-md border-2 border-dashed border-muted-foreground/20 flex items-center justify-center mb-1">
+                      <span className="text-muted-foreground text-xs">Sin imagen</span>
+                    </div>
+                  )}
                   <div className="flex flex-col items-center justify-center space-y-1">
                     <span className="font-medium text-sm text-center">
                       {variant.variant?.name}

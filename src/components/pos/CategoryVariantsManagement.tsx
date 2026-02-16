@@ -9,6 +9,7 @@ import { Plus, Edit2, Trash2, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CategoryVariant } from "@/types";
+import { VariantImageUpload } from "./VariantImageUpload";
 
 interface CategoryVariantsManagementProps {
   categoryId?: string;
@@ -22,6 +23,7 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
     name: '',
     active: true,
     display_order: 0,
+    image_url: null as string | null,
   });
   const { toast } = useToast();
 
@@ -33,97 +35,54 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
 
   const fetchVariants = async () => {
     if (!categoryId) return;
-
     try {
       const { data, error } = await supabase
         .from('category_variants')
         .select('*')
         .eq('category_id', categoryId)
         .order('display_order');
-
       if (error) throw error;
       setVariants(data || []);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al cargar las variantes",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Error al cargar las variantes", variant: "destructive" });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!categoryId) return;
-
     try {
+      const payload = {
+        name: formData.name,
+        active: formData.active,
+        display_order: formData.display_order,
+        image_url: formData.image_url,
+      };
       if (editingVariant) {
-        const { error } = await supabase
-          .from('category_variants')
-          .update({
-            name: formData.name,
-            active: formData.active,
-            display_order: formData.display_order,
-          })
-          .eq('id', editingVariant.id);
-
+        const { error } = await supabase.from('category_variants').update(payload).eq('id', editingVariant.id);
         if (error) throw error;
-        toast({
-          title: "Éxito",
-          description: "Variante actualizada correctamente",
-        });
+        toast({ title: "Éxito", description: "Variante actualizada correctamente" });
       } else {
-        const { error } = await supabase
-          .from('category_variants')
-          .insert({
-            category_id: categoryId,
-            name: formData.name,
-            active: formData.active,
-            display_order: formData.display_order,
-          });
-
+        const { error } = await supabase.from('category_variants').insert({ ...payload, category_id: categoryId });
         if (error) throw error;
-        toast({
-          title: "Éxito",
-          description: "Variante creada correctamente",
-        });
+        toast({ title: "Éxito", description: "Variante creada correctamente" });
       }
-
       fetchVariants();
       handleClose();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al guardar la variante",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Error al guardar la variante", variant: "destructive" });
     }
   };
 
   const deleteVariant = async (variant: CategoryVariant) => {
-    if (!window.confirm(`¿Estás seguro de eliminar la variante "${variant.name}"?`)) {
-      return;
-    }
-
+    if (!window.confirm(`¿Estás seguro de eliminar la variante "${variant.name}"?`)) return;
     try {
-      const { error } = await supabase
-        .from('category_variants')
-        .delete()
-        .eq('id', variant.id);
-
+      const { error } = await supabase.from('category_variants').delete().eq('id', variant.id);
       if (error) throw error;
-      
-      toast({
-        title: "Éxito",
-        description: "Variante eliminada correctamente",
-      });
+      toast({ title: "Éxito", description: "Variante eliminada correctamente" });
       fetchVariants();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al eliminar la variante",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Error al eliminar la variante", variant: "destructive" });
     }
   };
 
@@ -133,41 +92,28 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
       name: variant.name,
       active: variant.active,
       display_order: variant.display_order,
+      image_url: variant.image_url || null,
     });
     setIsDialogOpen(true);
   };
 
   const openNewDialog = () => {
     setEditingVariant(null);
-    setFormData({
-      name: '',
-      active: true,
-      display_order: variants.length + 1,
-    });
+    setFormData({ name: '', active: true, display_order: variants.length + 1, image_url: null });
     setIsDialogOpen(true);
   };
 
   const handleClose = () => {
     setIsDialogOpen(false);
     setEditingVariant(null);
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      active: true,
-      display_order: 0,
-    });
+    setFormData({ name: '', active: true, display_order: 0, image_url: null });
   };
 
   if (!categoryId) {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-muted-foreground">
-            Selecciona una categoría para gestionar sus variantes.
-          </p>
+          <p className="text-muted-foreground">Selecciona una categoría para gestionar sus variantes.</p>
         </CardContent>
       </Card>
     );
@@ -186,9 +132,7 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
       </CardHeader>
       <CardContent>
         {variants.length === 0 ? (
-          <p className="text-muted-foreground">
-            No hay variantes configuradas para esta categoría.
-          </p>
+          <p className="text-muted-foreground">No hay variantes configuradas para esta categoría.</p>
         ) : (
           <div className="space-y-2">
             {variants.map((variant) => (
@@ -197,11 +141,16 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <GripVertical className="h-4 w-4 text-muted-foreground" />
+                      {variant.image_url && (
+                        <img
+                          src={variant.image_url}
+                          alt={variant.name}
+                          className="w-10 h-10 rounded-md object-cover border"
+                        />
+                      )}
                       <div>
                         <p className="font-medium">{variant.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Orden: {variant.display_order}
-                        </p>
+                        <p className="text-sm text-muted-foreground">Orden: {variant.display_order}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -209,32 +158,17 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
                         checked={variant.active}
                         onCheckedChange={async (checked) => {
                           try {
-                            await supabase
-                              .from('category_variants')
-                              .update({ active: checked })
-                              .eq('id', variant.id);
+                            await supabase.from('category_variants').update({ active: checked }).eq('id', variant.id);
                             fetchVariants();
                           } catch (error) {
-                            toast({
-                              title: "Error",
-                              description: "Error al actualizar estado",
-                              variant: "destructive",
-                            });
+                            toast({ title: "Error", description: "Error al actualizar estado", variant: "destructive" });
                           }
                         }}
                       />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(variant)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => openEditDialog(variant)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteVariant(variant)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => deleteVariant(variant)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -248,9 +182,7 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {editingVariant ? 'Editar Variante' : 'Nueva Variante'}
-              </DialogTitle>
+              <DialogTitle>{editingVariant ? 'Editar Variante' : 'Nueva Variante'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -273,6 +205,16 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
                   min="0"
                 />
               </div>
+
+              <div>
+                <Label>Imagen de la Variante</Label>
+                <VariantImageUpload
+                  imageUrl={formData.image_url}
+                  onImageChange={(url) => setFormData({ ...formData, image_url: url })}
+                  variantName={formData.name || 'variante'}
+                />
+              </div>
+
               <div className="flex items-center space-x-2">
                 <Switch
                   id="active"
@@ -282,12 +224,8 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
                 <Label htmlFor="active">Activo</Label>
               </div>
               <div className="flex space-x-2">
-                <Button type="submit">
-                  {editingVariant ? 'Actualizar' : 'Crear'}
-                </Button>
-                <Button type="button" variant="outline" onClick={handleClose}>
-                  Cancelar
-                </Button>
+                <Button type="submit">{editingVariant ? 'Actualizar' : 'Crear'}</Button>
+                <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>
               </div>
             </form>
           </DialogContent>

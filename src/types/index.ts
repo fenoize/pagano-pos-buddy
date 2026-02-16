@@ -546,6 +546,7 @@ export interface CategoryVariant {
   name: string;
   display_order: number;
   active: boolean;
+  image_url?: string;
   created_at: string;
   updated_at: string;
 }
