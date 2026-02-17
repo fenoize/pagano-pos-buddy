@@ -461,20 +461,23 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     if (config.pricing_mode === 'fixed') {
       total = config.base_price;
       
-      selections.forEach(selection => {
-        if (selection.selectedVariant) {
-          const slot = selection.comboSlot;
-          const allVariants = selection.selectedProduct ? variantsData[selection.selectedProduct.id!] || [] : [];
-          const availableVariants = allVariants.filter(v => v.variant?.category_id === slot.category_id);
-          const defaultVariant = slot.default_variant_id
-            ? availableVariants.find(v => v.category_variant_id === slot.default_variant_id)
-            : availableVariants.find(v => v.is_default);
-          
-          if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
-            total += selection.selectedVariant.price * selection.quantity;
+      // Only charge for variant changes if included_variants is false
+      if (!config.included_variants) {
+        selections.forEach(selection => {
+          if (selection.selectedVariant) {
+            const slot = selection.comboSlot;
+            const allVariants = selection.selectedProduct ? variantsData[selection.selectedProduct.id!] || [] : [];
+            const availableVariants = allVariants.filter(v => v.variant?.category_id === slot.category_id);
+            const defaultVariant = slot.default_variant_id
+              ? availableVariants.find(v => v.category_variant_id === slot.default_variant_id)
+              : availableVariants.find(v => v.is_default);
+            
+            if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
+              total += selection.selectedVariant.price * selection.quantity;
+            }
           }
-        }
-      });
+        });
+      }
     } else {
       total = config.base_price;
       
@@ -513,24 +516,23 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     if (comboConfig.pricing_mode === 'fixed') {
       total = comboConfig.base_price;
       
-      // Add prices for non-default variants
-      selections.forEach(selection => {
-        if (selection.selectedVariant) {
-          // Find the default variant for this combo slot
-          const slot = selection.comboSlot;
-          const allVariants = selection.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
-          const availableVariants = allVariants.filter(v => v.variant?.category_id === slot.category_id);
-          const defaultVariant = slot.default_variant_id
-            ? availableVariants.find(v => v.category_variant_id === slot.default_variant_id)
-            : availableVariants.find(v => v.is_default);
-          
-          // If there's a default variant and the selected variant is different, add the price
-          if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
-            total += selection.selectedVariant.price * selection.quantity;
+      // Only charge for variant changes if included_variants is false
+      if (!comboConfig.included_variants) {
+        selections.forEach(selection => {
+          if (selection.selectedVariant) {
+            const slot = selection.comboSlot;
+            const allVariants = selection.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
+            const availableVariants = allVariants.filter(v => v.variant?.category_id === slot.category_id);
+            const defaultVariant = slot.default_variant_id
+              ? availableVariants.find(v => v.category_variant_id === slot.default_variant_id)
+              : availableVariants.find(v => v.is_default);
+            
+            if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
+              total += selection.selectedVariant.price * selection.quantity;
+            }
           }
-          // If there's no default variant, don't add extra cost for variant changes
-        }
-      });
+        });
+      }
     } else {
       // Individual pricing mode
       total = comboConfig.base_price;
