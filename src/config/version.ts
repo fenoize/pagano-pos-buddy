@@ -3,12 +3,22 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.3.2 (beta)";
- export const APP_BUILD_DATE = "2026-02-11";
+ export const APP_VERSION = "1.3.3 (beta)";
+ export const APP_BUILD_DATE = "2026-02-17";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.3.3 (beta)",
+     date: "2026-02-17",
+     changes: [
+       "Búsqueda inteligente en Nueva Venta: al buscar una variante, se preselecciona automáticamente al abrir el producto",
+       "Corrección de cobro en combos con variantes incluidas en precio base",
+       "Botones Cancelar y Confirmar Pago siempre visibles en el modal de pago",
+       "Mejoras de usabilidad y correcciones menores"
+     ]
+   },
    {
      version: "1.3.2 (beta)",
      date: "2026-02-11",
