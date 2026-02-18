@@ -68,7 +68,7 @@ export default function NewSale() {
   const { hasActiveSession } = useCashSession();
   const { deductInventoryFromOrder } = useInventory();
   const { config: posConfig } = usePOSConfig();
-  const { discountPercent: subscriptionDiscountPercent } = useCustomerDiscountSubscription(customer?.id as string | undefined);
+  const { discountPercent: subscriptionDiscountPercent, rules: subscriptionRules } = useCustomerDiscountSubscription(customer?.id as string | undefined);
 
   const subtotal = cartItems.reduce((sum, item) => {
     const extrasTotal = item.extras.reduce((extraSum, extra) => extraSum + (extra.price * (extra.quantity || 1)), 0);
@@ -76,14 +76,69 @@ export default function NewSale() {
     return sum + itemTotal;
   }, 0);
 
+  // Calculate subscription discount with rules
+  const calculateSubscriptionDiscount = () => {
+    if (subscriptionDiscountPercent <= 0 || !subscriptionRules) return { products: 0, delivery: 0 };
+
+    // Min/max spend check
+    if (subscriptionRules.minSpend && subtotal < subscriptionRules.minSpend) return { products: 0, delivery: 0 };
+    if (subscriptionRules.maxSpend && subtotal > subscriptionRules.maxSpend) return { products: 0, delivery: 0 };
+
+    // Calculate eligible product total based on scope
+    let eligibleTotal = 0;
+    if (subscriptionRules.scopeMode === 'all') {
+      eligibleTotal = subtotal;
+    } else {
+      cartItems.forEach(item => {
+        const product = products.find(p => p.id === item.productId);
+        const categoryId = product?.category || '';
+        const productId = item.productId || '';
+
+        let eligible = true;
+        if (subscriptionRules.scopeMode === 'categories') {
+          if (subscriptionRules.allowedCategories.length > 0 && !subscriptionRules.allowedCategories.includes(categoryId)) eligible = false;
+          if (subscriptionRules.excludedCategories.includes(categoryId)) eligible = false;
+        } else if (subscriptionRules.scopeMode === 'products') {
+          if (subscriptionRules.allowedProducts.length > 0 && !subscriptionRules.allowedProducts.includes(productId)) eligible = false;
+          if (subscriptionRules.excludedProducts.includes(productId)) eligible = false;
+        }
+
+        if (eligible) {
+          const extrasTotal = item.extras.reduce((s, e) => s + (e.price * (e.quantity || 1)), 0);
+          eligibleTotal += (item.basePrice + extrasTotal) * item.quantity;
+        }
+      });
+    }
+
+    const productsDiscount = Math.round(eligibleTotal * subscriptionDiscountPercent / 100);
+
+    // Delivery discount
+    let deliveryDisc = 0;
+    if (subscriptionRules.affectsDelivery && deliveryFee > 0) {
+      if (subscriptionRules.deliveryMode === 'free') {
+        deliveryDisc = deliveryFee;
+      } else if (subscriptionRules.deliveryMode === 'fixed') {
+        deliveryDisc = Math.min(deliveryFee, subscriptionRules.deliveryAmount || 0);
+      } else if (subscriptionRules.deliveryMode === 'percent') {
+        deliveryDisc = Math.round(deliveryFee * (subscriptionRules.deliveryAmount || 0) / 100);
+      }
+    }
+
+    return { products: productsDiscount, delivery: deliveryDisc };
+  };
+
+  const subscriptionDisc = calculateSubscriptionDiscount();
+  const subscriptionDiscountAmount = subscriptionDisc.products;
+  const subscriptionDeliveryDiscount = subscriptionDisc.delivery;
+
   const couponDiscount = appliedCoupons.reduce((sum, coupon) => 
     sum + Number(coupon.discount_products) + Number(coupon.discount_delivery), 0);
   const manualDiscountAmount = manualDiscount ? manualDiscount.amount : 0;
   const runasDiscount = usedRunas * runaRewardValue;
-  const subscriptionDiscountAmount = subscriptionDiscountPercent > 0 ? Math.round(subtotal * subscriptionDiscountPercent / 100) : 0;
   const totalDiscount = couponDiscount + manualDiscountAmount + runasDiscount + subscriptionDiscountAmount;
   const totalBeforeDelivery = Math.max(0, subtotal - totalDiscount);
-  const total = totalBeforeDelivery + deliveryFee;
+  const effectiveDeliveryFee = Math.max(0, deliveryFee - subscriptionDeliveryDiscount);
+  const total = totalBeforeDelivery + effectiveDeliveryFee;
 
   useEffect(() => {
     fetchData();
