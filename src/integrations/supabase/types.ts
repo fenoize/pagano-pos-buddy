@@ -1161,42 +1161,78 @@ export type Database = {
       }
       customer_discount_subscriptions: {
         Row: {
+          affects_delivery: boolean | null
+          allowed_categories: string[] | null
+          allowed_products: string[] | null
+          apply_to_combo_children: boolean | null
+          apply_to_discounted: boolean | null
           created_at: string
           created_by: string | null
           customer_id: string
+          delivery_amount: number | null
+          delivery_mode: string | null
           discount_percent: number
           end_date: string | null
+          excluded_categories: string[] | null
+          excluded_products: string[] | null
           id: string
           is_active: boolean
+          max_spend: number | null
+          min_spend: number | null
           notes: string | null
+          scope_mode: string | null
           start_date: string | null
           updated_at: string
           usage_count: number
           usage_limit: number | null
         }
         Insert: {
+          affects_delivery?: boolean | null
+          allowed_categories?: string[] | null
+          allowed_products?: string[] | null
+          apply_to_combo_children?: boolean | null
+          apply_to_discounted?: boolean | null
           created_at?: string
           created_by?: string | null
           customer_id: string
+          delivery_amount?: number | null
+          delivery_mode?: string | null
           discount_percent: number
           end_date?: string | null
+          excluded_categories?: string[] | null
+          excluded_products?: string[] | null
           id?: string
           is_active?: boolean
+          max_spend?: number | null
+          min_spend?: number | null
           notes?: string | null
+          scope_mode?: string | null
           start_date?: string | null
           updated_at?: string
           usage_count?: number
           usage_limit?: number | null
         }
         Update: {
+          affects_delivery?: boolean | null
+          allowed_categories?: string[] | null
+          allowed_products?: string[] | null
+          apply_to_combo_children?: boolean | null
+          apply_to_discounted?: boolean | null
           created_at?: string
           created_by?: string | null
           customer_id?: string
+          delivery_amount?: number | null
+          delivery_mode?: string | null
           discount_percent?: number
           end_date?: string | null
+          excluded_categories?: string[] | null
+          excluded_products?: string[] | null
           id?: string
           is_active?: boolean
+          max_spend?: number | null
+          min_spend?: number | null
           notes?: string | null
+          scope_mode?: string | null
           start_date?: string | null
           updated_at?: string
           usage_count?: number

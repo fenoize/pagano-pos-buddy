@@ -15,7 +15,27 @@ export interface DiscountSubscription {
   updated_at: string;
   usage_limit: number | null;
   usage_count: number;
+  // New rule fields
+  min_spend: number | null;
+  max_spend: number | null;
+  affects_delivery: boolean;
+  delivery_mode: string | null;
+  delivery_amount: number | null;
+  apply_to_discounted: boolean;
+  apply_to_combo_children: boolean;
+  scope_mode: string;
+  allowed_categories: string[];
+  excluded_categories: string[];
+  allowed_products: string[];
+  excluded_products: string[];
 }
+
+export type DiscountSubscriptionUpdatable = Partial<Pick<DiscountSubscription,
+  'discount_percent' | 'is_active' | 'notes' | 'start_date' | 'end_date' | 'usage_limit' |
+  'min_spend' | 'max_spend' | 'affects_delivery' | 'delivery_mode' | 'delivery_amount' |
+  'apply_to_discounted' | 'apply_to_combo_children' | 'scope_mode' |
+  'allowed_categories' | 'excluded_categories' | 'allowed_products' | 'excluded_products'
+>>;
 
 export function useDiscountSubscription(customerId?: string) {
   const [subscription, setSubscription] = useState<DiscountSubscription | null>(null);
@@ -33,7 +53,19 @@ export function useDiscountSubscription(customerId?: string) {
         .maybeSingle();
 
       if (error) throw error;
-      setSubscription(data as DiscountSubscription | null);
+      // Ensure arrays default to empty
+      const sub = data ? {
+        ...data,
+        allowed_categories: (data as any).allowed_categories || [],
+        excluded_categories: (data as any).excluded_categories || [],
+        allowed_products: (data as any).allowed_products || [],
+        excluded_products: (data as any).excluded_products || [],
+        scope_mode: (data as any).scope_mode || 'all',
+        affects_delivery: (data as any).affects_delivery || false,
+        apply_to_discounted: (data as any).apply_to_discounted ?? true,
+        apply_to_combo_children: (data as any).apply_to_combo_children ?? true,
+      } as DiscountSubscription : null;
+      setSubscription(sub);
     } catch (error) {
       console.error('Error fetching discount subscription:', error);
     } finally {
@@ -46,11 +78,25 @@ export function useDiscountSubscription(customerId?: string) {
   }, [fetchSubscription]);
 
   const createSubscription = async (
-    discountPercent: number,
-    notes?: string,
-    startDate?: string | null,
-    endDate?: string | null,
-    usageLimit?: number | null
+    data: {
+      discountPercent: number;
+      notes?: string;
+      startDate?: string | null;
+      endDate?: string | null;
+      usageLimit?: number | null;
+      minSpend?: number | null;
+      maxSpend?: number | null;
+      affectsDelivery?: boolean;
+      deliveryMode?: string | null;
+      deliveryAmount?: number | null;
+      applyToDiscounted?: boolean;
+      applyToComboChildren?: boolean;
+      scopeMode?: string;
+      allowedCategories?: string[];
+      excludedCategories?: string[];
+      allowedProducts?: string[];
+      excludedProducts?: string[];
+    }
   ): Promise<boolean> => {
     if (!customerId) return false;
     try {
@@ -58,14 +104,26 @@ export function useDiscountSubscription(customerId?: string) {
         .from('customer_discount_subscriptions')
         .insert({
           customer_id: customerId,
-          discount_percent: discountPercent,
+          discount_percent: data.discountPercent,
           is_active: true,
-          start_date: startDate || new Date().toISOString().split('T')[0],
-          end_date: endDate || null,
-          notes: notes || null,
-          usage_limit: usageLimit ?? null,
-          usage_count: 0
-        });
+          start_date: data.startDate || new Date().toISOString().split('T')[0],
+          end_date: data.endDate || null,
+          notes: data.notes || null,
+          usage_limit: data.usageLimit ?? null,
+          usage_count: 0,
+          min_spend: data.minSpend ?? null,
+          max_spend: data.maxSpend ?? null,
+          affects_delivery: data.affectsDelivery ?? false,
+          delivery_mode: data.deliveryMode ?? null,
+          delivery_amount: data.deliveryAmount ?? null,
+          apply_to_discounted: data.applyToDiscounted ?? true,
+          apply_to_combo_children: data.applyToComboChildren ?? true,
+          scope_mode: data.scopeMode ?? 'all',
+          allowed_categories: data.allowedCategories ?? [],
+          excluded_categories: data.excludedCategories ?? [],
+          allowed_products: data.allowedProducts ?? [],
+          excluded_products: data.excludedProducts ?? [],
+        } as any);
 
       if (error) {
         if (error.code === '23505') {
@@ -76,7 +134,7 @@ export function useDiscountSubscription(customerId?: string) {
         return false;
       }
 
-      toast({ title: "Éxito", description: `Descuento del ${discountPercent}% creado` });
+      toast({ title: "Éxito", description: `Descuento del ${data.discountPercent}% creado` });
       await fetchSubscription();
       return true;
     } catch (error) {
@@ -88,12 +146,12 @@ export function useDiscountSubscription(customerId?: string) {
 
   const updateSubscription = async (
     id: string,
-    updates: Partial<Pick<DiscountSubscription, 'discount_percent' | 'is_active' | 'notes' | 'start_date' | 'end_date' | 'usage_limit'>>
+    updates: DiscountSubscriptionUpdatable
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('customer_discount_subscriptions')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update({ ...updates, updated_at: new Date().toISOString() } as any)
         .eq('id', id);
 
       if (error) throw error;

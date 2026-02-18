@@ -47,7 +47,7 @@ export default function CustomerCheckout() {
   const { settings: paymentSettings, loading: settingsLoading } = useCustomerOrderSettings();
   const { zones: deliveryZones, loading: zonesLoading } = useDeliveryZones();
   const { findZoneByCoordinates } = useDeliveryGeo();
-  const { discountPercent: subscriptionDiscount } = useCustomerDiscountSubscription(customer?.id);
+  const { discountPercent: subscriptionDiscount, rules: subscriptionRules } = useCustomerDiscountSubscription(customer?.id);
   
   const [notes, setNotes] = useState('');
   const [canOrder, setCanOrder] = useState(true);
@@ -173,9 +173,24 @@ export default function CustomerCheckout() {
   }, [items.length, mpEnabled, runasEnabled, deliveryEnabled, pickupEnabled, navigate]);
 
   const selectedAddress = customerAddresses.find(a => a.id === selectedAddressId);
-  const subscriptionDiscountAmount = subscriptionDiscount > 0 ? Math.round(subtotal * subscriptionDiscount / 100) : 0;
+  // Apply subscription discount with rules
+  const subscriptionDiscountAmount = (() => {
+    if (subscriptionDiscount <= 0 || !subscriptionRules) return 0;
+    if (subscriptionRules.minSpend && subtotal < subscriptionRules.minSpend) return 0;
+    if (subscriptionRules.maxSpend && subtotal > subscriptionRules.maxSpend) return 0;
+    // For customer app, apply to full subtotal (scope filtering can be added later with product categories)
+    return Math.round(subtotal * subscriptionDiscount / 100);
+  })();
+  const subscriptionDeliveryDiscount = (() => {
+    if (!subscriptionRules?.affectsDelivery || deliveryFee <= 0) return 0;
+    if (subscriptionRules.deliveryMode === 'free') return deliveryFee;
+    if (subscriptionRules.deliveryMode === 'fixed') return Math.min(deliveryFee, subscriptionRules.deliveryAmount || 0);
+    if (subscriptionRules.deliveryMode === 'percent') return Math.round(deliveryFee * (subscriptionRules.deliveryAmount || 0) / 100);
+    return 0;
+  })();
   const subtotalAfterDiscount = Math.max(0, subtotal - subscriptionDiscountAmount);
-  const total = subtotalAfterDiscount + (fulfillmentType === 'delivery' ? deliveryFee : 0);
+  const effectiveDeliveryFee = Math.max(0, deliveryFee - subscriptionDeliveryDiscount);
+  const total = subtotalAfterDiscount + (fulfillmentType === 'delivery' ? effectiveDeliveryFee : 0);
 
   const handlePayment = async () => {
     if (!canOrder) {
