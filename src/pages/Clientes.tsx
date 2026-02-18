@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, MapPin, CreditCard, Download, X, Shield } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Coins, CreditCard, Download, X, Shield } from "lucide-react";
+import { useRunasConfig } from '@/hooks/useRunasConfig';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +48,11 @@ export default function Clientes() {
     updateCustomerInList,
     exportCustomersCSV
   } = useCustomers();
+
+  const { runaRedemptionValue } = useRunasConfig();
+
+  const totalRunas = customers.reduce((sum, c) => sum + (c.cantidad_runas || 0), 0);
+  const totalRunasValue = totalRunas * runaRedemptionValue;
 
   // Auto-fetch when filters change
   useEffect(() => {
@@ -191,9 +197,9 @@ export default function Clientes() {
                 <CreditCard className="w-4 h-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Con Runas</p>
+                <p className="text-sm text-muted-foreground">Total Runas</p>
                 <p className="text-xl font-bold">
-                  {customers.filter(c => (c.cantidad_runas || 0) > 0).length}
+                  {formatRunas(totalRunas)}
                 </p>
               </div>
             </div>
@@ -204,12 +210,12 @@ export default function Clientes() {
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                <MapPin className="w-4 h-4 text-purple-600" />
+                <Coins className="w-4 h-4 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Con Dirección</p>
+                <p className="text-sm text-muted-foreground">Valor Runas</p>
                 <p className="text-xl font-bold">
-                  {customers.filter(c => c.addresses && c.addresses.length > 0).length}
+                  {formatPrice(totalRunasValue)}
                 </p>
               </div>
             </div>
