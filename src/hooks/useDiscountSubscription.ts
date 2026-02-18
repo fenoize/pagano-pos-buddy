@@ -100,30 +100,27 @@ export function useDiscountSubscription(customerId?: string) {
   ): Promise<boolean> => {
     if (!customerId) return false;
     try {
-      const { error } = await supabase
-        .from('customer_discount_subscriptions')
-        .insert({
-          customer_id: customerId,
-          discount_percent: data.discountPercent,
-          is_active: true,
-          start_date: data.startDate || new Date().toISOString().split('T')[0],
-          end_date: data.endDate || null,
-          notes: data.notes || null,
-          usage_limit: data.usageLimit ?? null,
-          usage_count: 0,
-          min_spend: data.minSpend ?? null,
-          max_spend: data.maxSpend ?? null,
-          affects_delivery: data.affectsDelivery ?? false,
-          delivery_mode: data.deliveryMode ?? null,
-          delivery_amount: data.deliveryAmount ?? null,
-          apply_to_discounted: data.applyToDiscounted ?? true,
-          apply_to_combo_children: data.applyToComboChildren ?? true,
-          scope_mode: data.scopeMode ?? 'all',
-          allowed_categories: data.allowedCategories ?? [],
-          excluded_categories: data.excludedCategories ?? [],
-          allowed_products: data.allowedProducts ?? [],
-          excluded_products: data.excludedProducts ?? [],
-        } as any);
+      const { error } = await supabase.rpc('create_discount_subscription', {
+        p_customer_id: customerId,
+        p_discount_percent: data.discountPercent,
+        p_is_active: true,
+        p_start_date: data.startDate || new Date().toISOString().split('T')[0],
+        p_end_date: data.endDate || null,
+        p_notes: data.notes || null,
+        p_usage_limit: data.usageLimit ?? null,
+        p_min_spend: data.minSpend ?? null,
+        p_max_spend: data.maxSpend ?? null,
+        p_affects_delivery: data.affectsDelivery ?? false,
+        p_delivery_mode: data.deliveryMode ?? null,
+        p_delivery_amount: data.deliveryAmount ?? null,
+        p_apply_to_discounted: data.applyToDiscounted ?? true,
+        p_apply_to_combo_children: data.applyToComboChildren ?? true,
+        p_scope_mode: data.scopeMode ?? 'all',
+        p_allowed_categories: data.allowedCategories ?? [],
+        p_excluded_categories: data.excludedCategories ?? [],
+        p_allowed_products: data.allowedProducts ?? [],
+        p_excluded_products: data.excludedProducts ?? [],
+      } as any);
 
       if (error) {
         if (error.code === '23505') {
@@ -149,10 +146,10 @@ export function useDiscountSubscription(customerId?: string) {
     updates: DiscountSubscriptionUpdatable
   ): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('customer_discount_subscriptions')
-        .update({ ...updates, updated_at: new Date().toISOString() } as any)
-        .eq('id', id);
+      const { error } = await supabase.rpc('update_discount_subscription', {
+        p_id: id,
+        p_updates: updates as any,
+      } as any);
 
       if (error) throw error;
       toast({ title: "Éxito", description: "Suscripción actualizada" });
@@ -167,10 +164,9 @@ export function useDiscountSubscription(customerId?: string) {
 
   const deleteSubscription = async (id: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('customer_discount_subscriptions')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.rpc('delete_discount_subscription', {
+        p_id: id,
+      } as any);
 
       if (error) throw error;
       toast({ title: "Éxito", description: "Suscripción eliminada" });
