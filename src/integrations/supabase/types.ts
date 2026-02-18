@@ -5994,6 +5994,30 @@ export type Database = {
         }
         Returns: number
       }
+      create_discount_subscription: {
+        Args: {
+          p_affects_delivery?: boolean
+          p_allowed_categories?: string[]
+          p_allowed_products?: string[]
+          p_apply_to_combo_children?: boolean
+          p_apply_to_discounted?: boolean
+          p_customer_id: string
+          p_delivery_amount?: number
+          p_delivery_mode?: string
+          p_discount_percent: number
+          p_end_date?: string
+          p_excluded_categories?: string[]
+          p_excluded_products?: string[]
+          p_is_active?: boolean
+          p_max_spend?: number
+          p_min_spend?: number
+          p_notes?: string
+          p_scope_mode?: string
+          p_start_date?: string
+          p_usage_limit?: number
+        }
+        Returns: string
+      }
       create_order_with_context:
         | {
             Args: {
@@ -6025,6 +6049,7 @@ export type Database = {
         Args: { p_order_id: string; p_warehouse_id?: string }
         Returns: Json
       }
+      delete_discount_subscription: { Args: { p_id: string }; Returns: boolean }
       delivery_export_range: {
         Args: { _end: string; _start: string; _tz?: string }
         Returns: {
@@ -6455,6 +6480,10 @@ export type Database = {
       update_customer_runas: {
         Args: { p_cantidad_runas: number; p_customer_id: string }
         Returns: undefined
+      }
+      update_discount_subscription: {
+        Args: { p_id: string; p_updates: Json }
+        Returns: boolean
       }
       update_online_order_settings:
         | { Args: { p_settings: Json }; Returns: Json }
