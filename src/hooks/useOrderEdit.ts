@@ -235,6 +235,7 @@ export function useOrderEdit() {
           pickup_mode: editData.pickup_mode || null,
           total: editData.total,
           payment_method: editData.payment_method as any,
+          payment_status: editData.payment_method === 'pendiente' ? 'unpaid' : 'paid',
           payment_efectivo: editData.payment_efectivo,
           payment_mp: editData.payment_mp,
           payment_pos: editData.payment_pos,
