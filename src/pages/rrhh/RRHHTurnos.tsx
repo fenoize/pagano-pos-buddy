@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Calendar, CalendarDays, List, Plus, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, Filter, CalendarClock, Users } from 'lucide-react';
+import { Calendar, CalendarDays, List, Plus, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, Filter, CalendarClock, Users, Trash2 } from 'lucide-react';
 import { useHRShifts } from '@/hooks/useHRShifts';
 import { useHREmployees } from '@/hooks/useHREmployees';
 import { useHRShiftConfig } from '@/hooks/useHRShiftConfig';
@@ -50,7 +50,7 @@ function RRHHTurnos() {
   const { 
     shifts, loading, filters, setFilters, 
     createShift, updateShift, confirmShift, approveShift, deleteShift,
-    bulkConfirm, bulkApprove, bulkCreateShifts,
+    bulkConfirm, bulkApprove, bulkDelete, bulkCreateShifts,
   } = useHRShifts({
     dateFrom: format(dateRange.start, 'yyyy-MM-dd'),
     dateTo: format(dateRange.end, 'yyyy-MM-dd'),
@@ -168,6 +168,18 @@ function RRHHTurnos() {
 
   const draftSelected = selectedIds.filter(id => shifts.find(s => s.id === id)?.status === 'draft').length;
   const confirmedSelected = selectedIds.filter(id => shifts.find(s => s.id === id)?.status === 'confirmed').length;
+  const deletableSelected = draftSelected + confirmedSelected;
+
+  const handleBulkDelete = async () => {
+    const deletableIds = selectedIds.filter(id => {
+      const shift = shifts.find(s => s.id === id);
+      return shift?.status === 'draft' || shift?.status === 'confirmed';
+    });
+    if (deletableIds.length > 0) {
+      await bulkDelete(deletableIds);
+      setSelectedIds([]);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -341,6 +353,12 @@ function RRHHTurnos() {
                 <Button size="sm" onClick={handleBulkApprove}>
                   <CheckCheck className="h-4 w-4 mr-1" />
                   Aprobar ({confirmedSelected})
+                </Button>
+              )}
+              {deletableSelected > 0 && (
+                <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Eliminar ({deletableSelected})
                 </Button>
               )}
             </div>
