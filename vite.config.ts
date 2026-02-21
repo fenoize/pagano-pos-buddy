@@ -42,7 +42,6 @@ export default defineConfig(({ mode }) => ({
           // POS/Staff chunks - separados por funcionalidad
           'pos-auth': [
             './src/pages/Login.tsx',
-            './src/hooks/useAuth.ts',
             './src/components/guards/StaffProtectedRoute.tsx',
           ],
           'pos-sales': [
