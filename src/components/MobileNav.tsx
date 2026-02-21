@@ -32,7 +32,9 @@ export function MobileNav() {
   const currentPath = location.pathname;
 
   const canAccessRoute = (roles: AppRole[]) => {
-    return user?.role && roles.includes(user.role);
+    if (!user) return false;
+    const userRoles = user.roles?.length ? user.roles : (user.role ? [user.role] : []);
+    return userRoles.some(r => roles.includes(r));
   };
 
   const isActive = (path: string) => currentPath === path;
