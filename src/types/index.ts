@@ -18,6 +18,7 @@ export interface User {
   full_name?: string;
   email?: string;
   role: AppRole;
+  roles?: AppRole[];
   active: boolean;
   can_do_delivery: boolean;
   created_at: string;

@@ -32,8 +32,6 @@ export function useUsers() {
   const [loading, setLoading] = useState(false);
 
   const { user } = useAuthContext();
-
-  // Usar hook de permisos centralizado
   const { canManageUsers } = usePermissions();
 
   const requireAdminContext = async <T,>(operation: () => Promise<T>): Promise<T> => {
@@ -54,23 +52,40 @@ export function useUsers() {
         return;
       }
 
-      // Setear contexto para que RLS permita el SELECT
       const result = await withStaffContext(user.id, async () => {
-        const { data, error } = await supabase
+        // Fetch users
+        const { data: usersData, error: usersError } = await supabase
           .from('users')
           .select('id, username, full_name, email, role, active, can_do_delivery, created_at, updated_at')
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return data || [];
+        if (usersError) throw usersError;
+
+        // Fetch all user_roles
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id, role');
+
+        if (rolesError) throw rolesError;
+
+        // Group roles by user_id
+        const rolesByUser: Record<string, AppRole[]> = {};
+        for (const r of rolesData || []) {
+          const mapped = mapDatabaseRoleToApp(r.role);
+          if (!rolesByUser[r.user_id]) rolesByUser[r.user_id] = [];
+          if (!rolesByUser[r.user_id].includes(mapped)) {
+            rolesByUser[r.user_id].push(mapped);
+          }
+        }
+
+        return (usersData || []).map(u => ({
+          ...u,
+          role: mapDatabaseRoleToApp((u as any).role),
+          roles: rolesByUser[u.id] || [mapDatabaseRoleToApp((u as any).role)],
+        })) as User[];
       });
 
-      const mappedUsers = result.map(u => ({
-        ...u,
-        role: mapDatabaseRoleToApp((u as any).role)
-      })) as User[];
-
-      setUsers(mappedUsers);
+      setUsers(result);
     } catch (error) {
       console.error('Error fetching users:', error);
       throw error;
@@ -79,47 +94,82 @@ export function useUsers() {
     }
   }, [user?.id]);
 
+  const syncUserRoles = async (userId: string, roles: AppRole[]) => {
+    // Delete existing roles
+    const { error: deleteError } = await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId);
+
+    if (deleteError) throw deleteError;
+
+    // Insert new roles
+    const dbRoles = roles.map(r => mapAppRoleToDatabase(r));
+    const uniqueDbRoles = [...new Set(dbRoles)];
+
+    if (uniqueDbRoles.length > 0) {
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert(uniqueDbRoles.map(role => ({ user_id: userId, role: role as any })));
+
+      if (insertError) throw insertError;
+    }
+
+    // Update primary role on users table (first role)
+    const primaryDbRole = uniqueDbRoles[0];
+    if (primaryDbRole) {
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ role: primaryDbRole as any })
+        .eq('id', userId);
+
+      if (updateError) throw updateError;
+    }
+  };
+
   const createUser = async (userData: {
     username: string;
     full_name: string;
     email: string;
     password: string;
-    role: AppRole;
+    roles: AppRole[];
     can_do_delivery?: boolean;
   }) => {
     return requireAdminContext(async () => {
       const username = userData.username.trim();
       const full_name = userData.full_name.trim();
       const email = userData.email.trim();
+      const primaryRole = mapAppRoleToDatabase(userData.roles[0] || 'Cajero');
 
-      // First create the user with a temporary password
       const { data, error: insertError } = await supabase
         .from('users')
         .insert({
           username,
           full_name: full_name || null,
           email: email || null,
-          pass_hash: 'temp', // Temporary value
-          role: mapAppRoleToDatabase(userData.role) as any,
+          pass_hash: 'temp',
+          role: primaryRole as any,
           active: true,
-          can_do_delivery: userData.can_do_delivery ?? (userData.role === 'Reparto')
+          can_do_delivery: userData.can_do_delivery ?? userData.roles.includes('Reparto')
         })
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      // Now set the proper password using the database function
+      // Set password
       const { error: passwordError } = await supabase.rpc('set_user_password', {
         user_uuid: data.id,
         new_password: userData.password
       });
 
       if (passwordError) {
-        // If password setting failed, clean up the user
         await supabase.from('users').delete().eq('id', data.id);
         throw passwordError;
       }
+
+      // Sync roles to user_roles table
+      await syncUserRoles(data.id, userData.roles);
 
       return data;
     });
@@ -129,7 +179,7 @@ export function useUsers() {
     username?: string;
     full_name?: string;
     email?: string;
-    role?: AppRole;
+    roles?: AppRole[];
     can_do_delivery?: boolean;
   }) => {
     return requireAdminContext(async () => {
@@ -147,8 +197,13 @@ export function useUsers() {
         const v = userData.email.trim();
         updateData.email = v ? v : null;
       }
-      if (userData.role) updateData.role = mapAppRoleToDatabase(userData.role);
       if (userData.can_do_delivery !== undefined) updateData.can_do_delivery = userData.can_do_delivery;
+
+      // Update primary role if roles changed
+      if (userData.roles && userData.roles.length > 0) {
+        updateData.role = mapAppRoleToDatabase(userData.roles[0]);
+        await syncUserRoles(userId, userData.roles);
+      }
 
       const { data, error } = await supabase
         .from('users')
@@ -164,6 +219,7 @@ export function useUsers() {
 
   const deleteUser = async (userId: string) => {
     return requireAdminContext(async () => {
+      // user_roles has ON DELETE CASCADE, so it auto-cleans
       const { error } = await supabase.from('users').delete().eq('id', userId);
       if (error) throw error;
     });
@@ -190,14 +246,8 @@ export function useUsers() {
         new_password: newPassword
       });
 
-      if (error) {
-        console.error('Error updating password:', error);
-        throw error;
-      }
-
-      if (!data) {
-        throw new Error('No se pudo actualizar la contraseña. Usuario no encontrado.');
-      }
+      if (error) throw error;
+      if (!data) throw new Error('No se pudo actualizar la contraseña. Usuario no encontrado.');
     });
   };
 
