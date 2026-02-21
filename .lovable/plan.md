@@ -1,90 +1,46 @@
 
 
-## Buscador de Productos Mejorado - Nueva Venta
+## Asignacion Masiva de Turnos a Empleados
 
 ### Problema actual
-El buscador solo filtra por el nombre del producto. Si buscas "Coca Cola", no encuentra el producto "Lata" aunque tenga esa variante configurada.
+Actualmente, para asignar turnos recurrentes a un empleado (ej: "Cristobal trabaja de lunes a viernes en Cocina"), hay que crear cada turno uno por uno o usar "Generar desde Horario" que crea turnos **sin empleado asignado** y luego asignarlos manualmente.
 
-### Solucion
+### Solucion propuesta
+Crear un nuevo modal **"Asignacion Masiva"** accesible desde la pagina de Turnos, que permita definir reglas de asignacion por empleado y generar todos los turnos en un rango de fechas.
 
-**1. Busqueda por variantes**
+### Flujo del usuario
 
-Modificar la logica de filtrado en `src/components/pos/ProductGrid.tsx` (linea 372-392) para que ademas del nombre del producto, busque dentro de los nombres de las variantes asociadas (`productVariants`).
+1. El usuario hace clic en un boton "Asignacion Masiva" en la barra de herramientas de Turnos
+2. Se abre un modal con:
+   - **Rango de fechas** (fecha inicio / fecha fin)
+   - **Lista de reglas de asignacion** donde cada regla tiene:
+     - Empleado (select)
+     - Rol (select: Cocina, Caja, etc.)
+     - Tipo de turno (select: Turno Completo, etc.)
+     - Jornada (select: Jornada AM, PM, etc.)
+     - Dias de la semana (checkboxes: L M X J V S D)
+   - Boton "+ Agregar regla" para agregar mas empleados
+3. **Vista previa** muestra cuantos turnos se generaran en total, desglosado por empleado
+4. Al confirmar, se crean todos los turnos en estado "draft" con el empleado ya asignado
 
-La logica sera:
-- Buscar en `product.name`
-- Buscar en los nombres de las variantes del producto (`productVariants[product.id]`)
-- Si alguna coincide, el producto aparece en los resultados
-- Cuando el match es por variante (no por nombre), mostrar un indicador visual (badge) debajo del producto indicando que variante coincidio (ej: "Coca Cola" destacado)
-
-**2. Mejoras de UX/UI del buscador**
-
-- **Resultados instantaneos (1 caracter minimo en vez de 2)**: Reducir el umbral de busqueda de 2 a 1 caracter para respuesta mas rapida.
-- **Highlight de coincidencia por variante**: Cuando un producto aparece porque una variante coincide, mostrar un badge o texto debajo indicando "Variante: Coca Cola" para que el cajero entienda por que aparece ese resultado.
-- **Icono X mas limpio**: Reemplazar el caracter "X" por el icono `X` de lucide-react que ya esta importado en el proyecto.
-- **Autofocus**: Al cargar la pagina, enfocar automaticamente el buscador para agilizar la operacion del cajero.
-- **Contador de resultados mejorado**: Indicar si los resultados incluyen coincidencias por variante.
+### Ejemplo del usuario
+- Regla 1: Cristobal Sepulveda / Cocina / Turno Completo / Jornada PM / L-M-X-J-V
+- Regla 2: Ignacio Hernandez / Caja / Turno Completo / Jornada PM / L-X-V (dia por medio)
+- Rango: 31 marzo - 13 abril (2 semanas)
+- Resultado: Cristobal obtiene 10 turnos, Ignacio obtiene 6 turnos = 16 turnos totales
 
 ### Detalles tecnicos
 
-**Archivo**: `src/components/pos/ProductGrid.tsx`
+**Nuevo componente:** `src/components/rrhh/BulkAssignShiftsModal.tsx`
+- Reutiliza los mismos datos de `activeEmployees`, `activeRoles`, `activeShiftTypes`, `activeSchedules`
+- Usa `eachDayOfInterval` y `getDay` de date-fns para calcular que dias coinciden con los checkboxes seleccionados
+- La vista previa se calcula en un `useMemo` reactivo
+- Al confirmar, llama a `bulkCreateShifts` del hook existente `useHRShifts`, pero ahora cada turno incluye `employee_id`
 
-**Cambios en el filtrado** (linea ~372):
-```typescript
-const filteredProducts = useMemo(() => {
-  let filtered = products;
+**Modificacion en:** `src/pages/rrhh/RRHHTurnos.tsx`
+- Agregar boton "Asignacion Masiva" junto a "Generar desde Horario" y "Nuevo Turno"
+- Importar y renderizar el nuevo modal
+- Pasar las mismas props (employees, roles, shiftTypes, schedules, bulkCreateShifts)
 
-  if (searchTerm.trim().length >= 1) {
-    const searchLower = searchTerm.toLowerCase().trim();
-    filtered = filtered.filter(product => {
-      // Match por nombre de producto
-      if (product.name.toLowerCase().includes(searchLower)) return true;
-      // Match por nombre de variante
-      const variants = productVariants[product.id!] || [];
-      return variants.some(v => 
-        v.variant_value?.toLowerCase().includes(searchLower) ||
-        v.variant?.name?.toLowerCase().includes(searchLower)
-      );
-    });
-  }
-
-  if (searchTerm.trim().length < 1 && activeCategory !== 'all') {
-    filtered = filtered.filter(p => 
-      p.categories?.some(cat => cat.id === activeCategory)
-    );
-  }
-
-  return filtered;
-}, [products, searchTerm, activeCategory, productVariants]);
-```
-
-**Funcion helper para obtener variantes que coinciden** (nueva):
-```typescript
-const getMatchingVariants = (product: Product): string[] => {
-  if (searchTerm.trim().length < 1) return [];
-  const searchLower = searchTerm.toLowerCase().trim();
-  if (product.name.toLowerCase().includes(searchLower)) return [];
-  const variants = productVariants[product.id!] || [];
-  return variants
-    .filter(v => v.variant_value?.toLowerCase().includes(searchLower))
-    .map(v => v.variant_value);
-};
-```
-
-**UI del producto en resultados** - agregar debajo del nombre del producto:
-```tsx
-{getMatchingVariants(product).length > 0 && (
-  <div className="flex flex-wrap gap-1">
-    {getMatchingVariants(product).map((name, i) => (
-      <Badge key={i} variant="outline" className="text-xs bg-primary/10">
-        Variante: {name}
-      </Badge>
-    ))}
-  </div>
-)}
-```
-
-**Icono X**: Reemplazar el boton con texto "X" por el componente `X` de lucide-react (ya importado en otros archivos).
-
-**Autofocus**: Agregar `autoFocus` al Input de busqueda, pero solo en desktop (verificar con `useIsMobile()`), para no molestar en movil donde el teclado virtual ocupa espacio.
+**Sin cambios en base de datos** - Se reutiliza `bulkCreateShifts` que ya soporta `employee_id` en cada turno.
 
