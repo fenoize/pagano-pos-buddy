@@ -73,6 +73,7 @@ const MarketingPromosApp = lazy(() => import("@/pages/MarketingPromosApp"));
 const MarketingNotifications = lazy(() => import("@/pages/MarketingNotifications"));
 const MarketingTVContent = lazy(() => import("@/pages/MarketingTVContent"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+const ForceUpdate = lazy(() => import("@/pages/ForceUpdate"));
 
 // Delivery Pages
 const DeliveryDashboard = lazy(() => import("@/pages/delivery/DeliveryDashboard"));
@@ -751,6 +752,9 @@ const App = () => (
               <Route path="/cierres-diarios" element={<Navigate to="/pos/cierres-diarios" replace />} />
               <Route path="/configuracion" element={<Navigate to="/pos/configuracion" replace />} />
               
+                {/* Force Update */}
+                <Route path="/force-update" element={<ForceUpdate />} />
+                
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
