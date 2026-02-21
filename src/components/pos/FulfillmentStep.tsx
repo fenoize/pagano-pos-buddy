@@ -580,6 +580,24 @@ export default function FulfillmentStep({ fulfillment, pickupMode, customer, ini
                         />
                       </div>
                       
+                      {/* Repartidor en excepción */}
+                      <div>
+                        <Label>Repartidor (opcional)</Label>
+                        <Select value={selectedRepartidorId} onValueChange={setSelectedRepartidorId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sin asignar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin asignar</SelectItem>
+                            {repartidores.map(rep => (
+                              <SelectItem key={rep.id} value={rep.id}>
+                                {rep.full_name || rep.username}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       <Button 
                         variant="ghost" 
                         size="sm"
