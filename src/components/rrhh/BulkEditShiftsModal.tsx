@@ -43,10 +43,10 @@ export function BulkEditShiftsModal({
 
   const handleApply = async () => {
     const changes: Record<string, any> = {};
-    if (employeeId !== UNCHANGED) changes.employee_id = employeeId || null;
+    if (employeeId !== UNCHANGED) changes.employee_id = employeeId === '__unassigned__' ? null : employeeId;
     if (roleId !== UNCHANGED) changes.role_id = roleId;
     if (shiftTypeId !== UNCHANGED) changes.shift_type_id = shiftTypeId;
-    if (scheduleId !== UNCHANGED) changes.schedule_id = scheduleId || null;
+    if (scheduleId !== UNCHANGED) changes.schedule_id = scheduleId === '__none__' ? null : scheduleId;
     if (replaceNotes) changes.notes = notes || null;
 
     setSaving(true);
@@ -86,7 +86,7 @@ export function BulkEditShiftsModal({
               <SelectTrigger><SelectValue placeholder="Sin cambiar" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={UNCHANGED}>— Sin cambiar —</SelectItem>
-                <SelectItem value="">Sin asignar</SelectItem>
+                <SelectItem value="__unassigned__">Sin asignar</SelectItem>
                 {activeEmployees.map(e => (
                   <SelectItem key={e.id} value={e.id}>{e.full_name}</SelectItem>
                 ))}
@@ -126,7 +126,7 @@ export function BulkEditShiftsModal({
               <SelectTrigger><SelectValue placeholder="Sin cambiar" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={UNCHANGED}>— Sin cambiar —</SelectItem>
-                <SelectItem value="">Sin jornada</SelectItem>
+                <SelectItem value="__none__">Sin jornada</SelectItem>
                 {activeSchedules.map(s => (
                   <SelectItem key={s.id} value={s.id}>{s.name} ({s.start_time}–{s.end_time})</SelectItem>
                 ))}
