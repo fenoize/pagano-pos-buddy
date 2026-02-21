@@ -70,7 +70,8 @@ export default function Users() {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const userRoles = user.roles || [user.role];
+    const matchesRole = roleFilter === 'all' || userRoles.includes(roleFilter as AppRole);
     const matchesStatus = statusFilter === 'all' || 
       (statusFilter === 'active' && user.active) ||
       (statusFilter === 'inactive' && !user.active);
@@ -277,7 +278,11 @@ export default function Users() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getRoleColor(user.role)}>{user.role}</Badge>
+                        <div className="flex flex-wrap gap-1">
+                          {(user.roles || [user.role]).map((r) => (
+                            <Badge key={r} className={getRoleColor(r)}>{r}</Badge>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {user.can_do_delivery ? (
