@@ -217,33 +217,18 @@ export function CajeroDashboard() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ventas del Día</CardTitle>
+            <CardTitle className="text-sm font-medium">Ventas del Turno</CardTitle>
             <DollarSign className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {loading ? '...' : formatCurrency(stats.todaysSales)}
+              {loading ? '...' : formatCurrency(hasActiveSession() ? stats.sessionSales : stats.todaysSales)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.todaysOrders} ventas realizadas
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ventas Semanales</CardTitle>
-            <CalendarDays className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? '...' : formatCurrency(stats.sessionSales)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.sessionOrders} ventas (turno actual)
+              {hasActiveSession() ? stats.sessionOrders : stats.todaysOrders} ventas realizadas
             </p>
           </CardContent>
         </Card>
@@ -255,7 +240,11 @@ export function CajeroDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {loading ? '...' : formatCurrency(stats.todaysOrders > 0 ? stats.todaysSales / stats.todaysOrders : 0)}
+              {loading ? '...' : (() => {
+                const sales = hasActiveSession() ? stats.sessionSales : stats.todaysSales;
+                const orders = hasActiveSession() ? stats.sessionOrders : stats.todaysOrders;
+                return formatCurrency(orders > 0 ? sales / orders : 0);
+              })()}
             </div>
             <p className="text-xs text-muted-foreground">
               Promedio por venta
