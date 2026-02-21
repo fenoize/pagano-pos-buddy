@@ -225,6 +225,27 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
     }
   };
 
+  const bulkUpdate = async (ids: string[], changes: Record<string, any>) => {
+    const userId = getStaffUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
+    try {
+      const { error } = await supabase.from('hr_shifts').update({
+        ...changes,
+        updated_at: new Date().toISOString(),
+      }).in('id', ids).in('status', ['draft', 'confirmed']);
+      if (error) throw error;
+      toast.success(`${ids.length} turno(s) actualizado(s)`);
+      await fetchShifts();
+    } catch (error: any) {
+      console.error('Error bulk updating shifts:', error);
+      toast.error('Error al actualizar turnos');
+      throw error;
+    }
+  };
+
   const bulkConfirm = async (ids: string[]) => {
     const userId = getStaffUserId();
     if (!userId) {
@@ -318,6 +339,7 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
     bulkConfirm,
     bulkApprove,
     bulkDelete,
+    bulkUpdate,
     bulkCreateShifts,
   };
 }

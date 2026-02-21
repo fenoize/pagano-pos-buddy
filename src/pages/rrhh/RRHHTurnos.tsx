@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Calendar, CalendarDays, List, Plus, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, Filter, CalendarClock, Users, Trash2 } from 'lucide-react';
+import { Calendar, CalendarDays, List, Plus, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, Filter, CalendarClock, Users, Trash2, Pencil } from 'lucide-react';
 import { useHRShifts } from '@/hooks/useHRShifts';
 import { useHREmployees } from '@/hooks/useHREmployees';
 import { useHRShiftConfig } from '@/hooks/useHRShiftConfig';
@@ -20,6 +20,7 @@ import { ShiftCalendar } from '@/components/rrhh/ShiftCalendar';
 import { ShiftListView } from '@/components/rrhh/ShiftListView';
 import { GenerateShiftsModal } from '@/components/rrhh/GenerateShiftsModal';
 import { BulkAssignShiftsModal } from '@/components/rrhh/BulkAssignShiftsModal';
+import { BulkEditShiftsModal } from '@/components/rrhh/BulkEditShiftsModal';
 import { SHIFT_COLOR_LEGEND } from '@/lib/shiftColors';
 import { cn } from '@/lib/utils';
 
@@ -50,7 +51,7 @@ function RRHHTurnos() {
   const { 
     shifts, loading, filters, setFilters, 
     createShift, updateShift, confirmShift, approveShift, deleteShift,
-    bulkConfirm, bulkApprove, bulkDelete, bulkCreateShifts,
+    bulkConfirm, bulkApprove, bulkDelete, bulkUpdate, bulkCreateShifts,
   } = useHRShifts({
     dateFrom: format(dateRange.start, 'yyyy-MM-dd'),
     dateTo: format(dateRange.end, 'yyyy-MM-dd'),
@@ -63,6 +64,7 @@ function RRHHTurnos() {
   const [modalOpen, setModalOpen] = useState(false);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [shiftForm, setShiftForm] = useState<HRShiftFormData>({
     employee_id: '',
     shift_date: format(new Date(), 'yyyy-MM-dd'),
@@ -342,7 +344,13 @@ function RRHHTurnos() {
         <Card className="bg-muted/50">
           <CardContent className="py-3 flex items-center justify-between">
             <span className="text-sm">{selectedIds.length} turno(s) seleccionado(s)</span>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {deletableSelected > 0 && (
+                <Button size="sm" variant="outline" onClick={() => setBulkEditOpen(true)}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Editar ({deletableSelected})
+                </Button>
+              )}
               {draftSelected > 0 && (
                 <Button size="sm" variant="secondary" onClick={handleBulkConfirm}>
                   <Check className="h-4 w-4 mr-1" />
@@ -513,6 +521,25 @@ function RRHHTurnos() {
         shiftTypes={activeShiftTypes}
         schedules={activeSchedules}
         onBulkCreate={bulkCreateShifts}
+      />
+
+      {/* Bulk Edit Modal */}
+      <BulkEditShiftsModal
+        open={bulkEditOpen}
+        onOpenChange={setBulkEditOpen}
+        selectedCount={deletableSelected}
+        employees={employees}
+        shiftTypes={shiftTypes}
+        roles={roles}
+        schedules={schedules}
+        onApply={async (changes) => {
+          const editableIds = selectedIds.filter(id => {
+            const s = shifts.find(sh => sh.id === id);
+            return s?.status === 'draft' || s?.status === 'confirmed';
+          });
+          await bulkUpdate(editableIds, changes);
+          setSelectedIds([]);
+        }}
       />
     </div>
   );
