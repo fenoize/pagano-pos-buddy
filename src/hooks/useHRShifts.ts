@@ -207,6 +207,24 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
     }
   };
 
+  const bulkDelete = async (ids: string[]) => {
+    const userId = getStaffUserId();
+    if (!userId) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
+    try {
+      const { error } = await supabase.from('hr_shifts').delete().in('id', ids).in('status', ['draft', 'confirmed']);
+      if (error) throw error;
+      toast.success(`${ids.length} turno(s) eliminado(s)`);
+      await fetchShifts();
+    } catch (error: any) {
+      console.error('Error bulk deleting shifts:', error);
+      toast.error('Error al eliminar turnos');
+      throw error;
+    }
+  };
+
   const bulkConfirm = async (ids: string[]) => {
     const userId = getStaffUserId();
     if (!userId) {
@@ -299,6 +317,7 @@ export function useHRShifts(initialFilters?: HRShiftFilters) {
     deleteShift,
     bulkConfirm,
     bulkApprove,
+    bulkDelete,
     bulkCreateShifts,
   };
 }
