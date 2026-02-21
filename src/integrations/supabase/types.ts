@@ -6488,14 +6488,23 @@ export type Database = {
       update_online_order_settings:
         | { Args: { p_settings: Json }; Returns: Json }
         | { Args: { p_settings: Json; p_user_id?: string }; Returns: Json }
-      update_order_status: {
-        Args: {
-          p_new_status: Database["public"]["Enums"]["order_status"]
-          p_order_id: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
+      update_order_status:
+        | {
+            Args: {
+              p_new_status: Database["public"]["Enums"]["order_status"]
+              p_order_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_new_status: string
+              p_order_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
       validate_staff_token: {
         Args: { _token: string }
         Returns: {
