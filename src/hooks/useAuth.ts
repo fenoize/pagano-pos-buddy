@@ -137,6 +137,22 @@ export function useAuth() {
       const userRecord = userData[0];
       console.log('Authentication successful for user:', userRecord.username);
 
+      // 1b. Fetch all assigned roles from user_roles
+      const { data: userRolesData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userRecord.user_id);
+
+      const allRoles: AppRole[] = (userRolesData || [])
+        .map(r => mapDatabaseRoleToApp(r.role));
+      
+      // If no roles found, fallback to primary role
+      if (allRoles.length === 0) {
+        allRoles.push(mapDatabaseRoleToApp(userRecord.role));
+      }
+
+      console.log('User roles:', allRoles);
+
       // 2. Crear sesión de staff con flag PWA
       const { data: sessionData, error: sessionError } = await supabase
         .rpc('create_staff_session', {
@@ -158,6 +174,7 @@ export function useAuth() {
         full_name: userRecord.full_name,
         email: userRecord.email,
         role: mapDatabaseRoleToApp(userRecord.role),
+        roles: allRoles,
         active: userRecord.active
       } as User;
       

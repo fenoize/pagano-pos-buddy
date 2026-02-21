@@ -176,7 +176,10 @@ export function AppSidebar() {
       : "text-primary hover:bg-primary hover:text-primary-foreground transition-colors";
 
   const canAccessRoute = (roles: AppRole[]) => {
-    return user?.role && roles.includes(user.role);
+    if (!user) return false;
+    // Check all assigned roles (multi-role support)
+    const userRoles = user.roles?.length ? user.roles : (user.role ? [user.role] : []);
+    return userRoles.some(r => roles.includes(r));
   };
 
   const handleLogout = async () => {

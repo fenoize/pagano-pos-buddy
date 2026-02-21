@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import type { OrderStatus } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -106,7 +107,7 @@ export const OrderStatusDropdown: React.FC<OrderStatusDropdownProps> = ({
       // Usar RPC que establece contexto dentro de la transacción
       const { data, error } = await supabase.rpc('update_order_status', {
         p_order_id: orderId,
-        p_new_status: newStatus as any,
+        p_new_status: newStatus as OrderStatus,
         p_user_id: staffUser.id
       });
 
