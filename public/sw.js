@@ -1,7 +1,7 @@
 // Import OneSignal SDK for push notifications
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 
-const CACHE_NAME = 'paganos-customer-v1';
+const CACHE_NAME = 'paganos-customer-v2';
 
 // Solo cachear rutas y assets del portal de clientes
 const urlsToCache = [
