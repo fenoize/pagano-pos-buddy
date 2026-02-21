@@ -4,7 +4,7 @@
 // Import OneSignal SDK for push notifications
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 
-const CACHE_NAME = 'paganos-pos-v1';
+const CACHE_NAME = 'paganos-pos-v2';
 
 // Assets estáticos mínimos para fallback offline
 const STATIC_ASSETS = [
