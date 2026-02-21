@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Calendar, CalendarDays, List, Plus, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, Filter, CalendarClock } from 'lucide-react';
+import { Calendar, CalendarDays, List, Plus, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, Filter, CalendarClock, Users } from 'lucide-react';
 import { useHRShifts } from '@/hooks/useHRShifts';
 import { useHREmployees } from '@/hooks/useHREmployees';
 import { useHRShiftConfig } from '@/hooks/useHRShiftConfig';
@@ -19,6 +19,7 @@ import { es } from 'date-fns/locale';
 import { ShiftCalendar } from '@/components/rrhh/ShiftCalendar';
 import { ShiftListView } from '@/components/rrhh/ShiftListView';
 import { GenerateShiftsModal } from '@/components/rrhh/GenerateShiftsModal';
+import { BulkAssignShiftsModal } from '@/components/rrhh/BulkAssignShiftsModal';
 import { SHIFT_COLOR_LEGEND } from '@/lib/shiftColors';
 import { cn } from '@/lib/utils';
 
@@ -61,6 +62,7 @@ function RRHHTurnos() {
   
   const [modalOpen, setModalOpen] = useState(false);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [shiftForm, setShiftForm] = useState<HRShiftFormData>({
     employee_id: '',
     shift_date: format(new Date(), 'yyyy-MM-dd'),
@@ -176,7 +178,11 @@ function RRHHTurnos() {
             <h1 className="text-2xl font-bold">Gestión de Turnos</h1>
             <p className="text-muted-foreground">Registra y gestiona turnos del personal</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => setBulkAssignOpen(true)}>
+              <Users className="h-4 w-4 mr-2" />
+              Asignación Masiva
+            </Button>
             <Button variant="outline" onClick={() => setGenerateModalOpen(true)}>
               <CalendarClock className="h-4 w-4 mr-2" />
               Generar desde Horario
@@ -478,6 +484,17 @@ function RRHHTurnos() {
         onOpenChange={setGenerateModalOpen}
         schedules={schedules}
         onGenerate={bulkCreateShifts}
+      />
+
+      {/* Bulk Assign Modal */}
+      <BulkAssignShiftsModal
+        open={bulkAssignOpen}
+        onOpenChange={setBulkAssignOpen}
+        employees={activeEmployees}
+        roles={activeRoles}
+        shiftTypes={activeShiftTypes}
+        schedules={activeSchedules}
+        onBulkCreate={bulkCreateShifts}
       />
     </div>
   );
