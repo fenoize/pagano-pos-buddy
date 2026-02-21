@@ -6477,6 +6477,14 @@ export type Database = {
         }
         Returns: string
       }
+      sync_user_roles: {
+        Args: {
+          p_admin_user_id: string
+          p_roles: string[]
+          p_target_user_id: string
+        }
+        Returns: undefined
+      }
       update_customer_runas: {
         Args: { p_cantidad_runas: number; p_customer_id: string }
         Returns: undefined
