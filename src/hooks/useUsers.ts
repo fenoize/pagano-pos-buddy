@@ -94,37 +94,17 @@ export function useUsers() {
     }
   }, [user?.id]);
 
-  const syncUserRoles = async (userId: string, roles: AppRole[]) => {
-    // Delete existing roles
-    const { error: deleteError } = await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId);
-
-    if (deleteError) throw deleteError;
-
-    // Insert new roles
+  const syncUserRoles = async (userId: string, roles: AppRole[], adminUserId: string) => {
     const dbRoles = roles.map(r => mapAppRoleToDatabase(r));
     const uniqueDbRoles = [...new Set(dbRoles)];
 
-    if (uniqueDbRoles.length > 0) {
-      const { error: insertError } = await supabase
-        .from('user_roles')
-        .insert(uniqueDbRoles.map(role => ({ user_id: userId, role: role as any })));
+    const { error } = await supabase.rpc('sync_user_roles', {
+      p_admin_user_id: adminUserId,
+      p_target_user_id: userId,
+      p_roles: uniqueDbRoles,
+    } as any);
 
-      if (insertError) throw insertError;
-    }
-
-    // Update primary role on users table (first role)
-    const primaryDbRole = uniqueDbRoles[0];
-    if (primaryDbRole) {
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ role: primaryDbRole as any })
-        .eq('id', userId);
-
-      if (updateError) throw updateError;
-    }
+    if (error) throw error;
   };
 
   const createUser = async (userData: {
@@ -169,7 +149,7 @@ export function useUsers() {
       }
 
       // Sync roles to user_roles table
-      await syncUserRoles(data.id, userData.roles);
+      await syncUserRoles(data.id, userData.roles, user!.id);
 
       return data;
     });
@@ -202,7 +182,7 @@ export function useUsers() {
       // Update primary role if roles changed
       if (userData.roles && userData.roles.length > 0) {
         updateData.role = mapAppRoleToDatabase(userData.roles[0]);
-        await syncUserRoles(userId, userData.roles);
+        await syncUserRoles(userId, userData.roles, user!.id);
       }
 
       const { data, error } = await supabase
