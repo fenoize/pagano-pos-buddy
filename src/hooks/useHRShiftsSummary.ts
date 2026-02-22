@@ -29,14 +29,10 @@ export interface ShiftSummaryFilters {
   shiftTypeId?: string;
 }
 
-export function useHRShiftsSummary(initialFilters?: ShiftSummaryFilters) {
+export function useHRShiftsSummary(filters: ShiftSummaryFilters) {
   const [shifts, setShifts] = useState<HRShift[]>([]);
   const [payRules, setPayRules] = useState<HRPayRule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<ShiftSummaryFilters>(() => initialFilters || {
-    dateFrom: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-    dateTo: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
-  });
 
   // Fetch pay rules
   const fetchPayRules = useCallback(async () => {
@@ -167,7 +163,6 @@ export function useHRShiftsSummary(initialFilters?: ShiftSummaryFilters) {
     totals,
     loading,
     filters,
-    setFilters,
     refetch: fetchShifts,
   };
 }
