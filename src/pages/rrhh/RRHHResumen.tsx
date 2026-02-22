@@ -30,15 +30,19 @@ export default function RRHHResumen() {
   const [employeeFilter, setEmployeeFilter] = useState<string>('__all__');
   const [shiftTypeFilter, setShiftTypeFilter] = useState<string>('__all__');
 
-  const { employees } = useHREmployees();
-  const { shiftTypes } = useHRShiftConfig();
-
-  const { items, totals, loading } = useHRShiftsSummary({
+  const buildFilters = () => ({
     dateFrom: format(dateFrom, 'yyyy-MM-dd'),
     dateTo: format(dateTo, 'yyyy-MM-dd'),
     employeeId: employeeFilter !== '__all__' ? employeeFilter : undefined,
     shiftTypeId: shiftTypeFilter !== '__all__' ? shiftTypeFilter : undefined,
   });
+
+  const [appliedFilters, setAppliedFilters] = useState(buildFilters);
+
+  const { employees } = useHREmployees();
+  const { shiftTypes } = useHRShiftConfig();
+
+  const { items, totals, loading } = useHRShiftsSummary(appliedFilters);
 
   const dateRange = useMemo(() => ({
     from: format(dateFrom, 'dd/MM/yyyy', { locale: es }),
@@ -175,6 +179,11 @@ export default function RRHHResumen() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => setAppliedFilters(buildFilters())}>
+              Filtrar
+            </Button>
           </div>
         </CardContent>
       </Card>
