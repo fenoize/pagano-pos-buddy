@@ -660,15 +660,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-base">
-          <span>Configurar Combo</span>
-          <Badge variant="secondary">
-            {formatPrice(calculateComboTotal())}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 pt-0">
+      <CardContent className="space-y-3 pt-4">
         {selections.map((selection, index) => {
           const slot = selection.comboSlot;
           const availableProducts = slotProducts[slot.category_id] || [];
