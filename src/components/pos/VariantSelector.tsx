@@ -67,13 +67,28 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
           return (
             <Card
               key={variant.id}
-              className={`cursor-pointer transition-all ${
+              className={`cursor-pointer transition-all relative ${
                 isSelected 
                   ? 'ring-2 ring-primary bg-primary/5' 
                   : 'hover:bg-accent/50'
               } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               onClick={() => !disabled && onVariantSelect(variant)}
             >
+              {variant.stock !== undefined && (
+                variant.stock <= 0 ? (
+                  !hideOutOfStockBadge && (
+                    <Badge variant="destructive" className="text-[10px] px-1 py-0 absolute top-1 right-1 z-10">
+                      Agotado
+                    </Badge>
+                  )
+                ) : (
+                  showStockCount && (
+                    <Badge variant="outline" className="text-[10px] px-1 py-0 absolute top-1 right-1 z-10 text-muted-foreground">
+                      Stock: {variant.stock}
+                    </Badge>
+                  )
+                )
+              )}
               <CardContent className="p-3">
                 <div className="text-center space-y-2">
                   {imageUrl && (
@@ -109,21 +124,6 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                     <div className="text-primary font-semibold">
                       {showExtraCost && isDefault ? "Incluido" : formatPrice(variant.price)}
                     </div>
-                  )}
-                  {variant.stock !== undefined && (
-                    variant.stock <= 0 ? (
-                      !hideOutOfStockBadge && (
-                        <Badge variant="destructive" className="text-xs">
-                          Agotado
-                        </Badge>
-                      )
-                    ) : (
-                      showStockCount && (
-                        <Badge variant="outline" className="text-xs text-muted-foreground">
-                          Stock: {variant.stock}
-                        </Badge>
-                      )
-                    )
                   )}
                 </div>
               </CardContent>
