@@ -436,26 +436,29 @@ export default function Products() {
                 </div>
 
                 {/* Acciones */}
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="icon"
+                    className="h-9 w-9"
                     onClick={() => openEditDialog(product)}
                   >
-                    <Edit className="w-4 h-4" />
+                    <Edit className="h-4 w-4" />
                   </Button>
-                  <Switch
-                    checked={product.active}
-                    onCheckedChange={() => toggleProductActive(product)}
-                  />
+                  <div className="flex items-center justify-center h-9 w-9">
+                    <Switch
+                      checked={product.active}
+                      onCheckedChange={() => toggleProductActive(product)}
+                    />
+                  </div>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
+                        size="icon"
+                        className="h-9 w-9 text-destructive hover:text-destructive"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
