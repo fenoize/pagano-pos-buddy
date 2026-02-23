@@ -736,7 +736,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-between h-8 my-[5px] px-[5px] py-[5px] mx-[15px] text-sm"
+                className="w-full justify-between h-8 text-base mx-0 px-[5px] py-[20px] my-[10px]"
                 onClick={() => setExtrasModalSlotIndex(index)}>
 
                   <div className="flex items-center gap-1.5">
