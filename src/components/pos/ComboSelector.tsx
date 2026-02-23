@@ -678,7 +678,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               {/* Header: category + quantity + locked product inline */}
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">
-                  {getCategoryName(slot.category_id)}
+                  {selection.selectedProduct?.name || getCategoryName(slot.category_id)}
                 </span>
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                   {slot.quantity}x
