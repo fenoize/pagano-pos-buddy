@@ -801,20 +801,6 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                 </div>
               )}
 
-              {/* Price info - compact */}
-              {comboConfig.pricing_mode === 'dynamic' && selection.selectedProduct && (
-                <div className="text-[11px] text-muted-foreground">
-                  Precio individual: {formatPrice(
-                    selection.selectedVariant?.price || 
-                    getProductBasePrice(selection.selectedProduct)
-                  )}
-                  {(comboConfig.combo_discount || 0) > 0 && (
-                    <span className="text-green-600 ml-1">
-                      ({comboConfig.combo_discount}% desc.)
-                    </span>
-                  )}
-                </div>
-              )}
             </div>
           );
         })}
