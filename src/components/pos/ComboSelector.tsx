@@ -674,7 +674,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           [];
 
           return (
-            <div key={slot.id} className="border border-border rounded-lg p-3 space-y-2">
+            <div key={slot.id} className="border-border rounded-lg p-3 space-y-2 border-4">
               {/* Header: category + quantity + locked product inline */}
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">
@@ -736,7 +736,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-between h-8 text-xs"
+                className="w-full justify-between h-8 my-[5px] px-[5px] py-[5px] mx-[15px] text-sm"
                 onClick={() => setExtrasModalSlotIndex(index)}>
 
                   <div className="flex items-center gap-1.5">
