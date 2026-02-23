@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Settings, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Settings, AlertTriangle, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ComboProduct, ComboItem, Category, Product, PricingMode } from "@/types";
@@ -462,13 +462,27 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label>Producto por Defecto</Label>
+                          <div className="flex items-center justify-between mb-1">
+                            <Label>Producto por Defecto</Label>
+                            {item.default_product_id && (
+                              <div className="flex items-center space-x-2">
+                                <Lock className="h-3 w-3 text-muted-foreground" />
+                                <Switch
+                                  checked={item.lock_product === true}
+                                  onCheckedChange={(checked) => updateComboItem(item.id, 'lock_product', checked)}
+                                />
+                                <Label className="text-xs">Bloquear</Label>
+                              </div>
+                            )}
+                          </div>
                           <Select
                             value={item.default_product_id || undefined}
                             onValueChange={(value) => {
                               updateComboItem(item.id, 'default_product_id', value || null);
                               // Reset variant when product changes
                               updateComboItem(item.id, 'default_variant_id', null);
+                              // Reset lock when product changes
+                              if (!value) updateComboItem(item.id, 'lock_product', false);
                             }}
                           >
                             <SelectTrigger>

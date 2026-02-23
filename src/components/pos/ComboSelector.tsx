@@ -698,21 +698,32 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                   <label className="text-xs font-medium text-muted-foreground mb-2 block">
                     Producto
                   </label>
-                  <Select
-                    value={selection.selectedProduct?.id || ''}
-                    onValueChange={(productId) => selectProduct(index, productId)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar producto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableProducts.map((product) => (
-                        <SelectItem key={product.id} value={product.id!}>
-                          {product.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {(slot as any).lock_product && selection.selectedProduct ? (
+                    <div className="p-3 bg-muted/50 rounded-md border">
+                      <div className="text-sm font-medium">
+                        {selection.selectedProduct.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Producto fijo
+                      </div>
+                    </div>
+                  ) : (
+                    <Select
+                      value={selection.selectedProduct?.id || ''}
+                      onValueChange={(productId) => selectProduct(index, productId)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar producto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableProducts.map((product) => (
+                          <SelectItem key={product.id} value={product.id!}>
+                            {product.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 {/* Variant Selection - condicionado por allow_variant_change */}
