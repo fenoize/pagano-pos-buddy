@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, ToggleLeft, ToggleRight, Image as ImageIcon, Trash2, Filter, ArrowUpDown, Search } from 'lucide-react';
+import { Plus, Edit, Image as ImageIcon, Trash2, Filter, ArrowUpDown, Search } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { ProductEditModal } from '@/components/pos/ProductEditModal';
 import { useToast } from '@/hooks/use-toast';
 
@@ -443,17 +444,10 @@ export default function Products() {
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleProductActive(product)}
-                  >
-                    {product.active ? (
-                      <ToggleLeft className="w-4 h-4" />
-                    ) : (
-                      <ToggleRight className="w-4 h-4" />
-                    )}
-                  </Button>
+                  <Switch
+                    checked={product.active}
+                    onCheckedChange={() => toggleProductActive(product)}
+                  />
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
