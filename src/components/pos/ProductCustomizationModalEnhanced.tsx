@@ -4,6 +4,7 @@ import { Product, ProductVariantOption, ComboProduct } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// Badge, Label used in variant/extras sections
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -425,7 +426,7 @@ export function ProductCustomizationModalEnhanced({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
           {/* Combo Configuration o Variant Selection */}
           {hasCombo ? (
             <ComboSelector
@@ -438,10 +439,10 @@ export function ProductCustomizationModalEnhanced({
             />
           ) : (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center">
                   Variantes Disponibles
-                  <Badge variant="destructive" className="ml-2">Obligatorio</Badge>
+                  <Badge variant="destructive" className="ml-2 text-[10px]">Obligatorio</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -472,57 +473,52 @@ export function ProductCustomizationModalEnhanced({
           {/* Extras - Solo mostrar para productos individuales */}
           {!hasCombo && extras.length > 0 && (
             <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Extras</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Los extras tienen costo adicional
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between h-auto py-3"
-                    onClick={() => setShowExtrasModal(true)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      <span>Agregar Extras</span>
-                      {Object.keys(selectedExtras).length > 0 && (
-                        <Badge variant="secondary">
-                          {Object.keys(selectedExtras).length}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">
-                        {formatPrice(getExtrasTotal())}
-                      </span>
-                      <ChevronRight className="h-4 w-4" />
-                    </div>
-                  </Button>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-muted-foreground">Extras</label>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between h-auto py-2.5"
+                  onClick={() => setShowExtrasModal(true)}
+                >
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    <span>Agregar Extras</span>
+                    {Object.keys(selectedExtras).length > 0 && (
+                      <Badge variant="secondary">
+                        {Object.keys(selectedExtras).length}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">
+                      {formatPrice(getExtrasTotal())}
+                    </span>
+                    <ChevronRight className="h-4 w-4" />
+                  </div>
+                </Button>
 
-                  {/* Resumen de extras seleccionados */}
-                  {Object.keys(selectedExtras).length > 0 && (
-                    <div className="mt-3 space-y-1">
-                      {Object.entries(selectedExtras).map(([extraId, qty]) => {
-                        const extra = extras.find(e => e.id === extraId);
-                        if (!extra) return null;
-                        return (
-                          <div key={extraId} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              {extra.name} × {qty}
-                            </span>
-                            <span className="font-medium">
-                              {formatPrice(extra.price * qty)}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                {/* Resumen de extras seleccionados */}
+                {Object.keys(selectedExtras).length > 0 && (
+                  <div className="space-y-0.5">
+                    {Object.entries(selectedExtras).map(([extraId, qty]) => {
+                      const extra = extras.find(e => e.id === extraId);
+                      if (!extra) return null;
+                      return (
+                        <div key={extraId} className="flex justify-between text-xs px-1">
+                          <span className="text-muted-foreground">
+                            {extra.name} × {qty}
+                          </span>
+                          <span className="font-medium">
+                            {formatPrice(extra.price * qty)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               {/* Modal secundario de extras */}
               <ExtrasModal
@@ -537,51 +533,43 @@ export function ProductCustomizationModalEnhanced({
 
           {/* Modificaciones - Solo mostrar para productos individuales */}
           {!hasCombo && modifiers.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Modificaciones</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Las modificaciones son gratuitas (ej: sin pepinillos, sin cebolla)
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {modifiers.map((modifier) => (
-                    <label
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">
+                Modificaciones <span className="text-xs font-normal">(gratis)</span>
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {modifiers.map((modifier) => {
+                  const isSelected = selectedModifiers.includes(modifier.id);
+                  return (
+                    <button
                       key={modifier.id}
-                      className="flex items-center space-x-3 p-2 rounded hover:bg-muted cursor-pointer"
+                      type="button"
+                      onClick={() => toggleModifier(modifier.id)}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                        isSelected
+                          ? 'bg-primary/10 border-primary text-primary'
+                          : 'bg-muted/50 border-border text-muted-foreground hover:bg-muted'
+                      }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selectedModifiers.includes(modifier.id)}
-                        onChange={() => toggleModifier(modifier.id)}
-                        className="rounded"
-                      />
-                      <span>{modifier.name}</span>
-                      <Badge variant="outline" className="ml-auto">
-                        Gratis
-                      </Badge>
-                    </label>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                      {isSelected ? '✓ ' : ''}{modifier.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
-          {/* Notas especiales */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Notas Especiales</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={specialNotes}
-                onChange={(e) => setSpecialNotes(e.target.value)}
-                placeholder="Notas adicionales para la cocina..."
-                rows={3}
-              />
-            </CardContent>
-          </Card>
+          {/* Notas especiales - compact */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Notas especiales</label>
+            <Textarea
+              value={specialNotes}
+              onChange={(e) => setSpecialNotes(e.target.value)}
+              placeholder="Notas adicionales para la cocina..."
+              rows={2}
+              className="text-sm resize-none"
+            />
+          </div>
 
         </div>
 

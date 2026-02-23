@@ -660,22 +660,21 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between text-base">
           <span>Configurar Combo</span>
           <Badge variant="secondary">
             {formatPrice(calculateComboTotal())}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 pt-0">
         {selections.map((selection, index) => {
           const slot = selection.comboSlot;
           const availableProducts = slotProducts[slot.category_id] || [];
           const allProductVariants = selection.selectedProduct 
             ? productVariants[selection.selectedProduct.id!] || []
             : [];
-          // Filter variants to only those belonging to the slot's category
           const availableVariants = allProductVariants.filter(v => v.variant?.category_id === slot.category_id);
           const availableExtras = productExtras[slot.category_id] || [];
           const availableModifiers = selection.selectedProduct 
@@ -683,172 +682,147 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
             : [];
 
           return (
-            <div key={slot.id} className="border border-border rounded-lg p-4">
-              <div className="pb-3">
-                <div className="text-sm font-medium">
+            <div key={slot.id} className="border border-border rounded-lg p-3 space-y-2">
+              {/* Header: category + quantity + locked product inline */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
                   {getCategoryName(slot.category_id)}
-                  <Badge variant="outline" className="ml-2">
-                    {slot.quantity}x
-                  </Badge>
-                </div>
+                </span>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                  {slot.quantity}x
+                </Badge>
+                {(slot as any).lock_product && selection.selectedProduct && (
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {selection.selectedProduct.name} <span className="opacity-60">· fijo</span>
+                  </span>
+                )}
               </div>
-              <div className="space-y-3">
-                {/* Product Selection */}
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                    Producto
-                  </label>
-                  {(slot as any).lock_product && selection.selectedProduct ? (
-                    <div className="p-3 bg-muted/50 rounded-md border">
-                      <div className="text-sm font-medium">
-                        {selection.selectedProduct.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Producto fijo
-                      </div>
-                    </div>
+
+              {/* Product Selection - only if NOT locked */}
+              {!((slot as any).lock_product && selection.selectedProduct) && (
+                <Select
+                  value={selection.selectedProduct?.id || ''}
+                  onValueChange={(productId) => selectProduct(index, productId)}
+                >
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Seleccionar producto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableProducts.map((product) => (
+                      <SelectItem key={product.id} value={product.id!}>
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Variant Selection */}
+              {availableVariants.length > 0 && (
+                <>
+                  <label className="text-xs text-muted-foreground">Selecciona variante *</label>
+                  {slot.allow_variant_change !== false ? (
+                    <VariantSelector
+                      variants={availableVariants}
+                      selectedVariantId={selection.selectedVariant?.id}
+                      onVariantSelect={(variant) => selectVariant(index, variant)}
+                      disabled={false}
+                      defaultVariantId={slot.default_variant_id}
+                      showExtraCost={comboConfig?.pricing_mode === 'fixed'}
+                      showStockCount={showVariantStock}
+                    />
                   ) : (
-                    <Select
-                      value={selection.selectedProduct?.id || ''}
-                      onValueChange={(productId) => selectProduct(index, productId)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar producto" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableProducts.map((product) => (
-                          <SelectItem key={product.id} value={product.id!}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="text-sm text-muted-foreground bg-muted/50 rounded px-2 py-1.5">
+                      {selection.selectedVariant?.variant?.name || 'Variante fija'}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Extras - compact button */}
+              {availableExtras.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-between h-8 text-xs"
+                  onClick={() => setExtrasModalSlotIndex(index)}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Plus className="h-3 w-3" />
+                    <span>Agregar Extras</span>
+                    {Object.keys(selection.extras || {}).length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] h-4 px-1">
+                        {Object.keys(selection.extras || {}).length}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {(() => {
+                      const extrasTotal = Object.entries(selection.extras || {}).reduce((total, [extraId, qty]) => {
+                        const extra = availableExtras.find(e => e.id === extraId);
+                        return total + (extra ? extra.price * qty : 0);
+                      }, 0);
+                      return extrasTotal > 0 ? (
+                        <span className="text-xs font-semibold">+{formatPrice(extrasTotal)}</span>
+                      ) : null;
+                    })()}
+                    <ChevronRight className="h-3 w-3" />
+                  </div>
+                </Button>
+              )}
+
+              {/* Extras summary badges */}
+              {Object.keys(selection.extras || {}).length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(selection.extras || {}).map(([extraId, qty]) => {
+                    const extra = availableExtras.find(e => e.id === extraId);
+                    if (!extra) return null;
+                    return (
+                      <Badge key={extraId} variant="outline" className="text-[10px] py-0">
+                        {extra.name} x{qty}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Modifiers - inline compact */}
+              {availableModifiers.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {availableModifiers.map((modifier) => {
+                    const isSelected = (selection.modifiers || []).includes(modifier.id);
+                    return (
+                      <button
+                        key={modifier.id}
+                        type="button"
+                        onClick={() => toggleModifier(index, modifier.id)}
+                        className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
+                          isSelected
+                            ? 'bg-primary/10 border-primary text-primary'
+                            : 'bg-muted/50 border-border text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {isSelected ? '✓ ' : ''}{modifier.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Price info - compact */}
+              {comboConfig.pricing_mode === 'dynamic' && selection.selectedProduct && (
+                <div className="text-[11px] text-muted-foreground">
+                  Precio individual: {formatPrice(
+                    selection.selectedVariant?.price || 
+                    getProductBasePrice(selection.selectedProduct)
+                  )}
+                  {(comboConfig.combo_discount || 0) > 0 && (
+                    <span className="text-green-600 ml-1">
+                      ({comboConfig.combo_discount}% desc.)
+                    </span>
                   )}
                 </div>
-
-                {/* Variant Selection - condicionado por allow_variant_change */}
-                {availableVariants.length > 0 && (
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                      Variante
-                    </label>
-                    {slot.allow_variant_change !== false ? (
-                      <VariantSelector
-                        variants={availableVariants}
-                        selectedVariantId={selection.selectedVariant?.id}
-                        onVariantSelect={(variant) => selectVariant(index, variant)}
-                        disabled={false}
-                        defaultVariantId={slot.default_variant_id}
-                        showExtraCost={comboConfig?.pricing_mode === 'fixed'}
-                        showStockCount={showVariantStock}
-                      />
-                    ) : (
-                      // Mostrar solo la variante por defecto (no modificable)
-                      <div className="p-3 bg-muted/50 rounded-md border">
-                        <div className="text-sm font-medium">
-                          {selection.selectedVariant?.variant?.name || 'Variante fija'}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Variante no modificable
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Extras - Botón compacto que abre panel lateral */}
-                {availableExtras.length > 0 && (
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                      Extras
-                    </label>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between h-auto py-3"
-                      onClick={() => setExtrasModalSlotIndex(index)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
-                        <span>Agregar Extras</span>
-                        {Object.keys(selection.extras || {}).length > 0 && (
-                          <Badge variant="secondary">
-                            {Object.keys(selection.extras || {}).length}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {(() => {
-                          const extrasTotal = Object.entries(selection.extras || {}).reduce((total, [extraId, qty]) => {
-                            const extra = availableExtras.find(e => e.id === extraId);
-                            return total + (extra ? extra.price * qty : 0);
-                          }, 0);
-                          return extrasTotal > 0 ? (
-                            <span className="text-sm font-semibold">
-                              +{formatPrice(extrasTotal)}
-                            </span>
-                          ) : null;
-                        })()}
-                        <ChevronRight className="h-4 w-4" />
-                      </div>
-                    </Button>
-                    
-                    {/* Mostrar resumen de extras seleccionados */}
-                    {Object.keys(selection.extras || {}).length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {Object.entries(selection.extras || {}).map(([extraId, qty]) => {
-                          const extra = availableExtras.find(e => e.id === extraId);
-                          if (!extra) return null;
-                          return (
-                            <Badge key={extraId} variant="outline" className="text-xs">
-                              {extra.name} x{qty}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Modifiers */}
-                {availableModifiers.length > 0 && (
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                      Modificaciones (gratis)
-                    </label>
-                    <div className="space-y-1">
-                      {availableModifiers.map((modifier) => (
-                        <label
-                          key={modifier.id}
-                          className="flex items-center space-x-2 text-sm cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={((selection.modifiers || []).includes(modifier.id))}
-                            onChange={() => toggleModifier(index, modifier.id)}
-                            className="rounded"
-                          />
-                          <span>{modifier.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Price Information */}
-                {comboConfig.pricing_mode === 'dynamic' && selection.selectedProduct && (
-                  <div className="text-xs text-muted-foreground">
-                    Precio individual: {formatPrice(
-                      selection.selectedVariant?.price || 
-                      getProductBasePrice(selection.selectedProduct)
-                    )}
-                    {(comboConfig.combo_discount || 0) > 0 && (
-                      <span className="text-green-600 ml-1">
-                        ({comboConfig.combo_discount}% desc.)
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           );
         })}
