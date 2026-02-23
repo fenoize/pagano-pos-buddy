@@ -1,0 +1,1 @@
+ALTER TABLE public.combo_items ADD COLUMN lock_product boolean NOT NULL DEFAULT false;
