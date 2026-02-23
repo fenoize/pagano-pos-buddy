@@ -43,12 +43,12 @@ interface ProductCustomizationModalEnhancedProps {
   preselectedVariantId?: string;
 }
 
-export function ProductCustomizationModalEnhanced({ 
-  isOpen, 
-  onClose, 
-  onAddToCart, 
-  product, 
-  editingItem, 
+export function ProductCustomizationModalEnhanced({
+  isOpen,
+  onClose,
+  onAddToCart,
+  product,
+  editingItem,
   editingIndex,
   preloadedVariants = [],
   preloadedExtras = [],
@@ -60,7 +60,7 @@ export function ProductCustomizationModalEnhanced({
   // Variant system state
   const [availableVariants, setAvailableVariants] = useState<ProductVariantOption[]>([]);
   const [selectedVariantOption, setSelectedVariantOption] = useState<ProductVariantOption | null>(null);
-  
+
   // Common state
   const [selectedExtras, setSelectedExtras] = useState<Record<string, number>>({});
   const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
@@ -68,7 +68,7 @@ export function ProductCustomizationModalEnhanced({
   const [quantity, setQuantity] = useState(1);
   const [extras, setExtras] = useState<ProductExtra[]>([]);
   const [modifiers, setModifiers] = useState<ProductModifier[]>([]);
-  
+
   // Combo system state
   const [hasCombo, setHasCombo] = useState(false);
   const [comboConfig, setComboConfig] = useState<ComboProduct | null>(null);
@@ -84,10 +84,10 @@ export function ProductCustomizationModalEnhanced({
   useEffect(() => {
     console.log('[ProductCustomization] comboTotal updated:', comboTotal);
   }, [comboTotal]);
-  
+
   // Extras modal state
   const [showExtrasModal, setShowExtrasModal] = useState(false);
-  
+
   const { toast } = useToast();
 
   // Reset initialization when modal closes or product changes
@@ -107,28 +107,28 @@ export function ProductCustomizationModalEnhanced({
 
     // Always update available variants
     setAvailableVariants(preloadedVariants);
-    
+
     // Only set default variant on first initialization (not on every render)
     if (!isInitialized.current) {
       isInitialized.current = true;
-      
+
       // Set default variant
       if (preloadedVariants.length > 0) {
         // If editing and has variant_id, use that
         if (editingItem?.product_variant_option_id) {
-          const editingVariant = preloadedVariants.find(v => v.id === editingItem.product_variant_option_id);
+          const editingVariant = preloadedVariants.find((v) => v.id === editingItem.product_variant_option_id);
           if (editingVariant) {
             setSelectedVariantOption(editingVariant);
           } else {
-            const defaultVariant = preloadedVariants.find(v => v.is_default) || preloadedVariants[0];
+            const defaultVariant = preloadedVariants.find((v) => v.is_default) || preloadedVariants[0];
             setSelectedVariantOption(defaultVariant);
           }
         } else if (preselectedVariantId) {
           // If a variant was matched from search, pre-select it
-          const matchedVariant = preloadedVariants.find(v => v.id === preselectedVariantId);
-          setSelectedVariantOption(matchedVariant || preloadedVariants.find(v => v.is_default) || preloadedVariants[0]);
+          const matchedVariant = preloadedVariants.find((v) => v.id === preselectedVariantId);
+          setSelectedVariantOption(matchedVariant || preloadedVariants.find((v) => v.is_default) || preloadedVariants[0]);
         } else {
-          const defaultVariant = preloadedVariants.find(v => v.is_default) || preloadedVariants[0];
+          const defaultVariant = preloadedVariants.find((v) => v.is_default) || preloadedVariants[0];
           setSelectedVariantOption(defaultVariant);
         }
       }
@@ -145,23 +145,23 @@ export function ProductCustomizationModalEnhanced({
         // Fallback: load combo config if not preloaded
         loadComboConfig();
       }
-      
+
       // Initialize form if editing
       if (editingItem) {
         setQuantity(editingItem.quantity);
         setSpecialNotes(editingItem.notes || '');
-        
+
         // Set extras
         const extrasMap: Record<string, number> = {};
         editingItem.extras?.forEach((extra: any) => {
           extrasMap[extra.key] = extra.quantity || 1;
         });
         setSelectedExtras(extrasMap);
-        
+
         // Set modifiers
         const modifierIds = editingItem.modifiers?.map((mod: any) => mod.id) || [];
         setSelectedModifiers(modifierIds);
-        
+
         // Set combo state
         if (editingItem.is_combo_item) {
           setUseCombo(true);
@@ -182,12 +182,12 @@ export function ProductCustomizationModalEnhanced({
 
   const loadComboConfig = async () => {
     try {
-      const { data: comboData, error } = await supabase
-        .from('combo_products')
-        .select('*')
-        .eq('product_id', product.id)
-        .eq('active', true)
-        .maybeSingle();
+      const { data: comboData, error } = await supabase.
+      from('combo_products').
+      select('*').
+      eq('product_id', product.id).
+      eq('active', true).
+      maybeSingle();
 
       if (error) {
         if (error.code !== 'PGRST116') {
@@ -226,13 +226,13 @@ export function ProductCustomizationModalEnhanced({
     if (useCombo) {
       return comboConfig?.pricing_mode === 'fixed' ? comboConfig.base_price : comboTotal;
     }
-    
+
     return selectedVariantOption?.price || 0;
   };
 
   const getExtrasTotal = () => {
     return Object.entries(selectedExtras).reduce((total, [extraId, qty]) => {
-      const extra = extras.find(e => e.id === extraId);
+      const extra = extras.find((e) => e.id === extraId);
       return total + (extra ? extra.price * qty : 0);
     }, 0);
   };
@@ -254,7 +254,7 @@ export function ProductCustomizationModalEnhanced({
   };
 
   const handleExtraChange = (extraId: string, change: number) => {
-    setSelectedExtras(prev => {
+    setSelectedExtras((prev) => {
       const newQty = Math.max(0, (prev[extraId] || 0) + change);
       if (newQty === 0) {
         const { [extraId]: _, ...rest } = prev;
@@ -265,10 +265,10 @@ export function ProductCustomizationModalEnhanced({
   };
 
   const toggleModifier = (modifierId: string) => {
-    setSelectedModifiers(prev =>
-      prev.includes(modifierId)
-        ? prev.filter(id => id !== modifierId)
-        : [...prev, modifierId]
+    setSelectedModifiers((prev) =>
+    prev.includes(modifierId) ?
+    prev.filter((id) => id !== modifierId) :
+    [...prev, modifierId]
     );
   };
 
@@ -277,19 +277,19 @@ export function ProductCustomizationModalEnhanced({
     if (!useCombo && !selectedVariantOption) {
       return false;
     }
-    
+
     // Si es combo, verificar que todas las selecciones tengan producto
     if (useCombo) {
       // Si no hay selecciones aún, no es válido
       if (comboSelections.length === 0) {
         return false;
       }
-      
+
       // Validar que todas las selecciones tengan al menos producto seleccionado
       // La variante puede ser undefined si el producto no tiene variantes configuradas
-      return comboSelections.every(sel => sel.selectedProduct);
+      return comboSelections.every((sel) => sel.selectedProduct);
     }
-    
+
     return true;
   };
 
@@ -299,23 +299,23 @@ export function ProductCustomizationModalEnhanced({
         toast({
           title: "Variante requerida",
           description: "Debes seleccionar una variante para continuar",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
-      
+
       if (useCombo) {
         toast({
           title: "Selección incompleta",
           description: "Debes completar todas las selecciones del combo",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
     }
 
     const selectedExtrasArray = Object.entries(selectedExtras).map(([extraId, qty]) => {
-      const extra = extras.find(e => e.id === extraId);
+      const extra = extras.find((e) => e.id === extraId);
       return {
         key: extraId,
         label: extra?.name || '',
@@ -324,8 +324,8 @@ export function ProductCustomizationModalEnhanced({
       };
     });
 
-    const selectedModifiersArray = selectedModifiers.map(modifierId => {
-      const modifier = modifiers.find(m => m.id === modifierId);
+    const selectedModifiersArray = selectedModifiers.map((modifierId) => {
+      const modifier = modifiers.find((m) => m.id === modifierId);
       return {
         id: modifierId,
         name: modifier?.name || '',
@@ -399,7 +399,7 @@ export function ProductCustomizationModalEnhanced({
       // Variant data
       category_variant_id: useCombo ? undefined : selectedVariantOption?.category_variant_id,
       variant_name: useCombo ? 'Combo' : selectedVariantOption?.variant?.name,
-      product_variant_option_id: useCombo ? undefined : selectedVariantOption?.id,
+      product_variant_option_id: useCombo ? undefined : selectedVariantOption?.id
     };
 
     if (editingItem && editingIndex !== undefined) {
@@ -407,7 +407,7 @@ export function ProductCustomizationModalEnhanced({
     } else {
       onAddToCart(orderItem);
     }
-    
+
     resetForm();
     onClose();
   };
@@ -428,17 +428,17 @@ export function ProductCustomizationModalEnhanced({
 
         <div className="flex-1 overflow-y-auto space-y-4 pr-2">
           {/* Combo Configuration o Variant Selection */}
-          {hasCombo ? (
-            <ComboSelector
-              product={product}
-              onComboItemsChange={setComboSelections}
-              onComboTotalChange={setComboTotal}
-              preloadedComboData={preloadedComboData}
-              initialSelections={editingItem?.combo_selections}
-              showVariantStock={showVariantStock}
-            />
-          ) : (
-            <Card>
+          {hasCombo ?
+          <ComboSelector
+            product={product}
+            onComboItemsChange={setComboSelections}
+            onComboTotalChange={setComboTotal}
+            preloadedComboData={preloadedComboData}
+            initialSelections={editingItem?.combo_selections}
+            showVariantStock={showVariantStock} /> :
+
+
+          <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center">
                   Variantes Disponibles
@@ -446,50 +446,50 @@ export function ProductCustomizationModalEnhanced({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {availableVariants.length === 0 ? (
-                  <div className="text-center py-4">
+                {availableVariants.length === 0 ?
+              <div className="text-center py-4">
                     <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">
                       No hay variantes disponibles para este producto.
                       <br />
                       Contacta al administrador para configurar variantes.
                     </p>
-                  </div>
-                ) : (
-                  <VariantSelector
-                    variants={availableVariants}
-                    selectedVariantId={selectedVariantOption?.id || undefined}
-                    onVariantSelect={(variant) => {
-                      setSelectedVariantOption(variant);
-                    }}
-                    disabled={false}
-                    showStockCount={showVariantStock}
-                  />
-                )}
+                  </div> :
+
+              <VariantSelector
+                variants={availableVariants}
+                selectedVariantId={selectedVariantOption?.id || undefined}
+                onVariantSelect={(variant) => {
+                  setSelectedVariantOption(variant);
+                }}
+                disabled={false}
+                showStockCount={showVariantStock} />
+
+              }
               </CardContent>
             </Card>
-          )}
+          }
 
           {/* Extras - Solo mostrar para productos individuales */}
-          {!hasCombo && extras.length > 0 && (
-            <>
+          {!hasCombo && extras.length > 0 &&
+          <>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-muted-foreground">Extras</label>
                 </div>
                 <Button
-                  variant="outline"
-                  className="w-full justify-between h-auto py-2.5"
-                  onClick={() => setShowExtrasModal(true)}
-                >
+                variant="outline"
+                className="w-full justify-between h-auto py-2.5"
+                onClick={() => setShowExtrasModal(true)}>
+
                   <div className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     <span>Agregar Extras</span>
-                    {Object.keys(selectedExtras).length > 0 && (
-                      <Badge variant="secondary">
+                    {Object.keys(selectedExtras).length > 0 &&
+                  <Badge variant="secondary">
                         {Object.keys(selectedExtras).length}
                       </Badge>
-                    )}
+                  }
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold">
@@ -500,75 +500,75 @@ export function ProductCustomizationModalEnhanced({
                 </Button>
 
                 {/* Resumen de extras seleccionados */}
-                {Object.keys(selectedExtras).length > 0 && (
-                  <div className="space-y-0.5">
+                {Object.keys(selectedExtras).length > 0 &&
+              <div className="space-y-0.5">
                     {Object.entries(selectedExtras).map(([extraId, qty]) => {
-                      const extra = extras.find(e => e.id === extraId);
-                      if (!extra) return null;
-                      return (
-                        <div key={extraId} className="flex justify-between text-xs px-1">
+                  const extra = extras.find((e) => e.id === extraId);
+                  if (!extra) return null;
+                  return (
+                    <div key={extraId} className="flex justify-between text-xs px-1">
                           <span className="text-muted-foreground">
                             {extra.name} × {qty}
                           </span>
                           <span className="font-medium">
                             {formatPrice(extra.price * qty)}
                           </span>
-                        </div>
-                      );
-                    })}
+                        </div>);
+
+                })}
                   </div>
-                )}
+              }
               </div>
 
               {/* Modal secundario de extras */}
               <ExtrasModal
-                isOpen={showExtrasModal}
-                onClose={() => setShowExtrasModal(false)}
-                extras={extras}
-                selectedExtras={selectedExtras}
-                onExtrasChange={setSelectedExtras}
-              />
+              isOpen={showExtrasModal}
+              onClose={() => setShowExtrasModal(false)}
+              extras={extras}
+              selectedExtras={selectedExtras}
+              onExtrasChange={setSelectedExtras} />
+
             </>
-          )}
+          }
 
           {/* Modificaciones - Solo mostrar para productos individuales */}
-          {!hasCombo && modifiers.length > 0 && (
-            <div className="space-y-2">
+          {!hasCombo && modifiers.length > 0 &&
+          <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">
                 Modificaciones <span className="text-xs font-normal">(gratis)</span>
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {modifiers.map((modifier) => {
-                  const isSelected = selectedModifiers.includes(modifier.id);
-                  return (
-                    <button
-                      key={modifier.id}
-                      type="button"
-                      onClick={() => toggleModifier(modifier.id)}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                        isSelected
-                          ? 'bg-primary/10 border-primary text-primary'
-                          : 'bg-muted/50 border-border text-muted-foreground hover:bg-muted'
-                      }`}
-                    >
+                const isSelected = selectedModifiers.includes(modifier.id);
+                return (
+                  <button
+                    key={modifier.id}
+                    type="button"
+                    onClick={() => toggleModifier(modifier.id)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                    isSelected ?
+                    'bg-primary/10 border-primary text-primary' :
+                    'bg-muted/50 border-border text-muted-foreground hover:bg-muted'}`
+                    }>
+
                       {isSelected ? '✓ ' : ''}{modifier.name}
-                    </button>
-                  );
-                })}
+                    </button>);
+
+              })}
               </div>
             </div>
-          )}
+          }
 
           {/* Notas especiales - compact */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-muted-foreground">Notas especiales</label>
+            <label className="font-medium text-muted-foreground text-base">Notas especiales</label>
             <Textarea
               value={specialNotes}
               onChange={(e) => setSpecialNotes(e.target.value)}
               placeholder="Notas adicionales para la cocina..."
               rows={2}
-              className="text-sm resize-none"
-            />
+              className="text-sm resize-none" />
+
           </div>
 
         </div>
@@ -593,8 +593,8 @@ export function ProductCustomizationModalEnhanced({
                 variant="outline"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 disabled={quantity <= 1}
-                className="h-9 w-9 p-0"
-              >
+                className="h-9 w-9 p-0">
+
                 <Minus className="h-4 w-4" />
               </Button>
               <span className="text-xl font-bold w-8 text-center">{quantity}</span>
@@ -602,38 +602,38 @@ export function ProductCustomizationModalEnhanced({
                 size="sm"
                 variant="outline"
                 onClick={() => setQuantity(quantity + 1)}
-                className="h-9 w-9 p-0"
-              >
+                className="h-9 w-9 p-0">
+
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
           </div>
           
-          {!canAddToCart && (
-            <div className="flex items-center space-x-2 text-destructive text-sm">
+          {!canAddToCart &&
+          <div className="flex items-center space-x-2 text-destructive text-sm">
               <AlertTriangle className="h-4 w-4" />
               <span>
-                {!selectedVariantOption && !useCombo 
-                  ? "Selecciona una variante" 
-                  : "Completa la configuración del combo"}
+                {!selectedVariantOption && !useCombo ?
+              "Selecciona una variante" :
+              "Completa la configuración del combo"}
               </span>
             </div>
-          )}
+          }
 
           <div className="flex space-x-2">
             <Button variant="outline" onClick={onClose} className="flex-1">
               Cancelar
             </Button>
-            <Button 
-              onClick={handleAddToCart} 
+            <Button
+              onClick={handleAddToCart}
               className="flex-1"
-              disabled={!canAddToCart}
-            >
+              disabled={!canAddToCart}>
+
               {editingItem ? 'Actualizar' : 'Agregar al Carrito'}
             </Button>
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>);
+
 }
