@@ -712,7 +712,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               {/* Variant Selection */}
               {availableVariants.length > 0 && (
                 <>
-                  <label className="text-xs text-muted-foreground">Selecciona variante *</label>
+                  
                   {slot.allow_variant_change !== false ? (
                     <VariantSelector
                       variants={availableVariants}
