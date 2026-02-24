@@ -305,15 +305,14 @@ export function usePurchaseOrders() {
           const { error: stockError } = await supabase
             .from('stock_moves')
             .insert({
-              move_type: 'purchase',
+              move_type: 'purchase' as const,
               raw_material_id: item.raw_material_id,
               warehouse_id: order.warehouse_id,
               qty_in: receipt.qtyReceived,
               qty_out: 0,
               uom_id: item.uom_id,
               unit_cost: item.unit_cost,
-              reference_type: 'purchase_order',
-              reference_id: orderId,
+              related_purchase_id: orderId,
               notes: `Recepción OC ${order.po_number}`,
             });
 
