@@ -6134,6 +6134,40 @@ export type Database = {
       generate_po_number: { Args: never; Returns: string }
       generate_simple_hash: { Args: { password: string }; Returns: string }
       get_active_staff_user_id: { Args: never; Returns: string }
+      get_active_suppliers: {
+        Args: { p_user_id: string }
+        Returns: {
+          address: string | null
+          bank_account_holder: string | null
+          bank_account_holder_rut: string | null
+          bank_account_number: string | null
+          bank_account_type: string | null
+          bank_name: string | null
+          ciudad_fiscal: string | null
+          comuna_fiscal: string | null
+          created_at: string | null
+          direccion_fiscal: string | null
+          email: string | null
+          giro: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          payment_terms_days: number | null
+          payment_terms_type: string | null
+          phone: string | null
+          preferred_contact_method: string | null
+          razon_social: string | null
+          rut: string | null
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "suppliers"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_current_customer_id: { Args: never; Returns: string }
       get_current_staff_user_from_token: { Args: never; Returns: string }
       get_current_staff_user_id: { Args: never; Returns: string }
