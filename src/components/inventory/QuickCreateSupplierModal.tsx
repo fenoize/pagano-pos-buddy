@@ -9,20 +9,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { toast } from '@/hooks/use-toast';
 
 interface QuickCreateSupplierModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (supplier: { id: string; name: string }) => void;
-  createSupplier: (data: any) => Promise<boolean>;
-  refetchSuppliers: () => Promise<void>;
+  createSupplier?: (data: any) => Promise<boolean>;
+  refetchSuppliers?: () => Promise<void>;
 }
 
 export function QuickCreateSupplierModal({
   open,
   onOpenChange,
   onCreated,
-  createSupplier,
   refetchSuppliers,
 }: QuickCreateSupplierModalProps) {
   const [name, setName] = useState('');
@@ -34,21 +36,36 @@ export function QuickCreateSupplierModal({
   const handleSave = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    const success = await createSupplier({
-      name: name.trim(),
-      rut: rut.trim() || undefined,
-      phone: phone.trim() || undefined,
-      email: email.trim() || undefined,
-    });
-    if (success) {
-      await refetchSuppliers();
-      // We need to find the new supplier after refetch - use name matching
-      // The parent will handle selecting the newly created supplier
-      onCreated({ id: '', name: name.trim() });
+    try {
+      const staffUser = JSON.parse(localStorage.getItem(STORAGE_KEYS.STAFF_USER) || '{}');
+      const userId = staffUser?.id;
+      if (!userId) throw new Error('No se encontró sesión de usuario');
+
+      const { data, error } = await supabase.rpc('quick_create_supplier', {
+        p_user_id: userId,
+        p_name: name.trim(),
+        p_rut: rut.trim() || null,
+        p_phone: phone.trim() || null,
+        p_email: email.trim() || null,
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'Éxito', description: 'Proveedor creado correctamente' });
+      if (refetchSuppliers) await refetchSuppliers();
+      onCreated(data as any);
       resetForm();
       onOpenChange(false);
+    } catch (error: any) {
+      console.error('Error creating supplier:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo crear el proveedor',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const resetForm = () => {

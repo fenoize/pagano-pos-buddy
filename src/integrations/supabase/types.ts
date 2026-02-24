@@ -6432,6 +6432,26 @@ export type Database = {
         }
         Returns: string[]
       }
+      quick_create_raw_material: {
+        Args: {
+          p_base_uom_id?: string
+          p_code?: string
+          p_last_cost?: number
+          p_name: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      quick_create_supplier: {
+        Args: {
+          p_email?: string
+          p_name: string
+          p_phone?: string
+          p_rut?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       refresh_staff_token: {
         Args: { _token: string }
         Returns: {
