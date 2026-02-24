@@ -80,14 +80,7 @@ export function usePurchaseOrders() {
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('purchase_orders')
-        .select(`
-          *,
-          supplier:suppliers(*),
-          warehouse:warehouses(*)
-        `)
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('get_purchase_orders');
 
       if (error) throw error;
       setOrders((data || []) as unknown as PurchaseOrder[]);
@@ -105,37 +98,12 @@ export function usePurchaseOrders() {
 
   const getOrderById = async (id: string): Promise<PurchaseOrder | null> => {
     try {
-      const { data: orderData, error: orderError } = await supabase
-        .from('purchase_orders')
-        .select(`
-          *,
-          supplier:suppliers(*),
-          warehouse:warehouses(*)
-        `)
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.rpc('get_purchase_order_detail', {
+        p_order_id: id,
+      });
 
-      if (orderError) throw orderError;
-
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('purchase_items')
-        .select(`
-          *,
-          raw_material:raw_materials(
-            id, name, code, base_uom_id,
-            base_uom:units_of_measure(*)
-          ),
-          uom:units_of_measure(*)
-        `)
-        .eq('purchase_id', id)
-        .order('created_at');
-
-      if (itemsError) throw itemsError;
-
-      return {
-        ...orderData,
-        items: itemsData || [],
-      } as unknown as PurchaseOrder;
+      if (error) throw error;
+      return data as unknown as PurchaseOrder;
     } catch (error) {
       console.error('Error fetching order:', error);
       toast({
@@ -282,72 +250,16 @@ export function usePurchaseOrders() {
     ingressToInventory: boolean
   ): Promise<boolean> => {
     try {
-      // Get order details
-      const order = await getOrderById(orderId);
-      if (!order) throw new Error('Orden no encontrada');
+      const { error } = await supabase.rpc('receive_purchase_items', {
+        p_order_id: orderId,
+        p_receipts: itemReceipts.map(r => ({
+          itemId: r.itemId,
+          qtyReceived: r.qtyReceived,
+        })),
+        p_ingress_to_inventory: ingressToInventory,
+      });
 
-      // Update each item's received quantity
-      for (const receipt of itemReceipts) {
-        const item = order.items?.find(i => i.id === receipt.itemId);
-        if (!item) continue;
-
-        const newQtyReceived = (item.qty_received || 0) + receipt.qtyReceived;
-
-        const { error: updateError } = await supabase
-          .from('purchase_items')
-          .update({ qty_received: newQtyReceived })
-          .eq('id', receipt.itemId);
-
-        if (updateError) throw updateError;
-
-        // If ingressing to inventory, create stock movement
-        if (ingressToInventory && receipt.qtyReceived > 0) {
-          const { error: stockError } = await supabase
-            .from('stock_moves')
-            .insert({
-              move_type: 'purchase' as const,
-              raw_material_id: item.raw_material_id,
-              warehouse_id: order.warehouse_id,
-              qty_in: receipt.qtyReceived,
-              qty_out: 0,
-              uom_id: item.uom_id,
-              unit_cost: item.unit_cost,
-              related_purchase_id: orderId,
-              notes: `Recepción OC ${order.po_number}`,
-            });
-
-          if (stockError) throw stockError;
-
-          // Update stock balance using upsert
-          await supabase
-            .from('stock_balances')
-            .upsert({
-              raw_material_id: item.raw_material_id,
-              warehouse_id: order.warehouse_id,
-              qty_on_hand: receipt.qtyReceived,
-              last_cost: item.unit_cost,
-              updated_at: new Date().toISOString(),
-            }, {
-              onConflict: 'raw_material_id,warehouse_id',
-            });
-        }
-      }
-
-      // Check if order is fully received
-      const updatedOrder = await getOrderById(orderId);
-      const allItemsReceived = updatedOrder?.items?.every(
-        item => (item.qty_received || 0) >= item.qty
-      );
-      const someItemsReceived = updatedOrder?.items?.some(
-        item => (item.qty_received || 0) > 0
-      );
-
-      // Update order status based on reception
-      if (allItemsReceived) {
-        await updateOrderStatus(orderId, 'received');
-      } else if (someItemsReceived) {
-        await updateOrderStatus(orderId, 'partial');
-      }
+      if (error) throw error;
 
       toast({
         title: 'Recepción registrada',
@@ -356,6 +268,7 @@ export function usePurchaseOrders() {
           : 'Items recibidos (pendiente ingreso a inventario)',
       });
 
+      await fetchOrders();
       return true;
     } catch (error: any) {
       console.error('Error receiving items:', error);

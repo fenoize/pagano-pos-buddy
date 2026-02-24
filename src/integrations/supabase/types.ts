@@ -6308,6 +6308,8 @@ export type Database = {
       get_online_order_settings:
         | { Args: never; Returns: Json }
         | { Args: { p_user_id?: string }; Returns: Json }
+      get_purchase_order_detail: { Args: { p_order_id: string }; Returns: Json }
+      get_purchase_orders: { Args: never; Returns: Json }
       get_runas_history_with_context: {
         Args: {
           p_customer_id: string
@@ -6485,6 +6487,14 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      receive_purchase_items: {
+        Args: {
+          p_ingress_to_inventory?: boolean
+          p_order_id: string
+          p_receipts: Json
+        }
+        Returns: boolean
       }
       refresh_staff_token: {
         Args: { _token: string }
