@@ -216,15 +216,14 @@ export default function PurchaseRequestForm() {
 
   // Handle supplier created from quick modal
   const handleSupplierCreated = async (supplier: { id: string; name: string }) => {
-    // After refetch, find by name
-    if (createForItemId) {
-      // We need to wait a tick for suppliers to refresh
-      setTimeout(() => {
-        const found = suppliers.find(s => s.name === supplier.name);
-        if (found && createForItemId) {
-          updateItem(createForItemId, 'supplier_id', found.id);
-        }
-      }, 500);
+    if (createForItemId && supplier.id) {
+      updateItem(createForItemId, 'supplier_id', supplier.id);
+      // Also update the supplier name for display
+      setItems(prev => prev.map(item =>
+        item.tempId === createForItemId
+          ? { ...item, supplier_id: supplier.id, supplierName: supplier.name }
+          : item
+      ));
     }
     setCreateForItemId(null);
   };

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Supplier } from '@/types/supplier';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export type { Supplier } from '@/types/supplier';
 
@@ -9,22 +10,31 @@ export function useSuppliers(includeInactive = false) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const getStaffUserId = (): string | null => {
+    try {
+      const staffUser = JSON.parse(localStorage.getItem(STORAGE_KEYS.STAFF_USER) || '{}');
+      return staffUser?.id || null;
+    } catch { return null; }
+  };
+
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
-      let query = supabase
-        .from('suppliers')
-        .select('*')
-        .order('name');
+      const userId = getStaffUserId();
 
-      if (!includeInactive) {
-        query = query.eq('is_active', true);
+      if (userId && !includeInactive) {
+        // Use RPC to bypass RLS
+        const { data, error } = await supabase.rpc('get_active_suppliers', { p_user_id: userId });
+        if (error) throw error;
+        setSuppliers((data || []) as Supplier[]);
+      } else {
+        // Fallback to direct query
+        let query = supabase.from('suppliers').select('*').order('name');
+        if (!includeInactive) query = query.eq('is_active', true);
+        const { data, error } = await query;
+        if (error) throw error;
+        setSuppliers((data || []) as Supplier[]);
       }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setSuppliers((data || []) as Supplier[]);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
       toast({
