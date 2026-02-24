@@ -255,13 +255,8 @@ export default function PurchaseRequestForm() {
 
       {/* Items Section */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg">Items de la Solicitud</CardTitle>
-          <Button onClick={addItem} size="sm">
-            <Plus className="h-4 w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Agregar Item</span>
-            <span className="sm:hidden">Agregar</span>
-          </Button>
         </CardHeader>
         <CardContent>
           {items.length === 0 ? (
@@ -556,6 +551,11 @@ export default function PurchaseRequestForm() {
               </Table>
             </div>
           )}
+
+          <Button onClick={addItem} variant="outline" size="sm" className="w-full mt-4">
+            <Plus className="h-4 w-4 mr-2" />
+            Agregar Item
+          </Button>
         </CardContent>
       </Card>
 
