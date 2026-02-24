@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Send } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Send, PackagePlus, TruckIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -21,11 +22,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { MaterialSearchAutocomplete } from '@/components/inventory/MaterialSearchAutocomplete';
+import { QuickCreateMaterialModal } from '@/components/inventory/QuickCreateMaterialModal';
+import { QuickCreateSupplierModal } from '@/components/inventory/QuickCreateSupplierModal';
 import { usePurchaseRequests } from '@/hooks/usePurchaseRequests';
 import { useRawMaterials } from '@/hooks/useRawMaterials';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useToast } from '@/hooks/use-toast';
 import { useUOM } from '@/hooks/useUOM';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { CreatePurchaseRequestItemData } from '@/types/purchaseRequests';
 
 interface FormItem extends CreatePurchaseRequestItemData {
@@ -40,15 +44,21 @@ export default function PurchaseRequestForm() {
   const isEditMode = !!id;
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const { createRequest, getRequestById, updateRequest, submitForApproval: submitRequestForApproval } = usePurchaseRequests();
-  const { materials } = useRawMaterials();
-  const { suppliers } = useSuppliers();
+  const { materials, createMaterial, fetchMaterials } = useRawMaterials();
+  const { suppliers, createSupplier, refetch: refetchSuppliers } = useSuppliers();
   const { uoms } = useUOM();
 
   const [items, setItems] = useState<FormItem[]>([]);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEditMode);
+
+  // Quick create modals
+  const [showCreateMaterial, setShowCreateMaterial] = useState(false);
+  const [showCreateSupplier, setShowCreateSupplier] = useState(false);
+  const [createForItemId, setCreateForItemId] = useState<string | null>(null);
 
   // Load existing request data in edit mode
   useEffect(() => {
@@ -111,18 +121,16 @@ export default function PurchaseRequestForm() {
 
       const updated = { ...item, [field]: value };
 
-      // Auto-fill when material is selected
       if (field === 'raw_material_id') {
         const material = materials.find(m => m.id === value);
         if (material) {
-          updated.uom_id = material.base_uom_id;
+          updated.uom_id = material.base_uom_id || '';
           updated.estimated_unit_cost = material.last_cost || 0;
           updated.materialName = material.name;
-          updated.uomSymbol = (material.base_uom as { symbol?: string })?.symbol || '';
+          updated.uomSymbol = (material.base_uom as { symbol?: string; abbreviation?: string })?.abbreviation || '';
         }
       }
 
-      // Update supplier name
       if (field === 'supplier_id') {
         const supplier = suppliers.find(s => s.id === value);
         if (supplier) {
@@ -134,18 +142,14 @@ export default function PurchaseRequestForm() {
     }));
   };
 
-  // Calculate totals
   const subtotal = items.reduce((acc, item) => acc + (item.qty * item.estimated_unit_cost), 0);
   const tax = subtotal * 0.19;
   const total = subtotal + tax;
 
-  // Group items by supplier for preview
   const itemsBySupplier = items.reduce((acc, item) => {
     if (!item.supplier_id) return acc;
     const supplierName = item.supplierName || 'Sin proveedor';
-    if (!acc[supplierName]) {
-      acc[supplierName] = { count: 0, total: 0 };
-    }
+    if (!acc[supplierName]) acc[supplierName] = { count: 0, total: 0 };
     acc[supplierName].count += 1;
     acc[supplierName].total += item.qty * item.estimated_unit_cost;
     return acc;
@@ -153,31 +157,20 @@ export default function PurchaseRequestForm() {
 
   const validateForm = (): boolean => {
     if (items.length === 0) {
-      toast({
-        title: 'Error',
-        description: 'Debes agregar al menos un item',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Debes agregar al menos un item', variant: 'destructive' });
       return false;
     }
-
     for (const item of items) {
       if (!item.raw_material_id || !item.supplier_id || item.qty <= 0) {
-        toast({
-          title: 'Error',
-          description: 'Todos los items deben tener material, proveedor y cantidad válida',
-          variant: 'destructive',
-        });
+        toast({ title: 'Error', description: 'Todos los items deben tener material, proveedor y cantidad válida', variant: 'destructive' });
         return false;
       }
     }
-
     return true;
   };
 
   const handleSave = async (submitForApproval: boolean) => {
     if (!validateForm()) return;
-
     setSaving(true);
     try {
       const itemsData = items.map(item => ({
@@ -189,33 +182,51 @@ export default function PurchaseRequestForm() {
       }));
 
       if (isEditMode && id) {
-        // Update existing request
-        const success = await updateRequest(id, {
-          notes: notes || undefined,
-          items: itemsData,
-        });
+        const success = await updateRequest(id, { notes: notes || undefined, items: itemsData });
         if (success) {
-          if (submitForApproval) {
-            // After update, submit for approval
-            await submitRequestForApproval(id);
-          }
+          if (submitForApproval) await submitRequestForApproval(id);
           navigate(`/pos/inventario/solicitudes/${id}`);
         }
       } else {
-        // Create new request
         const requestId = await createRequest({
           notes: notes || undefined,
           items: itemsData,
           submit_for_approval: submitForApproval,
         });
-
-        if (requestId) {
-          navigate(`/pos/inventario/solicitudes/${requestId}`);
-        }
+        if (requestId) navigate(`/pos/inventario/solicitudes/${requestId}`);
       }
     } finally {
       setSaving(false);
     }
+  };
+
+  // Handle material created from quick modal
+  const handleMaterialCreated = (material: { id: string; name: string; base_uom_id?: string; last_cost?: number }) => {
+    fetchMaterials();
+    if (createForItemId) {
+      updateItem(createForItemId, 'raw_material_id', material.id);
+      setItems(prev => prev.map(item =>
+        item.tempId === createForItemId
+          ? { ...item, raw_material_id: material.id, materialName: material.name, uom_id: material.base_uom_id || '', estimated_unit_cost: material.last_cost || 0 }
+          : item
+      ));
+    }
+    setCreateForItemId(null);
+  };
+
+  // Handle supplier created from quick modal
+  const handleSupplierCreated = async (supplier: { id: string; name: string }) => {
+    // After refetch, find by name
+    if (createForItemId) {
+      // We need to wait a tick for suppliers to refresh
+      setTimeout(() => {
+        const found = suppliers.find(s => s.name === supplier.name);
+        if (found && createForItemId) {
+          updateItem(createForItemId, 'supplier_id', found.id);
+        }
+      }, 500);
+    }
+    setCreateForItemId(null);
   };
 
   if (loading) {
@@ -227,43 +238,194 @@ export default function PurchaseRequestForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 pb-32 sm:pb-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(isEditMode ? `/pos/inventario/solicitudes/${id}` : '/pos/inventario/solicitudes')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            {isEditMode ? 'Editar Solicitud de Compra' : 'Nueva Solicitud de Compra'}
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">
+            {isEditMode ? 'Editar Solicitud' : 'Nueva Solicitud de Compra'}
           </h1>
-          <p className="text-muted-foreground">
-            {isEditMode ? 'Modifica los materiales de la solicitud' : 'Agrega los materiales que necesitas comprar'}
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            {isEditMode ? 'Modifica los materiales' : 'Agrega los materiales que necesitas comprar'}
           </p>
         </div>
       </div>
 
-      {/* Items Table - Full Width */}
+      {/* Items Section */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Items de la Solicitud</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="text-base sm:text-lg">Items de la Solicitud</CardTitle>
           <Button onClick={addItem} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar Item
+            <Plus className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Agregar Item</span>
+            <span className="sm:hidden">Agregar</span>
           </Button>
         </CardHeader>
         <CardContent>
           {items.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p>No hay items. Haz clic en "Agregar Item" para comenzar.</p>
+              <p>No hay items. Haz clic en "Agregar" para comenzar.</p>
+            </div>
+          ) : isMobile ? (
+            /* ========== MOBILE: Card-based layout ========== */
+            <div className="space-y-4">
+              {items.map((item, idx) => (
+                <Card key={item.tempId} className="border border-border">
+                  <CardContent className="p-3 space-y-3">
+                    {/* Header with index and delete */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">Item #{idx + 1}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeItem(item.tempId)}
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Material */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Material</Label>
+                      <div className="flex gap-1.5">
+                        <div className="flex-1">
+                          <MaterialSearchAutocomplete
+                            materials={materials}
+                            loading={materials.length === 0}
+                            value={item.raw_material_id}
+                            displayValue={item.materialName}
+                            onSelect={(materialId, material) => {
+                              if (material) {
+                                updateItem(item.tempId, 'raw_material_id', materialId);
+                              } else {
+                                updateItem(item.tempId, 'raw_material_id', '');
+                              }
+                            }}
+                            placeholder="Buscar material..."
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={() => {
+                            setCreateForItemId(item.tempId);
+                            setShowCreateMaterial(true);
+                          }}
+                          title="Crear material"
+                        >
+                          <PackagePlus className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Supplier */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Proveedor</Label>
+                      <div className="flex gap-1.5">
+                        <div className="flex-1">
+                          <Select
+                            value={item.supplier_id}
+                            onValueChange={(v) => updateItem(item.tempId, 'supplier_id', v)}
+                          >
+                            <SelectTrigger className="h-9 text-sm">
+                              <SelectValue placeholder="Seleccionar proveedor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {suppliers.map((supplier) => (
+                                <SelectItem key={supplier.id} value={supplier.id}>
+                                  {supplier.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9 shrink-0"
+                          onClick={() => {
+                            setCreateForItemId(item.tempId);
+                            setShowCreateSupplier(true);
+                          }}
+                          title="Crear proveedor"
+                        >
+                          <TruckIcon className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Cantidad + Unidad side by side */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Cantidad</Label>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0.01}
+                          step={0.01}
+                          value={item.qty}
+                          onChange={(e) => updateItem(item.tempId, 'qty', parseFloat(e.target.value) || 0)}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Unidad</Label>
+                        <Select
+                          value={item.uom_id}
+                          onValueChange={(v) => updateItem(item.tempId, 'uom_id', v)}
+                        >
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="Unidad" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {uoms.map((uom) => (
+                              <SelectItem key={uom.id} value={uom.id}>
+                                {uom.abbreviation}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Precio + Total side by side */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Precio Unit.</Label>
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          step={1}
+                          value={item.estimated_unit_cost}
+                          onChange={(e) => updateItem(item.tempId, 'estimated_unit_cost', parseFloat(e.target.value) || 0)}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Total</Label>
+                        <div className="h-9 flex items-center px-3 rounded-md bg-muted text-sm font-medium">
+                          {formatCurrency(item.qty * item.estimated_unit_cost)}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : (
+            /* ========== DESKTOP: Table layout ========== */
             <div className="overflow-x-auto border border-border rounded-md">
               <Table className="border-collapse">
                 <TableHeader>
                   <TableRow className="border-b border-border">
-                    <TableHead className="border-r border-border px-2 py-1.5 h-auto">Material</TableHead>
-                    <TableHead className="border-r border-border px-2 py-1.5 h-auto">Proveedor</TableHead>
+                    <TableHead className="border-r border-border px-2 py-1.5 h-auto min-w-[180px]">Material</TableHead>
+                    <TableHead className="border-r border-border px-2 py-1.5 h-auto min-w-[160px]">Proveedor</TableHead>
                     <TableHead className="border-r border-border px-2 py-1.5 h-auto w-[90px]">Cantidad</TableHead>
                     <TableHead className="border-r border-border px-2 py-1.5 h-auto w-[90px]">Unidad</TableHead>
                     <TableHead className="border-r border-border px-2 py-1.5 h-auto w-[100px]">Precio Unit.</TableHead>
@@ -275,38 +437,69 @@ export default function PurchaseRequestForm() {
                   {items.map((item, idx) => (
                     <TableRow key={item.tempId} className={idx < items.length - 1 ? 'border-b border-border' : ''}>
                       <TableCell className="border-r border-border p-1">
-                        <MaterialSearchAutocomplete
-                          materials={materials}
-                          loading={materials.length === 0}
-                          value={item.raw_material_id}
-                          displayValue={item.materialName}
-                          onSelect={(materialId, material) => {
-                            if (material) {
-                              updateItem(item.tempId, 'raw_material_id', materialId);
-                            } else {
-                              // Clear the material
-                              updateItem(item.tempId, 'raw_material_id', '');
-                            }
-                          }}
-                          placeholder="Buscar material..."
-                        />
+                        <div className="flex gap-1">
+                          <div className="flex-1">
+                            <MaterialSearchAutocomplete
+                              materials={materials}
+                              loading={materials.length === 0}
+                              value={item.raw_material_id}
+                              displayValue={item.materialName}
+                              onSelect={(materialId, material) => {
+                                if (material) {
+                                  updateItem(item.tempId, 'raw_material_id', materialId);
+                                } else {
+                                  updateItem(item.tempId, 'raw_material_id', '');
+                                }
+                              }}
+                              placeholder="Buscar material..."
+                            />
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => {
+                              setCreateForItemId(item.tempId);
+                              setShowCreateMaterial(true);
+                            }}
+                            title="Crear material"
+                          >
+                            <PackagePlus className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell className="border-r border-border p-1">
-                        <Select
-                          value={item.supplier_id}
-                          onValueChange={(v) => updateItem(item.tempId, 'supplier_id', v)}
-                        >
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue placeholder="Seleccionar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {suppliers.map((supplier) => (
-                              <SelectItem key={supplier.id} value={supplier.id}>
-                                {supplier.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex gap-1">
+                          <div className="flex-1">
+                            <Select
+                              value={item.supplier_id}
+                              onValueChange={(v) => updateItem(item.tempId, 'supplier_id', v)}
+                            >
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Seleccionar" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {suppliers.map((supplier) => (
+                                  <SelectItem key={supplier.id} value={supplier.id}>
+                                    {supplier.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => {
+                              setCreateForItemId(item.tempId);
+                              setShowCreateSupplier(true);
+                            }}
+                            title="Crear proveedor"
+                          >
+                            <TruckIcon className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell className="border-r border-border p-1">
                         <Input
@@ -369,8 +562,8 @@ export default function PurchaseRequestForm() {
 
       {/* Notes */}
       <Card>
-        <CardHeader>
-          <CardTitle>Notas</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg">Notas</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
@@ -382,11 +575,10 @@ export default function PurchaseRequestForm() {
         </CardContent>
       </Card>
 
-      {/* Orders to generate & Summary - Side by side */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Orders to generate - Left */}
+      {/* Orders to generate & Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-sm">Órdenes a Generar</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -406,12 +598,11 @@ export default function PurchaseRequestForm() {
           </CardContent>
         </Card>
 
-        {/* Summary - Right */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-sm">Resumen</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
@@ -420,7 +611,7 @@ export default function PurchaseRequestForm() {
               <span className="text-muted-foreground">IVA (19%)</span>
               <span>{formatCurrency(tax)}</span>
             </div>
-            <div className="border-t pt-4 flex justify-between font-bold text-lg">
+            <div className="border-t pt-3 flex justify-between font-bold text-lg">
               <span>Total</span>
               <span>{formatCurrency(total)}</span>
             </div>
@@ -428,32 +619,55 @@ export default function PurchaseRequestForm() {
         </Card>
       </div>
 
-      {/* Action Buttons - Bottom */}
-      <div className="flex items-center justify-between">
+      {/* Action Buttons - Fixed bottom on mobile */}
+      <div className="fixed bottom-16 left-0 right-0 bg-background border-t border-border p-3 flex items-center justify-between gap-2 z-40 sm:static sm:border-0 sm:p-0 sm:bg-transparent">
         <Button
           variant="ghost"
+          size="sm"
           onClick={() => navigate('/pos/inventario/solicitudes')}
+          className="text-xs sm:text-sm"
         >
           Cancelar
         </Button>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => handleSave(false)}
             disabled={saving || items.length === 0}
+            className="text-xs sm:text-sm"
           >
-            <Save className="h-4 w-4 mr-2" />
-            Guardar Borrador
+            <Save className="h-3.5 w-3.5 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Guardar Borrador</span>
+            <span className="sm:hidden">Borrador</span>
           </Button>
           <Button
+            size="sm"
             onClick={() => handleSave(true)}
             disabled={saving || items.length === 0}
+            className="text-xs sm:text-sm"
           >
-            <Send className="h-4 w-4 mr-2" />
-            Enviar a Aprobación
+            <Send className="h-3.5 w-3.5 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Enviar a Aprobación</span>
+            <span className="sm:hidden">Enviar</span>
           </Button>
         </div>
       </div>
+
+      {/* Quick Create Modals */}
+      <QuickCreateMaterialModal
+        open={showCreateMaterial}
+        onOpenChange={setShowCreateMaterial}
+        onCreated={handleMaterialCreated}
+        createMaterial={createMaterial}
+      />
+      <QuickCreateSupplierModal
+        open={showCreateSupplier}
+        onOpenChange={setShowCreateSupplier}
+        onCreated={handleSupplierCreated}
+        createSupplier={createSupplier}
+        refetchSuppliers={refetchSuppliers}
+      />
     </div>
   );
 }

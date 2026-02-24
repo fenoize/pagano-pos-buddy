@@ -242,9 +242,13 @@ export function MaterialSearchAutocomplete({
             value={searchQuery}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder="Escribe al menos 3 letras..."
-            className="h-8 pl-7 pr-8 text-sm"
+            placeholder="Escribe 3+ letras..."
+            className="h-8 pl-7 pr-8 text-[16px] sm:text-sm"
             autoFocus
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
           />
           <button
             type="button"
