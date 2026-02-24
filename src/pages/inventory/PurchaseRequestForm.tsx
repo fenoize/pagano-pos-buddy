@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Save, Send, PackagePlus, TruckIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -76,6 +76,7 @@ export default function PurchaseRequestForm() {
             qty: item.qty,
             uom_id: item.uom_id || '',
             estimated_unit_cost: item.estimated_unit_cost,
+            notes: item.notes || '',
             materialName: item.raw_material?.name,
             supplierName: item.supplier?.name,
             uomSymbol: item.uom?.abbreviation,
@@ -179,6 +180,7 @@ export default function PurchaseRequestForm() {
         qty: item.qty,
         uom_id: item.uom_id,
         estimated_unit_cost: item.estimated_unit_cost,
+        notes: item.notes || undefined,
       }));
 
       if (isEditMode && id) {
@@ -408,6 +410,18 @@ export default function PurchaseRequestForm() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Nota para el proveedor */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Nota (instrucciones al proveedor)</Label>
+                      <Textarea
+                        value={item.notes || ''}
+                        onChange={(e) => updateItem(item.tempId, 'notes', e.target.value)}
+                        placeholder="Ej: 1.5 kg rebanado y 1.5 kg entero"
+                        className="min-h-[60px] text-sm resize-none"
+                        rows={2}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -429,7 +443,8 @@ export default function PurchaseRequestForm() {
                 </TableHeader>
                 <TableBody>
                   {items.map((item, idx) => (
-                    <TableRow key={item.tempId} className={idx < items.length - 1 ? 'border-b border-border' : ''}>
+                    <React.Fragment key={item.tempId}>
+                    <TableRow className="border-b-0">
                       <TableCell className="border-r border-border p-1">
                         <div className="flex gap-1">
                           <div className="flex-1">
@@ -546,6 +561,18 @@ export default function PurchaseRequestForm() {
                         </Button>
                       </TableCell>
                     </TableRow>
+                    <TableRow className={idx < items.length - 1 ? 'border-b border-border' : ''}>
+                      <TableCell colSpan={7} className="p-1 pt-0">
+                        <Textarea
+                          value={item.notes || ''}
+                          onChange={(e) => updateItem(item.tempId, 'notes', e.target.value)}
+                          placeholder="Nota para el proveedor (ej: 1.5 kg rebanado y 1.5 kg entero)"
+                          className="min-h-[40px] text-xs resize-none border-dashed"
+                          rows={1}
+                        />
+                      </TableCell>
+                    </TableRow>
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
