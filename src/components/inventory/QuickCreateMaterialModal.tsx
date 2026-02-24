@@ -17,19 +17,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useUOM } from '@/hooks/useUOM';
+import { supabase } from '@/integrations/supabase/client';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { toast } from '@/hooks/use-toast';
 
 interface QuickCreateMaterialModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (material: { id: string; name: string; base_uom_id?: string; last_cost?: number }) => void;
-  createMaterial: (material: any) => Promise<{ success: boolean; data?: any }>;
+  createMaterial?: (material: any) => Promise<{ success: boolean; data?: any }>;
 }
 
 export function QuickCreateMaterialModal({
   open,
   onOpenChange,
   onCreated,
-  createMaterial,
 }: QuickCreateMaterialModalProps) {
   const { uoms } = useUOM();
   const [name, setName] = useState('');
@@ -41,18 +43,34 @@ export function QuickCreateMaterialModal({
   const handleSave = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    const result = await createMaterial({
-      name: name.trim(),
-      code: code.trim() || undefined,
-      base_uom_id: baseUomId || undefined,
-      last_cost: lastCost || 0,
-      is_active: true,
-    });
-    setSaving(false);
-    if (result.success && result.data) {
-      onCreated(result.data);
+    try {
+      const staffUser = JSON.parse(localStorage.getItem(STORAGE_KEYS.STAFF_USER) || '{}');
+      const userId = staffUser?.id;
+      if (!userId) throw new Error('No se encontró sesión de usuario');
+
+      const { data, error } = await supabase.rpc('quick_create_raw_material', {
+        p_user_id: userId,
+        p_name: name.trim(),
+        p_code: code.trim() || null,
+        p_base_uom_id: baseUomId || null,
+        p_last_cost: lastCost || 0,
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'Éxito', description: 'Material creado correctamente' });
+      onCreated(data as any);
       resetForm();
       onOpenChange(false);
+    } catch (error: any) {
+      console.error('Error creating material:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo crear el material',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
     }
   };
 

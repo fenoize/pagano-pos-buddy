@@ -659,13 +659,11 @@ export default function PurchaseRequestForm() {
         open={showCreateMaterial}
         onOpenChange={setShowCreateMaterial}
         onCreated={handleMaterialCreated}
-        createMaterial={createMaterial}
       />
       <QuickCreateSupplierModal
         open={showCreateSupplier}
         onOpenChange={setShowCreateSupplier}
         onCreated={handleSupplierCreated}
-        createSupplier={createSupplier}
         refetchSuppliers={refetchSuppliers}
       />
     </div>
