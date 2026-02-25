@@ -292,10 +292,12 @@ export default function Sales() {
       filtered = filtered.filter(order => {
         const customer = customers.find(c => c.id === order.customer_id);
         const customerName = customer ? getFullCustomerName(customer).toLowerCase() : '';
+        const guestName = (order.nombre_resumen || '').toLowerCase();
         const orderNumber = order.order_number.toString();
         
         return orderNumber.includes(query) || 
                customerName.includes(query) ||
+               guestName.includes(query) ||
                order.status.toLowerCase().includes(query);
       });
     }
