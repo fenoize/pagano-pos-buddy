@@ -42,14 +42,14 @@ export default function PurchaseOrderReceiveModal({
   const [quantities, setQuantities] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
     order.items?.forEach(item => {
-      initial[item.id] = item.qty_pending || 0;
+      initial[item.id] = Math.max(0, item.qty_pending || 0);
     });
     return initial;
   });
 
   const handleQuantityChange = (itemId: string, value: number) => {
     const item = order.items?.find(i => i.id === itemId);
-    const maxQty = item?.qty_pending || 0;
+    const maxQty = Math.max(0, item?.qty_pending || 0);
     const clampedValue = Math.max(0, Math.min(value, maxQty));
     setQuantities(prev => ({ ...prev, [itemId]: clampedValue }));
   };
@@ -57,7 +57,7 @@ export default function PurchaseOrderReceiveModal({
   const handleReceiveAll = () => {
     const all: Record<string, number> = {};
     order.items?.forEach(item => {
-      all[item.id] = item.qty_pending || 0;
+      all[item.id] = Math.max(0, item.qty_pending || 0);
     });
     setQuantities(all);
   };
