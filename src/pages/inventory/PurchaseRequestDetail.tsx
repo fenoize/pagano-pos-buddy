@@ -57,6 +57,7 @@ import { es } from 'date-fns/locale';
 import ItemResolveModal from '@/components/inventory/ItemResolveModal';
 import LinkedPurchaseOrders from '@/components/inventory/LinkedPurchaseOrders';
 import DirectPurchaseChecklist from '@/components/inventory/DirectPurchaseChecklist';
+import StartManagementOnboarding from '@/components/inventory/StartManagementOnboarding';
 
 export default function PurchaseRequestDetail() {
   const { id } = useParams<{ id: string }>();
@@ -86,6 +87,7 @@ export default function PurchaseRequestDetail() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [resolveItem, setResolveItem] = useState<PurchaseRequestItem | null>(null);
   const [checklistFullscreen, setChecklistFullscreen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   // Management notes
   const [managementNotes, setManagementNotes] = useState('');
@@ -350,7 +352,7 @@ export default function PurchaseRequestDetail() {
           )}
 
           {request.status === 'approved' && (
-            <Button size="sm" onClick={handleStartProcessing} disabled={actionLoading}>
+            <Button size="sm" onClick={() => setShowOnboarding(true)} disabled={actionLoading}>
               <PlayCircle className="h-4 w-4 mr-2" />
               Iniciar Gestión
             </Button>
@@ -708,6 +710,17 @@ export default function PurchaseRequestDetail() {
         onOpenChange={(open) => !open && setResolveItem(null)}
         item={resolveItem}
         onResolved={loadRequest}
+      />
+
+      {/* Onboarding Iniciar Gestión */}
+      <StartManagementOnboarding
+        open={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onConfirm={async () => {
+          setShowOnboarding(false);
+          handleStartProcessing();
+        }}
+        loading={actionLoading}
       />
     </div>
   );
