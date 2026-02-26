@@ -460,6 +460,26 @@ export const usePurchaseRequests = () => {
     }
   };
 
+  const unresolveItem = async (itemId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('purchase_request_items')
+        .update({
+          actual_supplier_id: null,
+          actual_unit_cost: 0,
+          resolved_at: null,
+          resolved_by: null,
+        })
+        .eq('id', itemId);
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error unresolving item:', error);
+      toast({ title: 'Error', description: 'No se pudo desmarcar el item', variant: 'destructive' });
+      return false;
+    }
+  };
+
   const rejectRequest = async (id: string, reason: string): Promise<boolean> => {
     try {
       const { error } = await supabase
@@ -541,6 +561,7 @@ export const usePurchaseRequests = () => {
     startProcessing,
     completeRequest,
     resolveItem,
+    unresolveItem,
     rejectRequest,
     cancelRequest,
     deleteRequest,
