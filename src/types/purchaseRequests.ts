@@ -61,6 +61,7 @@ export interface PurchaseRequest {
   status: PurchaseRequestStatus;
   warehouse_id: string | null;
   notes: string | null;
+  management_notes: string | null;
   subtotal: number;
   tax: number;
   total: number;

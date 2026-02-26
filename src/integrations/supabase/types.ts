@@ -4644,6 +4644,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          management_notes: string | null
           notes: string | null
           pr_number: string
           rejection_reason: string | null
@@ -4660,6 +4661,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          management_notes?: string | null
           notes?: string | null
           pr_number: string
           rejection_reason?: string | null
@@ -4676,6 +4678,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          management_notes?: string | null
           notes?: string | null
           pr_number?: string
           rejection_reason?: string | null
@@ -4796,6 +4799,8 @@ export type Database = {
           id: string
           is_active: boolean
           last_cost: number | null
+          last_procurement_mode: string | null
+          last_supplier_id: string | null
           min_stock: number | null
           name: string
           uom_id: string | null
@@ -4812,6 +4817,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_cost?: number | null
+          last_procurement_mode?: string | null
+          last_supplier_id?: string | null
           min_stock?: number | null
           name: string
           uom_id?: string | null
@@ -4828,6 +4835,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_cost?: number | null
+          last_procurement_mode?: string | null
+          last_supplier_id?: string | null
           min_stock?: number | null
           name?: string
           uom_id?: string | null
@@ -4839,6 +4848,13 @@ export type Database = {
             columns: ["base_uom_id"]
             isOneToOne: false
             referencedRelation: "units_of_measure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raw_materials_last_supplier_id_fkey"
+            columns: ["last_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
           {
