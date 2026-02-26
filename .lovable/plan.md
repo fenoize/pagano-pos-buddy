@@ -1,108 +1,163 @@
 
-Objetivo inmediato: dejar operativo el botón **“Registrar recepción”** sin más errores encadenados y blindar el flujo para que no vuelvas a perder créditos.
 
-## 1) Diagnóstico confirmado (hecho con revisión de BD real + flujo UI)
+# Plan: Rediseño del Flujo de Compras para Paganos
 
-Encontré el problema exacto en producción:
+## Tu realidad operativa (como la entiendo)
 
-1. La función RPC activa en Supabase (`public.receive_purchase_items`) está insertando:
-   - `move_type = 'in'` en `stock_moves`
-   - pero el enum `stock_move_type` **no** permite `'in'`; solo permite:
-     `purchase, sale, adjustment, transfer_in, transfer_out, waste`.
-   - Por eso el error: `invalid input value for enum stock_move_type: "in"`.
+1. **Cocina hace una lista** de todo lo que necesita (la "solicitud").
+2. **Logística recibe esa lista** y tiene que resolver cada item:
+   - Algunos van a **proveedores fijos** (les mandan la lista y ellos despachan o ustedes retiran).
+   - Otros requieren **cotizar/buscar** en ferias o locales (tomates, paltas, cebollas) para encontrar el mejor precio.
+3. **La compra real** puede ser: proveedor entrega en local, ustedes van a retirar, o compra directa en feria/local.
+4. **Problema de UOM**: compran en cajas (ej: caja de papas McCain = 8 bolsas x 2.25kg) pero usan/venden en gramos (200g). El sistema no traduce bien entre "unidad de compra" y "unidad de uso".
 
-2. Además, esa misma función activa intenta hacer:
-   - `INSERT INTO stock_balances (..., qty)`
-   - `DO UPDATE SET qty = ...`
-   - pero en tu esquema real `stock_balances` usa `qty_on_hand` (no `qty`).
-   - O sea: aunque arreglemos `'in'`, el siguiente error sería por columna inexistente si no corregimos todo junto.
+## Observaciones sobre el sistema actual
 
-3. El replay de sesión confirma que al hacer click en **Registrar Recepción** el error viene del RPC backend (no del frontend).
+**Lo que no calza con tu operación:**
 
-## 2) Causa raíz de por qué “no se arreglaba”
+- La **Solicitud de Compra** actual obliga a poner **proveedor y precio** por cada item. En tu caso, cocina no sabe (ni debería saber) a quién ni a cuánto se compra. Solo dice "necesito 5kg de tomate".
+- Al **aprobar** la solicitud, se generan OC automáticamente agrupadas por proveedor. Pero si un item no tiene proveedor fijo (ej: verduras), no hay forma de manejar la fase de "búsqueda de mejor precio".
+- No existe un **estado intermedio** entre "aprobada la solicitud" y "comprado" para la fase de cotización/búsqueda.
+- No hay distinción entre **"proveedor despacha"** vs **"nosotros retiramos"** vs **"compra directa en feria"**.
+- Las **UOM de compra vs. UOM de uso** no están diferenciadas. No hay concepto de "presentación de compra" (caja, bolsa, pack) con su contenido equivalente.
 
-Hay migraciones recientes que reescribieron `receive_purchase_items` con mezcla de esquemas antiguos/nuevos:
-- esquema nuevo de `stock_moves` (`qty_in/qty_out/notes`) + valor viejo `'in'`
-- y además `stock_balances.qty` (que no existe en tu BD actual)
+**Lo que sí sirve:**
 
-Resultado: función inválida en producción aunque el front esté bien.
+- La estructura base de Solicitud → OC → Recepción es correcta conceptualmente.
+- El sistema de materiales, bodegas, y kardex está funcional.
+- La recepción con movimientos de stock (recién arreglada) está operativa.
 
-## 3) Plan de solución (implementación propuesta, de punta a punta)
+## Plan de Mejoras
 
-### Fase A — Hotfix backend definitivo (una sola migración limpia)
-Crear una nueva migración que haga `CREATE OR REPLACE FUNCTION public.receive_purchase_items(...)` y deje el flujo consistente con tu esquema real:
+### Fase 1 — Solicitud de Compra simplificada (lo que pide cocina)
 
-- En `stock_moves`:
-  - usar `move_type = 'purchase'::stock_move_type`
-  - usar columnas correctas: `qty_in`, `qty_out`, `notes`, `related_purchase_id`.
-- En `stock_balances`:
-  - upsert con `qty_on_hand`.
-  - actualizar costo promedio (`avg_cost`) de forma consistente al recibir.
-- Mantener lógica de clamp para no recibir más que pendiente.
-- Mantener estado de OC:
-  - `received` si todo recibido
-  - `partial` si parcial
-- Mantener `SECURITY DEFINER` para evitar bloqueos por RLS desde frontend.
+**Cambio conceptual**: La solicitud de cocina es solo una **lista de necesidades** — sin proveedor, sin precio.
 
-### Fase B — Robustez del RPC (para evitar próximos errores)
-En la misma función:
+- Quitar la obligatoriedad de proveedor y precio en `purchase_request_items`.
+- El formulario de solicitud solo pide: **Material + Cantidad + Unidad + Nota** (ej: "maduros", "de 2.25kg", etc.).
+- El campo `supplier_id` y `estimated_unit_cost` pasan a ser opcionales (nullable).
+- Cocina crea la solicitud y la envía. Punto.
 
-- validaciones explícitas por ítem:
-  - item pertenece a la orden
-  - cantidad > 0
-  - no exceder pendiente
-- mapeo UOM robusto y determinístico (evitar fallback “primer registro” cuando no hay match claro).
-- mensajes de error más específicos (`RAISE EXCEPTION`) para diagnóstico rápido.
+**Impacto en BD:**
+- ALTER `purchase_request_items`: `supplier_id` nullable, `estimated_unit_cost` default 0.
+- Validación frontend ajustada.
 
-### Fase C — Ajuste frontend mínimo (si hace falta)
-`usePurchaseOrders.receiveItems` y modal ya están bien para invocar el RPC, pero agregaré:
-- manejo de error más claro en toast (traducido/contextual) para diferenciar:
-  - error enum
-  - error uom
-  - error saldo/columna
-Así el próximo fallo no queda ambiguo.
+### Fase 2 — Asignación por Logística (fase nueva)
 
-### Fase D — Verificación completa del flujo OC
-Haré una prueba de flujo completa con la OC que estás usando (`OC-2026-0012`):
-1. recepción parcial
-2. recepción total
-3. verificar:
-   - `purchase_items.qty_received / qty_pending`
-   - `purchase_orders.status`
-   - inserción en `stock_moves`
-   - upsert correcto en `stock_balances.qty_on_hand`
-4. repetir con switch de “Ingresar automáticamente al inventario” apagado para validar ambos caminos.
+Cuando logística recibe una solicitud aprobada, necesita **resolver cada item**:
 
-## 4) Resultado esperado tras aplicar el plan
+**Nuevo concepto: "Modalidad de abastecimiento" por item:**
 
-- El error `enum stock_move_type: "in"` desaparece.
-- No aparece error posterior por `stock_balances.qty`.
-- La recepción de items funciona de principio a fin.
-- Queda estabilizado el flujo para que no vuelvas a consumir créditos en intentos fallidos.
+| Modalidad | Descripción | Flujo |
+|-----------|-------------|-------|
+| `proveedor_despacha` | Proveedor fijo, ellos entregan | Se genera OC → se envía → se recibe |
+| `retiro_proveedor` | Proveedor fijo, nosotros retiramos | Se genera OC → se marca "por retirar" → se recibe |
+| `compra_directa` | Feria/local, sin proveedor fijo | Se registra compra con precio real post-compra |
 
-## 5) Detalle técnico (resumen para referencia)
+**Nuevo estado en la solicitud**: `en_proceso` (entre `approved` y un nuevo estado `completada`).
+
+**UI nueva: Panel de "Gestión de Compra"**
+- Logística ve cada item de la solicitud.
+- Asigna proveedor (o marca "compra directa").
+- Registra cotizaciones/precios encontrados.
+- Marca cada item como "resuelto" cuando tiene proveedor+precio definido.
+- Desde ahí genera las OC (agrupadas por proveedor) solo para los items con proveedor fijo.
+- Los items de "compra directa" se registran con el precio real al volver de la feria.
+
+**Impacto en BD:**
+- Nuevo campo en `purchase_request_items`: `procurement_mode` (enum: `proveedor_despacha`, `retiro_proveedor`, `compra_directa`).
+- Nuevo campo: `actual_unit_cost` (el precio real pagado).
+- Nuevo campo: `actual_supplier_id` (el proveedor finalmente seleccionado, puede diferir del estimado).
+- Nuevo campo: `resolved_at` (timestamp cuando logística resolvió ese item).
+- Nuevo enum value `en_proceso` para `purchase_request_status`.
+
+### Fase 3 — UOM de Compra vs. UOM de Uso (presentaciones)
+
+**Problema actual**: Compras una caja de papas McCain (8 bolsas x 2.25kg = 18kg total), pero el sistema solo conoce "gramos" o "kilogramos". No hay forma de decir "compré 2 cajas" y que el sistema entienda que son 36kg.
+
+**Solución: Presentaciones de compra por material**
+
+Nueva tabla `material_purchase_presentations`:
 
 ```text
-Flujo corregido del RPC:
-
-UI (Registrar Recepción)
-  -> supabase.rpc('receive_purchase_items', p_order_id, p_receipts, p_ingress_to_inventory)
-    -> valida orden + items + cantidades
-    -> UPDATE purchase_items.qty_received
-    -> IF ingress:
-         INSERT stock_moves(move_type='purchase', qty_in, qty_out=0, ...)
-         UPSERT stock_balances(qty_on_hand, avg_cost)
-    -> recalcula estado OC (partial/received)
-    -> commit atómico
+material_purchase_presentations
+├── id
+├── raw_material_id     → FK a raw_materials
+├── supplier_id         → FK a suppliers (opcional, la presentación puede variar por proveedor)
+├── name                → "Caja 8x2.25kg", "Bolsa 2.25kg", "Saco 25kg"
+├── purchase_uom_id     → FK a units_of_measure (ej: "Caja")
+├── content_qty         → 18 (cantidad en unidad base)
+├── content_uom_id      → FK a units_of_measure (ej: "Kilogramo")
+├── is_default           → boolean
+├── is_active            → boolean
+└── last_price           → último precio pagado por esta presentación
 ```
 
-Archivos objetivo cuando implementemos:
-- `supabase/migrations/<new_timestamp>_fix_receive_purchase_items.sql`
-- (opcional, solo si agregamos mejora de UX de error)
-  - `src/hooks/usePurchaseOrders.ts`
+**Ejemplo papas McCain:**
+- Presentación: "Caja 8x2.25kg"
+- `purchase_uom_id` = Caja
+- `content_qty` = 18
+- `content_uom_id` = Kilogramo
+- Logística dice "compré 2 cajas a $45.000 c/u"
+- Sistema calcula: 2 × 18kg = 36kg ingresan al inventario
+- Costo unitario: $45.000 / 18 = $2.500/kg
 
-<lov-actions>
-<lov-suggestion message="Testea el flujo completo end-to-end de recepción de OC (parcial y total) para confirmar que ya no aparece el error y que se actualizan stock_moves y stock_balances.">Verificar flujo end-to-end</lov-suggestion>
-<lov-suggestion message="Agregar una vista de auditoría en la pantalla de OC que muestre los movimientos de stock generados por cada recepción (kardex vinculado por related_purchase_id).">Agregar auditoría de recepción</lov-suggestion>
-<lov-suggestion message="Implementar un check de salud en Configuración que valide RPCs críticas de inventario (receive_purchase_items, process_stock_adjustment, process_stock_transfer) y avise incompatibilidades de esquema.">Health check de RPCs críticas</lov-suggestion>
-</lov-actions>
+**Impacto en el flujo:**
+- En la solicitud, cocina pide "18kg de papas" (en su unidad de uso).
+- En la OC/compra, logística selecciona la presentación "Caja 8x2.25kg" y pone cantidad 1.
+- Al recibir, el sistema convierte automáticamente: 1 caja → 18kg al inventario.
+
+### Fase 4 — Registro de cotizaciones (historial de precios)
+
+Para los items que requieren búsqueda de mejor precio:
+
+Nueva tabla `purchase_quotations`:
+
+```text
+purchase_quotations
+├── id
+├── request_item_id     → FK a purchase_request_items
+├── supplier_name       → texto libre (para ferias/locales sin ficha)
+├── supplier_id         → FK opcional (si es proveedor registrado)
+├── unit_price
+├── presentation_id     → FK opcional a material_purchase_presentations
+├── notes               → "Feria Lo Valledor, puesto 42"
+├── quoted_at
+├── is_selected         → boolean (la cotización ganadora)
+└── quoted_by           → FK a users
+```
+
+Esto permite que logística registre: "Tomates: $1.200/kg en Feria Lo Valledor, $1.500/kg en Jumbo, $1.100/kg en Vega Central" → selecciona la mejor y esa se usa para la compra.
+
+## Orden de implementación recomendado
+
+| Prioridad | Fase | Impacto operativo | Complejidad |
+|-----------|------|-------------------|-------------|
+| 1 | Fase 1: Solicitud simplificada | Alto — cocina deja de inventar precios | Baja |
+| 2 | Fase 2: Gestión por logística | Alto — flujo real de trabajo | Media-Alta |
+| 3 | Fase 3: Presentaciones de compra | Alto — elimina confusión cajas/gramos | Media |
+| 4 | Fase 4: Cotizaciones | Medio — trazabilidad de precios | Baja-Media |
+
+## Resumen visual del flujo propuesto
+
+```text
+COCINA                          LOGÍSTICA                           INVENTARIO
+──────                          ─────────                           ──────────
+Crea solicitud                  
+(solo materiales + cant.)       
+       │                        
+       ▼                        
+Envía a aprobación ──────────►  Revisa y aprueba
+                                       │
+                                       ▼
+                                Para cada item:
+                                ┌─ Proveedor fijo? ──► Asigna proveedor
+                                │                      Genera OC ──────►  Recibe mercadería
+                                │                      (despacho/retiro)   Ingresa stock
+                                │
+                                └─ Sin proveedor? ──► Busca/cotiza
+                                                      Registra precio
+                                                      Compra directa ──► Registra ingreso
+                                                                          Ingresa stock
+```
+
