@@ -52,6 +52,7 @@ function DirectPurchaseItemCard({
   const [expanded, setExpanded] = useState(!item.resolved_at);
   const [supplierId, setSupplierId] = useState(item.actual_supplier_id || '__none__');
   const [unitCost, setUnitCost] = useState(item.actual_unit_cost > 0 ? String(item.actual_unit_cost) : '');
+  const [actualQty, setActualQty] = useState(String(item.qty || ''));
   const [presentationId, setPresentationId] = useState(item.presentation_id || '__none__');
   const [saving, setSaving] = useState(false);
   const isResolved = !!item.resolved_at;
@@ -127,8 +128,8 @@ function DirectPurchaseItemCard({
     }
   };
 
-  const selectedPresentation = presentations.find(p => p.id === presentationId);
-  const costDisplay = item.actual_unit_cost > 0 ? `$${item.actual_unit_cost.toLocaleString('es-CL')}` : null;
+  const subtotal = item.actual_unit_cost > 0 ? item.actual_unit_cost * item.qty : 0;
+  const costDisplay = subtotal > 0 ? `$${subtotal.toLocaleString('es-CL')}` : null;
 
   return (
     <div className={`rounded-lg border transition-colors ${isResolved ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800' : 'bg-card border-border'}`}>
@@ -167,8 +168,9 @@ function DirectPurchaseItemCard({
 
       {expanded && !isResolved && (
         <div className="px-4 pb-4 space-y-3 border-t pt-3">
+          {/* Proveedor (opcional) */}
           <div className="space-y-1">
-            <Label className="text-xs">Proveedor / Lugar</Label>
+            <Label className="text-xs">Proveedor / Lugar (opcional)</Label>
             <Select value={supplierId} onValueChange={setSupplierId}>
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="¿Dónde se compró?" />
@@ -182,46 +184,65 @@ function DirectPurchaseItemCard({
             </Select>
           </div>
 
-          {presentations.length > 0 && (
+          {/* Unidad | Cantidad | Precio en fila */}
+          <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs">Presentación</Label>
-              <Select value={presentationId} onValueChange={setPresentationId}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent position="popper" className="z-[200]">
-                  <SelectItem value="__none__">Sin presentación</SelectItem>
-                  {presentations.map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} ({p.content_qty} {p.content_uom?.abbreviation})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs text-muted-foreground">Unidad</Label>
+              {presentations.length > 0 ? (
+                <Select value={presentationId} onValueChange={setPresentationId}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Unidad" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="z-[200]">
+                    <SelectItem value="__none__">{item.uom?.abbreviation || 'u'}</SelectItem>
+                    {presentations.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={item.uom?.abbreviation || 'u'}
+                  disabled
+                  className="h-9 text-sm bg-muted"
+                />
+              )}
             </div>
-          )}
-
-          <div className="space-y-1">
-            <Label className="text-xs">
-              Precio pagado (CLP) / {selectedPresentation
-                ? selectedPresentation.purchase_uom?.abbreviation || 'unidad'
-                : item.uom?.abbreviation || 'unidad'}
-            </Label>
-            <Input
-              type="number"
-              min="0"
-              placeholder="0"
-              value={unitCost}
-              onChange={e => setUnitCost(e.target.value)}
-              className="h-9 text-sm"
-              style={{ fontSize: '16px' }}
-            />
-            {selectedPresentation && unitCost && parseFloat(unitCost) > 0 && (
-              <p className="text-xs text-muted-foreground">
-                ≈ ${Math.round(parseFloat(unitCost) / selectedPresentation.content_qty).toLocaleString('es-CL')}/{selectedPresentation.content_uom?.abbreviation || 'u'}
-              </p>
-            )}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Cantidad</Label>
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                placeholder="0"
+                value={actualQty}
+                onChange={e => setActualQty(e.target.value)}
+                className="h-9 text-sm"
+                style={{ fontSize: '16px' }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Precio $</Label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={unitCost}
+                onChange={e => setUnitCost(e.target.value)}
+                className="h-9 text-sm"
+                style={{ fontSize: '16px' }}
+              />
+            </div>
           </div>
+
+          {/* Subtotal preview */}
+          {actualQty && unitCost && parseFloat(actualQty) > 0 && parseFloat(unitCost) > 0 && (
+            <p className="text-xs text-muted-foreground text-right">
+              Subtotal: <span className="font-medium text-foreground">${Math.round(parseFloat(actualQty) * parseFloat(unitCost)).toLocaleString('es-CL')}</span>
+            </p>
+          )}
 
           <Button
             className="w-full"
@@ -266,7 +287,7 @@ export default function DirectPurchaseChecklist({ items, onItemResolved, fullscr
   // Running total of resolved items
   const totalSpent = directItems
     .filter(i => i.resolved_at && i.actual_unit_cost > 0)
-    .reduce((sum, i) => sum + i.actual_unit_cost, 0);
+    .reduce((sum, i) => sum + (i.actual_unit_cost * i.qty), 0);
 
   if (directItems.length === 0) return null;
 
