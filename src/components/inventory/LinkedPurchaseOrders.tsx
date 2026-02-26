@@ -119,7 +119,7 @@ export default function LinkedPurchaseOrders({ requestId, onRefresh }: Props) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate(`/pos/inventario/ordenes/${order.id}`)}
+                    onClick={() => navigate(`/pos/inventario/compras/${order.id}`)}
                   >
                     <ExternalLink className="h-3.5 w-3.5 mr-1" />
                     Ver OC
