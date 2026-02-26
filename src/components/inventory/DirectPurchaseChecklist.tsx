@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,12 +24,25 @@ import type { PurchaseRequestItem } from '@/types/purchaseRequests';
 
 interface Props {
   items: PurchaseRequestItem[];
-  onItemResolved: () => void;
+  onItemResolved?: () => void;
   fullscreen?: boolean;
   onToggleFullscreen?: () => void;
 }
 
-function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestItem; onResolved: () => void }) {
+// Local optimistic state for a single item
+interface OptimisticState {
+  resolved_at: string | null;
+  actual_unit_cost: number;
+  actual_supplier_id: string | null;
+}
+
+function DirectPurchaseItemCard({ 
+  item, 
+  onOptimisticUpdate 
+}: { 
+  item: PurchaseRequestItem; 
+  onOptimisticUpdate: (itemId: string, state: OptimisticState) => void;
+}) {
   const { suppliers } = useSuppliers();
   const { resolveItem, unresolveItem } = usePurchaseRequests();
   const { presentations } = usePurchasePresentations(item.raw_material_id);
@@ -45,11 +58,22 @@ function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestIte
 
   const handleResolve = async () => {
     if (!user) return;
+    const cost = parseFloat(unitCost) || 0;
+    const supplier = supplierId === '__none__' ? null : supplierId;
+
+    // Optimistic update immediately
+    onOptimisticUpdate(item.id, {
+      resolved_at: new Date().toISOString(),
+      actual_unit_cost: cost,
+      actual_supplier_id: supplier,
+    });
+    setExpanded(false);
+
     setSaving(true);
     const success = await resolveItem(item.id, {
       procurement_mode: 'compra_directa',
-      actual_supplier_id: supplierId === '__none__' ? null : supplierId,
-      actual_unit_cost: parseFloat(unitCost) || 0,
+      actual_supplier_id: supplier,
+      actual_unit_cost: cost,
       resolved_by: user.id,
     });
 
@@ -60,23 +84,42 @@ function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestIte
     }
 
     setSaving(false);
-    if (success) {
-      toast({ title: 'Item marcado como comprado' });
-      onResolved();
+    if (!success) {
+      // Revert optimistic update on failure
+      onOptimisticUpdate(item.id, {
+        resolved_at: null,
+        actual_unit_cost: 0,
+        actual_supplier_id: null,
+      });
+      toast({ title: 'Error', description: 'No se pudo marcar el item', variant: 'destructive' });
     }
   };
 
   const handleUnresolve = async () => {
+    // Optimistic update immediately
+    onOptimisticUpdate(item.id, {
+      resolved_at: null,
+      actual_unit_cost: 0,
+      actual_supplier_id: null,
+    });
+    setExpanded(true);
+
     setSaving(true);
     const success = await unresolveItem(item.id);
     setSaving(false);
-    if (success) {
-      toast({ title: 'Item desmarcado' });
-      onResolved();
+    if (!success) {
+      // Revert on failure
+      onOptimisticUpdate(item.id, {
+        resolved_at: item.resolved_at,
+        actual_unit_cost: item.actual_unit_cost,
+        actual_supplier_id: item.actual_supplier_id,
+      });
+      toast({ title: 'Error', description: 'No se pudo desmarcar el item', variant: 'destructive' });
     }
   };
 
   const handleCheckboxChange = (checked: boolean | 'indeterminate') => {
+    if (saving) return;
     if (checked && !isResolved) {
       handleResolve();
     } else if (!checked && isResolved) {
@@ -196,7 +239,27 @@ function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestIte
 }
 
 export default function DirectPurchaseChecklist({ items, onItemResolved, fullscreen, onToggleFullscreen }: Props) {
-  const directItems = items.filter(i => i.procurement_mode === 'compra_directa' || (!i.procurement_mode && !i.resolved_at));
+  // Local optimistic overrides keyed by item id
+  const [optimisticOverrides, setOptimisticOverrides] = useState<Record<string, OptimisticState>>({});
+
+  const handleOptimisticUpdate = useCallback((itemId: string, state: OptimisticState) => {
+    setOptimisticOverrides(prev => ({ ...prev, [itemId]: state }));
+    // Notify parent (non-blocking, no full reload needed)
+    onItemResolved?.();
+  }, [onItemResolved]);
+
+  // Merge server items with optimistic overrides
+  const mergedItems = useMemo(() => {
+    return items
+      .filter(i => i.procurement_mode === 'compra_directa' || (!i.procurement_mode && !i.resolved_at) || optimisticOverrides[i.id])
+      .map(i => {
+        const override = optimisticOverrides[i.id];
+        if (!override) return i;
+        return { ...i, ...override };
+      });
+  }, [items, optimisticOverrides]);
+
+  const directItems = mergedItems.filter(i => i.procurement_mode === 'compra_directa' || (!i.procurement_mode && !i.resolved_at));
   const resolvedCount = directItems.filter(i => i.resolved_at).length;
   const progressPercent = directItems.length > 0 ? Math.round((resolvedCount / directItems.length) * 100) : 0;
 
@@ -238,7 +301,7 @@ export default function DirectPurchaseChecklist({ items, onItemResolved, fullscr
             <DirectPurchaseItemCard
               key={item.id}
               item={item}
-              onResolved={onItemResolved}
+              onOptimisticUpdate={handleOptimisticUpdate}
             />
           ))}
         </div>
