@@ -55,7 +55,8 @@ export const usePurchaseRequests = () => {
             *,
             warehouse:warehouses(id, name),
             creator:users!purchase_requests_created_by_fkey(id, username, full_name),
-            approver:users!purchase_requests_approved_by_fkey(id, username, full_name)
+            approver:users!purchase_requests_approved_by_fkey(id, username, full_name),
+            buyer:users!purchase_requests_buyer_id_fkey(id, username, full_name)
           `)
           .eq('id', id)
           .single()
@@ -249,10 +250,17 @@ export const usePurchaseRequests = () => {
       // Generate OCs from resolved items grouped by supplier
       await generateOrdersFromRequest(id);
 
-      const { error } = await supabase
-        .from('purchase_requests')
-        .update({ status: 'en_proceso' as PurchaseRequestStatus })
-        .eq('id', id);
+      const staffUserId = getStaffUserId();
+      const { error } = await withStaffContext(staffUserId, async () =>
+        await supabase
+          .from('purchase_requests')
+          .update({ 
+            status: 'en_proceso' as PurchaseRequestStatus,
+            buyer_id: staffUserId || null,
+            buyer_started_at: new Date().toISOString(),
+          })
+          .eq('id', id)
+      );
       if (error) throw error;
       toast({ title: 'Gestión iniciada', description: 'Se generaron las Órdenes de Compra por proveedor' });
       await fetchRequests();
