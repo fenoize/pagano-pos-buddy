@@ -31,7 +31,7 @@ interface Props {
 
 function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestItem; onResolved: () => void }) {
   const { suppliers } = useSuppliers();
-  const { resolveItem } = usePurchaseRequests();
+  const { resolveItem, unresolveItem } = usePurchaseRequests();
   const { presentations } = usePurchasePresentations(item.raw_material_id);
   const { user } = useAuthContext();
   const { toast } = useToast();
@@ -66,7 +66,26 @@ function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestIte
     }
   };
 
+  const handleUnresolve = async () => {
+    setSaving(true);
+    const success = await unresolveItem(item.id);
+    setSaving(false);
+    if (success) {
+      toast({ title: 'Item desmarcado' });
+      onResolved();
+    }
+  };
+
+  const handleCheckboxChange = (checked: boolean | 'indeterminate') => {
+    if (checked && !isResolved) {
+      handleResolve();
+    } else if (!checked && isResolved) {
+      handleUnresolve();
+    }
+  };
+
   const selectedPresentation = presentations.find(p => p.id === presentationId);
+  const costDisplay = item.actual_unit_cost > 0 ? `$${item.actual_unit_cost.toLocaleString('es-CL')}` : null;
 
   return (
     <div className={`rounded-lg border transition-colors ${isResolved ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800' : 'bg-card border-border'}`}>
@@ -77,24 +96,29 @@ function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestIte
       >
         <Checkbox
           checked={isResolved}
-          onCheckedChange={() => !isResolved && handleResolve()}
+          onCheckedChange={handleCheckboxChange}
           onClick={(e) => e.stopPropagation()}
-          disabled={saving || isResolved}
+          disabled={saving}
         />
         <div className="flex-1 min-w-0">
           <p className={`font-medium text-sm ${isResolved ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
             {item.raw_material?.name}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {item.qty} {item.uom?.abbreviation}
-            {item.notes && ` · ${item.notes}`}
-          </p>
+          {item.notes && (
+            <p className="text-xs text-muted-foreground">{item.notes}</p>
+          )}
         </div>
-        {isResolved && unitCost && (
-          <Badge variant="outline" className="text-xs shrink-0 border-emerald-300 text-emerald-700">
-            ${parseFloat(unitCost).toLocaleString('es-CL')}
-          </Badge>
-        )}
+        {/* Right side: qty + cost */}
+        <div className="flex items-center gap-2 shrink-0 text-right">
+          <span className="text-xs text-muted-foreground">
+            {item.qty} {item.uom?.abbreviation}
+          </span>
+          {isResolved && costDisplay && (
+            <Badge variant="outline" className="text-xs border-emerald-300 text-emerald-700 dark:text-emerald-400">
+              {costDisplay}
+            </Badge>
+          )}
+        </div>
         {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
       </button>
 
@@ -176,6 +200,11 @@ export default function DirectPurchaseChecklist({ items, onItemResolved, fullscr
   const resolvedCount = directItems.filter(i => i.resolved_at).length;
   const progressPercent = directItems.length > 0 ? Math.round((resolvedCount / directItems.length) * 100) : 0;
 
+  // Running total of resolved items
+  const totalSpent = directItems
+    .filter(i => i.resolved_at && i.actual_unit_cost > 0)
+    .reduce((sum, i) => sum + i.actual_unit_cost, 0);
+
   if (directItems.length === 0) return null;
 
   const content = (
@@ -204,7 +233,7 @@ export default function DirectPurchaseChecklist({ items, onItemResolved, fullscr
           <Progress value={progressPercent} className="h-2" />
         </div>
 
-        <div className={`space-y-2 ${fullscreen ? 'max-h-[calc(100vh-200px)] overflow-y-auto' : ''}`}>
+        <div className={`space-y-2 ${fullscreen ? 'max-h-[calc(100vh-280px)] overflow-y-auto' : ''}`}>
           {directItems.map(item => (
             <DirectPurchaseItemCard
               key={item.id}
@@ -213,17 +242,23 @@ export default function DirectPurchaseChecklist({ items, onItemResolved, fullscr
             />
           ))}
         </div>
+
+        {/* Running total */}
+        {totalSpent > 0 && (
+          <div className="flex items-center justify-between pt-2 border-t text-sm font-medium">
+            <span className="text-muted-foreground">Total gastado</span>
+            <span className="text-foreground">${totalSpent.toLocaleString('es-CL')}</span>
+          </div>
+        )}
       </CardContent>
     </>
   );
 
   if (fullscreen) {
     return (
-      <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
+      <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
         <div className="max-w-2xl mx-auto p-4">
-          <Card>
-            {content}
-          </Card>
+          <Card>{content}</Card>
         </div>
       </div>
     );
