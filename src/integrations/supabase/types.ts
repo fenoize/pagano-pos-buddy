@@ -4641,6 +4641,8 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          buyer_id: string | null
+          buyer_started_at: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -4658,6 +4660,8 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          buyer_id?: string | null
+          buyer_started_at?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -4675,6 +4679,8 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          buyer_id?: string | null
+          buyer_started_at?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -4700,6 +4706,20 @@ export type Database = {
           {
             foreignKeyName: "purchase_requests_approved_by_fkey"
             columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requests_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requests_buyer_id_fkey"
+            columns: ["buyer_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]

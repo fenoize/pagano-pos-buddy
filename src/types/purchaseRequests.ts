@@ -71,6 +71,8 @@ export interface PurchaseRequest {
   rejection_reason: string | null;
   created_at: string;
   updated_at: string;
+  buyer_id: string | null;
+  buyer_started_at: string | null;
   // Joined data
   items?: PurchaseRequestItem[];
   warehouse?: {
@@ -83,6 +85,11 @@ export interface PurchaseRequest {
     full_name: string | null;
   };
   approver?: {
+    id: string;
+    username: string;
+    full_name: string | null;
+  };
+  buyer?: {
     id: string;
     username: string;
     full_name: string | null;

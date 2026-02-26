@@ -348,7 +348,26 @@ export default function PurchaseRequestDetail() {
         </Card>
       )}
 
-      {/* === EN PROCESO: New layout with OCs + Direct Purchase + Comments === */}
+      {/* Buyer Info */}
+      {(isEnProceso || request.status === 'completada') && request.buyer && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <PlayCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+              <div>
+                <p className="font-medium text-amber-700">
+                  Comprador: {request.buyer.full_name || request.buyer.username}
+                </p>
+                {request.buyer_started_at && (
+                  <p className="text-amber-600/70 text-sm">
+                    Gestión iniciada {format(new Date(request.buyer_started_at), 'dd MMM yyyy, HH:mm', { locale: es })}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {isEnProceso && id && (
         <div className="space-y-6">
           {/* Linked Purchase Orders */}
