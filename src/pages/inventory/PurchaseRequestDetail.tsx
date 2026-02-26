@@ -13,7 +13,9 @@ import {
   CheckCheck,
   Pencil,
   MessageSquare,
-  Save
+  Save,
+  User,
+  ShieldCheck
 } from 'lucide-react';
 import { exportPurchaseRequestToPDF } from '@/lib/purchaseRequestExport';
 import { Button } from '@/components/ui/button';
@@ -79,8 +81,11 @@ export default function PurchaseRequestDetail() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [showDraftOCWarning, setShowDraftOCWarning] = useState(false);
+  const [draftOCCount, setDraftOCCount] = useState(0);
   const [rejectionReason, setRejectionReason] = useState('');
   const [resolveItem, setResolveItem] = useState<PurchaseRequestItem | null>(null);
+  const [checklistFullscreen, setChecklistFullscreen] = useState(false);
   
   // Management notes
   const [managementNotes, setManagementNotes] = useState('');
@@ -94,6 +99,9 @@ export default function PurchaseRequestDetail() {
     last_cost: number | null;
     last_procurement_mode: string | null;
   }>>({});
+
+  // Linked OC info for finalize warning
+  const [linkedOrders, setLinkedOrders] = useState<{ status: string }[]>([]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -110,7 +118,6 @@ export default function PurchaseRequestDetail() {
     setRequest(data);
     if (data) {
       setManagementNotes(data.management_notes || '');
-      // Load last purchase info for pending_approval status
       if (['pending_approval', 'approved'].includes(data.status) && data.items?.length) {
         const materialIds = data.items.map(i => i.raw_material_id);
         const info = await getLastPurchaseInfo(materialIds);
@@ -156,6 +163,22 @@ export default function PurchaseRequestDetail() {
     return completeRequest(id);
   });
 
+  const handleTryComplete = () => {
+    // Check if there are draft/unapproved OCs
+    const draftOCs = linkedOrders.filter(o => ['draft'].includes(o.status));
+    if (draftOCs.length > 0) {
+      setDraftOCCount(draftOCs.length);
+      setShowDraftOCWarning(true);
+    } else {
+      setShowCompleteDialog(true);
+    }
+  };
+
+  const handleConfirmCompleteWithDrafts = () => {
+    setShowDraftOCWarning(false);
+    setShowCompleteDialog(true);
+  };
+
   const handleReject = async () => {
     if (!id || !rejectionReason.trim()) return;
     setActionLoading(true);
@@ -194,6 +217,20 @@ export default function PurchaseRequestDetail() {
     setNotesSaving(false);
   };
 
+  // Allow admin to reopen completed requests
+  const handleReopenToEnProceso = () => handleAction(async () => {
+    if (!id) return false;
+    const { error } = await (await import('@/integrations/supabase/client')).supabase
+      .from('purchase_requests')
+      .update({ status: 'en_proceso' as any })
+      .eq('id', id);
+    if (error) {
+      console.error(error);
+      return false;
+    }
+    return true;
+  });
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -222,9 +259,10 @@ export default function PurchaseRequestDetail() {
   const isEnProceso = request.status === 'en_proceso';
   const isPendingApproval = request.status === 'pending_approval';
   const canResolveItems = isEnProceso || isPendingApproval;
+  const isAdmin = user?.role === 'Administrador';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div className="flex items-center gap-4">
@@ -238,31 +276,56 @@ export default function PurchaseRequestDetail() {
                 {statusConfig.label}
               </Badge>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Creado por {request.creator?.full_name || request.creator?.username} el{' '}
               {format(new Date(request.created_at), 'dd MMM yyyy, HH:mm', { locale: es })}
             </p>
+            {/* Compact approval/buyer info */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+              {(request.status === 'approved' || isEnProceso || request.status === 'completada') && request.approver && (
+                <span className="text-xs text-primary flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3" />
+                  Aprobó: {request.approver.full_name || request.approver.username}
+                  {request.approved_at && (
+                    <span className="text-primary/60 ml-1">
+                      ({format(new Date(request.approved_at), 'dd/MM HH:mm', { locale: es })})
+                    </span>
+                  )}
+                </span>
+              )}
+              {(isEnProceso || request.status === 'completada') && request.buyer && (
+                <span className="text-xs text-amber-600 flex items-center gap-1">
+                  <User className="h-3 w-3" />
+                  Comprador: {request.buyer.full_name || request.buyer.username}
+                  {request.buyer_started_at && (
+                    <span className="text-amber-500/60 ml-1">
+                      ({format(new Date(request.buyer_started_at), 'dd/MM HH:mm', { locale: es })})
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Actions based on status */}
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => exportPurchaseRequestToPDF(request)}>
+          <Button variant="outline" size="sm" onClick={() => exportPurchaseRequestToPDF(request)}>
             <Download className="h-4 w-4 mr-2" />
             PDF
           </Button>
 
           {request.status === 'draft' && (
             <>
-              <Button variant="outline" onClick={() => navigate(`/pos/inventario/solicitudes/${id}/editar`)}>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/pos/inventario/solicitudes/${id}/editar`)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Editar
               </Button>
-              <Button onClick={handleSubmitForApproval} disabled={actionLoading}>
+              <Button size="sm" onClick={handleSubmitForApproval} disabled={actionLoading}>
                 <Send className="h-4 w-4 mr-2" />
                 Enviar a Aprobación
               </Button>
-              <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+              <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)}>
                 <Trash2 className="h-4 w-4 mr-2" />
                 Eliminar
               </Button>
@@ -271,15 +334,15 @@ export default function PurchaseRequestDetail() {
 
           {isPendingApproval && (
             <>
-              <Button variant="outline" onClick={handleReturnToDraft} disabled={actionLoading}>
+              <Button variant="outline" size="sm" onClick={handleReturnToDraft} disabled={actionLoading}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Devolver
               </Button>
-              <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>
+              <Button variant="destructive" size="sm" onClick={() => setShowRejectDialog(true)}>
                 <XCircle className="h-4 w-4 mr-2" />
                 Rechazar
               </Button>
-              <Button onClick={handleApprove} disabled={actionLoading}>
+              <Button size="sm" onClick={handleApprove} disabled={actionLoading}>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Aprobar
               </Button>
@@ -287,7 +350,7 @@ export default function PurchaseRequestDetail() {
           )}
 
           {request.status === 'approved' && (
-            <Button onClick={handleStartProcessing} disabled={actionLoading}>
+            <Button size="sm" onClick={handleStartProcessing} disabled={actionLoading}>
               <PlayCircle className="h-4 w-4 mr-2" />
               Iniciar Gestión
             </Button>
@@ -295,7 +358,8 @@ export default function PurchaseRequestDetail() {
 
           {isEnProceso && (
             <Button
-              onClick={() => setShowCompleteDialog(true)}
+              size="sm"
+              onClick={handleTryComplete}
               disabled={actionLoading || resolvedCount < totalItems}
             >
               <CheckCheck className="h-4 w-4 mr-2" />
@@ -303,8 +367,15 @@ export default function PurchaseRequestDetail() {
             </Button>
           )}
 
+          {request.status === 'completada' && isAdmin && (
+            <Button variant="outline" size="sm" onClick={handleReopenToEnProceso} disabled={actionLoading}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reabrir Gestión
+            </Button>
+          )}
+
           {request.status === 'rejected' && (
-            <Button variant="outline" onClick={handleReturnToDraft} disabled={actionLoading}>
+            <Button variant="outline" size="sm" onClick={handleReturnToDraft} disabled={actionLoading}>
               <RotateCcw className="h-4 w-4 mr-2" />
               Reabrir como Borrador
             </Button>
@@ -315,273 +386,247 @@ export default function PurchaseRequestDetail() {
       {/* Rejection Reason */}
       {request.status === 'rejected' && request.rejection_reason && (
         <Card className="border-destructive/30 bg-destructive/5">
-          <CardContent className="pt-6">
+          <CardContent className="py-3 px-4">
             <div className="flex items-start gap-3">
-              <XCircle className="h-5 w-5 text-destructive mt-0.5" />
+              <XCircle className="h-4 w-4 text-destructive mt-0.5" />
               <div>
-                <p className="font-medium text-destructive">Motivo del Rechazo</p>
-                <p className="text-destructive/80">{request.rejection_reason}</p>
+                <p className="font-medium text-destructive text-sm">Motivo del Rechazo</p>
+                <p className="text-destructive/80 text-sm">{request.rejection_reason}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Approval Info */}
-      {(request.status === 'approved' || isEnProceso || request.status === 'completada') && request.approver && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <p className="font-medium text-primary">
-                  Aprobada por {request.approver.full_name || request.approver.username}
-                </p>
-                {request.approved_at && (
-                  <p className="text-primary/70 text-sm">
-                    {format(new Date(request.approved_at), 'dd MMM yyyy, HH:mm', { locale: es })}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Buyer Info */}
-      {(isEnProceso || request.status === 'completada') && request.buyer && (
-        <Card className="border-amber-500/30 bg-amber-500/5">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <PlayCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-              <div>
-                <p className="font-medium text-amber-700">
-                  Comprador: {request.buyer.full_name || request.buyer.username}
-                </p>
-                {request.buyer_started_at && (
-                  <p className="text-amber-600/70 text-sm">
-                    Gestión iniciada {format(new Date(request.buyer_started_at), 'dd MMM yyyy, HH:mm', { locale: es })}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* === EN PROCESO sections === */}
       {isEnProceso && id && (
-        <div className="space-y-6">
-          {/* Linked Purchase Orders */}
-          <LinkedPurchaseOrders requestId={id} onRefresh={loadRequest} />
+        <div className="space-y-4">
+          {/* 1. Linked Purchase Orders (collapsible) */}
+          <LinkedPurchaseOrders
+            requestId={id}
+            onRefresh={loadRequest}
+            onOrdersLoaded={setLinkedOrders}
+          />
 
-          {/* Direct Purchase Checklist */}
+          {/* 2. Direct Purchase Checklist */}
           {request.items && (
             <DirectPurchaseChecklist
               items={request.items}
               onItemResolved={loadRequest}
+              fullscreen={checklistFullscreen}
+              onToggleFullscreen={() => setChecklistFullscreen(!checklistFullscreen)}
             />
           )}
-
-          {/* Management Notes */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Comentarios de Gestión
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Textarea
-                placeholder="Notas sobre la gestión de compras (cambios de precio, tips de ahorro, observaciones...)"
-                value={managementNotes}
-                onChange={(e) => handleNotesChange(e.target.value)}
-                rows={4}
-              />
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  {notesSaving ? 'Guardando...' : 'Auto-guardado'}
-                </p>
-                <Button variant="ghost" size="sm" onClick={handleSaveNotes} disabled={notesSaving}>
-                  <Save className="h-3.5 w-3.5 mr-1" />
-                  Guardar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
 
+      {/* Completada: also show linked OCs (collapsed) */}
+      {request.status === 'completada' && id && (
+        <LinkedPurchaseOrders requestId={id} onRefresh={loadRequest} defaultCollapsed />
+      )}
+
       {/* Items Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center justify-between">
-            <span>Items Solicitados</span>
-            <span className="text-sm font-normal text-muted-foreground">{totalItems} items</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Material</TableHead>
-                <TableHead className="text-right">Cantidad</TableHead>
-                <TableHead>Nota</TableHead>
-                {/* Pre-fill columns for pending_approval */}
-                {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
-                  <>
-                    <TableHead>Modalidad</TableHead>
-                    <TableHead>Proveedor</TableHead>
-                    <TableHead className="text-right">Precio</TableHead>
-                  </>
-                )}
-                {isPendingApproval && (
-                  <>
-                    <TableHead className="text-muted-foreground text-xs">Últ. Proveedor</TableHead>
-                    <TableHead className="text-muted-foreground text-xs text-right">Últ. Precio</TableHead>
-                  </>
-                )}
-                {canResolveItems && <TableHead className="w-10" />}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {request.items?.map((item) => {
-                const isResolved = !!item.resolved_at;
-                const lastInfo = lastPurchaseInfo[item.raw_material_id];
-                return (
-                <TableRow
-                  key={item.id}
-                  className={canResolveItems ? 'cursor-pointer hover:bg-muted/50' : ''}
-                  onClick={() => canResolveItems && setResolveItem(item)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {canResolveItems && (
-                        <div className={`h-2 w-2 rounded-full shrink-0 ${isResolved ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                      )}
-                      <div>
-                        <p className="font-medium">{item.raw_material?.name}</p>
-                        {item.raw_material?.code && (
-                          <p className="text-xs text-muted-foreground">{item.raw_material.code}</p>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {item.qty} {item.uom?.abbreviation}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
-                    {item.notes || '—'}
-                  </TableCell>
-                  {/* Resolution columns for all reviewable states */}
-                  {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
-                    <>
-                      <TableCell>
-                        {item.procurement_mode ? (
-                          <Badge className={`${PROCUREMENT_MODE_CONFIG[item.procurement_mode].bgColor} ${PROCUREMENT_MODE_CONFIG[item.procurement_mode].color} border-0 text-xs`}>
-                            {PROCUREMENT_MODE_CONFIG[item.procurement_mode].label}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">Sin asignar</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {item.actual_supplier?.name || item.supplier?.name || '—'}
-                      </TableCell>
-                      <TableCell className="text-right text-sm">
-                        {item.actual_unit_cost > 0 ? formatCurrency(item.actual_unit_cost) : '—'}
-                      </TableCell>
-                    </>
-                  )}
-                  {/* Historical reference columns for approval */}
-                  {isPendingApproval && (
-                    <>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {lastInfo?.last_supplier_name || '—'}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
-                        {lastInfo?.last_cost ? formatCurrency(lastInfo.last_cost) : '—'}
-                      </TableCell>
-                    </>
-                  )}
-                  {canResolveItems && (
-                    <TableCell className="w-10">
-                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                    </TableCell>
-                  )}
-                </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Notes */}
-      {request.notes && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Notas del Chef</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">{request.notes}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Management notes for completada status (read-only) */}
-      {request.status === 'completada' && request.management_notes && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Comentarios de Gestión
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground whitespace-pre-wrap">{request.management_notes}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Información</CardTitle></CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Almacén</span>
-              <span>{request.warehouse?.name || 'Por defecto'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Items</span>
-              <span>{totalItems}</span>
-            </div>
-            {(isEnProceso || request.status === 'completada') && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Items resueltos</span>
-                <span className="font-medium">{resolvedCount}/{totalItems}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {hasEstimatedCosts && (
+      {!checklistFullscreen && (
+        <>
           <Card>
-            <CardHeader><CardTitle className="text-sm">Estimado</CardTitle></CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatCurrency(request.subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">IVA (19%)</span>
-                <span>{formatCurrency(request.tax)}</span>
-              </div>
-              <div className="border-t pt-3 flex justify-between font-bold">
-                <span>Total</span>
-                <span>{formatCurrency(request.total)}</span>
-              </div>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span>Items Solicitados</span>
+                <span className="text-sm font-normal text-muted-foreground">{totalItems} items</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Material</TableHead>
+                    <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead>Nota</TableHead>
+                    {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
+                      <>
+                        <TableHead>Modalidad</TableHead>
+                        <TableHead>Proveedor</TableHead>
+                        <TableHead className="text-right">Precio</TableHead>
+                      </>
+                    )}
+                    {isPendingApproval && (
+                      <>
+                        <TableHead className="text-muted-foreground text-xs">Últ. Proveedor</TableHead>
+                        <TableHead className="text-muted-foreground text-xs text-right">Últ. Precio</TableHead>
+                      </>
+                    )}
+                    {canResolveItems && <TableHead className="w-10" />}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {request.items?.map((item) => {
+                    const isResolved = !!item.resolved_at;
+                    const lastInfo = lastPurchaseInfo[item.raw_material_id];
+                    return (
+                    <TableRow
+                      key={item.id}
+                      className={canResolveItems ? 'cursor-pointer hover:bg-muted/50' : ''}
+                      onClick={() => canResolveItems && setResolveItem(item)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {canResolveItems && (
+                            <div className={`h-2 w-2 rounded-full shrink-0 ${isResolved ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                          )}
+                          <div>
+                            <p className="font-medium">{item.raw_material?.name}</p>
+                            {item.raw_material?.code && (
+                              <p className="text-xs text-muted-foreground">{item.raw_material.code}</p>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {item.qty} {item.uom?.abbreviation}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
+                        {item.notes || '—'}
+                      </TableCell>
+                      {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
+                        <>
+                          <TableCell>
+                            {item.procurement_mode ? (
+                              <Badge className={`${PROCUREMENT_MODE_CONFIG[item.procurement_mode].bgColor} ${PROCUREMENT_MODE_CONFIG[item.procurement_mode].color} border-0 text-xs`}>
+                                {PROCUREMENT_MODE_CONFIG[item.procurement_mode].label}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">Sin asignar</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {item.actual_supplier?.name || item.supplier?.name || '—'}
+                          </TableCell>
+                          <TableCell className="text-right text-sm">
+                            {item.actual_unit_cost > 0 ? formatCurrency(item.actual_unit_cost) : '—'}
+                          </TableCell>
+                        </>
+                      )}
+                      {isPendingApproval && (
+                        <>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {lastInfo?.last_supplier_name || '—'}
+                          </TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground">
+                            {lastInfo?.last_cost ? formatCurrency(lastInfo.last_cost) : '—'}
+                          </TableCell>
+                        </>
+                      )}
+                      {canResolveItems && (
+                        <TableCell className="w-10">
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                        </TableCell>
+                      )}
+                    </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
-        )}
-      </div>
+
+          {/* Notes */}
+          {request.notes && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Notas del Chef</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">{request.notes}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Management Notes (editable in en_proceso) */}
+          {isEnProceso && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Comentarios de Gestión
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Textarea
+                  placeholder="Notas sobre la gestión de compras (cambios de precio, tips de ahorro, observaciones...)"
+                  value={managementNotes}
+                  onChange={(e) => handleNotesChange(e.target.value)}
+                  rows={4}
+                />
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {notesSaving ? 'Guardando...' : 'Auto-guardado'}
+                  </p>
+                  <Button variant="ghost" size="sm" onClick={handleSaveNotes} disabled={notesSaving}>
+                    <Save className="h-3.5 w-3.5 mr-1" />
+                    Guardar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Management notes for completada status (read-only) */}
+          {request.status === 'completada' && request.management_notes && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Comentarios de Gestión
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground whitespace-pre-wrap">{request.management_notes}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Información</CardTitle></CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Almacén</span>
+                  <span>{request.warehouse?.name || 'Por defecto'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Items</span>
+                  <span>{totalItems}</span>
+                </div>
+                {(isEnProceso || request.status === 'completada') && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Items resueltos</span>
+                    <span className="font-medium">{resolvedCount}/{totalItems}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {hasEstimatedCosts && (
+              <Card>
+                <CardHeader><CardTitle className="text-sm">Estimado</CardTitle></CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>{formatCurrency(request.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">IVA (19%)</span>
+                    <span>{formatCurrency(request.tax)}</span>
+                  </div>
+                  <div className="border-t pt-3 flex justify-between font-bold">
+                    <span>Total</span>
+                    <span>{formatCurrency(request.total)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Delete Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -614,6 +659,30 @@ export default function PurchaseRequestDetail() {
         </DialogContent>
       </Dialog>
 
+      {/* Draft OC Warning Dialog */}
+      <AlertDialog open={showDraftOCWarning} onOpenChange={setShowDraftOCWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-amber-500" />
+              OC en Borrador detectadas
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Hay <strong>{draftOCCount}</strong> Orden(es) de Compra en estado <strong>Borrador</strong> que no han sido aprobadas ni enviadas. 
+              Al finalizar la gestión, estas OC serán <strong>canceladas automáticamente</strong>.
+              <br /><br />
+              ¿Deseas continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver y revisar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmCompleteWithDrafts} className="bg-amber-600 hover:bg-amber-700 text-white">
+              Continuar y cancelar borradores
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Complete/Finalize Dialog */}
       <AlertDialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
         <AlertDialogContent>
@@ -621,7 +690,7 @@ export default function PurchaseRequestDetail() {
             <AlertDialogTitle>¿Finalizar Gestión de Compras?</AlertDialogTitle>
             <AlertDialogDescription>
               Los precios y proveedores de cada item quedarán registrados como referencia para futuras solicitudes.
-              Esta acción no se puede deshacer.
+              {isAdmin && ' Un administrador podrá reabrir la gestión si se necesitan correcciones.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

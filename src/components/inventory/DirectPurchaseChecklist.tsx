@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ShoppingBag, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { ShoppingBag, ChevronDown, ChevronUp, Loader2, Maximize2, X } from 'lucide-react';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { usePurchaseRequests } from '@/hooks/usePurchaseRequests';
 import { usePurchasePresentations } from '@/hooks/usePurchasePresentations';
@@ -24,6 +25,8 @@ import type { PurchaseRequestItem } from '@/types/purchaseRequests';
 interface Props {
   items: PurchaseRequestItem[];
   onItemResolved: () => void;
+  fullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestItem; onResolved: () => void }) {
@@ -97,7 +100,6 @@ function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestIte
 
       {expanded && !isResolved && (
         <div className="px-4 pb-4 space-y-3 border-t pt-3">
-          {/* Supplier / Place */}
           <div className="space-y-1">
             <Label className="text-xs">Proveedor / Lugar</Label>
             <Select value={supplierId} onValueChange={setSupplierId}>
@@ -113,7 +115,6 @@ function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestIte
             </Select>
           </div>
 
-          {/* Presentation */}
           {presentations.length > 0 && (
             <div className="space-y-1">
               <Label className="text-xs">Presentación</Label>
@@ -133,7 +134,6 @@ function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestIte
             </div>
           )}
 
-          {/* Price */}
           <div className="space-y-1">
             <Label className="text-xs">
               Precio pagado (CLP) / {selectedPresentation
@@ -171,14 +171,15 @@ function DirectPurchaseItemCard({ item, onResolved }: { item: PurchaseRequestIte
   );
 }
 
-export default function DirectPurchaseChecklist({ items, onItemResolved }: Props) {
+export default function DirectPurchaseChecklist({ items, onItemResolved, fullscreen, onToggleFullscreen }: Props) {
   const directItems = items.filter(i => i.procurement_mode === 'compra_directa' || (!i.procurement_mode && !i.resolved_at));
   const resolvedCount = directItems.filter(i => i.resolved_at).length;
+  const progressPercent = directItems.length > 0 ? Math.round((resolvedCount / directItems.length) * 100) : 0;
 
   if (directItems.length === 0) return null;
 
-  return (
-    <Card>
+  const content = (
+    <>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <ShoppingBag className="h-4 w-4" />
@@ -186,17 +187,47 @@ export default function DirectPurchaseChecklist({ items, onItemResolved }: Props
           <Badge variant="outline" className="ml-auto text-xs">
             {resolvedCount}/{directItems.length}
           </Badge>
+          {onToggleFullscreen && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 ml-1" onClick={onToggleFullscreen}>
+              {fullscreen ? <X className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
-        {directItems.map(item => (
-          <DirectPurchaseItemCard
-            key={item.id}
-            item={item}
-            onResolved={onItemResolved}
-          />
-        ))}
+      <CardContent className="space-y-3">
+        {/* Progress bar */}
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Progreso</span>
+            <span className="font-medium">{progressPercent}%</span>
+          </div>
+          <Progress value={progressPercent} className="h-2" />
+        </div>
+
+        <div className={`space-y-2 ${fullscreen ? 'max-h-[calc(100vh-200px)] overflow-y-auto' : ''}`}>
+          {directItems.map(item => (
+            <DirectPurchaseItemCard
+              key={item.id}
+              item={item}
+              onResolved={onItemResolved}
+            />
+          ))}
+        </div>
       </CardContent>
-    </Card>
+    </>
   );
+
+  if (fullscreen) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
+        <div className="max-w-2xl mx-auto p-4">
+          <Card>
+            {content}
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return <Card>{content}</Card>;
 }
