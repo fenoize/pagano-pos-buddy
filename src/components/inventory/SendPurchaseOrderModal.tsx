@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, Mail, Copy, Check, User } from 'lucide-react';
+import { MessageCircle, Mail, Copy, Check, User, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { useSupplierContacts } from '@/hooks/useSupplierContacts';
 import { useToast } from '@/hooks/use-toast';
 import type { PurchaseOrder, PurchaseOrderItem } from '@/hooks/usePurchaseOrders';
@@ -28,9 +29,12 @@ export function SendPurchaseOrderModal({
   order 
 }: SendPurchaseOrderModalProps) {
   const { toast } = useToast();
-  const { contacts, loading } = useSupplierContacts(order?.supplier_id);
+  const { contacts, loading, createContact, refetch } = useSupplierContacts(order?.supplier_id);
   const [selectedContactId, setSelectedContactId] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [showNewContact, setShowNewContact] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
+  const [newContact, setNewContact] = useState({ name: '', phone: '', email: '' });
 
   // Filter contacts that receive purchase orders
   const poContacts = contacts.filter(c => c.receive_purchase_orders);
@@ -148,48 +152,117 @@ ${order.notes ? `📝 Notas: ${order.notes}` : ''}`;
                 Cargando contactos...
               </div>
             ) : poContacts.length === 0 ? (
-              <div className="p-4 bg-muted rounded-lg text-center text-sm text-muted-foreground">
-                No hay contactos configurados para recibir órdenes de compra.
-                <br />
-                Configura los contactos en la ficha del proveedor.
+              <div className="p-4 bg-muted rounded-lg text-center text-sm text-muted-foreground space-y-2">
+                <p>No hay contactos configurados para recibir órdenes de compra.</p>
+                {!showNewContact && (
+                  <Button variant="outline" size="sm" onClick={() => setShowNewContact(true)}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Crear contacto
+                  </Button>
+                )}
               </div>
             ) : (
-              <RadioGroup
-                value={selectedContactId}
-                onValueChange={setSelectedContactId}
-                className="space-y-2"
-              >
-                {poContacts.map((contact) => (
-                  <div
-                    key={contact.id}
-                    className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                      selectedContactId === contact.id
-                        ? 'border-primary bg-primary/5'
-                        : 'hover:bg-muted/50'
-                    }`}
-                    onClick={() => setSelectedContactId(contact.id)}
-                  >
-                    <RadioGroupItem value={contact.id} id={contact.id} />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{contact.name}</span>
-                        {contact.is_primary && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                            Principal
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {contact.position && <span>{contact.position} • </span>}
-                        {contact.phone && <span>{contact.phone}</span>}
-                        {contact.phone && contact.email && <span> • </span>}
-                        {contact.email && <span>{contact.email}</span>}
+              <>
+                <RadioGroup
+                  value={selectedContactId}
+                  onValueChange={setSelectedContactId}
+                  className="space-y-2"
+                >
+                  {poContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedContactId === contact.id
+                          ? 'border-primary bg-primary/5'
+                          : 'hover:bg-muted/50'
+                      }`}
+                      onClick={() => setSelectedContactId(contact.id)}
+                    >
+                      <RadioGroupItem value={contact.id} id={contact.id} />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{contact.name}</span>
+                          {contact.is_primary && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                              Principal
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {contact.position && <span>{contact.position} • </span>}
+                          {contact.phone && <span>{contact.phone}</span>}
+                          {contact.phone && contact.email && <span> • </span>}
+                          {contact.email && <span>{contact.email}</span>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </RadioGroup>
+                  ))}
+                </RadioGroup>
+                {!showNewContact && (
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => setShowNewContact(true)}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Agregar contacto
+                  </Button>
+                )}
+              </>
+            )}
+
+            {/* Inline new contact form */}
+            {showNewContact && (
+              <div className="p-3 border rounded-lg space-y-3 bg-muted/30">
+                <Label className="text-sm font-medium">Nuevo contacto</Label>
+                <Input
+                  placeholder="Nombre *"
+                  value={newContact.name}
+                  onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    placeholder="Teléfono / WhatsApp"
+                    value={newContact.phone}
+                    onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Email"
+                    type="email"
+                    value={newContact.email}
+                    onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => { setShowNewContact(false); setNewContact({ name: '', phone: '', email: '' }); }}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={!newContact.name.trim() || savingContact}
+                    onClick={async () => {
+                      if (!order?.supplier_id) return;
+                      setSavingContact(true);
+                      const ok = await createContact({
+                        supplier_id: order.supplier_id,
+                        name: newContact.name.trim(),
+                        phone: newContact.phone.trim() || undefined,
+                        email: newContact.email.trim() || undefined,
+                        whatsapp: newContact.phone.trim() || undefined,
+                        is_primary: poContacts.length === 0,
+                        receive_purchase_orders: true,
+                        receive_payments: false,
+                        is_active: true,
+                      });
+                      setSavingContact(false);
+                      if (ok) {
+                        setShowNewContact(false);
+                        setNewContact({ name: '', phone: '', email: '' });
+                        await refetch();
+                      }
+                    }}
+                  >
+                    {savingContact ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
 
