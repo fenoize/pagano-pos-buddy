@@ -3191,6 +3191,80 @@ export type Database = {
           },
         ]
       }
+      material_purchase_presentations: {
+        Row: {
+          content_qty: number
+          content_uom_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          last_price: number | null
+          name: string
+          purchase_uom_id: string
+          raw_material_id: string
+          supplier_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content_qty: number
+          content_uom_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_price?: number | null
+          name: string
+          purchase_uom_id: string
+          raw_material_id: string
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content_qty?: number
+          content_uom_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_price?: number | null
+          name?: string
+          purchase_uom_id?: string
+          raw_material_id?: string
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_purchase_presentations_content_uom_id_fkey"
+            columns: ["content_uom_id"]
+            isOneToOne: false
+            referencedRelation: "units_of_measure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_purchase_presentations_purchase_uom_id_fkey"
+            columns: ["purchase_uom_id"]
+            isOneToOne: false
+            referencedRelation: "units_of_measure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_purchase_presentations_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_purchase_presentations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_events: {
         Row: {
           body: string
@@ -4365,44 +4439,160 @@ export type Database = {
           },
         ]
       }
+      purchase_quotations: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_selected: boolean | null
+          notes: string | null
+          presentation_id: string | null
+          quoted_at: string | null
+          quoted_by: string | null
+          request_item_id: string
+          supplier_id: string | null
+          supplier_name: string | null
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_selected?: boolean | null
+          notes?: string | null
+          presentation_id?: string | null
+          quoted_at?: string | null
+          quoted_by?: string | null
+          request_item_id: string
+          supplier_id?: string | null
+          supplier_name?: string | null
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_selected?: boolean | null
+          notes?: string | null
+          presentation_id?: string | null
+          quoted_at?: string | null
+          quoted_by?: string | null
+          request_item_id?: string
+          supplier_id?: string | null
+          supplier_name?: string | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_quotations_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "material_purchase_presentations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_quotations_quoted_by_fkey"
+            columns: ["quoted_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_quotations_quoted_by_fkey"
+            columns: ["quoted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_quotations_request_item_id_fkey"
+            columns: ["request_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_request_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_quotations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_request_items: {
         Row: {
+          actual_supplier_id: string | null
+          actual_unit_cost: number | null
           created_at: string
           estimated_total: number | null
-          estimated_unit_cost: number
+          estimated_unit_cost: number | null
           id: string
           notes: string | null
+          presentation_id: string | null
+          procurement_mode:
+            | Database["public"]["Enums"]["procurement_mode"]
+            | null
           qty: number
           raw_material_id: string
           request_id: string
-          supplier_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          supplier_id: string | null
           uom_id: string
         }
         Insert: {
+          actual_supplier_id?: string | null
+          actual_unit_cost?: number | null
           created_at?: string
           estimated_total?: number | null
-          estimated_unit_cost?: number
+          estimated_unit_cost?: number | null
           id?: string
           notes?: string | null
+          presentation_id?: string | null
+          procurement_mode?:
+            | Database["public"]["Enums"]["procurement_mode"]
+            | null
           qty: number
           raw_material_id: string
           request_id: string
-          supplier_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          supplier_id?: string | null
           uom_id: string
         }
         Update: {
+          actual_supplier_id?: string | null
+          actual_unit_cost?: number | null
           created_at?: string
           estimated_total?: number | null
-          estimated_unit_cost?: number
+          estimated_unit_cost?: number | null
           id?: string
           notes?: string | null
+          presentation_id?: string | null
+          procurement_mode?:
+            | Database["public"]["Enums"]["procurement_mode"]
+            | null
           qty?: number
           raw_material_id?: string
           request_id?: string
-          supplier_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          supplier_id?: string | null
           uom_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_request_items_actual_supplier_id_fkey"
+            columns: ["actual_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_request_items_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "material_purchase_presentations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_request_items_raw_material_id_fkey"
             columns: ["raw_material_id"]
@@ -4415,6 +4605,20 @@ export type Database = {
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "purchase_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_request_items_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "app_public_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_request_items_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -6632,10 +6836,16 @@ export type Database = {
         | "approved"
         | "partial"
         | "cancelled"
+      procurement_mode:
+        | "proveedor_despacha"
+        | "retiro_proveedor"
+        | "compra_directa"
       purchase_request_status:
         | "draft"
         | "pending_approval"
         | "approved"
+        | "en_proceso"
+        | "completada"
         | "rejected"
         | "cancelled"
       runa_movement_type: "acumulacion" | "canje" | "ajuste" | "promo"
@@ -6816,10 +7026,17 @@ export const Constants = {
         "partial",
         "cancelled",
       ],
+      procurement_mode: [
+        "proveedor_despacha",
+        "retiro_proveedor",
+        "compra_directa",
+      ],
       purchase_request_status: [
         "draft",
         "pending_approval",
         "approved",
+        "en_proceso",
+        "completada",
         "rejected",
         "cancelled",
       ],
