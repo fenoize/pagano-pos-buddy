@@ -11,7 +11,8 @@ import {
   Download,
   PlayCircle,
   CheckCheck,
-  Package
+  Package,
+  Pencil
 } from 'lucide-react';
 import { exportPurchaseRequestToPDF } from '@/lib/purchaseRequestExport';
 import { Button } from '@/components/ui/button';
@@ -47,9 +48,10 @@ import {
 } from '@/components/ui/dialog';
 import { usePurchaseRequests } from '@/hooks/usePurchaseRequests';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { REQUEST_STATUS_CONFIG, PROCUREMENT_MODE_CONFIG, type PurchaseRequest } from '@/types/purchaseRequests';
+import { REQUEST_STATUS_CONFIG, PROCUREMENT_MODE_CONFIG, type PurchaseRequest, type PurchaseRequestItem } from '@/types/purchaseRequests';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import ItemResolveModal from '@/components/inventory/ItemResolveModal';
 
 export default function PurchaseRequestDetail() {
   const { id } = useParams<{ id: string }>();
@@ -72,7 +74,7 @@ export default function PurchaseRequestDetail() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-
+  const [resolveItem, setResolveItem] = useState<PurchaseRequestItem | null>(null);
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -315,17 +317,30 @@ export default function PurchaseRequestDetail() {
                     <TableHead className="text-right">Precio</TableHead>
                   </>
                 )}
+                {request.status === 'en_proceso' && <TableHead className="w-10" />}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {request.items?.map((item) => (
-                <TableRow key={item.id}>
+              {request.items?.map((item) => {
+                const isEnProceso = request.status === 'en_proceso';
+                const isResolved = !!item.resolved_at;
+                return (
+                <TableRow
+                  key={item.id}
+                  className={isEnProceso ? 'cursor-pointer hover:bg-muted/50' : ''}
+                  onClick={() => isEnProceso && setResolveItem(item)}
+                >
                   <TableCell>
-                    <div>
-                      <p className="font-medium">{item.raw_material?.name}</p>
-                      {item.raw_material?.code && (
-                        <p className="text-xs text-muted-foreground">{item.raw_material.code}</p>
+                    <div className="flex items-center gap-2">
+                      {isEnProceso && (
+                        <div className={`h-2 w-2 rounded-full shrink-0 ${isResolved ? 'bg-emerald-500' : 'bg-amber-400'}`} />
                       )}
+                      <div>
+                        <p className="font-medium">{item.raw_material?.name}</p>
+                        {item.raw_material?.code && (
+                          <p className="text-xs text-muted-foreground">{item.raw_material.code}</p>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -353,8 +368,14 @@ export default function PurchaseRequestDetail() {
                       </TableCell>
                     </>
                   )}
+                  {isEnProceso && (
+                    <TableCell className="w-10">
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                    </TableCell>
+                  )}
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -443,6 +464,14 @@ export default function PurchaseRequestDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Item Resolve Modal */}
+      <ItemResolveModal
+        open={!!resolveItem}
+        onOpenChange={(open) => !open && setResolveItem(null)}
+        item={resolveItem}
+        onResolved={loadRequest}
+      />
     </div>
   );
 }

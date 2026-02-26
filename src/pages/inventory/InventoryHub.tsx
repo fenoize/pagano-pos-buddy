@@ -10,7 +10,8 @@ import {
   ArrowRightLeft,
   AlertTriangle,
   Boxes,
-  Tags
+  Tags,
+  PackageOpen
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -101,6 +102,15 @@ export default function InventoryHub() {
       route: "/pos/inventario/transferencias",
       color: "text-teal-600",
       bgColor: "bg-teal-50 hover:bg-teal-100",
+      permission: canManageInventory,
+    },
+    {
+      title: "Presentaciones",
+      description: "Conversión cajas/bolsas → kg/gr",
+      icon: PackageOpen,
+      route: "/pos/inventario/presentaciones",
+      color: "text-cyan-600",
+      bgColor: "bg-cyan-50 hover:bg-cyan-100",
       permission: canManageInventory,
     },
     {
