@@ -194,43 +194,41 @@ ${order.notes ? `📝 Notas: ${order.notes}` : ''}`;
           </div>
 
           {/* Send Methods */}
-          {selectedContact && (
-            <div className="space-y-3">
-              <Label>Método de envío</Label>
-              <div className="grid grid-cols-3 gap-3">
-                <Button
-                  variant="outline"
-                  className="flex flex-col h-auto py-4 gap-2"
-                  onClick={handleSendWhatsApp}
-                  disabled={!selectedContact.phone}
-                >
-                  <MessageCircle className="h-5 w-5 text-green-600" />
-                  <span className="text-xs">WhatsApp</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex flex-col h-auto py-4 gap-2"
-                  onClick={handleSendEmail}
-                  disabled={!selectedContact.email}
-                >
-                  <Mail className="h-5 w-5 text-blue-600" />
-                  <span className="text-xs">Email</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex flex-col h-auto py-4 gap-2"
-                  onClick={handleCopy}
-                >
-                  {copied ? (
-                    <Check className="h-5 w-5 text-green-600" />
-                  ) : (
-                    <Copy className="h-5 w-5" />
-                  )}
-                  <span className="text-xs">Copiar</span>
-                </Button>
-              </div>
+          <div className="space-y-3">
+            <Label>Método de envío</Label>
+            <div className="grid grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                className="flex flex-col h-auto py-4 gap-2"
+                onClick={handleSendWhatsApp}
+                disabled={!selectedContact?.phone}
+              >
+                <MessageCircle className="h-5 w-5 text-green-600" />
+                <span className="text-xs">WhatsApp</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex flex-col h-auto py-4 gap-2"
+                onClick={handleSendEmail}
+                disabled={!selectedContact?.email}
+              >
+                <Mail className="h-5 w-5 text-blue-600" />
+                <span className="text-xs">Email</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex flex-col h-auto py-4 gap-2"
+                onClick={handleCopy}
+              >
+                {copied ? (
+                  <Check className="h-5 w-5 text-green-600" />
+                ) : (
+                  <Copy className="h-5 w-5" />
+                )}
+                <span className="text-xs">Copiar</span>
+              </Button>
             </div>
-          )}
+          </div>
 
           {/* Preview */}
           <div className="space-y-2">
