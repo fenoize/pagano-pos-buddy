@@ -111,7 +111,7 @@ export default function PurchaseRequestDetail() {
     if (data) {
       setManagementNotes(data.management_notes || '');
       // Load last purchase info for pending_approval status
-      if (data.status === 'pending_approval' && data.items?.length) {
+      if (['pending_approval', 'approved'].includes(data.status) && data.items?.length) {
         const materialIds = data.items.map(i => i.raw_material_id);
         const info = await getLastPurchaseInfo(materialIds);
         setLastPurchaseInfo(info);
@@ -221,6 +221,7 @@ export default function PurchaseRequestDetail() {
   const totalItems = request.items?.length || 0;
   const isEnProceso = request.status === 'en_proceso';
   const isPendingApproval = request.status === 'pending_approval';
+  const canResolveItems = isEnProceso || isPendingApproval;
 
   return (
     <div className="space-y-6">
@@ -406,21 +407,20 @@ export default function PurchaseRequestDetail() {
                 <TableHead className="text-right">Cantidad</TableHead>
                 <TableHead>Nota</TableHead>
                 {/* Pre-fill columns for pending_approval */}
-                {isPendingApproval && (
-                  <>
-                    <TableHead>Últ. Proveedor</TableHead>
-                    <TableHead className="text-right">Últ. Precio</TableHead>
-                    <TableHead>Últ. Modalidad</TableHead>
-                  </>
-                )}
-                {(isEnProceso || request.status === 'completada') && (
+                {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
                   <>
                     <TableHead>Modalidad</TableHead>
                     <TableHead>Proveedor</TableHead>
                     <TableHead className="text-right">Precio</TableHead>
                   </>
                 )}
-                {isEnProceso && <TableHead className="w-10" />}
+                {isPendingApproval && (
+                  <>
+                    <TableHead className="text-muted-foreground text-xs">Últ. Proveedor</TableHead>
+                    <TableHead className="text-muted-foreground text-xs text-right">Últ. Precio</TableHead>
+                  </>
+                )}
+                {canResolveItems && <TableHead className="w-10" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -430,12 +430,12 @@ export default function PurchaseRequestDetail() {
                 return (
                 <TableRow
                   key={item.id}
-                  className={isEnProceso ? 'cursor-pointer hover:bg-muted/50' : ''}
-                  onClick={() => isEnProceso && setResolveItem(item)}
+                  className={canResolveItems ? 'cursor-pointer hover:bg-muted/50' : ''}
+                  onClick={() => canResolveItems && setResolveItem(item)}
                 >
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {isEnProceso && (
+                      {canResolveItems && (
                         <div className={`h-2 w-2 rounded-full shrink-0 ${isResolved ? 'bg-emerald-500' : 'bg-amber-400'}`} />
                       )}
                       <div>
@@ -452,25 +452,8 @@ export default function PurchaseRequestDetail() {
                   <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
                     {item.notes || '—'}
                   </TableCell>
-                  {/* Pre-fill data for approval */}
-                  {isPendingApproval && (
-                    <>
-                      <TableCell className="text-sm">
-                        {lastInfo?.last_supplier_name || <span className="text-muted-foreground">—</span>}
-                      </TableCell>
-                      <TableCell className="text-right text-sm">
-                        {lastInfo?.last_cost ? formatCurrency(lastInfo.last_cost) : <span className="text-muted-foreground">—</span>}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {lastInfo?.last_procurement_mode ? (
-                          <Badge className={`${PROCUREMENT_MODE_CONFIG[lastInfo.last_procurement_mode as keyof typeof PROCUREMENT_MODE_CONFIG]?.bgColor || 'bg-muted'} ${PROCUREMENT_MODE_CONFIG[lastInfo.last_procurement_mode as keyof typeof PROCUREMENT_MODE_CONFIG]?.color || 'text-muted-foreground'} border-0 text-xs`}>
-                            {PROCUREMENT_MODE_CONFIG[lastInfo.last_procurement_mode as keyof typeof PROCUREMENT_MODE_CONFIG]?.label || lastInfo.last_procurement_mode}
-                          </Badge>
-                        ) : <span className="text-muted-foreground">—</span>}
-                      </TableCell>
-                    </>
-                  )}
-                  {(isEnProceso || request.status === 'completada') && (
+                  {/* Resolution columns for all reviewable states */}
+                  {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
                     <>
                       <TableCell>
                         {item.procurement_mode ? (
@@ -489,7 +472,18 @@ export default function PurchaseRequestDetail() {
                       </TableCell>
                     </>
                   )}
-                  {isEnProceso && (
+                  {/* Historical reference columns for approval */}
+                  {isPendingApproval && (
+                    <>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {lastInfo?.last_supplier_name || '—'}
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">
+                        {lastInfo?.last_cost ? formatCurrency(lastInfo.last_cost) : '—'}
+                      </TableCell>
+                    </>
+                  )}
+                  {canResolveItems && (
                     <TableCell className="w-10">
                       <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                     </TableCell>
