@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -11,8 +11,9 @@ import {
   Download,
   PlayCircle,
   CheckCheck,
-  Package,
-  Pencil
+  Pencil,
+  MessageSquare,
+  Save
 } from 'lucide-react';
 import { exportPurchaseRequestToPDF } from '@/lib/purchaseRequestExport';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,8 @@ import { REQUEST_STATUS_CONFIG, PROCUREMENT_MODE_CONFIG, type PurchaseRequest, t
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ItemResolveModal from '@/components/inventory/ItemResolveModal';
+import LinkedPurchaseOrders from '@/components/inventory/LinkedPurchaseOrders';
+import DirectPurchaseChecklist from '@/components/inventory/DirectPurchaseChecklist';
 
 export default function PurchaseRequestDetail() {
   const { id } = useParams<{ id: string }>();
@@ -66,6 +69,8 @@ export default function PurchaseRequestDetail() {
     returnToDraft,
     startProcessing,
     completeRequest,
+    updateManagementNotes,
+    getLastPurchaseInfo,
   } = usePurchaseRequests();
 
   const [request, setRequest] = useState<PurchaseRequest | null>(null);
@@ -73,8 +78,23 @@ export default function PurchaseRequestDetail() {
   const [actionLoading, setActionLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [resolveItem, setResolveItem] = useState<PurchaseRequestItem | null>(null);
+  
+  // Management notes
+  const [managementNotes, setManagementNotes] = useState('');
+  const [notesSaving, setNotesSaving] = useState(false);
+  const notesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Last purchase info for approval view
+  const [lastPurchaseInfo, setLastPurchaseInfo] = useState<Record<string, {
+    last_supplier_id: string | null;
+    last_supplier_name: string | null;
+    last_cost: number | null;
+    last_procurement_mode: string | null;
+  }>>({});
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -88,6 +108,15 @@ export default function PurchaseRequestDetail() {
     setLoading(true);
     const data = await getRequestById(id);
     setRequest(data);
+    if (data) {
+      setManagementNotes(data.management_notes || '');
+      // Load last purchase info for pending_approval status
+      if (data.status === 'pending_approval' && data.items?.length) {
+        const materialIds = data.items.map(i => i.raw_material_id);
+        const info = await getLastPurchaseInfo(materialIds);
+        setLastPurchaseInfo(info);
+      }
+    }
     setLoading(false);
   };
 
@@ -147,6 +176,24 @@ export default function PurchaseRequestDetail() {
     setActionLoading(false);
   };
 
+  const handleNotesChange = useCallback((value: string) => {
+    setManagementNotes(value);
+    if (notesTimeoutRef.current) clearTimeout(notesTimeoutRef.current);
+    notesTimeoutRef.current = setTimeout(async () => {
+      if (!id) return;
+      setNotesSaving(true);
+      await updateManagementNotes(id, value);
+      setNotesSaving(false);
+    }, 1500);
+  }, [id, updateManagementNotes]);
+
+  const handleSaveNotes = async () => {
+    if (!id) return;
+    setNotesSaving(true);
+    await updateManagementNotes(id, managementNotes);
+    setNotesSaving(false);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -172,6 +219,8 @@ export default function PurchaseRequestDetail() {
   const hasEstimatedCosts = request.items?.some(i => i.estimated_unit_cost > 0);
   const resolvedCount = request.items?.filter(i => i.resolved_at).length || 0;
   const totalItems = request.items?.length || 0;
+  const isEnProceso = request.status === 'en_proceso';
+  const isPendingApproval = request.status === 'pending_approval';
 
   return (
     <div className="space-y-6">
@@ -219,7 +268,7 @@ export default function PurchaseRequestDetail() {
             </>
           )}
 
-          {request.status === 'pending_approval' && (
+          {isPendingApproval && (
             <>
               <Button variant="outline" onClick={handleReturnToDraft} disabled={actionLoading}>
                 <RotateCcw className="h-4 w-4 mr-2" />
@@ -243,10 +292,13 @@ export default function PurchaseRequestDetail() {
             </Button>
           )}
 
-          {request.status === 'en_proceso' && (
-            <Button onClick={handleComplete} disabled={actionLoading || resolvedCount < totalItems}>
+          {isEnProceso && (
+            <Button
+              onClick={() => setShowCompleteDialog(true)}
+              disabled={actionLoading || resolvedCount < totalItems}
+            >
               <CheckCheck className="h-4 w-4 mr-2" />
-              Marcar Completada ({resolvedCount}/{totalItems})
+              Finalizar Gestión ({resolvedCount}/{totalItems})
             </Button>
           )}
 
@@ -275,7 +327,7 @@ export default function PurchaseRequestDetail() {
       )}
 
       {/* Approval Info */}
-      {(request.status === 'approved' || request.status === 'en_proceso' || request.status === 'completada') && request.approver && (
+      {(request.status === 'approved' || isEnProceso || request.status === 'completada') && request.approver && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
@@ -295,7 +347,50 @@ export default function PurchaseRequestDetail() {
         </Card>
       )}
 
-      {/* Items */}
+      {/* === EN PROCESO: New layout with OCs + Direct Purchase + Comments === */}
+      {isEnProceso && id && (
+        <div className="space-y-6">
+          {/* Linked Purchase Orders */}
+          <LinkedPurchaseOrders requestId={id} onRefresh={loadRequest} />
+
+          {/* Direct Purchase Checklist */}
+          {request.items && (
+            <DirectPurchaseChecklist
+              items={request.items}
+              onItemResolved={loadRequest}
+            />
+          )}
+
+          {/* Management Notes */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Comentarios de Gestión
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Textarea
+                placeholder="Notas sobre la gestión de compras (cambios de precio, tips de ahorro, observaciones...)"
+                value={managementNotes}
+                onChange={(e) => handleNotesChange(e.target.value)}
+                rows={4}
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {notesSaving ? 'Guardando...' : 'Auto-guardado'}
+                </p>
+                <Button variant="ghost" size="sm" onClick={handleSaveNotes} disabled={notesSaving}>
+                  <Save className="h-3.5 w-3.5 mr-1" />
+                  Guardar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Items Table */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center justify-between">
@@ -310,20 +405,28 @@ export default function PurchaseRequestDetail() {
                 <TableHead>Material</TableHead>
                 <TableHead className="text-right">Cantidad</TableHead>
                 <TableHead>Nota</TableHead>
-                {(request.status === 'en_proceso' || request.status === 'completada') && (
+                {/* Pre-fill columns for pending_approval */}
+                {isPendingApproval && (
+                  <>
+                    <TableHead>Últ. Proveedor</TableHead>
+                    <TableHead className="text-right">Últ. Precio</TableHead>
+                    <TableHead>Últ. Modalidad</TableHead>
+                  </>
+                )}
+                {(isEnProceso || request.status === 'completada') && (
                   <>
                     <TableHead>Modalidad</TableHead>
                     <TableHead>Proveedor</TableHead>
                     <TableHead className="text-right">Precio</TableHead>
                   </>
                 )}
-                {request.status === 'en_proceso' && <TableHead className="w-10" />}
+                {isEnProceso && <TableHead className="w-10" />}
               </TableRow>
             </TableHeader>
             <TableBody>
               {request.items?.map((item) => {
-                const isEnProceso = request.status === 'en_proceso';
                 const isResolved = !!item.resolved_at;
+                const lastInfo = lastPurchaseInfo[item.raw_material_id];
                 return (
                 <TableRow
                   key={item.id}
@@ -349,7 +452,25 @@ export default function PurchaseRequestDetail() {
                   <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
                     {item.notes || '—'}
                   </TableCell>
-                  {(request.status === 'en_proceso' || request.status === 'completada') && (
+                  {/* Pre-fill data for approval */}
+                  {isPendingApproval && (
+                    <>
+                      <TableCell className="text-sm">
+                        {lastInfo?.last_supplier_name || <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right text-sm">
+                        {lastInfo?.last_cost ? formatCurrency(lastInfo.last_cost) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {lastInfo?.last_procurement_mode ? (
+                          <Badge className={`${PROCUREMENT_MODE_CONFIG[lastInfo.last_procurement_mode as keyof typeof PROCUREMENT_MODE_CONFIG]?.bgColor || 'bg-muted'} ${PROCUREMENT_MODE_CONFIG[lastInfo.last_procurement_mode as keyof typeof PROCUREMENT_MODE_CONFIG]?.color || 'text-muted-foreground'} border-0 text-xs`}>
+                            {PROCUREMENT_MODE_CONFIG[lastInfo.last_procurement_mode as keyof typeof PROCUREMENT_MODE_CONFIG]?.label || lastInfo.last_procurement_mode}
+                          </Badge>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                    </>
+                  )}
+                  {(isEnProceso || request.status === 'completada') && (
                     <>
                       <TableCell>
                         {item.procurement_mode ? (
@@ -384,14 +505,29 @@ export default function PurchaseRequestDetail() {
       {/* Notes */}
       {request.notes && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Notas</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Notas del Chef</CardTitle></CardHeader>
           <CardContent>
             <p className="text-muted-foreground">{request.notes}</p>
           </CardContent>
         </Card>
       )}
 
-      {/* Summary Sidebar */}
+      {/* Management notes for completada status (read-only) */}
+      {request.status === 'completada' && request.management_notes && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Comentarios de Gestión
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground whitespace-pre-wrap">{request.management_notes}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader><CardTitle className="text-sm">Información</CardTitle></CardHeader>
@@ -404,7 +540,7 @@ export default function PurchaseRequestDetail() {
               <span className="text-muted-foreground">Total Items</span>
               <span>{totalItems}</span>
             </div>
-            {(request.status === 'en_proceso' || request.status === 'completada') && (
+            {(isEnProceso || request.status === 'completada') && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Items resueltos</span>
                 <span className="font-medium">{resolvedCount}/{totalItems}</span>
@@ -464,6 +600,25 @@ export default function PurchaseRequestDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Complete/Finalize Dialog */}
+      <AlertDialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Finalizar Gestión de Compras?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Los precios y proveedores de cada item quedarán registrados como referencia para futuras solicitudes.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setShowCompleteDialog(false); handleComplete(); }}>
+              Finalizar Gestión
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Item Resolve Modal */}
       <ItemResolveModal

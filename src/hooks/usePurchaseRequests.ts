@@ -235,12 +235,15 @@ export const usePurchaseRequests = () => {
 
   const startProcessing = async (id: string): Promise<boolean> => {
     try {
+      // Generate OCs from resolved items grouped by supplier
+      await generateOrdersFromRequest(id);
+
       const { error } = await supabase
         .from('purchase_requests')
         .update({ status: 'en_proceso' as PurchaseRequestStatus })
         .eq('id', id);
       if (error) throw error;
-      toast({ title: 'Solicitud en proceso' });
+      toast({ title: 'Gestión iniciada', description: 'Se generaron las Órdenes de Compra por proveedor' });
       await fetchRequests();
       return true;
     } catch (error) {
@@ -250,20 +253,149 @@ export const usePurchaseRequests = () => {
     }
   };
 
+  const generateOrdersFromRequest = async (requestId: string): Promise<string[]> => {
+    // Fetch request with items
+    const request = await getRequestById(requestId);
+    if (!request?.items) return [];
+
+    // Group items by actual_supplier_id where procurement_mode is supplier-based
+    const supplierGroups: Record<string, PurchaseRequestItem[]> = {};
+    for (const item of request.items) {
+      if (
+        item.procurement_mode &&
+        ['proveedor_despacha', 'retiro_proveedor'].includes(item.procurement_mode) &&
+        item.actual_supplier_id
+      ) {
+        if (!supplierGroups[item.actual_supplier_id]) {
+          supplierGroups[item.actual_supplier_id] = [];
+        }
+        supplierGroups[item.actual_supplier_id].push(item);
+      }
+    }
+
+    const orderIds: string[] = [];
+
+    for (const [supplierId, items] of Object.entries(supplierGroups)) {
+      const subtotal = items.reduce((sum, i) => sum + (i.actual_unit_cost * i.qty), 0);
+      const tax = Math.round(subtotal * 0.19);
+      const total = subtotal + tax;
+
+      const { data: order, error: orderError } = await supabase
+        .from('purchase_orders')
+        .insert({
+          supplier_id: supplierId,
+          warehouse_id: request.warehouse_id,
+          notes: `Generada desde SC ${request.pr_number}`,
+          subtotal,
+          tax,
+          total,
+          status: 'draft',
+          request_id: requestId,
+        })
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error('Error creating PO:', orderError);
+        continue;
+      }
+
+      const poItems = items.map(item => ({
+        purchase_id: order.id,
+        raw_material_id: item.raw_material_id,
+        qty: item.qty,
+        uom_id: item.uom_id,
+        unit_cost: item.actual_unit_cost || 0,
+        qty_received: 0,
+      }));
+
+      await supabase.from('purchase_items').insert(poItems);
+      orderIds.push(order.id);
+    }
+
+    return orderIds;
+  };
+
   const completeRequest = async (id: string): Promise<boolean> => {
     try {
+      // Fetch items to update raw_materials with last cost/supplier
+      const request = await getRequestById(id);
+      if (request?.items) {
+        for (const item of request.items) {
+          if (item.resolved_at && item.actual_unit_cost > 0) {
+            const updates: Record<string, unknown> = {
+              last_cost: item.actual_unit_cost,
+            };
+            if (item.actual_supplier_id) {
+              updates.last_supplier_id = item.actual_supplier_id;
+            }
+            if (item.procurement_mode) {
+              updates.last_procurement_mode = item.procurement_mode;
+            }
+            await supabase
+              .from('raw_materials')
+              .update(updates)
+              .eq('id', item.raw_material_id);
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('purchase_requests')
         .update({ status: 'completada' as PurchaseRequestStatus })
         .eq('id', id);
       if (error) throw error;
-      toast({ title: 'Solicitud completada' });
+      toast({ title: 'Gestión finalizada', description: 'Los precios y proveedores han sido actualizados' });
       await fetchRequests();
       return true;
     } catch (error) {
       console.error('Error completing request:', error);
       toast({ title: 'Error', description: 'No se pudo completar la solicitud', variant: 'destructive' });
       return false;
+    }
+  };
+
+  const updateManagementNotes = async (id: string, notes: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('purchase_requests')
+        .update({ management_notes: notes })
+        .eq('id', id);
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error updating management notes:', error);
+      return false;
+    }
+  };
+
+  const getLastPurchaseInfo = async (rawMaterialIds: string[]): Promise<Record<string, {
+    last_supplier_id: string | null;
+    last_supplier_name: string | null;
+    last_cost: number | null;
+    last_procurement_mode: string | null;
+  }>> => {
+    try {
+      const { data, error } = await supabase
+        .from('raw_materials')
+        .select('id, last_cost, last_supplier_id, last_procurement_mode, supplier:suppliers!raw_materials_last_supplier_id_fkey(id, name)')
+        .in('id', rawMaterialIds);
+
+      if (error) throw error;
+
+      const result: Record<string, any> = {};
+      for (const rm of (data || [])) {
+        result[rm.id] = {
+          last_supplier_id: rm.last_supplier_id,
+          last_supplier_name: (rm as any).supplier?.name || null,
+          last_cost: rm.last_cost,
+          last_procurement_mode: rm.last_procurement_mode,
+        };
+      }
+      return result;
+    } catch (error) {
+      console.error('Error fetching last purchase info:', error);
+      return {};
     }
   };
 
@@ -381,5 +513,7 @@ export const usePurchaseRequests = () => {
     cancelRequest,
     deleteRequest,
     returnToDraft,
+    updateManagementNotes,
+    getLastPurchaseInfo,
   };
 };
