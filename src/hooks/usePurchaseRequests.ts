@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { withStaffContext } from '@/lib/dbContext';
+import { getStaffUserId } from '@/lib/staffSession';
 import type {
   PurchaseRequest,
   PurchaseRequestItem,
@@ -280,20 +282,23 @@ export const usePurchaseRequests = () => {
       const tax = Math.round(subtotal * 0.19);
       const total = subtotal + tax;
 
-      const { data: order, error: orderError } = await supabase
-        .from('purchase_orders')
-        .insert({
-          supplier_id: supplierId,
-          warehouse_id: request.warehouse_id,
-          notes: `Generada desde SC ${request.pr_number}`,
-          subtotal,
-          tax,
-          total,
-          status: 'draft',
-          request_id: requestId,
-        })
-        .select()
-        .single();
+      const staffUserId = getStaffUserId();
+      const { data: order, error: orderError } = await withStaffContext(staffUserId, async () =>
+        await supabase
+          .from('purchase_orders')
+          .insert({
+            supplier_id: supplierId,
+            warehouse_id: request.warehouse_id,
+            notes: `Generada desde SC ${request.pr_number}`,
+            subtotal,
+            tax,
+            total,
+            status: 'draft',
+            request_id: requestId,
+          })
+          .select()
+          .single()
+      );
 
       if (orderError) {
         console.error('Error creating PO:', orderError);
@@ -309,7 +314,9 @@ export const usePurchaseRequests = () => {
         qty_received: 0,
       }));
 
-      await supabase.from('purchase_items').insert(poItems);
+      await withStaffContext(staffUserId, async () =>
+        await supabase.from('purchase_items').insert(poItems)
+      );
       orderIds.push(order.id);
     }
 
@@ -318,6 +325,7 @@ export const usePurchaseRequests = () => {
 
   const completeRequest = async (id: string): Promise<boolean> => {
     try {
+      const staffUserId = getStaffUserId();
       // Fetch items to update raw_materials with last cost/supplier
       const request = await getRequestById(id);
       if (request?.items) {
@@ -332,18 +340,22 @@ export const usePurchaseRequests = () => {
             if (item.procurement_mode) {
               updates.last_procurement_mode = item.procurement_mode;
             }
-            await supabase
-              .from('raw_materials')
-              .update(updates)
-              .eq('id', item.raw_material_id);
+            await withStaffContext(staffUserId, async () =>
+              await supabase
+                .from('raw_materials')
+                .update(updates)
+                .eq('id', item.raw_material_id)
+            );
           }
         }
       }
 
-      const { error } = await supabase
-        .from('purchase_requests')
-        .update({ status: 'completada' as PurchaseRequestStatus })
-        .eq('id', id);
+      const { error } = await withStaffContext(staffUserId, async () =>
+        await supabase
+          .from('purchase_requests')
+          .update({ status: 'completada' as PurchaseRequestStatus })
+          .eq('id', id)
+      );
       if (error) throw error;
       toast({ title: 'Gestión finalizada', description: 'Los precios y proveedores han sido actualizados' });
       await fetchRequests();
