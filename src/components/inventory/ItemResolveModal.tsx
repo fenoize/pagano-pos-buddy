@@ -243,7 +243,11 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
 
           {/* Unit Cost */}
           <div className="space-y-2">
-            <Label>Precio Unitario (CLP)</Label>
+            <Label>
+              Precio Unitario (CLP) / {selectedPresentation
+                ? selectedPresentation.purchase_uom?.abbreviation || selectedPresentation.purchase_uom?.name || 'unidad'
+                : item.uom?.abbreviation || item.uom?.name || 'unidad'}
+            </Label>
             <Input
               type="number"
               min="0"
@@ -251,6 +255,11 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
               value={unitCost}
               onChange={e => setUnitCost(e.target.value)}
             />
+            {selectedPresentation && unitCost && parseFloat(unitCost) > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Equivale a ${Math.round(parseFloat(unitCost) / selectedPresentation.content_qty).toLocaleString('es-CL')}/{selectedPresentation.content_uom?.abbreviation || 'unidad base'}
+              </p>
+            )}
           </div>
 
           {/* Quotations section */}
