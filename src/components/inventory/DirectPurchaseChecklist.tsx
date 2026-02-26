@@ -128,8 +128,8 @@ function DirectPurchaseItemCard({
     }
   };
 
-  const subtotal = item.actual_unit_cost > 0 ? item.actual_unit_cost * item.qty : 0;
-  const costDisplay = subtotal > 0 ? `$${subtotal.toLocaleString('es-CL')}` : null;
+  // actual_unit_cost stores the TOTAL paid, not per-unit
+  const costDisplay = item.actual_unit_cost > 0 ? `$${item.actual_unit_cost.toLocaleString('es-CL')}` : null;
 
   return (
     <div className={`rounded-lg border transition-colors ${isResolved ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800' : 'bg-card border-border'}`}>
@@ -188,27 +188,19 @@ function DirectPurchaseItemCard({
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Unidad</Label>
-              {presentations.length > 0 ? (
-                <Select value={presentationId} onValueChange={setPresentationId}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Unidad" />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="z-[200]">
-                    <SelectItem value="__none__">{item.uom?.abbreviation || 'u'}</SelectItem>
-                    {presentations.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  value={item.uom?.abbreviation || 'u'}
-                  disabled
-                  className="h-9 text-sm bg-muted"
-                />
-              )}
+              <Select value={presentationId} onValueChange={setPresentationId}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Unidad" />
+                </SelectTrigger>
+                <SelectContent position="popper" className="z-[200]">
+                  <SelectItem value="__none__">{item.uom?.abbreviation || 'u'}</SelectItem>
+                  {presentations.map(p => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Cantidad</Label>
@@ -224,7 +216,7 @@ function DirectPurchaseItemCard({
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Precio $</Label>
+              <Label className="text-xs text-muted-foreground">Total $</Label>
               <Input
                 type="number"
                 min="0"
@@ -237,10 +229,10 @@ function DirectPurchaseItemCard({
             </div>
           </div>
 
-          {/* Subtotal preview */}
+          {/* Price = total paid, show per-unit preview */}
           {actualQty && unitCost && parseFloat(actualQty) > 0 && parseFloat(unitCost) > 0 && (
             <p className="text-xs text-muted-foreground text-right">
-              Subtotal: <span className="font-medium text-foreground">${Math.round(parseFloat(actualQty) * parseFloat(unitCost)).toLocaleString('es-CL')}</span>
+              Precio unitario: <span className="font-medium text-foreground">${Math.round(parseFloat(unitCost) / parseFloat(actualQty)).toLocaleString('es-CL')}</span> · Total: <span className="font-medium text-foreground">${Math.round(parseFloat(unitCost)).toLocaleString('es-CL')}</span>
             </p>
           )}
 
@@ -285,9 +277,10 @@ export default function DirectPurchaseChecklist({ items, onItemResolved, fullscr
   const progressPercent = directItems.length > 0 ? Math.round((resolvedCount / directItems.length) * 100) : 0;
 
   // Running total of resolved items
+  // actual_unit_cost = total paid (not per-unit)
   const totalSpent = directItems
     .filter(i => i.resolved_at && i.actual_unit_cost > 0)
-    .reduce((sum, i) => sum + (i.actual_unit_cost * i.qty), 0);
+    .reduce((sum, i) => sum + i.actual_unit_cost, 0);
 
   if (directItems.length === 0) return null;
 
