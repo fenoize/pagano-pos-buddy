@@ -21,15 +21,18 @@ export const usePurchaseRequests = () => {
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('purchase_requests')
-        .select(`
-          *,
-          warehouse:warehouses(id, name),
-          creator:users!purchase_requests_created_by_fkey(id, username, full_name),
-          approver:users!purchase_requests_approved_by_fkey(id, username, full_name)
-        `)
-        .order('created_at', { ascending: false });
+      const staffUserId = getStaffUserId();
+      const { data, error } = await withStaffContext(staffUserId, async () =>
+        await supabase
+          .from('purchase_requests')
+          .select(`
+            *,
+            warehouse:warehouses(id, name),
+            creator:users!purchase_requests_created_by_fkey(id, username, full_name),
+            approver:users!purchase_requests_approved_by_fkey(id, username, full_name)
+          `)
+          .order('created_at', { ascending: false })
+      );
 
       if (error) throw error;
       setRequests((data || []) as unknown as PurchaseRequest[]);
@@ -43,30 +46,36 @@ export const usePurchaseRequests = () => {
 
   const getRequestById = async (id: string): Promise<PurchaseRequest | null> => {
     try {
-      const { data: request, error: requestError } = await supabase
-        .from('purchase_requests')
-        .select(`
-          *,
-          warehouse:warehouses(id, name),
-          creator:users!purchase_requests_created_by_fkey(id, username, full_name),
-          approver:users!purchase_requests_approved_by_fkey(id, username, full_name)
-        `)
-        .eq('id', id)
-        .single();
+      const staffUserId = getStaffUserId();
+
+      const { data: request, error: requestError } = await withStaffContext(staffUserId, async () =>
+        await supabase
+          .from('purchase_requests')
+          .select(`
+            *,
+            warehouse:warehouses(id, name),
+            creator:users!purchase_requests_created_by_fkey(id, username, full_name),
+            approver:users!purchase_requests_approved_by_fkey(id, username, full_name)
+          `)
+          .eq('id', id)
+          .single()
+      );
 
       if (requestError) throw requestError;
 
-      const { data: items, error: itemsError } = await supabase
-        .from('purchase_request_items')
-        .select(`
-          *,
-          raw_material:raw_materials(id, name, code, last_cost, base_uom_id, base_uom:units_of_measure(id, name, abbreviation)),
-          supplier:suppliers!purchase_request_items_supplier_id_fkey(id, name, phone, email),
-          actual_supplier:suppliers!purchase_request_items_actual_supplier_id_fkey(id, name, phone, email),
-          uom:units_of_measure(id, name, abbreviation)
-        `)
-        .eq('request_id', id)
-        .order('created_at', { ascending: true });
+      const { data: items, error: itemsError } = await withStaffContext(staffUserId, async () =>
+        await supabase
+          .from('purchase_request_items')
+          .select(`
+            *,
+            raw_material:raw_materials(id, name, code, last_cost, base_uom_id, base_uom:units_of_measure(id, name, abbreviation)),
+            supplier:suppliers!purchase_request_items_supplier_id_fkey(id, name, phone, email),
+            actual_supplier:suppliers!purchase_request_items_actual_supplier_id_fkey(id, name, phone, email),
+            uom:units_of_measure(id, name, abbreviation)
+          `)
+          .eq('request_id', id)
+          .order('created_at', { ascending: true })
+      );
 
       if (itemsError) throw itemsError;
 
@@ -388,10 +397,13 @@ export const usePurchaseRequests = () => {
     last_procurement_mode: string | null;
   }>> => {
     try {
-      const { data, error } = await supabase
-        .from('raw_materials')
-        .select('id, last_cost, last_supplier_id, last_procurement_mode, supplier:suppliers!raw_materials_last_supplier_id_fkey(id, name)')
-        .in('id', rawMaterialIds);
+      const staffUserId = getStaffUserId();
+      const { data, error } = await withStaffContext(staffUserId, async () =>
+        await supabase
+          .from('raw_materials')
+          .select('id, last_cost, last_supplier_id, last_procurement_mode, supplier:suppliers!raw_materials_last_supplier_id_fkey(id, name)')
+          .in('id', rawMaterialIds)
+      );
 
       if (error) throw error;
 
