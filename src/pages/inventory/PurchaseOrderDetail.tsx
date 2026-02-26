@@ -174,7 +174,19 @@ export default function PurchaseOrderDetail() {
                 {config.label}
               </Badge>
             </div>
-            <p className="text-muted-foreground">{order.supplier?.name}</p>
+            <p className="text-muted-foreground">
+              {order.supplier?.name}
+              {order.request_id && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="ml-2 h-auto p-0 text-muted-foreground hover:text-primary"
+                  onClick={() => navigate(`/pos/inventario/solicitudes/${order.request_id}`)}
+                >
+                  ← Volver a Solicitud
+                </Button>
+              )}
+            </p>
           </div>
         </div>
 

@@ -45,6 +45,7 @@ export interface PurchaseOrder {
   created_by: string;
   created_at: string;
   updated_at: string;
+  request_id?: string | null;
   items?: PurchaseOrderItem[];
 }
 
