@@ -6494,7 +6494,7 @@ export type Database = {
           p_order_id: string
           p_receipts: Json
         }
-        Returns: boolean
+        Returns: undefined
       }
       refresh_staff_token: {
         Args: { _token: string }
