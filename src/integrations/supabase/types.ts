@@ -6728,6 +6728,16 @@ export type Database = {
         }
         Returns: Json
       }
+      receive_direct_purchase_item: {
+        Args: {
+          p_notes?: string
+          p_qty: number
+          p_request_item_id: string
+          p_total_cost: number
+          p_warehouse_id: string
+        }
+        Returns: undefined
+      }
       receive_purchase_items: {
         Args: {
           p_ingress_to_inventory?: boolean

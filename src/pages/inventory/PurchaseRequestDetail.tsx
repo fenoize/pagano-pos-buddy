@@ -414,6 +414,7 @@ export default function PurchaseRequestDetail() {
           {request.items && (
             <DirectPurchaseChecklist
               items={request.items}
+              warehouseId={request.warehouse_id}
               onItemResolved={() => {}}
               fullscreen={checklistFullscreen}
               onToggleFullscreen={() => setChecklistFullscreen(!checklistFullscreen)}
