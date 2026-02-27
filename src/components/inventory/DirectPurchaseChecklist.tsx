@@ -24,6 +24,7 @@ import type { PurchaseRequestItem } from '@/types/purchaseRequests';
 
 interface Props {
   items: PurchaseRequestItem[];
+  warehouseId?: string;
   onItemResolved?: () => void;
   fullscreen?: boolean;
   onToggleFullscreen?: () => void;
@@ -38,9 +39,11 @@ interface OptimisticState {
 
 function DirectPurchaseItemCard({ 
   item, 
+  warehouseId,
   onOptimisticUpdate 
 }: { 
   item: PurchaseRequestItem; 
+  warehouseId?: string;
   onOptimisticUpdate: (itemId: string, state: OptimisticState) => void;
 }) {
   const { suppliers } = useSuppliers();
@@ -59,13 +62,14 @@ function DirectPurchaseItemCard({
 
   const handleResolve = async () => {
     if (!user) return;
-    const cost = parseFloat(unitCost) || 0;
+    const totalCost = parseFloat(unitCost) || 0;
+    const qty = parseFloat(actualQty) || item.qty;
     const supplier = supplierId === '__none__' ? null : supplierId;
 
     // Optimistic update immediately
     onOptimisticUpdate(item.id, {
       resolved_at: new Date().toISOString(),
-      actual_unit_cost: cost,
+      actual_unit_cost: totalCost,
       actual_supplier_id: supplier,
     });
     setExpanded(false);
@@ -74,7 +78,7 @@ function DirectPurchaseItemCard({
     const success = await resolveItem(item.id, {
       procurement_mode: 'compra_directa',
       actual_supplier_id: supplier,
-      actual_unit_cost: cost,
+      actual_unit_cost: totalCost,
       resolved_by: user.id,
     });
 
@@ -82,6 +86,17 @@ function DirectPurchaseItemCard({
       await supabase.from('purchase_request_items').update({
         presentation_id: presentationId,
       }).eq('id', item.id);
+    }
+
+    // Recepcionar en inventario si hay warehouse y qty > 0
+    if (success && warehouseId && qty > 0) {
+      await supabase.rpc('receive_direct_purchase_item', {
+        p_request_item_id: item.id,
+        p_warehouse_id: warehouseId,
+        p_qty: qty,
+        p_total_cost: totalCost,
+        p_notes: `Compra directa - ${item.raw_material?.name}`,
+      });
     }
 
     setSaving(false);
@@ -251,7 +266,7 @@ function DirectPurchaseItemCard({
   );
 }
 
-export default function DirectPurchaseChecklist({ items, onItemResolved, fullscreen, onToggleFullscreen }: Props) {
+export default function DirectPurchaseChecklist({ items, warehouseId, onItemResolved, fullscreen, onToggleFullscreen }: Props) {
   // Local optimistic overrides keyed by item id
   const [optimisticOverrides, setOptimisticOverrides] = useState<Record<string, OptimisticState>>({});
 
@@ -315,6 +330,7 @@ export default function DirectPurchaseChecklist({ items, onItemResolved, fullscr
             <DirectPurchaseItemCard
               key={item.id}
               item={item}
+              warehouseId={warehouseId}
               onOptimisticUpdate={handleOptimisticUpdate}
             />
           ))}
