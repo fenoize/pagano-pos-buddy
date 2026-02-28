@@ -65,6 +65,7 @@ export interface CreatePurchaseOrderData {
   warehouse_id: string;
   notes?: string;
   expected_date?: string;
+  prices_include_tax?: boolean;
   items: {
     raw_material_id: string;
     qty: number;
@@ -138,9 +139,17 @@ export function usePurchaseOrders() {
   const createOrder = async (data: CreatePurchaseOrderData): Promise<string | null> => {
     try {
       // Calculate totals
-      const subtotal = data.items.reduce((sum, item) => sum + (item.qty * item.unit_cost), 0);
-      const tax = Math.round(subtotal * 0.19);
-      const total = subtotal + tax;
+      const rawSum = data.items.reduce((sum, item) => sum + (item.qty * item.unit_cost), 0);
+      let subtotal: number, tax: number, total: number;
+      if (data.prices_include_tax) {
+        total = rawSum;
+        subtotal = Math.round(total / 1.19);
+        tax = total - subtotal;
+      } else {
+        subtotal = rawSum;
+        tax = Math.round(subtotal * 0.19);
+        total = subtotal + tax;
+      }
 
       // Create purchase order
       const { data: order, error: orderError } = await supabase
@@ -326,9 +335,17 @@ export function usePurchaseOrders() {
 
   const updateOrder = async (id: string, data: CreatePurchaseOrderData): Promise<boolean> => {
     try {
-      const subtotal = data.items.reduce((sum, item) => sum + (item.qty * item.unit_cost), 0);
-      const tax = Math.round(subtotal * 0.19);
-      const total = subtotal + tax;
+      const rawSum = data.items.reduce((sum, item) => sum + (item.qty * item.unit_cost), 0);
+      let subtotal: number, tax: number, total: number;
+      if (data.prices_include_tax) {
+        total = rawSum;
+        subtotal = Math.round(total / 1.19);
+        tax = total - subtotal;
+      } else {
+        subtotal = rawSum;
+        tax = Math.round(subtotal * 0.19);
+        total = subtotal + tax;
+      }
 
       const { error: orderError } = await supabase
         .from('purchase_orders')
