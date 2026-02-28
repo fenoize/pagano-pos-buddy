@@ -324,6 +324,57 @@ export function usePurchaseOrders() {
     }
   };
 
+  const updateOrder = async (id: string, data: CreatePurchaseOrderData): Promise<boolean> => {
+    try {
+      const subtotal = data.items.reduce((sum, item) => sum + (item.qty * item.unit_cost), 0);
+      const tax = Math.round(subtotal * 0.19);
+      const total = subtotal + tax;
+
+      const { error: orderError } = await supabase
+        .from('purchase_orders')
+        .update({
+          supplier_id: data.supplier_id,
+          warehouse_id: data.warehouse_id,
+          notes: data.notes || '',
+          expected_date: data.expected_date || null,
+          subtotal,
+          tax,
+          total,
+        })
+        .eq('id', id);
+
+      if (orderError) throw orderError;
+
+      // Delete existing items and re-insert
+      await supabase.from('purchase_items').delete().eq('purchase_id', id);
+
+      if (data.items.length > 0) {
+        const itemsToInsert = data.items.map(item => ({
+          purchase_id: id,
+          raw_material_id: item.raw_material_id,
+          qty: item.qty,
+          uom_id: item.uom_id,
+          unit_cost: item.unit_cost,
+          qty_received: 0,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('purchase_items')
+          .insert(itemsToInsert);
+
+        if (itemsError) throw itemsError;
+      }
+
+      toast({ title: 'Orden actualizada', description: 'Los cambios se guardaron correctamente' });
+      await fetchOrders();
+      return true;
+    } catch (error: any) {
+      console.error('Error updating order:', error);
+      toast({ title: 'Error', description: error.message || 'No se pudo actualizar la orden', variant: 'destructive' });
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
@@ -335,6 +386,7 @@ export function usePurchaseOrders() {
     getOrderById,
     getStatusHistory,
     createOrder,
+    updateOrder,
     updateOrderStatus,
     receiveItems,
     deleteOrder,

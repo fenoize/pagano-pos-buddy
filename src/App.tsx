@@ -541,6 +541,14 @@ const App = () => (
                 </StaffProtectedRoute>
               } />
               
+              <Route path="/pos/inventario/compras/:id/editar" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <PurchaseOrderForm />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
               <Route path="/pos/inventario/compras/:id" element={
                 <StaffProtectedRoute>
                   <StaffLayout>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,7 @@ import { useRawMaterials } from '@/hooks/useRawMaterials';
 import { useUOM } from '@/hooks/useUOM';
 import { usePurchaseOrders } from '@/hooks/usePurchaseOrders';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface OrderItem {
   id: string;
@@ -37,29 +38,61 @@ interface OrderItem {
 }
 
 export default function PurchaseOrderForm() {
+  const { id: editId } = useParams<{ id: string }>();
+  const isEditMode = !!editId;
   const navigate = useNavigate();
   const { toast } = useToast();
   const { suppliers, loading: loadingSuppliers } = useSuppliers();
   const { warehouses, loading: loadingWarehouses } = useWarehouses();
   const { materials, loading: loadingMaterials } = useRawMaterials();
   const { uoms, loading: loadingUoms } = useUOM();
-  const { createOrder } = usePurchaseOrders();
+  const { createOrder, updateOrder, getOrderById } = usePurchaseOrders();
 
   const [saving, setSaving] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [loadingOrder, setLoadingOrder] = useState(isEditMode);
   const [supplierId, setSupplierId] = useState('');
   const [warehouseId, setWarehouseId] = useState('');
   const [expectedDate, setExpectedDate] = useState('');
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<OrderItem[]>([]);
 
-  // Set default warehouse
+  // Load existing order for edit mode
   useEffect(() => {
+    if (!editId) return;
+    (async () => {
+      setLoadingOrder(true);
+      const order = await getOrderById(editId);
+      if (order) {
+        setSupplierId(order.supplier_id);
+        setWarehouseId(order.warehouse_id);
+        setExpectedDate(order.expected_date || '');
+        setNotes(order.notes || '');
+        setItems(
+          (order.items || []).map((i: any) => ({
+            id: crypto.randomUUID(),
+            raw_material_id: i.raw_material_id,
+            qty: i.qty,
+            uom_id: i.uom_id,
+            unit_cost: i.unit_cost,
+          }))
+        );
+      } else {
+        toast({ title: 'Error', description: 'No se encontró la orden', variant: 'destructive' });
+        navigate('/pos/inventario/compras');
+      }
+      setLoadingOrder(false);
+    })();
+  }, [editId]);
+
+  // Set default warehouse (only for new orders)
+  useEffect(() => {
+    if (isEditMode) return;
     const defaultWarehouse = warehouses.find(w => w.is_default && w.is_active);
     if (defaultWarehouse && !warehouseId) {
       setWarehouseId(defaultWarehouse.id);
     }
-  }, [warehouses, warehouseId]);
+  }, [warehouses, warehouseId, isEditMode]);
 
   const addItem = () => {
     setItems([
@@ -80,7 +113,6 @@ export default function PurchaseOrderForm() {
       
       const updated = { ...item, [field]: value };
       
-      // Auto-set UOM when material is selected
       if (field === 'raw_material_id') {
         const material = materials.find(m => m.id === value);
         if (material?.base_uom_id) {
@@ -96,17 +128,9 @@ export default function PurchaseOrderForm() {
     setItems(items.filter(item => item.id !== id));
   };
 
-  const calculateSubtotal = () => {
-    return items.reduce((sum, item) => sum + (item.qty * item.unit_cost), 0);
-  };
-
-  const calculateTax = () => {
-    return Math.round(calculateSubtotal() * 0.19);
-  };
-
-  const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
-  };
+  const calculateSubtotal = () => items.reduce((sum, item) => sum + (item.qty * item.unit_cost), 0);
+  const calculateTax = () => Math.round(calculateSubtotal() * 0.19);
+  const calculateTotal = () => calculateSubtotal() + calculateTax();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value);
@@ -124,42 +148,41 @@ export default function PurchaseOrderForm() {
     return true;
   };
 
+  const getOrderData = (itemsToSave: OrderItem[]) => ({
+    supplier_id: supplierId,
+    warehouse_id: warehouseId,
+    expected_date: expectedDate || undefined,
+    notes,
+    items: itemsToSave.map(({ raw_material_id, qty, uom_id, unit_cost }) => ({
+      raw_material_id, qty, uom_id, unit_cost,
+    })),
+  });
+
   const handleSaveDraft = async () => {
     if (!validateBasicInfo()) return;
-    
-    // For drafts, allow empty items or incomplete items
     const validItems = items.filter(i => i.raw_material_id && i.uom_id && i.qty > 0);
 
     setSavingDraft(true);
-    const orderId = await createOrder({
-      supplier_id: supplierId,
-      warehouse_id: warehouseId,
-      expected_date: expectedDate || undefined,
-      notes,
-      items: validItems.map(({ raw_material_id, qty, uom_id, unit_cost }) => ({
-        raw_material_id,
-        qty,
-        uom_id,
-        unit_cost,
-      })),
-    });
-
-    setSavingDraft(false);
-
-    if (orderId) {
-      toast({ title: 'Borrador guardado', description: 'La orden se guardó como borrador' });
-      navigate(`/pos/inventario/compras/${orderId}`);
+    if (isEditMode) {
+      const success = await updateOrder(editId!, getOrderData(validItems));
+      setSavingDraft(false);
+      if (success) navigate(`/pos/inventario/compras/${editId}`);
+    } else {
+      const orderId = await createOrder(getOrderData(validItems));
+      setSavingDraft(false);
+      if (orderId) {
+        toast({ title: 'Borrador guardado' });
+        navigate(`/pos/inventario/compras/${orderId}`);
+      }
     }
   };
 
   const handleSubmit = async () => {
     if (!validateBasicInfo()) return;
-    
     if (items.length === 0) {
       toast({ title: 'Error', description: 'Agrega al menos un item', variant: 'destructive' });
       return;
     }
-
     const invalidItems = items.filter(i => !i.raw_material_id || !i.uom_id || i.qty <= 0);
     if (invalidItems.length > 0) {
       toast({ title: 'Error', description: 'Completa todos los items correctamente', variant: 'destructive' });
@@ -167,27 +190,27 @@ export default function PurchaseOrderForm() {
     }
 
     setSaving(true);
-    const orderId = await createOrder({
-      supplier_id: supplierId,
-      warehouse_id: warehouseId,
-      expected_date: expectedDate || undefined,
-      notes,
-      items: items.map(({ raw_material_id, qty, uom_id, unit_cost }) => ({
-        raw_material_id,
-        qty,
-        uom_id,
-        unit_cost,
-      })),
-    });
-
-    setSaving(false);
-
-    if (orderId) {
-      navigate(`/pos/inventario/compras/${orderId}`);
+    if (isEditMode) {
+      const success = await updateOrder(editId!, getOrderData(items));
+      setSaving(false);
+      if (success) navigate(`/pos/inventario/compras/${editId}`);
+    } else {
+      const orderId = await createOrder(getOrderData(items));
+      setSaving(false);
+      if (orderId) navigate(`/pos/inventario/compras/${orderId}`);
     }
   };
 
   const isLoading = loadingSuppliers || loadingWarehouses || loadingMaterials || loadingUoms;
+
+  if (loadingOrder) {
+    return (
+      <div className="p-4 md:p-6 space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -196,13 +219,13 @@ export default function PurchaseOrderForm() {
         <Button 
           variant="ghost" 
           size="icon"
-          onClick={() => navigate('/pos/inventario/compras')}
+          onClick={() => isEditMode ? navigate(`/pos/inventario/compras/${editId}`) : navigate('/pos/inventario/compras')}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Nueva Orden de Compra</h1>
-          <p className="text-muted-foreground">Crea una nueva orden para tu proveedor</p>
+          <h1 className="text-2xl font-bold">{isEditMode ? 'Editar Orden de Compra' : 'Nueva Orden de Compra'}</h1>
+          <p className="text-muted-foreground">{isEditMode ? 'Modifica los datos de la orden' : 'Crea una nueva orden para tu proveedor'}</p>
         </div>
       </div>
 
@@ -418,7 +441,7 @@ export default function PurchaseOrderForm() {
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Crear Orden
+                {isEditMode ? 'Guardar Cambios' : 'Crear Orden'}
               </>
             )}
           </Button>
@@ -442,7 +465,7 @@ export default function PurchaseOrderForm() {
           <Button 
             variant="outline" 
             className="w-full"
-            onClick={() => navigate('/pos/inventario/compras')}
+            onClick={() => isEditMode ? navigate(`/pos/inventario/compras/${editId}`) : navigate('/pos/inventario/compras')}
           >
             Cancelar
           </Button>
