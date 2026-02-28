@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   ChevronDown,
   ChevronUp,
+  Warehouse,
 } from 'lucide-react';
 import { exportPurchaseRequestToPDF } from '@/lib/purchaseRequestExport';
 import { Button } from '@/components/ui/button';
@@ -486,6 +487,7 @@ export default function PurchaseRequestDetail() {
                           <CollapsibleTrigger asChild>
                             <div className="px-4 py-2.5 bg-muted/40 border-b border-t flex items-center gap-2 cursor-pointer hover:bg-muted/60 transition-colors">
                               <ChevronDown className="h-4 w-4 text-muted-foreground collapsible-chevron transition-transform [&[data-state=open]_.collapsible-chevron]:rotate-180" />
+                              <Warehouse className="h-4 w-4 text-primary" />
                               <span className="text-sm font-semibold text-foreground flex-1">{group.supplierName}</span>
                               <Badge variant="outline" className="text-xs">{group.items.length}</Badge>
                               {groupTotal > 0 && (
