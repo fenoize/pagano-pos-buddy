@@ -22,6 +22,7 @@ export interface PurchaseRequestItem {
   resolved_at: string | null;
   resolved_by: string | null;
   presentation_id: string | null;
+  actual_qty: number | null;
   // Joined data
   raw_material?: {
     id: string;

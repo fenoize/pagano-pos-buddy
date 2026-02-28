@@ -1,0 +1,1 @@
+ALTER TABLE public.purchase_request_items ADD COLUMN actual_qty numeric DEFAULT NULL;

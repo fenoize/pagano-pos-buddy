@@ -52,6 +52,7 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
   const [mode, setMode] = useState<ProcurementMode | ''>('');
   const [supplierId, setSupplierId] = useState<string>('__none__');
   const [unitCost, setUnitCost] = useState('');
+  const [actualQty, setActualQty] = useState('');
   const [presentationId, setPresentationId] = useState<string>('__none__');
   const [saving, setSaving] = useState(false);
 
@@ -73,6 +74,7 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
       setMode((item.procurement_mode as ProcurementMode) || '');
       setSupplierId(item.actual_supplier_id || item.supplier_id || '__none__');
       setUnitCost(item.actual_unit_cost > 0 ? String(item.actual_unit_cost) : '');
+      setActualQty(String(item.actual_qty ?? item.qty));
       setPresentationId(item.presentation_id || '__none__');
       loadQuotations(item.id);
     }
@@ -128,10 +130,12 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
     if (!item || !mode || !user) return;
     setSaving(true);
 
+    const parsedQty = parseFloat(actualQty) || item.qty;
     const success = await resolveItem(item.id, {
       procurement_mode: mode,
       actual_supplier_id: supplierId === '__none__' ? null : supplierId,
       actual_unit_cost: parseFloat(unitCost) || 0,
+      actual_qty: parsedQty !== item.qty ? parsedQty : null,
       resolved_by: user.id,
     });
 
@@ -241,6 +245,31 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
             </div>
           )}
 
+          {/* Actual Quantity */}
+          <div className="space-y-2">
+            <Label>
+              Cantidad ({item.uom?.abbreviation || 'u'})
+            </Label>
+            <Input
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder={String(item.qty)}
+              value={actualQty}
+              onChange={e => setActualQty(e.target.value)}
+            />
+            {parseFloat(actualQty) !== item.qty && (
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline" className="text-xs border-amber-300 bg-amber-50 text-amber-700">
+                  Cantidad ajustada
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  Solicitado: {item.qty} {item.uom?.abbreviation || 'u'}
+                </span>
+              </div>
+            )}
+          </div>
+
           {/* Unit Cost */}
           <div className="space-y-2">
             <Label>
@@ -260,11 +289,11 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
                 Equivale a ${Math.round(parseFloat(unitCost) / selectedPresentation.content_qty).toLocaleString('es-CL')}/{selectedPresentation.content_uom?.abbreviation || 'unidad base'}
               </p>
             )}
-            {unitCost && parseFloat(unitCost) > 0 && item.qty > 0 && (
+            {unitCost && parseFloat(unitCost) > 0 && (parseFloat(actualQty) || item.qty) > 0 && (
               <p className="text-sm font-medium text-foreground mt-1">
-                Total estimado: <span className="text-primary">${Math.round(parseFloat(unitCost) * item.qty).toLocaleString('es-CL')}</span>
+                Total estimado: <span className="text-primary">${Math.round(parseFloat(unitCost) * (parseFloat(actualQty) || item.qty)).toLocaleString('es-CL')}</span>
                 <span className="text-xs text-muted-foreground ml-1">
-                  ({item.qty} {item.uom?.abbreviation || 'u'} × ${parseFloat(unitCost).toLocaleString('es-CL')})
+                  ({parseFloat(actualQty) || item.qty} {item.uom?.abbreviation || 'u'} × ${parseFloat(unitCost).toLocaleString('es-CL')})
                 </span>
               </p>
             )}

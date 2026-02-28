@@ -481,7 +481,7 @@ export default function PurchaseRequestDetail() {
 
                     return sortedKeys.map((key) => {
                       const group = groups[key];
-                      const groupTotal = group.items.reduce((sum, i) => sum + (i.actual_unit_cost > 0 ? i.actual_unit_cost * i.qty : 0), 0);
+                      const groupTotal = group.items.reduce((sum, i) => sum + (i.actual_unit_cost > 0 ? i.actual_unit_cost * (i.actual_qty ?? i.qty) : 0), 0);
                       return (
                         <Collapsible key={key} defaultOpen>
                           <CollapsibleTrigger asChild>
@@ -541,7 +541,14 @@ export default function PurchaseRequestDetail() {
                                         </div>
                                       </TableCell>
                                       <TableCell className="text-right">
-                                        {item.qty} {item.uom?.abbreviation}
+                                        {item.actual_qty != null && item.actual_qty !== item.qty ? (
+                                          <div>
+                                            <p className="font-medium">{item.actual_qty} {item.uom?.abbreviation}</p>
+                                            <p className="text-xs text-muted-foreground line-through">{item.qty} {item.uom?.abbreviation}</p>
+                                          </div>
+                                        ) : (
+                                          <span>{item.qty} {item.uom?.abbreviation}</span>
+                                        )}
                                       </TableCell>
                                       <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
                                         {item.notes || '—'}
@@ -560,7 +567,7 @@ export default function PurchaseRequestDetail() {
                                           <TableCell className="text-right text-sm">
                                             {item.actual_unit_cost > 0 ? (
                                               <div>
-                                                <p className="font-medium">{formatCurrency(item.actual_unit_cost * item.qty)}</p>
+                                                <p className="font-medium">{formatCurrency(item.actual_unit_cost * (item.actual_qty ?? item.qty))}</p>
                                                 <p className="text-xs text-muted-foreground">{formatCurrency(item.actual_unit_cost)}/{item.uom?.abbreviation || 'u'}</p>
                                               </div>
                                             ) : '—'}
