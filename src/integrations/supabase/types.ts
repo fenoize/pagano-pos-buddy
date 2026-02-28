@@ -4519,6 +4519,7 @@ export type Database = {
       }
       purchase_request_items: {
         Row: {
+          actual_qty: number | null
           actual_supplier_id: string | null
           actual_unit_cost: number | null
           created_at: string
@@ -4539,6 +4540,7 @@ export type Database = {
           uom_id: string
         }
         Insert: {
+          actual_qty?: number | null
           actual_supplier_id?: string | null
           actual_unit_cost?: number | null
           created_at?: string
@@ -4559,6 +4561,7 @@ export type Database = {
           uom_id: string
         }
         Update: {
+          actual_qty?: number | null
           actual_supplier_id?: string | null
           actual_unit_cost?: number | null
           created_at?: string

@@ -457,6 +457,7 @@ export const usePurchaseRequests = () => {
       procurement_mode: string;
       actual_supplier_id?: string | null;
       actual_unit_cost?: number;
+      actual_qty?: number | null;
       resolved_by: string;
       force_resolved?: boolean; // Used by direct purchase checklist to mark as resolved
     }
@@ -467,6 +468,7 @@ export const usePurchaseRequests = () => {
         procurement_mode: data.procurement_mode as 'proveedor_despacha' | 'retiro_proveedor' | 'compra_directa',
         actual_supplier_id: data.actual_supplier_id || null,
         actual_unit_cost: data.actual_unit_cost || 0,
+        actual_qty: data.actual_qty !== undefined ? data.actual_qty : null,
         resolved_by: data.resolved_by,
       };
       // For compra_directa from the resolution modal, don't mark as resolved yet — the buyer checklist handles that
