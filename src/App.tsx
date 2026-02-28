@@ -97,6 +97,7 @@ const PurchaseRequests = lazy(() => import("@/pages/inventory/PurchaseRequests")
 const PurchaseRequestForm = lazy(() => import("@/pages/inventory/PurchaseRequestForm"));
 const PurchaseRequestDetail = lazy(() => import("@/pages/inventory/PurchaseRequestDetail"));
 const PurchasePresentations = lazy(() => import("@/pages/inventory/PurchasePresentations"));
+const ManufacturingFormulas = lazy(() => import("@/pages/inventory/ManufacturingFormulas"));
 
 // Finance Pages
 const FinanceKPIs = lazy(() => import("@/pages/finance/FinanceKPIs"));
@@ -593,6 +594,14 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <PurchasePresentations />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/inventario/fabricacion" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <ManufacturingFormulas />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />

@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, FlaskConical } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Recipe, RecipeIngredient } from "@/types";
 import { useUOM } from "@/hooks/useUOM";
 import { useRawMaterials } from "@/hooks/useRawMaterials";
@@ -312,7 +313,17 @@ export function RecipeForm({ open, onOpenChange, recipe, onSave }: RecipeFormPro
                               </SelectTrigger>
                               <SelectContent>
                                 {materials.filter(m => m.is_active).map((m) => (
-                                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                                  <SelectItem key={m.id} value={m.id}>
+                                    <span className="flex items-center gap-1.5">
+                                      {m.name}
+                                      {(m as any).is_manufactured && (
+                                        <Badge variant="secondary" className="text-[10px] px-1 py-0 gap-0.5">
+                                          <FlaskConical className="h-2.5 w-2.5" />
+                                          Fab.
+                                        </Badge>
+                                      )}
+                                    </span>
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>

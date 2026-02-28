@@ -2949,6 +2949,118 @@ export type Database = {
         }
         Relationships: []
       }
+      manufacturing_formula_ingredients: {
+        Row: {
+          created_at: string
+          formula_id: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          quantity: number
+          raw_material_id: string
+          uom_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          formula_id: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          quantity: number
+          raw_material_id: string
+          uom_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          formula_id?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          quantity?: number
+          raw_material_id?: string
+          uom_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manufacturing_formula_ingredients_formula_id_fkey"
+            columns: ["formula_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturing_formulas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manufacturing_formula_ingredients_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manufacturing_formula_ingredients_uom_id_fkey"
+            columns: ["uom_id"]
+            isOneToOne: false
+            referencedRelation: "units_of_measure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manufacturing_formulas: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          preparation_notes: string | null
+          raw_material_id: string
+          updated_at: string
+          yield_quantity: number
+          yield_uom_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          preparation_notes?: string | null
+          raw_material_id: string
+          updated_at?: string
+          yield_quantity?: number
+          yield_uom_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          preparation_notes?: string | null
+          raw_material_id?: string
+          updated_at?: string
+          yield_quantity?: number
+          yield_uom_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manufacturing_formulas_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: true
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manufacturing_formulas_yield_uom_id_fkey"
+            columns: ["yield_uom_id"]
+            isOneToOne: false
+            referencedRelation: "units_of_measure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_app_promotions: {
         Row: {
           created_at: string
@@ -4821,6 +4933,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          is_manufactured: boolean
           last_cost: number | null
           last_procurement_mode: string | null
           last_supplier_id: string | null
@@ -4839,6 +4952,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_manufactured?: boolean
           last_cost?: number | null
           last_procurement_mode?: string | null
           last_supplier_id?: string | null
@@ -4857,6 +4971,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_manufactured?: boolean
           last_cost?: number | null
           last_procurement_mode?: string | null
           last_supplier_id?: string | null
