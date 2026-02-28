@@ -13,7 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ShoppingBag, ChevronDown, ChevronUp, Loader2, Maximize2, X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { ShoppingBag, Maximize2, X, Loader2 } from 'lucide-react';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { usePurchasePresentations } from '@/hooks/usePurchasePresentations';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -31,52 +38,51 @@ interface Props {
   unresolveItemFn: (itemId: string) => Promise<boolean>;
 }
 
-// Local optimistic state for a single item
 interface OptimisticState {
   resolved_at: string | null;
   actual_unit_cost: number;
   actual_supplier_id: string | null;
 }
 
-function DirectPurchaseItemCard({ 
-  item, 
+/* ─── Edit Modal ─── */
+function DirectPurchaseEditModal({
+  item,
+  open,
+  onOpenChange,
   warehouseId,
   onOptimisticUpdate,
   resolveItemFn,
-  unresolveItemFn,
-}: { 
-  item: PurchaseRequestItem; 
+}: {
+  item: PurchaseRequestItem;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
   warehouseId?: string;
   onOptimisticUpdate: (itemId: string, state: OptimisticState) => void;
-  resolveItemFn: (itemId: string, data: { procurement_mode: string; actual_supplier_id?: string | null; actual_unit_cost?: number; resolved_by: string; force_resolved?: boolean }) => Promise<boolean>;
-  unresolveItemFn: (itemId: string) => Promise<boolean>;
+  resolveItemFn: Props['resolveItemFn'];
 }) {
   const { suppliers } = useSuppliers();
   const { presentations } = usePurchasePresentations(item.raw_material_id);
   const { user } = useAuthContext();
   const { toast } = useToast();
 
-  const [expanded, setExpanded] = useState(!item.resolved_at);
   const [supplierId, setSupplierId] = useState(item.actual_supplier_id || '__none__');
   const [unitCost, setUnitCost] = useState(item.actual_unit_cost > 0 ? String(item.actual_unit_cost) : '');
   const [actualQty, setActualQty] = useState(String(item.qty || ''));
   const [presentationId, setPresentationId] = useState(item.presentation_id || '__none__');
   const [saving, setSaving] = useState(false);
-  const isResolved = !!item.resolved_at;
 
-  const handleResolve = async () => {
+  const handleSave = async () => {
     if (!user) return;
     const totalCost = parseFloat(unitCost) || 0;
     const qty = parseFloat(actualQty) || item.qty;
     const supplier = supplierId === '__none__' ? null : supplierId;
 
-    // Optimistic update immediately
     onOptimisticUpdate(item.id, {
       resolved_at: new Date().toISOString(),
       actual_unit_cost: totalCost,
       actual_supplier_id: supplier,
     });
-    setExpanded(false);
+    onOpenChange(false);
 
     setSaving(true);
     const success = await resolveItemFn(item.id, {
@@ -93,7 +99,6 @@ function DirectPurchaseItemCard({
       }).eq('id', item.id);
     }
 
-    // Recepcionar en inventario si hay warehouse y qty > 0
     if (success && warehouseId && qty > 0) {
       await supabase.rpc('receive_direct_purchase_item', {
         p_request_item_id: item.id,
@@ -106,7 +111,6 @@ function DirectPurchaseItemCard({
 
     setSaving(false);
     if (!success) {
-      // Revert optimistic update on failure
       onOptimisticUpdate(item.id, {
         resolved_at: null,
         actual_unit_cost: 0,
@@ -116,47 +120,157 @@ function DirectPurchaseItemCard({
     }
   };
 
-  const handleUnresolve = async () => {
-    // Optimistic update immediately
-    onOptimisticUpdate(item.id, {
-      resolved_at: null,
-      actual_unit_cost: 0,
-      actual_supplier_id: null,
-    });
-    setExpanded(true);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-base">{item.raw_material?.name}</DialogTitle>
+          {item.notes && (
+            <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>
+          )}
+        </DialogHeader>
 
-    setSaving(true);
-    const success = await unresolveItemFn(item.id);
-    setSaving(false);
-    if (!success) {
-      // Revert on failure
-      onOptimisticUpdate(item.id, {
-        resolved_at: item.resolved_at,
-        actual_unit_cost: item.actual_unit_cost,
-        actual_supplier_id: item.actual_supplier_id,
-      });
-      toast({ title: 'Error', description: 'No se pudo desmarcar el item', variant: 'destructive' });
-    }
-  };
+        <div className="space-y-4 py-2">
+          {/* Proveedor */}
+          <div className="space-y-1.5">
+            <Label className="text-sm">Proveedor / Lugar (opcional)</Label>
+            <Select value={supplierId} onValueChange={setSupplierId}>
+              <SelectTrigger className="h-10 text-sm">
+                <SelectValue placeholder="¿Dónde se compró?" />
+              </SelectTrigger>
+              <SelectContent position="popper" className="z-[200]">
+                <SelectItem value="__none__">Sin especificar</SelectItem>
+                {suppliers.map(s => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-  const handleCheckboxChange = (checked: boolean | 'indeterminate') => {
-    if (saving) return;
-    if (checked && !isResolved) {
-      handleResolve();
-    } else if (!checked && isResolved) {
-      handleUnresolve();
-    }
-  };
+          {/* Unidad | Cantidad | Total */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">Unidad</Label>
+              <Select value={presentationId} onValueChange={setPresentationId}>
+                <SelectTrigger className="h-10 text-sm">
+                  <SelectValue placeholder="Unidad" />
+                </SelectTrigger>
+                <SelectContent position="popper" className="z-[200]">
+                  <SelectItem value="__none__">{item.uom?.abbreviation || 'u'}</SelectItem>
+                  {presentations.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">Cantidad</Label>
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                placeholder="0"
+                value={actualQty}
+                onChange={e => setActualQty(e.target.value)}
+                className="h-10 text-sm"
+                style={{ fontSize: '16px' }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">Total $</Label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={unitCost}
+                onChange={e => setUnitCost(e.target.value)}
+                className="h-10 text-sm"
+                style={{ fontSize: '16px' }}
+              />
+            </div>
+          </div>
 
-  // actual_unit_cost stores the TOTAL paid, not per-unit
+          {/* Unit price preview */}
+          {actualQty && unitCost && parseFloat(actualQty) > 0 && parseFloat(unitCost) > 0 && (
+            <p className="text-xs text-muted-foreground text-right">
+              Precio unitario: <span className="font-medium text-foreground">${Math.round(parseFloat(unitCost) / parseFloat(actualQty)).toLocaleString('es-CL')}</span>
+            </p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button
+            className="w-full"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Marcar como Comprado
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ─── Item Row ─── */
+function DirectPurchaseItemRow({
+  item,
+  warehouseId,
+  onOptimisticUpdate,
+  resolveItemFn,
+  unresolveItemFn,
+}: {
+  item: PurchaseRequestItem;
+  warehouseId?: string;
+  onOptimisticUpdate: (itemId: string, state: OptimisticState) => void;
+  resolveItemFn: Props['resolveItemFn'];
+  unresolveItemFn: Props['unresolveItemFn'];
+}) {
+  const { toast } = useToast();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const isResolved = !!item.resolved_at;
   const costDisplay = item.actual_unit_cost > 0 ? `$${item.actual_unit_cost.toLocaleString('es-CL')}` : null;
 
+  const handleCheckboxChange = async (checked: boolean | 'indeterminate') => {
+    if (saving) return;
+    if (!checked && isResolved) {
+      // Unresolve
+      onOptimisticUpdate(item.id, {
+        resolved_at: null,
+        actual_unit_cost: 0,
+        actual_supplier_id: null,
+      });
+      setSaving(true);
+      const success = await unresolveItemFn(item.id);
+      setSaving(false);
+      if (!success) {
+        onOptimisticUpdate(item.id, {
+          resolved_at: item.resolved_at,
+          actual_unit_cost: item.actual_unit_cost,
+          actual_supplier_id: item.actual_supplier_id,
+        });
+        toast({ title: 'Error', description: 'No se pudo desmarcar el item', variant: 'destructive' });
+      }
+    }
+  };
+
+  const handleRowClick = () => {
+    if (!isResolved) {
+      setModalOpen(true);
+    }
+  };
+
   return (
-    <div className={`rounded-lg border transition-colors ${isResolved ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800' : 'bg-card border-border'}`}>
-      <button
-        type="button"
-        className="w-full flex items-center gap-3 p-4 text-left"
-        onClick={() => setExpanded(!expanded)}
+    <>
+      <div
+        className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors cursor-pointer ${
+          isResolved
+            ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800'
+            : 'bg-card border-border hover:bg-accent/50'
+        }`}
+        onClick={handleRowClick}
       >
         <Checkbox
           checked={isResolved}
@@ -169,10 +283,9 @@ function DirectPurchaseItemCard({
             {item.raw_material?.name}
           </p>
           {item.notes && (
-            <p className="text-xs text-muted-foreground">{item.notes}</p>
+            <p className="text-xs text-muted-foreground truncate">{item.notes}</p>
           )}
         </div>
-        {/* Right side: qty + cost */}
         <div className="flex items-center gap-2 shrink-0 text-right">
           <span className="text-xs text-muted-foreground">
             {item.qty} {item.uom?.abbreviation}
@@ -183,105 +296,31 @@ function DirectPurchaseItemCard({
             </Badge>
           )}
         </div>
-        {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
-      </button>
+      </div>
 
-      {expanded && !isResolved && (
-        <div className="px-4 pb-4 space-y-3 border-t pt-3">
-          {/* Proveedor (opcional) */}
-          <div className="space-y-1">
-            <Label className="text-xs">Proveedor / Lugar (opcional)</Label>
-            <Select value={supplierId} onValueChange={setSupplierId}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="¿Dónde se compró?" />
-              </SelectTrigger>
-              <SelectContent position="popper" className="z-[200]">
-                <SelectItem value="__none__">Sin especificar</SelectItem>
-                {suppliers.map(s => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Unidad | Cantidad | Precio en fila */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Unidad</Label>
-              <Select value={presentationId} onValueChange={setPresentationId}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Unidad" />
-                </SelectTrigger>
-                <SelectContent position="popper" className="z-[200]">
-                  <SelectItem value="__none__">{item.uom?.abbreviation || 'u'}</SelectItem>
-                  {presentations.map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Cantidad</Label>
-              <Input
-                type="number"
-                min="0"
-                step="any"
-                placeholder="0"
-                value={actualQty}
-                onChange={e => setActualQty(e.target.value)}
-                className="h-9 text-sm"
-                style={{ fontSize: '16px' }}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Total $</Label>
-              <Input
-                type="number"
-                min="0"
-                placeholder="0"
-                value={unitCost}
-                onChange={e => setUnitCost(e.target.value)}
-                className="h-9 text-sm"
-                style={{ fontSize: '16px' }}
-              />
-            </div>
-          </div>
-
-          {/* Price = total paid, show per-unit preview */}
-          {actualQty && unitCost && parseFloat(actualQty) > 0 && parseFloat(unitCost) > 0 && (
-            <p className="text-xs text-muted-foreground text-right">
-              Precio unitario: <span className="font-medium text-foreground">${Math.round(parseFloat(unitCost) / parseFloat(actualQty)).toLocaleString('es-CL')}</span> · Total: <span className="font-medium text-foreground">${Math.round(parseFloat(unitCost)).toLocaleString('es-CL')}</span>
-            </p>
-          )}
-
-          <Button
-            className="w-full"
-            size="sm"
-            onClick={handleResolve}
-            disabled={saving}
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Marcar como Comprado
-          </Button>
-        </div>
+      {modalOpen && (
+        <DirectPurchaseEditModal
+          item={item}
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          warehouseId={warehouseId}
+          onOptimisticUpdate={onOptimisticUpdate}
+          resolveItemFn={resolveItemFn}
+        />
       )}
-    </div>
+    </>
   );
 }
 
+/* ─── Main Checklist ─── */
 export default function DirectPurchaseChecklist({ items, warehouseId, onItemResolved, fullscreen, onToggleFullscreen, resolveItemFn, unresolveItemFn }: Props) {
-  // Local optimistic overrides keyed by item id
   const [optimisticOverrides, setOptimisticOverrides] = useState<Record<string, OptimisticState>>({});
 
   const handleOptimisticUpdate = useCallback((itemId: string, state: OptimisticState) => {
     setOptimisticOverrides(prev => ({ ...prev, [itemId]: state }));
-    // Notify parent (non-blocking, no full reload needed)
     onItemResolved?.();
   }, [onItemResolved]);
 
-  // Merge server items with optimistic overrides
   const mergedItems = useMemo(() => {
     return items
       .filter(i => i.procurement_mode === 'compra_directa' || (!i.procurement_mode && !i.resolved_at) || optimisticOverrides[i.id])
@@ -296,8 +335,6 @@ export default function DirectPurchaseChecklist({ items, warehouseId, onItemReso
   const resolvedCount = directItems.filter(i => i.resolved_at).length;
   const progressPercent = directItems.length > 0 ? Math.round((resolvedCount / directItems.length) * 100) : 0;
 
-  // Running total of resolved items
-  // actual_unit_cost = total paid (not per-unit)
   const totalSpent = directItems
     .filter(i => i.resolved_at && i.actual_unit_cost > 0)
     .reduce((sum, i) => sum + i.actual_unit_cost, 0);
@@ -321,7 +358,6 @@ export default function DirectPurchaseChecklist({ items, warehouseId, onItemReso
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Progress bar */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Progreso</span>
@@ -332,7 +368,7 @@ export default function DirectPurchaseChecklist({ items, warehouseId, onItemReso
 
         <div className={`space-y-2 ${fullscreen ? 'max-h-[calc(100vh-280px)] overflow-y-auto' : ''}`}>
           {directItems.map(item => (
-            <DirectPurchaseItemCard
+            <DirectPurchaseItemRow
               key={item.id}
               item={item}
               warehouseId={warehouseId}
@@ -343,7 +379,6 @@ export default function DirectPurchaseChecklist({ items, warehouseId, onItemReso
           ))}
         </div>
 
-        {/* Running total */}
         {totalSpent > 0 && (
           <div className="flex items-center justify-between pt-2 border-t text-sm font-medium">
             <span className="text-muted-foreground">Total gastado</span>
