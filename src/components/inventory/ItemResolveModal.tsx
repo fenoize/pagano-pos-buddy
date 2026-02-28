@@ -260,6 +260,14 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
                 Equivale a ${Math.round(parseFloat(unitCost) / selectedPresentation.content_qty).toLocaleString('es-CL')}/{selectedPresentation.content_uom?.abbreviation || 'unidad base'}
               </p>
             )}
+            {unitCost && parseFloat(unitCost) > 0 && item.qty > 0 && (
+              <p className="text-sm font-medium text-foreground mt-1">
+                Total estimado: <span className="text-primary">${Math.round(parseFloat(unitCost) * item.qty).toLocaleString('es-CL')}</span>
+                <span className="text-xs text-muted-foreground ml-1">
+                  ({item.qty} {item.uom?.abbreviation || 'u'} × ${parseFloat(unitCost).toLocaleString('es-CL')})
+                </span>
+              </p>
+            )}
           </div>
 
           {/* Quotations section */}
