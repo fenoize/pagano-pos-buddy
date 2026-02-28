@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -20,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Loader2, Info } from 'lucide-react';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import { useRawMaterials } from '@/hooks/useRawMaterials';
@@ -28,6 +29,19 @@ import { useUOM } from '@/hooks/useUOM';
 import { usePurchaseOrders } from '@/hooks/usePurchaseOrders';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MaterialSearchAutocomplete } from '@/components/inventory/MaterialSearchAutocomplete';
+import { supabase } from '@/integrations/supabase/client';
+
+interface PresentationOption {
+  id: string;
+  name: string;
+  purchase_uom_id: string;
+  content_qty: number;
+  content_uom_id: string;
+  last_price: number;
+  purchase_uom?: { id: string; name: string; abbreviation: string };
+  content_uom?: { id: string; name: string; abbreviation: string };
+}
 
 interface OrderItem {
   id: string;
@@ -35,6 +49,8 @@ interface OrderItem {
   qty: number;
   uom_id: string;
   unit_cost: number;
+  presentation_id?: string;
+  presentations?: PresentationOption[];
 }
 
 export default function PurchaseOrderForm() {
@@ -56,6 +72,7 @@ export default function PurchaseOrderForm() {
   const [expectedDate, setExpectedDate] = useState('');
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<OrderItem[]>([]);
+  const [pricesIncludeTax, setPricesIncludeTax] = useState(true);
 
   // Load existing order for edit mode
   useEffect(() => {
@@ -94,6 +111,26 @@ export default function PurchaseOrderForm() {
     }
   }, [warehouses, warehouseId, isEditMode]);
 
+  // Load presentations for a material
+  const loadPresentations = async (materialId: string): Promise<PresentationOption[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('material_purchase_presentations')
+        .select(`
+          id, name, purchase_uom_id, content_qty, content_uom_id, last_price,
+          purchase_uom:units_of_measure!material_purchase_presentations_purchase_uom_id_fkey(id, name, abbreviation),
+          content_uom:units_of_measure!material_purchase_presentations_content_uom_id_fkey(id, name, abbreviation)
+        `)
+        .eq('raw_material_id', materialId)
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      return (data || []) as unknown as PresentationOption[];
+    } catch {
+      return [];
+    }
+  };
+
   const addItem = () => {
     setItems([
       ...items,
@@ -107,20 +144,49 @@ export default function PurchaseOrderForm() {
     ]);
   };
 
-  const updateItem = (id: string, field: keyof OrderItem, value: string | number) => {
-    setItems(items.map(item => {
-      if (item.id !== id) return item;
-      
-      const updated = { ...item, [field]: value };
-      
-      if (field === 'raw_material_id') {
-        const material = materials.find(m => m.id === value);
-        if (material?.base_uom_id) {
-          updated.uom_id = material.base_uom_id;
+  const updateItem = async (id: string, field: keyof OrderItem, value: string | number) => {
+    if (field === 'raw_material_id') {
+      const material = materials.find(m => m.id === value);
+      const presentations = value ? await loadPresentations(value as string) : [];
+      setItems(prev => prev.map(item => {
+        if (item.id !== id) return item;
+        return {
+          ...item,
+          raw_material_id: value as string,
+          uom_id: material?.base_uom_id || '',
+          presentation_id: undefined,
+          presentations,
+        };
+      }));
+      return;
+    }
+
+    if (field === 'presentation_id' as any) {
+      setItems(prev => prev.map(item => {
+        if (item.id !== id) return item;
+        const pres = item.presentations?.find(p => p.id === value);
+        if (pres) {
+          return {
+            ...item,
+            presentation_id: pres.id,
+            uom_id: pres.purchase_uom_id,
+            unit_cost: pres.last_price || item.unit_cost,
+          };
         }
-      }
-      
-      return updated;
+        // "sin presentación" — reset to base uom
+        const material = materials.find(m => m.id === item.raw_material_id);
+        return {
+          ...item,
+          presentation_id: undefined,
+          uom_id: material?.base_uom_id || item.uom_id,
+        };
+      }));
+      return;
+    }
+
+    setItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      return { ...item, [field]: value };
     }));
   };
 
@@ -128,9 +194,30 @@ export default function PurchaseOrderForm() {
     setItems(items.filter(item => item.id !== id));
   };
 
-  const calculateSubtotal = () => items.reduce((sum, item) => sum + (item.qty * item.unit_cost), 0);
-  const calculateTax = () => Math.round(calculateSubtotal() * 0.19);
-  const calculateTotal = () => calculateSubtotal() + calculateTax();
+  const rawTotal = () => items.reduce((sum, item) => sum + (item.qty * item.unit_cost), 0);
+
+  const calculateSubtotal = () => {
+    const total = rawTotal();
+    if (pricesIncludeTax) {
+      return Math.round(total / 1.19);
+    }
+    return total;
+  };
+
+  const calculateTax = () => {
+    const total = rawTotal();
+    if (pricesIncludeTax) {
+      return total - Math.round(total / 1.19);
+    }
+    return Math.round(total * 0.19);
+  };
+
+  const calculateTotal = () => {
+    if (pricesIncludeTax) {
+      return rawTotal();
+    }
+    return rawTotal() + Math.round(rawTotal() * 0.19);
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value);
@@ -153,6 +240,7 @@ export default function PurchaseOrderForm() {
     warehouse_id: warehouseId,
     expected_date: expectedDate || undefined,
     notes,
+    prices_include_tax: pricesIncludeTax,
     items: itemsToSave.map(({ raw_material_id, qty, uom_id, unit_cost }) => ({
       raw_material_id, qty, uom_id, unit_cost,
     })),
@@ -211,6 +299,16 @@ export default function PurchaseOrderForm() {
       </div>
     );
   }
+
+  // Prepare materials for autocomplete
+  const activeMaterials = materials.filter(m => m.is_active).map(m => ({
+    id: m.id,
+    name: m.code ? `[${m.code}] ${m.name}` : m.name,
+    code: m.code,
+    last_cost: m.last_cost,
+    base_uom_id: m.base_uom_id,
+    base_uom: m.base_uom,
+  }));
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -310,89 +408,113 @@ export default function PurchaseOrderForm() {
                   </Button>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[200px]">Material</TableHead>
-                        <TableHead className="w-24">Cantidad</TableHead>
-                        <TableHead className="w-32">Unidad</TableHead>
-                        <TableHead className="w-32">Costo Unit.</TableHead>
-                        <TableHead className="w-32 text-right">Total</TableHead>
-                        <TableHead className="w-12"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {items.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>
-                            <Select
-                              value={item.raw_material_id}
-                              onValueChange={(v) => updateItem(item.id, 'raw_material_id', v)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {materials.filter(m => m.is_active).map(m => (
-                                  <SelectItem key={m.id} value={m.id}>
-                                    {m.code ? `[${m.code}] ` : ''}{m.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0.01"
-                              step="0.01"
-                              value={item.qty}
-                              onChange={(e) => updateItem(item.id, 'qty', parseFloat(e.target.value) || 0)}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={item.uom_id}
-                              onValueChange={(v) => updateItem(item.id, 'uom_id', v)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Unidad" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {uoms.map(u => (
-                                  <SelectItem key={u.id} value={u.id}>
-                                    {u.abbreviation}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={item.unit_cost}
-                              onChange={(e) => updateItem(item.id, 'unit_cost', parseInt(e.target.value) || 0)}
-                            />
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(item.qty * item.unit_cost)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeItem(item.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TableCell>
+                <div className="space-y-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[220px]">Material</TableHead>
+                          <TableHead className="w-24">Cantidad</TableHead>
+                          <TableHead className="w-36">Unidad</TableHead>
+                          <TableHead className="w-32">Costo Unit.</TableHead>
+                          <TableHead className="w-32 text-right">Total</TableHead>
+                          <TableHead className="w-12"></TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {items.map((item) => {
+                          const selectedPresentation = item.presentations?.find(p => p.id === item.presentation_id);
+                          return (
+                            <TableRow key={item.id}>
+                              <TableCell className="align-top">
+                                <div className="space-y-1.5">
+                                  <MaterialSearchAutocomplete
+                                    materials={activeMaterials}
+                                    value={item.raw_material_id}
+                                    onSelect={(materialId) => updateItem(item.id, 'raw_material_id', materialId)}
+                                    placeholder="Buscar material..."
+                                    loading={loadingMaterials}
+                                  />
+                                  {/* Presentation selector */}
+                                  {item.presentations && item.presentations.length > 0 && (
+                                    <Select
+                                      value={item.presentation_id || '__none__'}
+                                      onValueChange={(v) => updateItem(item.id, 'presentation_id' as any, v === '__none__' ? '' : v)}
+                                    >
+                                      <SelectTrigger className="h-7 text-xs">
+                                        <SelectValue placeholder="Presentación" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="__none__">Sin presentación (unidad base)</SelectItem>
+                                        {item.presentations.map(p => (
+                                          <SelectItem key={p.id} value={p.id}>
+                                            {p.name} ({p.content_qty} {p.content_uom?.abbreviation || 'un'})
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                  {selectedPresentation && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Info className="h-3 w-3" />
+                                      <span>1 {selectedPresentation.purchase_uom?.abbreviation} = {selectedPresentation.content_qty} {selectedPresentation.content_uom?.abbreviation}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="align-top">
+                                <Input
+                                  type="number"
+                                  min="0.01"
+                                  step="0.01"
+                                  value={item.qty}
+                                  onChange={(e) => updateItem(item.id, 'qty', parseFloat(e.target.value) || 0)}
+                                />
+                              </TableCell>
+                              <TableCell className="align-top">
+                                <Select
+                                  value={item.uom_id}
+                                  onValueChange={(v) => updateItem(item.id, 'uom_id', v)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Unidad" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {uoms.map(u => (
+                                      <SelectItem key={u.id} value={u.id}>
+                                        {u.abbreviation}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="align-top">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={item.unit_cost}
+                                  onChange={(e) => updateItem(item.id, 'unit_cost', parseInt(e.target.value) || 0)}
+                                />
+                              </TableCell>
+                              <TableCell className="text-right font-medium align-top pt-4">
+                                {formatCurrency(item.qty * item.unit_cost)}
+                              </TableCell>
+                              <TableCell className="align-top">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeItem(item.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -406,13 +528,29 @@ export default function PurchaseOrderForm() {
               <CardTitle>Resumen</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Tax toggle */}
+              <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/50">
+                <Label htmlFor="tax-toggle" className="text-sm font-medium cursor-pointer">
+                  Precio incluye IVA
+                </Label>
+                <Switch
+                  id="tax-toggle"
+                  checked={pricesIncludeTax}
+                  onCheckedChange={setPricesIncludeTax}
+                />
+              </div>
+
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal:</span>
+                  <span className="text-muted-foreground">
+                    {pricesIncludeTax ? 'Neto (desglose):' : 'Subtotal:'}
+                  </span>
                   <span>{formatCurrency(calculateSubtotal())}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">IVA (19%):</span>
+                  <span className="text-muted-foreground">
+                    IVA (19%){pricesIncludeTax ? ' incluido:' : ':'}
+                  </span>
                   <span>{formatCurrency(calculateTax())}</span>
                 </div>
                 <div className="border-t pt-2 flex justify-between font-semibold text-lg">
