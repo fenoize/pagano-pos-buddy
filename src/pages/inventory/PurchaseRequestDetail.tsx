@@ -440,7 +440,7 @@ export default function PurchaseRequestDetail() {
         <LinkedPurchaseOrders requestId={id} onRefresh={loadRequest} defaultCollapsed />
       )}
 
-      {/* Items Table */}
+      {/* Items Table — grouped by supplier */}
       {!checklistFullscreen && (
         <>
           <Collapsible open={!itemsCollapsed} onOpenChange={(open) => setItemsCollapsed(!open)}>
@@ -457,97 +457,125 @@ export default function PurchaseRequestDetail() {
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Material</TableHead>
-                        <TableHead className="text-right">Cantidad</TableHead>
-                        <TableHead>Nota</TableHead>
-                        {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
-                          <>
-                            <TableHead>Modalidad</TableHead>
-                            <TableHead>Proveedor</TableHead>
-                            <TableHead className="text-right">Precio</TableHead>
-                          </>
-                        )}
-                        {isPendingApproval && (
-                          <>
-                            <TableHead className="text-muted-foreground text-xs">Últ. Proveedor</TableHead>
-                            <TableHead className="text-muted-foreground text-xs text-right">Últ. Precio</TableHead>
-                          </>
-                        )}
-                        {canResolveItems && <TableHead className="w-10" />}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {request.items?.map((item) => {
-                        const isResolved = !!item.resolved_at;
-                        const lastInfo = lastPurchaseInfo[item.raw_material_id];
-                        return (
-                        <TableRow
-                          key={item.id}
-                          className={canResolveItems ? 'cursor-pointer hover:bg-muted/50' : ''}
-                          onClick={() => canResolveItems && setResolveItem(item)}
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {canResolveItems && (
-                                <div className={`h-2 w-2 rounded-full shrink-0 ${isResolved ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                              )}
-                              <div>
-                                <p className="font-medium">{item.raw_material?.name}</p>
-                                {item.raw_material?.code && (
-                                  <p className="text-xs text-muted-foreground">{item.raw_material.code}</p>
+                <CardContent className="p-0 space-y-0">
+                  {(() => {
+                    const items = request.items || [];
+                    // Group by supplier
+                    const groups: Record<string, { supplierName: string; items: typeof items }> = {};
+                    items.forEach((item) => {
+                      const suppName = item.actual_supplier?.name || item.supplier?.name || null;
+                      const key = suppName || '__sin_proveedor__';
+                      if (!groups[key]) {
+                        groups[key] = { supplierName: suppName || 'Sin proveedor', items: [] };
+                      }
+                      groups[key].items.push(item);
+                    });
+                    const sortedKeys = Object.keys(groups).sort((a, b) => {
+                      if (a === '__sin_proveedor__') return 1;
+                      if (b === '__sin_proveedor__') return -1;
+                      return groups[a].supplierName.localeCompare(groups[b].supplierName);
+                    });
+
+                    const showExtraCols = isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada';
+
+                    return sortedKeys.map((key) => {
+                      const group = groups[key];
+                      return (
+                        <div key={key}>
+                          <div className="px-4 py-2 bg-muted/40 border-b border-t flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">{group.supplierName}</span>
+                            <Badge variant="outline" className="text-xs">{group.items.length}</Badge>
+                          </div>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Material</TableHead>
+                                <TableHead className="text-right">Cantidad</TableHead>
+                                <TableHead>Nota</TableHead>
+                                {showExtraCols && (
+                                  <>
+                                    <TableHead>Modalidad</TableHead>
+                                    <TableHead className="text-right">Precio</TableHead>
+                                  </>
                                 )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {item.qty} {item.uom?.abbreviation}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
-                            {item.notes || '—'}
-                          </TableCell>
-                          {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
-                            <>
-                              <TableCell>
-                                {item.procurement_mode ? (
-                                  <Badge className={`${PROCUREMENT_MODE_CONFIG[item.procurement_mode].bgColor} ${PROCUREMENT_MODE_CONFIG[item.procurement_mode].color} border-0 text-xs`}>
-                                    {PROCUREMENT_MODE_CONFIG[item.procurement_mode].label}
-                                  </Badge>
-                                ) : (
-                                  <span className="text-muted-foreground text-xs">Sin asignar</span>
+                                {isPendingApproval && (
+                                  <>
+                                    <TableHead className="text-muted-foreground text-xs">Últ. Proveedor</TableHead>
+                                    <TableHead className="text-muted-foreground text-xs text-right">Últ. Precio</TableHead>
+                                  </>
                                 )}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                {item.actual_supplier?.name || item.supplier?.name || '—'}
-                              </TableCell>
-                              <TableCell className="text-right text-sm">
-                                {item.actual_unit_cost > 0 ? formatCurrency(item.actual_unit_cost) : '—'}
-                              </TableCell>
-                            </>
-                          )}
-                          {isPendingApproval && (
-                            <>
-                              <TableCell className="text-xs text-muted-foreground">
-                                {lastInfo?.last_supplier_name || '—'}
-                              </TableCell>
-                              <TableCell className="text-right text-xs text-muted-foreground">
-                                {lastInfo?.last_cost ? formatCurrency(lastInfo.last_cost) : '—'}
-                              </TableCell>
-                            </>
-                          )}
-                          {canResolveItems && (
-                            <TableCell className="w-10">
-                              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                            </TableCell>
-                          )}
-                        </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                                {canResolveItems && <TableHead className="w-10" />}
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {group.items.map((item) => {
+                                const isResolved = !!item.resolved_at;
+                                const lastInfo = lastPurchaseInfo[item.raw_material_id];
+                                return (
+                                  <TableRow
+                                    key={item.id}
+                                    className={canResolveItems ? 'cursor-pointer hover:bg-muted/50' : ''}
+                                    onClick={() => canResolveItems && setResolveItem(item)}
+                                  >
+                                    <TableCell>
+                                      <div className="flex items-center gap-2">
+                                        {canResolveItems && (
+                                          <div className={`h-2 w-2 rounded-full shrink-0 ${isResolved ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                                        )}
+                                        <div>
+                                          <p className="font-medium">{item.raw_material?.name}</p>
+                                          {item.raw_material?.code && (
+                                            <p className="text-xs text-muted-foreground">{item.raw_material.code}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {item.qty} {item.uom?.abbreviation}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
+                                      {item.notes || '—'}
+                                    </TableCell>
+                                    {showExtraCols && (
+                                      <>
+                                        <TableCell>
+                                          {item.procurement_mode ? (
+                                            <Badge className={`${PROCUREMENT_MODE_CONFIG[item.procurement_mode].bgColor} ${PROCUREMENT_MODE_CONFIG[item.procurement_mode].color} border-0 text-xs`}>
+                                              {PROCUREMENT_MODE_CONFIG[item.procurement_mode].label}
+                                            </Badge>
+                                          ) : (
+                                            <span className="text-muted-foreground text-xs">Sin asignar</span>
+                                          )}
+                                        </TableCell>
+                                        <TableCell className="text-right text-sm">
+                                          {item.actual_unit_cost > 0 ? formatCurrency(item.actual_unit_cost) : '—'}
+                                        </TableCell>
+                                      </>
+                                    )}
+                                    {isPendingApproval && (
+                                      <>
+                                        <TableCell className="text-xs text-muted-foreground">
+                                          {lastInfo?.last_supplier_name || '—'}
+                                        </TableCell>
+                                        <TableCell className="text-right text-xs text-muted-foreground">
+                                          {lastInfo?.last_cost ? formatCurrency(lastInfo.last_cost) : '—'}
+                                        </TableCell>
+                                      </>
+                                    )}
+                                    {canResolveItems && (
+                                      <TableCell className="w-10">
+                                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                      </TableCell>
+                                    )}
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      );
+                    });
+                  })()}
                 </CardContent>
               </CollapsibleContent>
             </Card>
