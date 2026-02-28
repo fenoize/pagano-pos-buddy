@@ -80,9 +80,18 @@ export const usePurchaseRequests = () => {
 
       if (itemsError) throw itemsError;
 
+      // Normalize joined relations — PostgREST returns arrays for non-unique FKs
+      const normalizedItems = (items || []).map((item: any) => ({
+        ...item,
+        supplier: Array.isArray(item.supplier) ? item.supplier[0] || null : item.supplier,
+        actual_supplier: Array.isArray(item.actual_supplier) ? item.actual_supplier[0] || null : item.actual_supplier,
+        raw_material: Array.isArray(item.raw_material) ? item.raw_material[0] || null : item.raw_material,
+        uom: Array.isArray(item.uom) ? item.uom[0] || null : item.uom,
+      }));
+
       return {
         ...(request as unknown as PurchaseRequest),
-        items: (items || []) as unknown as PurchaseRequestItem[],
+        items: normalizedItems as PurchaseRequestItem[],
       };
     } catch (error) {
       console.error('Error fetching purchase request:', error);
