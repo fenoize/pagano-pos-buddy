@@ -722,25 +722,8 @@ export default function PurchaseRequestDetail() {
                   <Card className="lg:col-span-1">
                     <CardHeader><CardTitle className="text-sm">Gasto Real</CardTitle></CardHeader>
                     <CardContent className="space-y-4 text-sm">
-                      {/* Items detail */}
-                      <div className="space-y-1.5">
-                        {resolvedItems.map(i => {
-                          const qty = i.actual_qty ?? i.qty;
-                          const lineTotal = i.actual_unit_cost * qty;
-                          return (
-                            <div key={i.id} className="flex justify-between items-start gap-2">
-                              <span className="text-muted-foreground truncate flex-1">
-                                {i.raw_material?.name}
-                                <span className="text-xs ml-1">({qty} {i.uom?.abbreviation})</span>
-                              </span>
-                              <span className="font-medium whitespace-nowrap">{formatCurrency(lineTotal)}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Separator + total */}
-                      <div className="border-t pt-3 flex justify-between font-bold">
+                      {/* Total */}
+                      <div className="flex justify-between font-bold">
                         <span>Total Gastado</span>
                         <span className="text-primary">{formatCurrency(actualTotal)}</span>
                       </div>
