@@ -87,12 +87,8 @@ export const usePurchaseRequests = () => {
 
       let suppliersMap: Record<string, any> = {};
       if (supplierIds.size > 0) {
-        const { data: suppliers } = await withStaffContext(staffUserId, async () =>
-          await supabase
-            .from('suppliers')
-            .select('id, name, phone, email')
-            .in('id', Array.from(supplierIds))
-        );
+        const { data: suppliers } = await supabase
+          .rpc('get_suppliers_by_ids', { p_ids: Array.from(supplierIds) });
         (suppliers || []).forEach((s: any) => { suppliersMap[s.id] = s; });
       }
 

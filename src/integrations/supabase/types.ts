@@ -6575,6 +6575,15 @@ export type Database = {
         Args: { p_supplier_id: string }
         Returns: number
       }
+      get_suppliers_by_ids: {
+        Args: { p_ids: string[] }
+        Returns: {
+          email: string
+          id: string
+          name: string
+          phone: string
+        }[]
+      }
       get_top_recurring_expenses_for_closure: {
         Args: { _end: string; _limit?: number; _start: string }
         Returns: {
