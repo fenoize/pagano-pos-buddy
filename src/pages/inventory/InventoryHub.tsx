@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   Boxes,
   Tags,
-  PackageOpen
+  PackageOpen,
+  FlaskConical
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -69,7 +70,15 @@ export default function InventoryHub() {
       permission: canManageInventory,
     },
     {
-      title: "Órdenes de Compra",
+      title: "Fabricación",
+      description: "Mezclas y preparaciones internas",
+      icon: FlaskConical,
+      route: "/pos/inventario/fabricacion",
+      color: "text-violet-600",
+      bgColor: "bg-violet-50 hover:bg-violet-100",
+      permission: canManageInventory,
+    },
+    {
       description: "Recepciones y compras",
       icon: ShoppingCart,
       route: "/pos/inventario/compras",
