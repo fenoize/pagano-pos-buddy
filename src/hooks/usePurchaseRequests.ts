@@ -70,8 +70,6 @@ export const usePurchaseRequests = () => {
           .select(`
             *,
             raw_material:raw_materials(id, name, code, last_cost, base_uom_id, base_uom:units_of_measure(id, name, abbreviation)),
-            supplier:suppliers!purchase_request_items_supplier_id_fkey(id, name, phone, email),
-            actual_supplier:suppliers!purchase_request_items_actual_supplier_id_fkey(id, name, phone, email),
             uom:units_of_measure(id, name, abbreviation)
           `)
           .eq('request_id', id)
@@ -80,13 +78,30 @@ export const usePurchaseRequests = () => {
 
       if (itemsError) throw itemsError;
 
-      // Normalize joined relations — PostgREST returns arrays for non-unique FKs
+      // Fetch suppliers por separado para evitar fallas de RLS en JOINs
+      const supplierIds = new Set<string>();
+      (items || []).forEach((item: any) => {
+        if (item.supplier_id) supplierIds.add(item.supplier_id);
+        if (item.actual_supplier_id) supplierIds.add(item.actual_supplier_id);
+      });
+
+      let suppliersMap: Record<string, any> = {};
+      if (supplierIds.size > 0) {
+        const { data: suppliers } = await withStaffContext(staffUserId, async () =>
+          await supabase
+            .from('suppliers')
+            .select('id, name, phone, email')
+            .in('id', Array.from(supplierIds))
+        );
+        (suppliers || []).forEach((s: any) => { suppliersMap[s.id] = s; });
+      }
+
       const normalizedItems = (items || []).map((item: any) => ({
         ...item,
-        supplier: Array.isArray(item.supplier) ? item.supplier[0] || null : item.supplier,
-        actual_supplier: Array.isArray(item.actual_supplier) ? item.actual_supplier[0] || null : item.actual_supplier,
         raw_material: Array.isArray(item.raw_material) ? item.raw_material[0] || null : item.raw_material,
         uom: Array.isArray(item.uom) ? item.uom[0] || null : item.uom,
+        supplier: item.supplier_id ? suppliersMap[item.supplier_id] || null : null,
+        actual_supplier: item.actual_supplier_id ? suppliersMap[item.actual_supplier_id] || null : null,
       }));
 
       return {
