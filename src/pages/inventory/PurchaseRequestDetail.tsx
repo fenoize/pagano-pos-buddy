@@ -124,9 +124,9 @@ export default function PurchaseRequestDetail() {
     }).format(value);
   };
 
-  const loadRequest = async () => {
+  const loadRequest = async (silent = false) => {
     if (!id) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     const data = await getRequestById(id);
     setRequest(data);
     if (data) {
@@ -137,7 +137,7 @@ export default function PurchaseRequestDetail() {
         setLastPurchaseInfo(info);
       }
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   useEffect(() => {
@@ -775,7 +775,7 @@ export default function PurchaseRequestDetail() {
         open={!!resolveItem}
         onOpenChange={(open) => !open && setResolveItem(null)}
         item={resolveItem}
-        onResolved={loadRequest}
+        onResolved={() => loadRequest(true)}
       />
 
       {/* Onboarding Iniciar Gestión */}
