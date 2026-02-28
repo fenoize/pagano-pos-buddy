@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/select';
 import { ShoppingBag, ChevronDown, ChevronUp, Loader2, Maximize2, X } from 'lucide-react';
 import { useSuppliers } from '@/hooks/useSuppliers';
-import { usePurchaseRequests } from '@/hooks/usePurchaseRequests';
 import { usePurchasePresentations } from '@/hooks/usePurchasePresentations';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +27,8 @@ interface Props {
   onItemResolved?: () => void;
   fullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  resolveItemFn: (itemId: string, data: { procurement_mode: string; actual_supplier_id?: string | null; actual_unit_cost?: number; resolved_by: string; force_resolved?: boolean }) => Promise<boolean>;
+  unresolveItemFn: (itemId: string) => Promise<boolean>;
 }
 
 // Local optimistic state for a single item
@@ -40,14 +41,17 @@ interface OptimisticState {
 function DirectPurchaseItemCard({ 
   item, 
   warehouseId,
-  onOptimisticUpdate 
+  onOptimisticUpdate,
+  resolveItemFn,
+  unresolveItemFn,
 }: { 
   item: PurchaseRequestItem; 
   warehouseId?: string;
   onOptimisticUpdate: (itemId: string, state: OptimisticState) => void;
+  resolveItemFn: (itemId: string, data: { procurement_mode: string; actual_supplier_id?: string | null; actual_unit_cost?: number; resolved_by: string; force_resolved?: boolean }) => Promise<boolean>;
+  unresolveItemFn: (itemId: string) => Promise<boolean>;
 }) {
   const { suppliers } = useSuppliers();
-  const { resolveItem, unresolveItem } = usePurchaseRequests();
   const { presentations } = usePurchasePresentations(item.raw_material_id);
   const { user } = useAuthContext();
   const { toast } = useToast();
@@ -75,11 +79,12 @@ function DirectPurchaseItemCard({
     setExpanded(false);
 
     setSaving(true);
-    const success = await resolveItem(item.id, {
+    const success = await resolveItemFn(item.id, {
       procurement_mode: 'compra_directa',
       actual_supplier_id: supplier,
       actual_unit_cost: totalCost,
       resolved_by: user.id,
+      force_resolved: true,
     });
 
     if (success && presentationId !== '__none__') {
@@ -121,7 +126,7 @@ function DirectPurchaseItemCard({
     setExpanded(true);
 
     setSaving(true);
-    const success = await unresolveItem(item.id);
+    const success = await unresolveItemFn(item.id);
     setSaving(false);
     if (!success) {
       // Revert on failure
@@ -266,7 +271,7 @@ function DirectPurchaseItemCard({
   );
 }
 
-export default function DirectPurchaseChecklist({ items, warehouseId, onItemResolved, fullscreen, onToggleFullscreen }: Props) {
+export default function DirectPurchaseChecklist({ items, warehouseId, onItemResolved, fullscreen, onToggleFullscreen, resolveItemFn, unresolveItemFn }: Props) {
   // Local optimistic overrides keyed by item id
   const [optimisticOverrides, setOptimisticOverrides] = useState<Record<string, OptimisticState>>({});
 
@@ -332,6 +337,8 @@ export default function DirectPurchaseChecklist({ items, warehouseId, onItemReso
               item={item}
               warehouseId={warehouseId}
               onOptimisticUpdate={handleOptimisticUpdate}
+              resolveItemFn={resolveItemFn}
+              unresolveItemFn={unresolveItemFn}
             />
           ))}
         </div>

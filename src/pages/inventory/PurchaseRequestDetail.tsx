@@ -74,6 +74,8 @@ export default function PurchaseRequestDetail() {
     completeRequest,
     updateManagementNotes,
     getLastPurchaseInfo,
+    resolveItem: resolveItemFromHook,
+    unresolveItem: unresolveItemFromHook,
   } = usePurchaseRequests();
 
   const [request, setRequest] = useState<PurchaseRequest | null>(null);
@@ -418,6 +420,8 @@ export default function PurchaseRequestDetail() {
               onItemResolved={() => {}}
               fullscreen={checklistFullscreen}
               onToggleFullscreen={() => setChecklistFullscreen(!checklistFullscreen)}
+              resolveItemFn={resolveItemFromHook}
+              unresolveItemFn={unresolveItemFromHook}
             />
           )}
         </div>

@@ -438,18 +438,27 @@ export const usePurchaseRequests = () => {
       actual_supplier_id?: string | null;
       actual_unit_cost?: number;
       resolved_by: string;
+      force_resolved?: boolean; // Used by direct purchase checklist to mark as resolved
     }
   ): Promise<boolean> => {
     try {
+      const isDirectPurchase = data.procurement_mode === 'compra_directa';
+      const updateData: Record<string, unknown> = {
+        procurement_mode: data.procurement_mode as 'proveedor_despacha' | 'retiro_proveedor' | 'compra_directa',
+        actual_supplier_id: data.actual_supplier_id || null,
+        actual_unit_cost: data.actual_unit_cost || 0,
+        resolved_by: data.resolved_by,
+      };
+      // For compra_directa from the resolution modal, don't mark as resolved yet — the buyer checklist handles that
+      // But if force_resolved is true (from the checklist), do mark it
+      if (!isDirectPurchase || data.force_resolved) {
+        updateData.resolved_at = new Date().toISOString();
+      } else {
+        updateData.resolved_at = null;
+      }
       const { error } = await supabase
         .from('purchase_request_items')
-        .update({
-          procurement_mode: data.procurement_mode as 'proveedor_despacha' | 'retiro_proveedor' | 'compra_directa',
-          actual_supplier_id: data.actual_supplier_id || null,
-          actual_unit_cost: data.actual_unit_cost || 0,
-          resolved_at: new Date().toISOString(),
-          resolved_by: data.resolved_by,
-        })
+        .update(updateData)
         .eq('id', itemId);
       if (error) throw error;
       return true;
