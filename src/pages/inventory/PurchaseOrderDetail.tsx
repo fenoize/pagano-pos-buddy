@@ -195,6 +195,13 @@ export default function PurchaseOrderDetail() {
           {order.status === 'draft' && (
             <>
               <Button 
+                variant="outline"
+                onClick={() => navigate(`/pos/inventario/compras/${id}/editar`)}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+              <Button 
                 onClick={() => handleStatusChange('approved')}
                 disabled={actionLoading}
               >
