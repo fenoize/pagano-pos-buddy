@@ -481,7 +481,7 @@ export default function PurchaseRequestDetail() {
 
                     return sortedKeys.map((key) => {
                       const group = groups[key];
-                      const groupTotal = group.items.reduce((sum, i) => sum + (i.actual_unit_cost > 0 ? i.actual_unit_cost : 0), 0);
+                      const groupTotal = group.items.reduce((sum, i) => sum + (i.actual_unit_cost > 0 ? i.actual_unit_cost * i.qty : 0), 0);
                       return (
                         <Collapsible key={key} defaultOpen>
                           <CollapsibleTrigger asChild>
@@ -558,7 +558,12 @@ export default function PurchaseRequestDetail() {
                                             )}
                                           </TableCell>
                                           <TableCell className="text-right text-sm">
-                                            {item.actual_unit_cost > 0 ? formatCurrency(item.actual_unit_cost) : '—'}
+                                            {item.actual_unit_cost > 0 ? (
+                                              <div>
+                                                <p className="font-medium">{formatCurrency(item.actual_unit_cost * item.qty)}</p>
+                                                <p className="text-xs text-muted-foreground">{formatCurrency(item.actual_unit_cost)}/{item.uom?.abbreviation || 'u'}</p>
+                                              </div>
+                                            ) : '—'}
                                           </TableCell>
                                         </>
                                       )}
