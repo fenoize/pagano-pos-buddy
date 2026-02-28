@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,9 +42,12 @@ export default function LinkedPurchaseOrders({ requestId, onRefresh, onOrdersLoa
   const [orders, setOrders] = useState<LinkedOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(!defaultCollapsed);
+  const retryCount = useRef(0);
+  const maxRetries = 3;
 
-  const fetchLinkedOrders = async () => {
-    setLoading(true);
+  const fetchLinkedOrders = useCallback(async (isRetry = false) => {
+    if (!isRetry) setLoading(true);
+
     const { data, error } = await supabase
       .from('purchase_orders')
       .select(`
@@ -55,7 +58,19 @@ export default function LinkedPurchaseOrders({ requestId, onRefresh, onOrdersLoa
       .eq('request_id', requestId)
       .order('created_at', { ascending: true });
 
-    if (!error && data) {
+    if (error) {
+      console.error('Error fetching linked orders:', error);
+      // Retry on error
+      if (retryCount.current < maxRetries) {
+        retryCount.current++;
+        setTimeout(() => fetchLinkedOrders(true), 1000 * retryCount.current);
+        return;
+      }
+      setLoading(false);
+      return;
+    }
+
+    if (data && data.length > 0) {
       const mapped = data.map((o: any) => ({
         id: o.id,
         po_number: o.po_number || '',
@@ -67,36 +82,28 @@ export default function LinkedPurchaseOrders({ requestId, onRefresh, onOrdersLoa
       }));
       setOrders(mapped);
       onOrdersLoaded?.(mapped.map(o => ({ status: o.status })));
+      retryCount.current = 0;
+      setLoading(false);
+    } else if (retryCount.current < maxRetries) {
+      // Empty result might be RLS timing — retry
+      retryCount.current++;
+      setTimeout(() => fetchLinkedOrders(true), 800 * retryCount.current);
+    } else {
+      // Exhausted retries, show actual empty state
+      setOrders([]);
+      onOrdersLoaded?.([]);
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, [requestId, onOrdersLoaded]);
 
   useEffect(() => {
+    retryCount.current = 0;
     fetchLinkedOrders();
-  }, [requestId]);
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="py-6 flex justify-center">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (orders.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-4 px-4">
-          <p className="text-sm text-muted-foreground">No se han generado órdenes de compra para esta solicitud.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  }, [requestId, fetchLinkedOrders]);
 
   const formatCLP = (v: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(v);
 
+  // Always show the card structure — just vary the content
   return (
     <Card>
       <Collapsible open={open} onOpenChange={setOpen}>
@@ -104,7 +111,11 @@ export default function LinkedPurchaseOrders({ requestId, onRefresh, onOrdersLoa
           <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
             <CardTitle className="text-base flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Órdenes de Compra ({orders.length})
+              Órdenes de Compra
+              {!loading && (
+                <Badge variant="outline" className="text-xs ml-1">{orders.length}</Badge>
+              )}
+              {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground ml-1" />}
               <span className="ml-auto">
                 {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
               </span>
@@ -113,6 +124,14 @@ export default function LinkedPurchaseOrders({ requestId, onRefresh, onOrdersLoa
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="space-y-3 pt-0">
+            {loading && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {!loading && orders.length === 0 && (
+              <p className="text-sm text-muted-foreground py-2">No se han generado órdenes de compra para esta solicitud.</p>
+            )}
             {orders.map((order) => {
               const st = STATUS_LABELS[order.status] || STATUS_LABELS.draft;
               return (
