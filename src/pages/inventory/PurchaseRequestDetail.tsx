@@ -659,47 +659,113 @@ export default function PurchaseRequestDetail() {
           )}
 
           {/* Summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Información</CardTitle></CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Almacén</span>
-                  <span>{request.warehouse?.name || 'Por defecto'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Items</span>
-                  <span>{totalItems}</span>
-                </div>
-                {(isEnProceso || request.status === 'completada') && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Items resueltos</span>
-                    <span className="font-medium">{resolvedCount}/{totalItems}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          {(() => {
+            const items = request.items || [];
+            const resolvedItems = items.filter(i => i.actual_unit_cost > 0);
+            const actualTotal = resolvedItems.reduce((sum, i) => sum + i.actual_unit_cost * (i.actual_qty ?? i.qty), 0);
 
-            {hasEstimatedCosts && (
-              <Card>
-                <CardHeader><CardTitle className="text-sm">Estimado</CardTitle></CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatCurrency(request.subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">IVA (19%)</span>
-                    <span>{formatCurrency(request.tax)}</span>
-                  </div>
-                  <div className="border-t pt-3 flex justify-between font-bold">
-                    <span>Total</span>
-                    <span>{formatCurrency(request.total)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+            // Group spending by supplier
+            const supplierTotals: Record<string, { name: string; total: number; itemCount: number }> = {};
+            resolvedItems.forEach(i => {
+              const name = i.actual_supplier?.name || i.supplier?.name || 'Sin proveedor';
+              const key = name;
+              if (!supplierTotals[key]) supplierTotals[key] = { name, total: 0, itemCount: 0 };
+              supplierTotals[key].total += i.actual_unit_cost * (i.actual_qty ?? i.qty);
+              supplierTotals[key].itemCount += 1;
+            });
+            const sortedSuppliers = Object.values(supplierTotals).sort((a, b) => b.total - a.total);
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader><CardTitle className="text-sm">Información</CardTitle></CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Almacén</span>
+                      <span>{request.warehouse?.name || 'Por defecto'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Items</span>
+                      <span>{totalItems}</span>
+                    </div>
+                    {(isEnProceso || request.status === 'completada') && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Items resueltos</span>
+                        <span className="font-medium">{resolvedCount}/{totalItems}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {hasEstimatedCosts && (
+                  <Card>
+                    <CardHeader><CardTitle className="text-sm">Estimado</CardTitle></CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span>{formatCurrency(request.subtotal)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">IVA (19%)</span>
+                        <span>{formatCurrency(request.tax)}</span>
+                      </div>
+                      <div className="border-t pt-3 flex justify-between font-bold">
+                        <span>Total</span>
+                        <span>{formatCurrency(request.total)}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Detalle de Gasto Real */}
+                {resolvedItems.length > 0 && (
+                  <Card className="lg:col-span-1">
+                    <CardHeader><CardTitle className="text-sm">Gasto Real</CardTitle></CardHeader>
+                    <CardContent className="space-y-4 text-sm">
+                      {/* Items detail */}
+                      <div className="space-y-1.5">
+                        {resolvedItems.map(i => {
+                          const qty = i.actual_qty ?? i.qty;
+                          const lineTotal = i.actual_unit_cost * qty;
+                          return (
+                            <div key={i.id} className="flex justify-between items-start gap-2">
+                              <span className="text-muted-foreground truncate flex-1">
+                                {i.raw_material?.name}
+                                <span className="text-xs ml-1">({qty} {i.uom?.abbreviation})</span>
+                              </span>
+                              <span className="font-medium whitespace-nowrap">{formatCurrency(lineTotal)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Separator + total */}
+                      <div className="border-t pt-3 flex justify-between font-bold">
+                        <span>Total Gastado</span>
+                        <span className="text-primary">{formatCurrency(actualTotal)}</span>
+                      </div>
+
+                      {/* By supplier */}
+                      {sortedSuppliers.length > 0 && (
+                        <div className="border-t pt-3 space-y-1.5">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Por Proveedor</p>
+                          {sortedSuppliers.map(s => (
+                            <div key={s.name} className="flex justify-between items-center gap-2">
+                              <span className="text-muted-foreground truncate flex-1">
+                                {s.name}
+                                <span className="text-xs ml-1">({s.itemCount} items)</span>
+                              </span>
+                              <span className="font-medium whitespace-nowrap">{formatCurrency(s.total)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
 
