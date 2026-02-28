@@ -15,7 +15,9 @@ import {
   MessageSquare,
   Save,
   User,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { exportPurchaseRequestToPDF } from '@/lib/purchaseRequestExport';
 import { Button } from '@/components/ui/button';
@@ -41,6 +43,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   Dialog,
   DialogContent,
@@ -90,6 +97,7 @@ export default function PurchaseRequestDetail() {
   const [resolveItem, setResolveItem] = useState<PurchaseRequestItem | null>(null);
   const [checklistFullscreen, setChecklistFullscreen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [itemsCollapsed, setItemsCollapsed] = useState(false);
   
   // Management notes
   const [managementNotes, setManagementNotes] = useState('');
@@ -435,106 +443,115 @@ export default function PurchaseRequestDetail() {
       {/* Items Table */}
       {!checklistFullscreen && (
         <>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center justify-between">
-                <span>Items Solicitados</span>
-                <span className="text-sm font-normal text-muted-foreground">{totalItems} items</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Material</TableHead>
-                    <TableHead className="text-right">Cantidad</TableHead>
-                    <TableHead>Nota</TableHead>
-                    {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
-                      <>
-                        <TableHead>Modalidad</TableHead>
-                        <TableHead>Proveedor</TableHead>
-                        <TableHead className="text-right">Precio</TableHead>
-                      </>
-                    )}
-                    {isPendingApproval && (
-                      <>
-                        <TableHead className="text-muted-foreground text-xs">Últ. Proveedor</TableHead>
-                        <TableHead className="text-muted-foreground text-xs text-right">Últ. Precio</TableHead>
-                      </>
-                    )}
-                    {canResolveItems && <TableHead className="w-10" />}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {request.items?.map((item) => {
-                    const isResolved = !!item.resolved_at;
-                    const lastInfo = lastPurchaseInfo[item.raw_material_id];
-                    return (
-                    <TableRow
-                      key={item.id}
-                      className={canResolveItems ? 'cursor-pointer hover:bg-muted/50' : ''}
-                      onClick={() => canResolveItems && setResolveItem(item)}
-                    >
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {canResolveItems && (
-                            <div className={`h-2 w-2 rounded-full shrink-0 ${isResolved ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                          )}
-                          <div>
-                            <p className="font-medium">{item.raw_material?.name}</p>
-                            {item.raw_material?.code && (
-                              <p className="text-xs text-muted-foreground">{item.raw_material.code}</p>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {item.qty} {item.uom?.abbreviation}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
-                        {item.notes || '—'}
-                      </TableCell>
-                      {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
-                        <>
+          <Collapsible open={!itemsCollapsed} onOpenChange={(open) => setItemsCollapsed(!open)}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors">
+                  <CardTitle className="text-base flex items-center justify-between">
+                    <span>Items Solicitados</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-normal text-muted-foreground">{totalItems} items</span>
+                      {itemsCollapsed ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronUp className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Material</TableHead>
+                        <TableHead className="text-right">Cantidad</TableHead>
+                        <TableHead>Nota</TableHead>
+                        {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
+                          <>
+                            <TableHead>Modalidad</TableHead>
+                            <TableHead>Proveedor</TableHead>
+                            <TableHead className="text-right">Precio</TableHead>
+                          </>
+                        )}
+                        {isPendingApproval && (
+                          <>
+                            <TableHead className="text-muted-foreground text-xs">Últ. Proveedor</TableHead>
+                            <TableHead className="text-muted-foreground text-xs text-right">Últ. Precio</TableHead>
+                          </>
+                        )}
+                        {canResolveItems && <TableHead className="w-10" />}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {request.items?.map((item) => {
+                        const isResolved = !!item.resolved_at;
+                        const lastInfo = lastPurchaseInfo[item.raw_material_id];
+                        return (
+                        <TableRow
+                          key={item.id}
+                          className={canResolveItems ? 'cursor-pointer hover:bg-muted/50' : ''}
+                          onClick={() => canResolveItems && setResolveItem(item)}
+                        >
                           <TableCell>
-                            {item.procurement_mode ? (
-                              <Badge className={`${PROCUREMENT_MODE_CONFIG[item.procurement_mode].bgColor} ${PROCUREMENT_MODE_CONFIG[item.procurement_mode].color} border-0 text-xs`}>
-                                {PROCUREMENT_MODE_CONFIG[item.procurement_mode].label}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">Sin asignar</span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {canResolveItems && (
+                                <div className={`h-2 w-2 rounded-full shrink-0 ${isResolved ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                              )}
+                              <div>
+                                <p className="font-medium">{item.raw_material?.name}</p>
+                                {item.raw_material?.code && (
+                                  <p className="text-xs text-muted-foreground">{item.raw_material.code}</p>
+                                )}
+                              </div>
+                            </div>
                           </TableCell>
-                          <TableCell className="text-sm">
-                            {item.actual_supplier?.name || item.supplier?.name || '—'}
+                          <TableCell className="text-right">
+                            {item.qty} {item.uom?.abbreviation}
                           </TableCell>
-                          <TableCell className="text-right text-sm">
-                            {item.actual_unit_cost > 0 ? formatCurrency(item.actual_unit_cost) : '—'}
+                          <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
+                            {item.notes || '—'}
                           </TableCell>
-                        </>
-                      )}
-                      {isPendingApproval && (
-                        <>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {lastInfo?.last_supplier_name || '—'}
-                          </TableCell>
-                          <TableCell className="text-right text-xs text-muted-foreground">
-                            {lastInfo?.last_cost ? formatCurrency(lastInfo.last_cost) : '—'}
-                          </TableCell>
-                        </>
-                      )}
-                      {canResolveItems && (
-                        <TableCell className="w-10">
-                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                        </TableCell>
-                      )}
-                    </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                          {(isPendingApproval || isEnProceso || request.status === 'approved' || request.status === 'completada') && (
+                            <>
+                              <TableCell>
+                                {item.procurement_mode ? (
+                                  <Badge className={`${PROCUREMENT_MODE_CONFIG[item.procurement_mode].bgColor} ${PROCUREMENT_MODE_CONFIG[item.procurement_mode].color} border-0 text-xs`}>
+                                    {PROCUREMENT_MODE_CONFIG[item.procurement_mode].label}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">Sin asignar</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {item.actual_supplier?.name || item.supplier?.name || '—'}
+                              </TableCell>
+                              <TableCell className="text-right text-sm">
+                                {item.actual_unit_cost > 0 ? formatCurrency(item.actual_unit_cost) : '—'}
+                              </TableCell>
+                            </>
+                          )}
+                          {isPendingApproval && (
+                            <>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {lastInfo?.last_supplier_name || '—'}
+                              </TableCell>
+                              <TableCell className="text-right text-xs text-muted-foreground">
+                                {lastInfo?.last_cost ? formatCurrency(lastInfo.last_cost) : '—'}
+                              </TableCell>
+                            </>
+                          )}
+                          {canResolveItems && (
+                            <TableCell className="w-10">
+                              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                            </TableCell>
+                          )}
+                        </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           {/* Notes */}
           {request.notes && (
