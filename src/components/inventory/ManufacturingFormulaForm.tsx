@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, FlaskConical, DollarSign } from "lucide-react";
 import { useUOM } from "@/hooks/useUOM";
 import { useRawMaterials } from "@/hooks/useRawMaterials";
-import { MaterialSearchAutocomplete } from "@/components/inventory/MaterialSearchAutocomplete";
+
 import { ManufacturingFormula } from "@/hooks/useManufacturingFormulas";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -155,12 +155,21 @@ export function ManufacturingFormulaForm({ open, onOpenChange, formula, onSave }
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Materia Prima de salida *</Label>
-                  <MaterialSearchAutocomplete
-                    materials={activeMaterials}
-                    value={formData.raw_material_id}
-                    onSelect={handleOutputMaterialSelect}
-                    placeholder="Buscar materia prima..."
-                  />
+                  <Select
+                    value={formData.raw_material_id || "__none__"}
+                    onValueChange={v => handleOutputMaterialSelect(v === "__none__" ? "" : v)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Seleccionar materia prima" /></SelectTrigger>
+                    <SelectContent position="popper" className="z-[9999] max-h-60">
+                      <SelectItem value="__none__" disabled>Seleccionar materia prima</SelectItem>
+                      {activeMaterials.map(m => (
+                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    El insumo que se producirá con esta fórmula
+                  </p>
                 </div>
                 <div>
                   <Label>Nombre de la fórmula *</Label>
@@ -170,6 +179,9 @@ export function ManufacturingFormulaForm({ open, onOpenChange, formula, onSave }
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Ej: Salsa Ácida"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Nombre descriptivo para identificar esta fórmula
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -182,17 +194,24 @@ export function ManufacturingFormulaForm({ open, onOpenChange, formula, onSave }
                     value={formData.yield_quantity}
                     onChange={e => setFormData({ ...formData, yield_quantity: parseFloat(e.target.value) || 1 })}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Cuántas unidades produce esta fórmula por lote
+                  </p>
                 </div>
                 <div>
                   <Label>Unidad de rendimiento</Label>
-                  <Select value={formData.yield_uom_id} onValueChange={v => setFormData({ ...formData, yield_uom_id: v })}>
+                  <Select value={formData.yield_uom_id || "__none__"} onValueChange={v => setFormData({ ...formData, yield_uom_id: v === "__none__" ? "" : v })}>
                     <SelectTrigger><SelectValue placeholder="Seleccionar unidad" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="z-[9999]">
+                      <SelectItem value="__none__" disabled>Seleccionar unidad</SelectItem>
                       {uoms.map(u => (
                         <SelectItem key={u.id} value={u.id}>{u.name} ({u.abbreviation})</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Unidad de medida del producto fabricado (ej: litros, cups)
+                  </p>
                 </div>
               </div>
               <div>
@@ -203,6 +222,9 @@ export function ManufacturingFormulaForm({ open, onOpenChange, formula, onSave }
                   rows={2}
                   placeholder="Instrucciones de preparación..."
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pasos o instrucciones para elaborar el producto
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -243,12 +265,18 @@ export function ManufacturingFormulaForm({ open, onOpenChange, formula, onSave }
                         return (
                           <TableRow key={index}>
                             <TableCell>
-                              <MaterialSearchAutocomplete
-                                materials={ingredientMaterials}
-                                value={ing.raw_material_id}
-                                onSelect={(id) => handleIngredientMaterialSelect(index, id)}
-                                placeholder="Buscar..."
-                              />
+                              <Select
+                                value={ing.raw_material_id || "__none__"}
+                                onValueChange={v => handleIngredientMaterialSelect(index, v === "__none__" ? "" : v)}
+                              >
+                                <SelectTrigger className="w-48"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                                <SelectContent position="popper" className="z-[9999] max-h-60">
+                                  <SelectItem value="__none__" disabled>Seleccionar</SelectItem>
+                                  {ingredientMaterials.map(m => (
+                                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell>
                               <Input
@@ -261,9 +289,10 @@ export function ManufacturingFormulaForm({ open, onOpenChange, formula, onSave }
                               />
                             </TableCell>
                             <TableCell>
-                              <Select value={ing.uom_id} onValueChange={v => handleIngredientChange(index, 'uom_id', v)}>
+                              <Select value={ing.uom_id || "__none__"} onValueChange={v => handleIngredientChange(index, 'uom_id', v === "__none__" ? "" : v)}>
                                 <SelectTrigger className="w-32"><SelectValue placeholder="UOM" /></SelectTrigger>
-                                <SelectContent>
+                                <SelectContent position="popper" className="z-[9999]">
+                                  <SelectItem value="__none__" disabled>Seleccionar</SelectItem>
                                   {uoms.map(u => (
                                     <SelectItem key={u.id} value={u.id}>{u.abbreviation}</SelectItem>
                                   ))}
