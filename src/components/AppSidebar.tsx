@@ -35,7 +35,8 @@ import {
   Award,
   MessageSquare,
   Briefcase,
-  Calendar
+  Calendar,
+  FlaskConical
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -100,6 +101,7 @@ const inventoryItems = [
   { title: "Almacenes", url: "/pos/inventario/almacenes", icon: Warehouse, roles: ['Administrador'] },
   { title: "Materias Primas", url: "/pos/inventario/materias-primas", icon: Package, roles: ['Administrador'] },
   { title: "Recetas", url: "/pos/inventario/recetas", icon: BookOpen, roles: ['Administrador'] },
+  { title: "Fabricación", url: "/pos/inventario/fabricacion", icon: FlaskConical, roles: ['Administrador'] },
   { title: "Solicitudes de Compra", url: "/pos/inventario/solicitudes", icon: FileText, roles: ['Administrador'] },
   { title: "Órdenes de Compra", url: "/pos/inventario/compras", icon: ShoppingCartIcon, roles: ['Administrador'] },
   { title: "Kardex", url: "/pos/inventario/kardex", icon: History, roles: ['Administrador'] },
