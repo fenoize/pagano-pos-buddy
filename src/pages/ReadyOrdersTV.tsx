@@ -4,12 +4,14 @@ import { Maximize, Minimize, Volume2, VolumeX, RefreshCw, Settings, LogOut, Rota
 import { Button } from "@/components/ui/button";
 import { useReadyOrders } from "@/hooks/useReadyOrders";
 import { useTVScreenConfig, TVScreenConfig } from "@/hooks/useTVScreenConfigs";
+import { useActiveTVScreenContent } from "@/hooks/useTVScreenContent";
 import { ReadyOrdersSounds } from "@/components/tv/ReadyOrdersSounds";
 import { TVLayoutFull } from "@/components/tv/TVLayoutFull";
 import { TVLayoutSplitHorizontal } from "@/components/tv/TVLayoutSplitHorizontal";
 import { TVLayoutSplitVertical } from "@/components/tv/TVLayoutSplitVertical";
 import { TVLayoutPromoOnly } from "@/components/tv/TVLayoutPromoOnly";
 import { TVConfigModal } from "@/components/tv/TVConfigModal";
+import { TVPreloader } from "@/components/tv/TVPreloader";
 import { cn } from "@/lib/utils";
 import { STORAGE_KEYS } from "@/lib/storageKeys";
 import { useQueryClient } from "@tanstack/react-query";
@@ -58,6 +60,20 @@ export default function ReadyOrdersTV() {
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showTopBar, setShowTopBar] = useState(false);
+  const [preloaded, setPreloaded] = useState(false);
+
+  // Fetch promo content for preloading assets
+  const { data: promoContent = [] } = useActiveTVScreenContent(screenId);
+
+  // Collect all media URLs that need preloading
+  const preloadImageUrls = useMemo(() => 
+    promoContent.filter(p => p.image_url).map(p => p.image_url!), 
+    [promoContent]
+  );
+  const preloadVideoUrls = useMemo(() => 
+    promoContent.filter(p => p.video_url).map(p => p.video_url!), 
+    [promoContent]
+  );
 
   // Load saved config when available & persist screenId
   useEffect(() => {
@@ -200,6 +216,30 @@ export default function ReadyOrdersTV() {
         return <TVLayoutFull {...layoutProps} />;
     }
   };
+
+  // Show preloader until all assets are ready
+  if (!preloaded && configReady) {
+    return (
+      <TVPreloader
+        imageUrls={preloadImageUrls}
+        videoUrls={preloadVideoUrls}
+        theme={theme as 'light' | 'dark'}
+        onComplete={() => setPreloaded(true)}
+      />
+    );
+  }
+
+  // Still loading config
+  if (!configReady) {
+    return (
+      <TVPreloader
+        imageUrls={[]}
+        videoUrls={[]}
+        theme="light"
+        onComplete={() => {}}
+      />
+    );
+  }
 
   return (
     <div
