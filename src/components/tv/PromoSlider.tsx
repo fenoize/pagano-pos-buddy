@@ -10,32 +10,21 @@ interface PromoSliderProps {
   fallbackScreenId?: string;
 }
 
-interface PromoConfig {
-  show_title?: boolean;
-}
-
-function parsePromoConfig(description: string | null | undefined): PromoConfig {
-  if (!description) return { show_title: true };
-  try {
-    return JSON.parse(description);
-  } catch {
-    return { show_title: true };
-  }
-}
-
 export function PromoSlider({ interval = 8000, className, screenConfigId, fallbackScreenId }: PromoSliderProps) {
   const { data: mainPromotions = [] } = useActiveTVScreenContent(screenConfigId);
   const { data: fallbackPromotions = [] } = useActiveTVScreenContent(fallbackScreenId);
-  
+
   const promotions = mainPromotions.length > 0 ? mainPromotions : fallbackPromotions;
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [nextIndex, setNextIndex] = useState<number | null>(null);
+  const [phase, setPhase] = useState<'showing' | 'crossfading'>('showing');
   const [cachedUrls, setCachedUrls] = useState<Record<string, string>>({});
   const videoRef = useRef<HTMLVideoElement>(null);
+  const nextVideoRef = useRef<HTMLVideoElement>(null);
 
-  const FADE_DURATION = 3000;
+  const CROSSFADE_MS = 1500; // 1.5s each side = 3s total overlap
 
-  // Pre-cache all promotion images when promotions change
+  // Pre-cache all promotion images
   const cacheImages = useCallback(async () => {
     const urlMap: Record<string, string> = {};
     for (const promo of promotions) {
@@ -48,7 +37,6 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
 
   useEffect(() => {
     cacheImages();
-    // Cleanup blob URLs on unmount
     return () => {
       Object.values(cachedUrls).forEach(url => {
         if (url.startsWith('blob:')) URL.revokeObjectURL(url);
@@ -56,22 +44,27 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
     };
   }, [cacheImages]);
 
-  // Auto-advance slides
+  // Auto-advance with crossfade
   useEffect(() => {
     if (promotions.length <= 1) return;
 
     const timer = setInterval(() => {
-      setIsTransitioning(true);
+      const next = (currentIndex + 1) % promotions.length;
+      setNextIndex(next);
+      setPhase('crossfading');
+
+      // After crossfade completes, commit the new slide
       setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % promotions.length);
-        setIsTransitioning(false);
-      }, FADE_DURATION);
+        setCurrentIndex(next);
+        setNextIndex(null);
+        setPhase('showing');
+      }, CROSSFADE_MS);
     }, interval);
 
     return () => clearInterval(timer);
-  }, [promotions.length, interval]);
+  }, [promotions.length, interval, currentIndex]);
 
-  // Reset video when slide changes
+  // Reset video on slide change
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
@@ -89,86 +82,83 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
     );
   }
 
-  const currentPromo = promotions[currentIndex];
-  const hasVideo = !!currentPromo?.video_url;
-  const hasImage = !!currentPromo?.image_url;
-  const config = parsePromoConfig(currentPromo?.description);
-  const showTitle = config.show_title !== false;
+  const getImageUrl = (originalUrl?: string | null) => {
+    if (!originalUrl) return '';
+    return cachedUrls[originalUrl] || originalUrl;
+  };
 
-  // Use cached URL if available, otherwise fall back to original
-  const imageUrl = currentPromo?.image_url
-    ? (cachedUrls[currentPromo.image_url] || currentPromo.image_url)
-    : '';
+  const renderMedia = (promoIndex: number, ref: React.RefObject<HTMLVideoElement>) => {
+    const promo = promotions[promoIndex];
+    if (!promo) return null;
+
+    if (promo.video_url) {
+      return (
+        <video
+          ref={ref}
+          src={promo.video_url}
+          autoPlay muted loop playsInline
+          className="w-full h-full object-contain"
+        />
+      );
+    }
+    if (promo.image_url) {
+      return (
+        <img
+          src={getImageUrl(promo.image_url)}
+          alt={promo.title || ''}
+          className="w-full h-full object-contain"
+        />
+      );
+    }
+    return <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40" />;
+  };
 
   return (
     <div className={cn("relative overflow-hidden bg-black", className)}>
-      {/* Background media */}
-      <div 
-        className={cn(
-          "absolute inset-0 transition-opacity duration-[3000ms] ease-in-out",
-          isTransitioning ? "opacity-0" : "opacity-100"
-        )}
+      {/* Current slide */}
+      <div
+        className="absolute inset-0 transition-opacity ease-in-out"
+        style={{
+          transitionDuration: `${CROSSFADE_MS}ms`,
+          opacity: phase === 'crossfading' ? 0 : 1,
+        }}
       >
-        {hasVideo ? (
-          <video
-            ref={videoRef}
-            src={currentPromo.video_url!}
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full h-full object-contain"
-          />
-        ) : hasImage ? (
-          <img
-            src={imageUrl}
-            alt={currentPromo.title}
-            className="w-full h-full object-contain"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40" />
-        )}
+        {renderMedia(currentIndex, videoRef)}
       </div>
 
-      {/* Content overlay */}
-      {showTitle && (
-        <div 
-          className={cn(
-            "absolute bottom-0 left-0 right-0 p-6 text-white transition-all duration-[3000ms] ease-in-out",
-            isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
-          )}
+      {/* Next slide (only during crossfade) */}
+      {nextIndex !== null && (
+        <div
+          className="absolute inset-0 transition-opacity ease-in-out"
+          style={{
+            transitionDuration: `${CROSSFADE_MS}ms`,
+            opacity: phase === 'crossfading' ? 1 : 0,
+          }}
         >
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent -z-10" />
-          {currentPromo.title && (
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 drop-shadow-lg">
-              {currentPromo.title}
-            </h2>
-          )}
-          {currentPromo.subtitle && (
-            <p className="text-xl md:text-2xl text-white/90 drop-shadow">
-              {currentPromo.subtitle}
-            </p>
-          )}
+          {renderMedia(nextIndex, nextVideoRef)}
         </div>
       )}
 
       {/* Slide indicators */}
       {promotions.length > 1 && (
-        <div className="absolute bottom-4 right-4 flex gap-2">
+        <div className="absolute bottom-4 right-4 flex gap-2 z-10">
           {promotions.map((_, idx) => (
             <button
               key={idx}
               onClick={() => {
-                setIsTransitioning(true);
+                if (phase === 'crossfading') return;
+                setNextIndex(idx);
+                setPhase('crossfading');
                 setTimeout(() => {
                   setCurrentIndex(idx);
-                  setIsTransitioning(false);
-                }, FADE_DURATION);
+                  setNextIndex(null);
+                  setPhase('showing');
+                }, CROSSFADE_MS);
               }}
               className={cn(
                 "w-3 h-3 rounded-full transition-all",
-                idx === currentIndex 
-                  ? "bg-white scale-125" 
+                idx === currentIndex
+                  ? "bg-white scale-125"
                   : "bg-white/50 hover:bg-white/75"
               )}
             />
