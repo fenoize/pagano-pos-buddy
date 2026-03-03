@@ -64,13 +64,7 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
     return () => clearInterval(timer);
   }, [promotions.length, interval, currentIndex]);
 
-  // Reset video on slide change
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
-    }
-  }, [currentIndex]);
+  // No reset needed — the next video already started playing during crossfade
 
   if (promotions.length === 0) {
     return (
