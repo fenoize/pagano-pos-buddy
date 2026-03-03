@@ -49,7 +49,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [movementType, setMovementType] = useState<'ingreso' | 'egreso'>('ingreso');
-  const [acceptAppOrders, setAcceptAppOrders] = useState(false);
+  const [acceptAppOrders, setAcceptAppOrders] = useState(true);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
@@ -73,6 +73,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
       setAmount('');
       setNote('');
       setMovementType('ingreso');
+      setAcceptAppOrders(true);
       setSelectedCategory('');
       setSelectedAccountId('');
       setAcknowledgedPendingPayments(false);
@@ -357,21 +358,31 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
           </div>
 
           {type === 'open' && (
-            <div className="flex items-center space-x-2 p-4 border rounded-md bg-muted/30">
-              <Checkbox
-                id="accept_app_orders"
-                checked={acceptAppOrders}
-                onCheckedChange={(checked) => setAcceptAppOrders(checked as boolean)}
-              />
-              <div className="space-y-1">
-                <Label htmlFor="accept_app_orders" className="flex items-center gap-2 cursor-pointer">
-                  <Smartphone className="h-4 w-4" />
-                  Recibir pedidos desde la App Cliente
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Permite que los clientes hagan pedidos desde sus dispositivos durante este turno
-                </p>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 p-4 border rounded-md bg-muted/30">
+                <Checkbox
+                  id="accept_app_orders"
+                  checked={acceptAppOrders}
+                  onCheckedChange={(checked) => setAcceptAppOrders(checked as boolean)}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="accept_app_orders" className="flex items-center gap-2 cursor-pointer">
+                    <Smartphone className="h-4 w-4" />
+                    Recibir pedidos desde la App Cliente
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Permite que los clientes hagan pedidos desde sus dispositivos durante este turno
+                  </p>
+                </div>
               </div>
+              {!acceptAppOrders && (
+                <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-700 dark:text-amber-400 text-sm">
+                    <strong>⚠️ App Cliente desactivada:</strong> Los clientes no podrán realizar pedidos desde la app mientras este turno esté abierto.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           )}
 
