@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { getCachedImageUrl } from '@/lib/imageCache';
 
 interface PromoSliderProps {
-  interval?: number; // ms
+  interval?: number; // ms — used for images only
   className?: string;
   screenConfigId?: string;
   fallbackScreenId?: string;
@@ -15,14 +15,20 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
   const { data: fallbackPromotions = [] } = useActiveTVScreenContent(fallbackScreenId);
 
   const promotions = mainPromotions.length > 0 ? mainPromotions : fallbackPromotions;
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [nextIndex, setNextIndex] = useState<number | null>(null);
-  const [phase, setPhase] = useState<'showing' | 'crossfading'>('showing');
-  const [cachedUrls, setCachedUrls] = useState<Record<string, string>>({});
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const nextVideoRef = useRef<HTMLVideoElement>(null);
 
-  const CROSSFADE_MS = 1500; // 1.5s each side = 3s total overlap
+  // Two layers (A and B) that alternate — we never unmount/remount during crossfade
+  const [layerAIndex, setLayerAIndex] = useState(0);
+  const [layerBIndex, setLayerBIndex] = useState(-1); // -1 = not loaded yet
+  const [activeLayer, setActiveLayer] = useState<'A' | 'B'>('A'); // which layer is currently visible
+  const [isCrossfading, setIsCrossfading] = useState(false);
+  const [cachedUrls, setCachedUrls] = useState<Record<string, string>>({});
+
+  const videoARef = useRef<HTMLVideoElement>(null);
+  const videoBRef = useRef<HTMLVideoElement>(null);
+  const crossfadeTriggered = useRef(false);
+  const imageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const CROSSFADE_MS = 1500;
 
   // Pre-cache all promotion images
   const cacheImages = useCallback(async () => {
@@ -44,27 +50,77 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
     };
   }, [cacheImages]);
 
-  // Auto-advance with crossfade
+  const currentIndex = activeLayer === 'A' ? layerAIndex : layerBIndex;
+
+  const startCrossfade = useCallback(() => {
+    if (isCrossfading || promotions.length <= 1) return;
+
+    const nextIdx = (currentIndex + 1) % promotions.length;
+    crossfadeTriggered.current = true;
+    setIsCrossfading(true);
+
+    // Load the next slide into the inactive layer
+    if (activeLayer === 'A') {
+      setLayerBIndex(nextIdx);
+    } else {
+      setLayerAIndex(nextIdx);
+    }
+
+    // Prepare next video: reset and play
+    const nextVideoRef = activeLayer === 'A' ? videoBRef : videoARef;
+    setTimeout(() => {
+      if (nextVideoRef.current) {
+        nextVideoRef.current.currentTime = 0;
+        nextVideoRef.current.play().catch(() => {});
+      }
+    }, 50);
+
+    // After crossfade duration, commit the switch
+    setTimeout(() => {
+      setActiveLayer(prev => prev === 'A' ? 'B' : 'A');
+      setIsCrossfading(false);
+      crossfadeTriggered.current = false;
+    }, CROSSFADE_MS);
+  }, [isCrossfading, promotions.length, currentIndex, activeLayer]);
+
+  // Video timeupdate handler: trigger crossfade CROSSFADE_MS before video ends
+  const handleTimeUpdate = useCallback((e: Event) => {
+    const video = e.target as HTMLVideoElement;
+    if (!video.duration || video.duration === Infinity) return;
+    if (crossfadeTriggered.current) return;
+
+    const remaining = (video.duration - video.currentTime) * 1000;
+    if (remaining <= CROSSFADE_MS) {
+      startCrossfade();
+    }
+  }, [startCrossfade]);
+
+  // Attach timeupdate to the active video
+  useEffect(() => {
+    const activeVideoRef = activeLayer === 'A' ? videoARef : videoBRef;
+    const video = activeVideoRef.current;
+    if (!video) return;
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+  }, [activeLayer, handleTimeUpdate]);
+
+  // For images: use interval-based advance (trigger crossfade after `interval - CROSSFADE_MS`)
   useEffect(() => {
     if (promotions.length <= 1) return;
+    const promo = promotions[currentIndex];
+    if (!promo || promo.video_url) return; // skip for videos
 
-    const timer = setInterval(() => {
-      const next = (currentIndex + 1) % promotions.length;
-      setNextIndex(next);
-      setPhase('crossfading');
+    if (imageTimerRef.current) clearTimeout(imageTimerRef.current);
 
-      // After crossfade completes, commit the new slide
-      setTimeout(() => {
-        setCurrentIndex(next);
-        setNextIndex(null);
-        setPhase('showing');
-      }, CROSSFADE_MS);
-    }, interval);
+    imageTimerRef.current = setTimeout(() => {
+      startCrossfade();
+    }, Math.max(interval - CROSSFADE_MS, 2000));
 
-    return () => clearInterval(timer);
-  }, [promotions.length, interval, currentIndex]);
-
-  // No reset needed — the next video already started playing during crossfade
+    return () => {
+      if (imageTimerRef.current) clearTimeout(imageTimerRef.current);
+    };
+  }, [currentIndex, promotions, interval, startCrossfade]);
 
   if (promotions.length === 0) {
     return (
@@ -82,6 +138,7 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
   };
 
   const renderMedia = (promoIndex: number, ref: React.RefObject<HTMLVideoElement>) => {
+    if (promoIndex < 0 || promoIndex >= promotions.length) return null;
     const promo = promotions[promoIndex];
     if (!promo) return null;
 
@@ -90,7 +147,7 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
         <video
           ref={ref}
           src={promo.video_url}
-          autoPlay muted loop playsInline
+          autoPlay muted playsInline
           className="w-full h-full object-contain"
         />
       );
@@ -107,31 +164,34 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
     return <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40" />;
   };
 
+  const layerAVisible = activeLayer === 'A' ? !isCrossfading : isCrossfading;
+  const layerBVisible = activeLayer === 'B' ? !isCrossfading : isCrossfading;
+
   return (
     <div className={cn("relative overflow-hidden bg-black", className)}>
-      {/* Current slide */}
+      {/* Layer A */}
       <div
         className="absolute inset-0 transition-opacity ease-in-out"
         style={{
           transitionDuration: `${CROSSFADE_MS}ms`,
-          opacity: phase === 'crossfading' ? 0 : 1,
+          opacity: layerAVisible ? 1 : 0,
+          zIndex: activeLayer === 'A' ? 1 : 0,
         }}
       >
-        {renderMedia(currentIndex, videoRef)}
+        {layerAIndex >= 0 && renderMedia(layerAIndex, videoARef)}
       </div>
 
-      {/* Next slide (only during crossfade) */}
-      {nextIndex !== null && (
-        <div
-          className="absolute inset-0 transition-opacity ease-in-out"
-          style={{
-            transitionDuration: `${CROSSFADE_MS}ms`,
-            opacity: phase === 'crossfading' ? 1 : 0,
-          }}
-        >
-          {renderMedia(nextIndex, nextVideoRef)}
-        </div>
-      )}
+      {/* Layer B */}
+      <div
+        className="absolute inset-0 transition-opacity ease-in-out"
+        style={{
+          transitionDuration: `${CROSSFADE_MS}ms`,
+          opacity: layerBVisible ? 1 : 0,
+          zIndex: activeLayer === 'B' ? 1 : 0,
+        }}
+      >
+        {layerBIndex >= 0 && renderMedia(layerBIndex, videoBRef)}
+      </div>
 
       {/* Slide indicators */}
       {promotions.length > 1 && (
@@ -140,13 +200,23 @@ export function PromoSlider({ interval = 8000, className, screenConfigId, fallba
             <button
               key={idx}
               onClick={() => {
-                if (phase === 'crossfading') return;
-                setNextIndex(idx);
-                setPhase('crossfading');
+                if (isCrossfading) return;
+                if (activeLayer === 'A') {
+                  setLayerBIndex(idx);
+                } else {
+                  setLayerAIndex(idx);
+                }
+                setIsCrossfading(true);
+                const nextVideoRef = activeLayer === 'A' ? videoBRef : videoARef;
                 setTimeout(() => {
-                  setCurrentIndex(idx);
-                  setNextIndex(null);
-                  setPhase('showing');
+                  if (nextVideoRef.current) {
+                    nextVideoRef.current.currentTime = 0;
+                    nextVideoRef.current.play().catch(() => {});
+                  }
+                }, 50);
+                setTimeout(() => {
+                  setActiveLayer(prev => prev === 'A' ? 'B' : 'A');
+                  setIsCrossfading(false);
                 }, CROSSFADE_MS);
               }}
               className={cn(
