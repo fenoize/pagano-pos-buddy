@@ -4228,6 +4228,7 @@ export type Database = {
           active: boolean | null
           category: string | null
           created_at: string | null
+          description: string | null
           id: string
           image_url: string | null
           name: string
@@ -4241,6 +4242,7 @@ export type Database = {
           active?: boolean | null
           category?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           image_url?: string | null
           name: string
@@ -4254,6 +4256,7 @@ export type Database = {
           active?: boolean | null
           category?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           image_url?: string | null
           name?: string

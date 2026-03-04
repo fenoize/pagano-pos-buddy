@@ -28,6 +28,7 @@ export interface User {
 export interface Product {
   id?: string;
   name: string;
+  description?: string;
   category?: string;
   image_url?: string;
   prices: {

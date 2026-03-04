@@ -4,6 +4,7 @@ import { configuredSupabase } from '@/lib/supabaseClient';
 export interface MenuProduct {
   id: string;
   name: string;
+  description?: string;
   image_url?: string;
   category?: string;
   active: boolean;
@@ -88,6 +89,7 @@ export function useCustomerMenuProducts() {
         .select(`
           id,
           name,
+          description,
           image_url,
           category,
           active,
@@ -127,6 +129,7 @@ export function useCustomerMenuProducts() {
           const transformedProduct: MenuProduct = {
             id: product.id,
             name: product.name,
+            description: product.description,
             image_url: product.image_url,
             category: product.category,
             active: product.active,

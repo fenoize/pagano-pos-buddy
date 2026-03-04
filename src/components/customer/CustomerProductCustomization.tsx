@@ -626,16 +626,16 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   );
 
   // Product image component
-  const ProductImage = ({ className = "" }: { className?: string }) => (
-    <div className={`bg-muted ${className}`}>
+  const ProductImage = () => (
+    <div className="w-full bg-muted">
       {product.image_url ? (
         <img
           src={product.image_url}
           alt={product.name}
-          className="w-full h-full object-cover"
+          className="w-full aspect-square object-cover"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center">
+        <div className="w-full aspect-square flex items-center justify-center">
           <Flame className="h-16 w-16 text-muted-foreground" />
         </div>
       )}
@@ -651,8 +651,8 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
             {/* Scrollable content - includes image */}
             <div className="flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
               <div className="pb-4">
-                {/* Product image - now scrollable */}
-                <ProductImage className="h-48 w-full" />
+                {/* Product image - square aspect ratio */}
+                <ProductImage />
                 
                 {/* Header */}
                 <div className="px-4 pt-4 pb-2">
