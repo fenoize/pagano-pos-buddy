@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
@@ -33,6 +34,7 @@ interface ProductEditModalProps {
 export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }: ProductEditModalProps) {
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
     active: true,
     image_url: '',
     show_in_pos: true,
@@ -49,6 +51,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
     if (product) {
       setFormData({
         name: product.name,
+        description: (product as any).description || '',
         active: product.active,
         image_url: product.image_url || '',
         show_in_pos: (product as any).show_in_pos ?? true,
@@ -115,13 +118,14 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
           .from('products')
           .update({
             name: formData.name,
+            description: formData.description || null,
             active: formData.active,
             image_url: formData.image_url || null,
             show_in_pos: formData.show_in_pos,
             show_in_app: formData.show_in_app,
             raw_material_id: formData.raw_material_id || null,
             prices: { combo: {}, only: {} } // Default empty prices for backward compatibility
-          })
+          } as any)
           .eq('id', product.id);
 
         if (error) throw error;
@@ -131,6 +135,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
           .from('products')
           .insert({
             name: formData.name,
+            description: formData.description || null,
             active: formData.active,
             image_url: formData.image_url || null,
             show_in_pos: formData.show_in_pos,
@@ -187,6 +192,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
   const resetForm = () => {
     setFormData({
       name: '',
+      description: '',
       active: true,
       image_url: '',
       show_in_pos: true,
@@ -244,6 +250,17 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Descripción (visible en App Cliente)</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Descripción breve del producto..."
+                  className="min-h-[80px] resize-none"
                 />
               </div>
 
