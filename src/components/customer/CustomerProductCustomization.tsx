@@ -349,36 +349,46 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         />
       ) : (
         <>
-          {/* Variant Selection - New System */}
+          {/* Variant Selection - New System (UberEats style) */}
           {useNewVariantSystem && availableVariants.length > 0 && (
-            <div className="space-y-3">
-              <Label className="text-base font-semibold text-white">Elige tu opción</Label>
+            <div>
+              <div className="mb-1">
+                <h3 className="text-lg font-bold text-white">Elige tu opción</h3>
+                <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
+              </div>
               <RadioGroup
                 value={selectedVariantOption?.id || ''}
                 onValueChange={(value) => {
                   const variant = availableVariants.find(v => v.id === value);
                   if (variant) setSelectedVariantOption(variant);
                 }}
+                className="gap-0"
               >
-                {availableVariants.map((variant) => (
+                {availableVariants.map((variant, idx) => (
                   <div
                     key={variant.id}
-                    className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                      selectedVariantOption?.id === variant.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-muted-foreground/50'
+                    className={`flex items-center justify-between py-4 cursor-pointer ${
+                      idx < availableVariants.length - 1 ? 'border-b border-border/50' : ''
                     }`}
                     onClick={() => setSelectedVariantOption(variant)}
                   >
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value={variant.id} id={variant.id} />
-                      <Label htmlFor={variant.id} className="font-medium cursor-pointer">
-                        {variant.variant?.name}
-                      </Label>
+                    <div className="flex-1">
+                      <span className="font-medium text-white">{variant.variant?.name}</span>
+                      {variant.price > 0 && (
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {formatPrice(variant.price)}
+                        </span>
+                      )}
                     </div>
-                    <span className="font-semibold text-primary">
-                      {formatPrice(variant.price)}
-                    </span>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      selectedVariantOption?.id === variant.id
+                        ? 'border-primary'
+                        : 'border-muted-foreground/40'
+                    }`}>
+                      {selectedVariantOption?.id === variant.id && (
+                        <div className="w-3.5 h-3.5 rounded-full bg-primary" />
+                      )}
+                    </div>
                   </div>
                 ))}
               </RadioGroup>
@@ -388,72 +398,77 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           {/* Legacy System - Price Type */}
           {!useNewVariantSystem && (
             <>
-              <div className="space-y-3">
-                <Label className="text-base font-semibold text-white">Tipo de pedido</Label>
+              <div>
+                <div className="mb-1">
+                  <h3 className="text-lg font-bold text-white">Tipo de pedido</h3>
+                  <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
+                </div>
                 <RadioGroup
                   value={selectedPriceType}
                   onValueChange={(value) => setSelectedPriceType(value as 'combo' | 'only')}
+                  className="gap-0"
                 >
-                  <div
-                    className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                      selectedPriceType === 'combo'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-muted-foreground/50'
-                    }`}
-                    onClick={() => setSelectedPriceType('combo')}
-                  >
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value="combo" id="combo" />
-                      <Label htmlFor="combo" className="font-medium cursor-pointer">
-                        Combo (con papas)
-                      </Label>
+                  {[
+                    { value: 'combo', label: 'Combo (con papas)' },
+                    { value: 'only', label: 'Solo hamburguesa' },
+                  ].map((option, idx) => (
+                    <div
+                      key={option.value}
+                      className={`flex items-center justify-between py-4 cursor-pointer ${
+                        idx < 1 ? 'border-b border-border/50' : ''
+                      }`}
+                      onClick={() => setSelectedPriceType(option.value as 'combo' | 'only')}
+                    >
+                      <span className="font-medium text-white">{option.label}</span>
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        selectedPriceType === option.value
+                          ? 'border-primary'
+                          : 'border-muted-foreground/40'
+                      }`}>
+                        {selectedPriceType === option.value && (
+                          <div className="w-3.5 h-3.5 rounded-full bg-primary" />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div
-                    className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                      selectedPriceType === 'only'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-muted-foreground/50'
-                    }`}
-                    onClick={() => setSelectedPriceType('only')}
-                  >
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value="only" id="only" />
-                      <Label htmlFor="only" className="font-medium cursor-pointer">
-                        Solo hamburguesa
-                      </Label>
-                    </div>
-                  </div>
+                  ))}
                 </RadioGroup>
               </div>
 
               {/* Legacy System - Variants */}
               {legacyVariants.length > 1 && (
-                <div className="space-y-3">
-                  <Label className="text-base font-semibold text-white">Tamaño</Label>
+                <div>
+                  <div className="mb-1">
+                    <h3 className="text-lg font-bold text-white">Tamaño</h3>
+                    <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
+                  </div>
                   <RadioGroup
                     value={selectedVariant}
                     onValueChange={(value) => setSelectedVariant(value as Variant)}
+                    className="gap-0"
                   >
-                    {legacyVariants.map((variant) => (
+                    {legacyVariants.map((variant, idx) => (
                       <div
                         key={variant}
-                        className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                          selectedVariant === variant
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border hover:border-muted-foreground/50'
+                        className={`flex items-center justify-between py-4 cursor-pointer ${
+                          idx < legacyVariants.length - 1 ? 'border-b border-border/50' : ''
                         }`}
                         onClick={() => setSelectedVariant(variant as Variant)}
                       >
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value={variant} id={variant} />
-                          <Label htmlFor={variant} className="font-medium cursor-pointer capitalize">
-                            {variant}
-                          </Label>
+                        <div className="flex-1">
+                          <span className="font-medium text-white capitalize">{variant}</span>
+                          <span className="text-sm text-muted-foreground ml-2">
+                            {formatPrice(getLegacyPrice(variant))}
+                          </span>
                         </div>
-                        <span className="font-semibold text-primary">
-                          {formatPrice(getLegacyPrice(variant))}
-                        </span>
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          selectedVariant === variant
+                            ? 'border-primary'
+                            : 'border-muted-foreground/40'
+                        }`}>
+                          {selectedVariant === variant && (
+                            <div className="w-3.5 h-3.5 rounded-full bg-primary" />
+                          )}
+                        </div>
                       </div>
                     ))}
                   </RadioGroup>
