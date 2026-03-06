@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { OrderStatus } from '@/types';
+import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
 
 interface ActiveShiftStats {
   totalSales: number;
@@ -57,7 +58,6 @@ export function useActiveShiftStats() {
       const activeSession = sessions?.[0];
 
       if (!activeSession) {
-        // No active session
         setStats({
           totalSales: 0,
           salesCount: 0,
@@ -69,11 +69,13 @@ export function useActiveShiftStats() {
         return;
       }
 
-      // Get orders for this session - prioritize by cash_session_id, fallback to created_by_user_id
-      // This ensures each shift only sees its own sales
+      // Get non-real payment methods
+      const nonRealMethods = await getNonRealSaleMethods();
+
+      // Get orders for this session
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('id, total, fulfillment, status, payment_runas')
+        .select('id, total, fulfillment, status, payment_runas, payment_method')
         .or(`cash_session_id.eq.${activeSession.id},and(cash_session_id.is.null,created_by_user_id.eq.${user.id})`)
         .gte('created_at', activeSession.opened_at)
         .in('status', COMPLETED_STATUSES);
@@ -82,19 +84,14 @@ export function useActiveShiftStats() {
         throw ordersError;
       }
 
-      // Filtrar órdenes: excluir las que fueron pagadas 100% con runas
+      // Filtrar órdenes: excluir las pagadas 100% con métodos no reales
       const realSalesOrders = (orders || []).filter(order => {
-        // Calcular el monto real de la venta (excluyendo runas)
-        const runasAmount = order.payment_runas || 0;
-        const realPayment = order.total - runasAmount;
-        // Solo contar como venta si hay pago real (no solo runas)
-        return realPayment > 0;
+        return getOrderRealRevenue(order, nonRealMethods) > 0;
       });
 
-      // El total de ventas es el monto real pagado (sin runas)
+      // El total de ventas es el monto real pagado (sin métodos no reales)
       const totalSales = realSalesOrders.reduce((sum, order) => {
-        const runasAmount = order.payment_runas || 0;
-        return sum + (order.total - runasAmount);
+        return sum + getOrderRealRevenue(order, nonRealMethods);
       }, 0);
       
       const salesCount = realSalesOrders.length;

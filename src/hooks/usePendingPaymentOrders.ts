@@ -143,9 +143,15 @@ const initGlobalSubscription = () => {
          case 'transferencia':
          case 'mp':
            updates.payment_mp = paymentData.amount;
-           updates.payment_method = 'mp';
+           if (paymentData.method.toLowerCase() === 'mp') {
+             updates.payment_method = 'mp';
+           }
            break;
          case 'aplicacion':
+           updates.payment_aplicacion = paymentData.amount;
+           break;
+         default:
+           // Non-standard methods (colacion, etc.) → store in payment_aplicacion as catch-all
            updates.payment_aplicacion = paymentData.amount;
            break;
        }

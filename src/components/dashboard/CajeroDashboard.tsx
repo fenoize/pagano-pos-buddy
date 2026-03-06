@@ -28,6 +28,7 @@ import { DeliveryCashPendingWidget } from '@/components/cash/DeliveryCashPending
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { usePaymentMethods, PaymentMethod } from '@/hooks/usePaymentMethods';
+import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
 
 // Mapeo de iconos dinámicos
 const iconMap: Record<string, LucideIcon> = {
@@ -99,25 +100,27 @@ export function CajeroDashboard() {
       // Get today's orders created by this user (only delivered = real sales)
       const { data: todaysOrders, error: todaysError } = await supabase
         .from('orders')
-        .select('id, total, payment_efectivo, payment_mp, payment_pos, payment_aplicacion, payment_runas, status')
+        .select('id, total, payment_efectivo, payment_mp, payment_pos, payment_aplicacion, payment_runas, payment_method, status')
         .eq('created_by_user_id', user.id)
         .gte('created_at', `${today}T00:00:00`)
         .lt('created_at', `${today}T23:59:59`);
 
       if (todaysError) throw todaysError;
 
-      // Filter for delivered orders (real sales) and exclude runas from totals
+      // Get non-real payment methods
+      const nonRealMethods = await getNonRealSaleMethods();
+
+      // Filter for delivered orders (real sales) and exclude non-real methods from totals
       const deliveredOrders = todaysOrders?.filter(o => o.status === 'Entregado') || [];
       const pendingOrders = todaysOrders?.filter(o => 
         o.status !== 'Entregado' && o.status !== 'Cancelado'
       ).length || 0;
 
-      // Calculate today's totals (excluding runas from total sales)
+      // Calculate today's totals (excluding non-real payment methods)
       const todaysSales = deliveredOrders.reduce((sum, order) => {
-        const runasAmount = order.payment_runas || 0;
-        return sum + (order.total - runasAmount);
+        return sum + getOrderRealRevenue(order, nonRealMethods);
       }, 0);
-      const todaysCount = deliveredOrders.length;
+      const todaysCount = deliveredOrders.filter(o => getOrderRealRevenue(o, nonRealMethods) > 0).length;
 
       let sessionSales = 0;
       let sessionCount = 0;
@@ -138,12 +141,11 @@ export function CajeroDashboard() {
           (o: any) => o.status === 'Entregado'
         );
         
-        // Calculate session sales excluding runas
+        // Calculate session sales excluding non-real methods
         sessionSales = sessionDeliveredOrders.reduce((sum: number, order: any) => {
-          const runasAmount = order.payment_runas || 0;
-          return sum + (order.total - runasAmount);
+          return sum + getOrderRealRevenue(order, nonRealMethods);
         }, 0);
-        sessionCount = sessionDeliveredOrders.length;
+        sessionCount = sessionDeliveredOrders.filter((o: any) => getOrderRealRevenue(o, nonRealMethods) > 0).length;
         
         // Calculate totals per payment method
         paymentTotals.efectivo = sessionDeliveredOrders.reduce((sum: number, o: any) => sum + (o.payment_efectivo || 0), 0);

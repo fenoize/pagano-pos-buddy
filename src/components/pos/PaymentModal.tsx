@@ -38,6 +38,8 @@ interface PaymentModalProps {
 
 interface SinglePayment {
   method: string;
+  methodName: string; // internal name (e.g. 'efectivo', 'colacion')
+  countsAsRealSale: boolean;
   amount: number;
   receiptNumber?: string;
   operationNumber?: string;
@@ -254,6 +256,8 @@ export default function PaymentModal({
     if (currentMethod === 'pendiente') {
       const newPayment: SinglePayment = {
         method: methodConfig?.display_name || 'Pendiente',
+        methodName: 'pendiente',
+        countsAsRealSale: methodConfig?.counts_as_real_sale ?? false,
         amount: 0,
       };
       setPayments([newPayment]);
@@ -327,6 +331,8 @@ export default function PaymentModal({
 
     const newPayment: SinglePayment = {
       method: methodConfig?.display_name || currentMethod,
+      methodName: methodConfig?.name || currentMethod,
+      countsAsRealSale: methodConfig?.counts_as_real_sale ?? true,
       amount: currentMethod === 'runas' 
         ? 0 
         : (methodConfig?.requires_change 
@@ -369,6 +375,8 @@ export default function PaymentModal({
       if (currentMethod === 'pendiente') {
         finalPayments = [{
           method: methodConfig?.display_name || 'Pendiente',
+          methodName: 'pendiente',
+          countsAsRealSale: methodConfig?.counts_as_real_sale ?? false,
           amount: 0,
         }];
       } else if (currentMethod !== 'runas' && amount <= 0) {
@@ -438,6 +446,8 @@ export default function PaymentModal({
       if (currentMethod !== 'pendiente') {
         const currentPayment: SinglePayment = {
           method: methodConfig?.display_name || currentMethod,
+          methodName: methodConfig?.name || currentMethod,
+          countsAsRealSale: methodConfig?.counts_as_real_sale ?? true,
           amount: currentMethod === 'runas' 
             ? 0 
             : (methodConfig?.requires_change 
