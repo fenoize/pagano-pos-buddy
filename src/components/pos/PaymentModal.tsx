@@ -375,6 +375,8 @@ export default function PaymentModal({
       if (currentMethod === 'pendiente') {
         finalPayments = [{
           method: methodConfig?.display_name || 'Pendiente',
+          methodName: 'pendiente',
+          countsAsRealSale: methodConfig?.counts_as_real_sale ?? false,
           amount: 0,
         }];
       } else if (currentMethod !== 'runas' && amount <= 0) {
