@@ -141,12 +141,11 @@ export function CajeroDashboard() {
           (o: any) => o.status === 'Entregado'
         );
         
-        // Calculate session sales excluding runas
+        // Calculate session sales excluding non-real methods
         sessionSales = sessionDeliveredOrders.reduce((sum: number, order: any) => {
-          const runasAmount = order.payment_runas || 0;
-          return sum + (order.total - runasAmount);
+          return sum + getOrderRealRevenue(order, nonRealMethods);
         }, 0);
-        sessionCount = sessionDeliveredOrders.length;
+        sessionCount = sessionDeliveredOrders.filter((o: any) => getOrderRealRevenue(o, nonRealMethods) > 0).length;
         
         // Calculate totals per payment method
         paymentTotals.efectivo = sessionDeliveredOrders.reduce((sum: number, o: any) => sum + (o.payment_efectivo || 0), 0);
