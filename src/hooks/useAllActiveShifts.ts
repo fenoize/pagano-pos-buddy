@@ -62,19 +62,25 @@ export function useAllActiveShifts() {
 
       const userMap = new Map(users?.map(u => [u.id, u]) || []);
 
+      // Get non-real payment methods
+      const nonRealMethods = await getNonRealSaleMethods();
+
       // Get orders for each session - prioritize by cash_session_id, fallback to created_by_user_id
       const shiftsWithStats = await Promise.all(
         sessions.map(async (session) => {
           const { data: orders } = await supabase
             .from('orders')
-            .select('total, status')
+            .select('total, status, payment_method, payment_runas')
             .or(`cash_session_id.eq.${session.id},and(cash_session_id.is.null,created_by_user_id.eq.${session.user_id})`)
             .gte('created_at', session.opened_at)
             .eq('status', 'Entregado');
 
           const user = userMap.get(session.user_id);
           const completedOrders = orders || [];
-          const totalSales = completedOrders.reduce((sum, o) => sum + o.total, 0);
+          
+          // Only count real revenue (exclude non-real payment methods)
+          const realOrders = completedOrders.filter(o => getOrderRealRevenue(o, nonRealMethods) > 0);
+          const totalSales = realOrders.reduce((sum, o) => sum + getOrderRealRevenue(o, nonRealMethods), 0);
 
           return {
             id: session.id,
@@ -85,7 +91,7 @@ export function useAllActiveShifts() {
             openingCash: session.opening_cash,
             acceptAppOrders: session.accept_app_orders || false,
             totalSales,
-            salesCount: completedOrders.length,
+            salesCount: realOrders.length,
           };
         })
       );
