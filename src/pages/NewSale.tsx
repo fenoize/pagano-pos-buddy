@@ -350,6 +350,8 @@ export default function NewSale() {
   const handlePaymentConfirm = async (paymentData: {
     payments: Array<{
       method: string;
+      methodName: string;
+      countsAsRealSale: boolean;
       amount: number;
       receiptNumber?: string;
       operationNumber?: string;
