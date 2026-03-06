@@ -38,6 +38,8 @@ interface PaymentModalProps {
 
 interface SinglePayment {
   method: string;
+  methodName: string; // internal name (e.g. 'efectivo', 'colacion')
+  countsAsRealSale: boolean;
   amount: number;
   receiptNumber?: string;
   operationNumber?: string;
