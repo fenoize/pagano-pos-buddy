@@ -526,38 +526,38 @@ export default function NewSale() {
         console.warn('No se encontró sesión de caja activa:', sessionError);
       }
 
-      // Calculate payment totals by method
+      // Calculate payment totals by method using methodName
       const totals = paymentData.payments.reduce(
         (acc, payment) => {
-          if (payment.method === 'Efectivo') {
+          const name = payment.methodName || payment.method.toLowerCase();
+          if (name === 'efectivo') {
             acc.efectivo += payment.amount;
-          } else if (payment.method === 'POS') {
+          } else if (name === 'pos') {
             acc.pos += payment.amount;
-          } else if (payment.method === 'Transferencia') {
+          } else if (name === 'transferencia' || name === 'mp') {
             acc.mp += payment.amount;
-          } else if (payment.method === 'Aplicación') {
+          } else if (name === 'aplicacion') {
             acc.aplicacion += payment.amount;
-          } else if (payment.method === 'Runas') {
+          } else if (name === 'runas') {
             acc.runas += payment.runas || 0;
+          } else {
+            // Non-standard methods (colacion, etc.) → store in aplicacion as catch-all
+            acc.aplicacion += payment.amount;
           }
           return acc;
         },
         { efectivo: 0, pos: 0, mp: 0, aplicacion: 0, runas: 0 }
       );
 
-      // Determine payment method
-      const paymentMethod: 'efectivo' | 'pos' | 'mp' | 'aplicacion' | 'mixto' | 'runas' | 'pendiente' =
+      // Determine payment method - use methodName for accurate mapping
+      const knownMethods: Record<string, string> = {
+        efectivo: 'efectivo', pos: 'pos', mp: 'mp', transferencia: 'transferencia',
+        aplicacion: 'aplicacion', runas: 'runas', pendiente: 'pendiente', colacion: 'colacion'
+      };
+
+      const paymentMethod: string =
         paymentData.payments.length === 1
-          ? (() => {
-              const method = paymentData.payments[0].method;
-              if (method === 'Efectivo') return 'efectivo';
-              if (method === 'POS') return 'pos';
-              if (method === 'Transferencia') return 'mp';
-              if (method === 'Aplicación') return 'aplicacion';
-              if (method === 'Runas') return 'runas';
-              if (method === 'Pendiente') return 'pendiente';
-              return 'efectivo';
-            })()
+          ? (knownMethods[paymentData.payments[0].methodName] || paymentData.payments[0].methodName || 'efectivo')
           : 'mixto';
 
       // Determinar payment_status según el método
