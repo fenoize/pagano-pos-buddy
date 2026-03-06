@@ -187,20 +187,24 @@ function DefaultDashboard() {
         ['Pendiente', 'En preparación', 'En pausa', 'Listo'].includes(order.status)
       ) || [];
 
-      const totalSales = completedOrders.reduce((sum, order) => sum + order.total, 0);
-      const salesCount = completedOrders.length;
+      // Get non-real payment methods to exclude from revenue
+      const nonRealMethods = await getNonRealSaleMethods();
+
+      const totalSales = completedOrders.reduce((sum, order) => sum + getOrderRealRevenue(order, nonRealMethods), 0);
+      const realSalesOrders = completedOrders.filter(o => getOrderRealRevenue(o, nonRealMethods) > 0);
+      const salesCount = realSalesOrders.length;
       const averageTicket = salesCount > 0 ? totalSales / salesCount : 0;
 
-      // Calculate payment method totals
+      // Calculate payment method totals (only from real-sale orders)
       const cashSales = completedOrders.reduce((sum, order) => sum + (order.payment_efectivo || 0), 0);
       const mpSales = completedOrders.reduce((sum, order) => sum + (order.payment_mp || 0), 0);
       const posSales = completedOrders.reduce((sum, order) => sum + (order.payment_pos || 0), 0);
       const runasSales = completedOrders.reduce((sum, order) => sum + (order.payment_runas || 0), 0);
       const appSales = completedOrders.reduce((sum, order) => sum + (order.payment_aplicacion || 0), 0);
 
-      // Weekly stats
-      const weeklySales = (weeklyOrders || []).reduce((sum, order) => sum + order.total, 0);
-      const weeklySalesCount = (weeklyOrders || []).length;
+      // Weekly stats - also exclude non-real methods
+      const weeklySales = (weeklyOrders || []).reduce((sum, order) => sum + getOrderRealRevenue(order, nonRealMethods), 0);
+      const weeklySalesCount = (weeklyOrders || []).filter(o => getOrderRealRevenue(o, nonRealMethods) > 0).length;
 
       // Calculate top products from selected period data
       const productCounts = new Map<string, { name: string; quantity: number }>();
