@@ -342,7 +342,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     <div className="space-y-6">
       {/* Combo Selection */}
       {hasCombo && useCombo ? (
-        <ComboSelector
+        <CustomerComboSelector
           product={product}
           onComboItemsChange={setComboSelections}
           onComboTotalChange={setComboTotal}
