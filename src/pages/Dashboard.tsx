@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
 import { TrendingUp, ShoppingCart, Clock, DollarSign, Calendar, Package, Star, CalendarIcon, ArrowRight } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
