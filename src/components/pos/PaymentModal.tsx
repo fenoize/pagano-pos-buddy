@@ -256,6 +256,8 @@ export default function PaymentModal({
     if (currentMethod === 'pendiente') {
       const newPayment: SinglePayment = {
         method: methodConfig?.display_name || 'Pendiente',
+        methodName: 'pendiente',
+        countsAsRealSale: methodConfig?.counts_as_real_sale ?? false,
         amount: 0,
       };
       setPayments([newPayment]);
