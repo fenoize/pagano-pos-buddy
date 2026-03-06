@@ -323,8 +323,8 @@ export const useDeliveryOrders = () => {
       } else if (methodLower === 'aplicacion') {
         paymentFields.payment_aplicacion = total;
       } else {
-        // Fallback: set as mp
-        paymentFields.payment_mp = total;
+        // Non-standard methods → store in payment_aplicacion as catch-all
+        paymentFields.payment_aplicacion = total;
       }
 
       // Update order payment info
