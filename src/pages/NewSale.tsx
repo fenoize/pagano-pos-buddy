@@ -447,6 +447,8 @@ export default function NewSale() {
     paymentData: {
       payments: Array<{
         method: string;
+        methodName: string;
+        countsAsRealSale: boolean;
         amount: number;
         receiptNumber?: string;
         operationNumber?: string;
