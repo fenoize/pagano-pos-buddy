@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Plus, Minus, Check, Flame, ShoppingCart, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import ComboSelector from '@/components/pos/ComboSelector';
+import CustomerComboSelector from '@/components/customer/CustomerComboSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ProductExtra {
