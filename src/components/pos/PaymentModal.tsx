@@ -331,6 +331,8 @@ export default function PaymentModal({
 
     const newPayment: SinglePayment = {
       method: methodConfig?.display_name || currentMethod,
+      methodName: methodConfig?.name || currentMethod,
+      countsAsRealSale: methodConfig?.counts_as_real_sale ?? true,
       amount: currentMethod === 'runas' 
         ? 0 
         : (methodConfig?.requires_change 
