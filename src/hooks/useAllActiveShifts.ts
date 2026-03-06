@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { setStaffContext } from '@/lib/dbContext';
+import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
 
 interface ActiveShift {
   id: string;
