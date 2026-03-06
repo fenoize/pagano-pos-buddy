@@ -28,6 +28,7 @@ import { DeliveryCashPendingWidget } from '@/components/cash/DeliveryCashPending
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { usePaymentMethods, PaymentMethod } from '@/hooks/usePaymentMethods';
+import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
 
 // Mapeo de iconos dinámicos
 const iconMap: Record<string, LucideIcon> = {
