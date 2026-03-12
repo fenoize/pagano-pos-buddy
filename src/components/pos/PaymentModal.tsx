@@ -68,7 +68,10 @@ export default function PaymentModal({
   orderName, 
   deliveryData, 
   appliedCoupons = [], 
-  manualDiscount 
+  manualDiscount,
+  onOpenCustomerModal,
+  onOpenCouponModal,
+  subscriptionDiscountPercent = 0
 }: PaymentModalProps) {
   const [payments, setPayments] = useState<SinglePayment[]>([]);
   const [currentMethod, setCurrentMethod] = useState('');
