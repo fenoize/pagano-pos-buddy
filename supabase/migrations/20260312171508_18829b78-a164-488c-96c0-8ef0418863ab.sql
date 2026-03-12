@@ -1,0 +1,1 @@
+UPDATE coupons SET delivery_mode = 'free' WHERE code = 'FREEDELY';
