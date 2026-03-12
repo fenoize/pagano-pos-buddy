@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { 
   CreditCard, Banknote, Smartphone, Coins, Bike, Plus, X,
-  AppWindow, Sparkles, DollarSign, Wallet
+  AppWindow, Sparkles, DollarSign, Wallet, User, Ticket
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Clock } from 'lucide-react';
@@ -34,6 +34,9 @@ interface PaymentModalProps {
   deliveryData?: DeliveryData | null;
   appliedCoupons?: CouponApplication[];
   manualDiscount?: { type: 'percentage' | 'fixed'; value: number; amount: number } | null;
+  onOpenCustomerModal?: () => void;
+  onOpenCouponModal?: () => void;
+  subscriptionDiscountPercent?: number;
 }
 
 interface SinglePayment {
@@ -65,7 +68,10 @@ export default function PaymentModal({
   orderName, 
   deliveryData, 
   appliedCoupons = [], 
-  manualDiscount 
+  manualDiscount,
+  onOpenCustomerModal,
+  onOpenCouponModal,
+  subscriptionDiscountPercent = 0
 }: PaymentModalProps) {
   const [payments, setPayments] = useState<SinglePayment[]>([]);
   const [currentMethod, setCurrentMethod] = useState('');
@@ -561,6 +567,41 @@ export default function PaymentModal({
         <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle>Procesar Pago {payments.length > 1 ? '(Mixto)' : ''}</DialogTitle>
         </DialogHeader>
+
+        {/* Quick action buttons: Customer + Coupon */}
+        {(onOpenCustomerModal || onOpenCouponModal) && (
+          <div className="px-6 pb-1 flex items-center gap-2 shrink-0">
+            {onOpenCustomerModal && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                onClick={onOpenCustomerModal}
+              >
+                <User className="w-4 h-4" />
+                {customer.id ? customer.name : 'Añadir Cliente'}
+                {subscriptionDiscountPercent > 0 && (
+                  <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-semibold dark:bg-emerald-900 dark:text-emerald-300">
+                    -{subscriptionDiscountPercent}%
+                  </span>
+                )}
+              </Button>
+            )}
+            {onOpenCouponModal && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                onClick={onOpenCouponModal}
+              >
+                <Ticket className="w-4 h-4" />
+                {appliedCoupons.length > 0 || manualDiscount
+                  ? `${appliedCoupons.length > 0 ? `${appliedCoupons.length} Cupón${appliedCoupons.length > 1 ? 'es' : ''}` : 'Descuento'}`
+                  : 'Añadir Cupón'}
+              </Button>
+            )}
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto px-6 pb-2">
           <div className="space-y-6">
