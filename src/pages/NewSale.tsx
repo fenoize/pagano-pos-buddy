@@ -1090,6 +1090,9 @@ export default function NewSale() {
         deliveryData={deliveryData}
         appliedCoupons={appliedCoupons}
         manualDiscount={manualDiscount}
+        onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
+        onOpenCouponModal={() => setIsCouponModalOpen(true)}
+        subscriptionDiscountPercent={subscriptionDiscountPercent}
       />
 
       {/* Coupon Modal */}
