@@ -568,6 +568,41 @@ export default function PaymentModal({
           <DialogTitle>Procesar Pago {payments.length > 1 ? '(Mixto)' : ''}</DialogTitle>
         </DialogHeader>
 
+        {/* Quick action buttons: Customer + Coupon */}
+        {(onOpenCustomerModal || onOpenCouponModal) && (
+          <div className="px-6 pb-1 flex items-center gap-2 shrink-0">
+            {onOpenCustomerModal && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                onClick={onOpenCustomerModal}
+              >
+                <User className="w-4 h-4" />
+                {customer.id ? customer.name : 'Añadir Cliente'}
+                {subscriptionDiscountPercent > 0 && (
+                  <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-semibold dark:bg-emerald-900 dark:text-emerald-300">
+                    -{subscriptionDiscountPercent}%
+                  </span>
+                )}
+              </Button>
+            )}
+            {onOpenCouponModal && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                onClick={onOpenCouponModal}
+              >
+                <Ticket className="w-4 h-4" />
+                {appliedCoupons.length > 0 || manualDiscount
+                  ? `${appliedCoupons.length > 0 ? `${appliedCoupons.length} Cupón${appliedCoupons.length > 1 ? 'es' : ''}` : 'Descuento'}`
+                  : 'Añadir Cupón'}
+              </Button>
+            )}
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto px-6 pb-2">
           <div className="space-y-6">
           {/* Order Name */}
