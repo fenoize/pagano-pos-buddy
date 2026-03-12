@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { 
   CreditCard, Banknote, Smartphone, Coins, Bike, Plus, X,
-  AppWindow, Sparkles, DollarSign, Wallet
+  AppWindow, Sparkles, DollarSign, Wallet, User, Ticket
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Clock } from 'lucide-react';
