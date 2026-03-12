@@ -34,6 +34,9 @@ interface PaymentModalProps {
   deliveryData?: DeliveryData | null;
   appliedCoupons?: CouponApplication[];
   manualDiscount?: { type: 'percentage' | 'fixed'; value: number; amount: number } | null;
+  onOpenCustomerModal?: () => void;
+  onOpenCouponModal?: () => void;
+  subscriptionDiscountPercent?: number;
 }
 
 interface SinglePayment {
