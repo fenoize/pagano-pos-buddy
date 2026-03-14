@@ -1,38 +1,59 @@
 
 
-## Plan: Corregir 3 problemas en formulario de Orden de Compra
+## Problem
 
-### Problema 1 — Buscador de materiales usa Select plano
-Actualmente el selector de materiales es un `<Select>` con todos los items. Se debe reemplazar por `MaterialSearchAutocomplete` (el componente que ya existe con filtro de 3+ caracteres).
+The POS runs on a desktop without a camera/barcode gun, so staff cannot scan customer QR codes. A smartphone with a camera could act as a dedicated QR reader that sends the scanned customer to the active POS session in real time.
 
-**Cambios en `PurchaseOrderForm.tsx`**:
-- Importar `MaterialSearchAutocomplete`
-- Reemplazar el `<Select>` de la columna "Material" por `<MaterialSearchAutocomplete>` pasando `materials`, `value`, `onSelect` y el display adecuado.
+## Solution: Remote QR Scanner via Supabase Realtime Broadcast
 
-### Problema 2 — No se pueden seleccionar presentaciones de compra
-El sistema de presentaciones (`material_purchase_presentations`) ya existe pero no está integrado en el formulario de OC. Cuando el usuario selecciona un material, si ese material tiene presentaciones configuradas, debe poder elegir una (ej: "Caja x36 un").
+Use Supabase Realtime **Broadcast** (no database needed) to create a peer-to-peer link between the smartphone scanner and the desktop POS.
 
-**Cambios en `PurchaseOrderForm.tsx`**:
-- Agregar campo `presentation_id` al tipo `OrderItem`.
-- Al seleccionar un material, cargar sus presentaciones disponibles vía query directa.
-- Si hay presentaciones, mostrar un selector debajo del material o en la columna "Unidad" para elegir la presentación.
-- Al elegir una presentación, auto-rellenar la unidad de compra (`purchase_uom_id`) y el último precio conocido (`last_price`).
-- En el resumen, mostrar una nota informativa de la conversión (ej: "1 Caja = 36 un").
+```text
+┌──────────────────┐   Broadcast channel    ┌──────────────────┐
+│  Smartphone      │  ───────────────────►   │  Desktop POS     │
+│  /pos/qr-scanner │   { customer data }     │  /pos (NewSale)  │
+│  (camera + scan) │                         │  (receives event)│
+└──────────────────┘                         └──────────────────┘
+     Same Supabase channel: "pos-qr-{store_id}"
+```
 
-### Problema 3 — El cálculo agrega IVA cuando la compra es bruta
-El resumen calcula `subtotal + IVA 19%`, pero las compras a proveedores se hacen con precio bruto (el monto ingresado ya incluye todo). El hook `usePurchaseOrders.createOrder` también suma IVA.
+### How it works
 
-**Cambios en `PurchaseOrderForm.tsx`**:
-- Agregar un toggle/switch "Precio incluye IVA" (por defecto activado).
-- Si está activado: el total = suma de (qty × unit_cost) directo. Desglosar IVA como `total / 1.19 * 0.19` (informativo).
-- Si está desactivado: calcular como hoy (neto + 19%).
+1. **Desktop POS (`NewSale.tsx`)** subscribes to a Supabase Broadcast channel `pos-qr-scan`. When it receives a `customer-scanned` event, it sets the customer on the current sale (same as `onCustomerFound` from the existing QR modal).
 
-**Cambios en `usePurchaseOrders.ts`**:
-- Aceptar flag `prices_include_tax` en `CreatePurchaseOrderData`.
-- Si `true`: `total = sum`, `tax = round(total - total/1.19)`, `subtotal = total - tax`.
-- Si `false`: mantener lógica actual.
+2. **New page `/pos/qr-scanner`** — a mobile-optimized, full-screen QR scanner page that:
+   - Authenticates with the same staff token
+   - Opens the camera and continuously scans QR codes
+   - When a valid `PAGANOS:{uuid}` QR is read, fetches the customer via `staff-list-customers`
+   - Broadcasts the customer data to the channel
+   - Shows a success confirmation with the customer name, then resumes scanning
 
-### Resumen de archivos a modificar
-1. `src/pages/inventory/PurchaseOrderForm.tsx` — autocomplete, presentaciones, toggle IVA
-2. `src/hooks/usePurchaseOrders.ts` — flag de IVA en create/update
+3. **No database table needed** — Broadcast is ephemeral, peer-to-peer via Supabase Realtime.
+
+### Implementation Steps
+
+1. **Create `src/pages/pos/QRScannerPage.tsx`**
+   - Full-screen camera scanner (reuse `html5-qrcode` already installed)
+   - Staff auth check (redirect to `/pos/login` if no token)
+   - On successful scan → fetch customer → broadcast via `supabase.channel('pos-qr-scan').send({ type: 'broadcast', event: 'customer-scanned', payload: customer })`
+   - Visual feedback: customer name + "Enviado al POS" toast
+   - Auto-resume scanning after 2 seconds
+
+2. **Add route in `App.tsx`**
+   - `/pos/qr-scanner` → `QRScannerPage` (staff-protected)
+
+3. **Update `NewSale.tsx`**
+   - Subscribe to `supabase.channel('pos-qr-scan')` on mount
+   - On `customer-scanned` event → call the same `setCustomer()` logic + show toast "Cliente escaneado: {name}"
+   - Cleanup channel on unmount
+
+4. **Add link/button in POS UI**
+   - In `CustomerModal.tsx`, add a small info text or button: "Usa un celular como lector QR" with a link/QR to `/pos/qr-scanner`
+
+### Key Details
+
+- Reuses existing `html5-qrcode` library and `staff-list-customers` edge function
+- No new database tables or migrations
+- Channel scoped so all open POS sessions receive the scan (simple for single-store setup)
+- The scanner page is mobile-optimized (full viewport camera, large touch targets)
 
