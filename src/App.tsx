@@ -357,8 +357,13 @@ const App = () => (
               <Route path="/customer/login" element={<Navigate to="/login" replace />} />
               <Route path="/addresses" element={<Navigate to="/my-addresses" replace />} />
               
-              {/* ==================== STAFF ROUTES (/pos/*) ==================== */}
+               {/* ==================== STAFF ROUTES (/pos/*) ==================== */}
               <Route path="/pos/login" element={<Login />} />
+              <Route path="/pos/qr-scanner" element={
+                <StaffProtectedRoute>
+                  <QRScannerPage />
+                </StaffProtectedRoute>
+              } />
               
               <Route path="/pos" element={
                 <StaffProtectedRoute>
