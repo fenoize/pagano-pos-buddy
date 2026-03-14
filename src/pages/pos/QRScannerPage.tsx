@@ -241,7 +241,7 @@ export default function QRScannerPage() {
 
           {/* Success overlay */}
           {lastScanned && (
-            <div className="absolute inset-0 bg-green-500/90 flex flex-col items-center justify-center text-white p-4 text-center">
+            <div className="absolute inset-0 bg-primary/90 flex flex-col items-center justify-center text-primary-foreground p-4 text-center">
               <CheckCircle2 className="h-16 w-16 mb-3" />
               <p className="text-xl font-bold">{lastScanned.name}</p>
               <p className="text-sm mt-1 opacity-90">Enviado al POS ✓</p>
