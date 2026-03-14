@@ -54,6 +54,7 @@ const CustomerProfile = lazy(() => import('@/pages/customer/CustomerProfile'));
 
 // Staff Pages - Lazy loading para code splitting
 const Login = lazy(() => import("./pages/Login"));
+const QRScannerPage = lazy(() => import("@/pages/pos/QRScannerPage"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Clientes = lazy(() => import("@/pages/Clientes"));
 const NewSale = lazy(() => import("@/pages/NewSale"));
@@ -357,8 +358,13 @@ const App = () => (
               <Route path="/customer/login" element={<Navigate to="/login" replace />} />
               <Route path="/addresses" element={<Navigate to="/my-addresses" replace />} />
               
-              {/* ==================== STAFF ROUTES (/pos/*) ==================== */}
+               {/* ==================== STAFF ROUTES (/pos/*) ==================== */}
               <Route path="/pos/login" element={<Login />} />
+              <Route path="/pos/qr-scanner" element={
+                <StaffProtectedRoute>
+                  <QRScannerPage />
+                </StaffProtectedRoute>
+              } />
               
               <Route path="/pos" element={
                 <StaffProtectedRoute>

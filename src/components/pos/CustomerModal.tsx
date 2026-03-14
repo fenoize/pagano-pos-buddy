@@ -240,8 +240,16 @@ export function CustomerModal({
               </div>
             )}
 
-            {/* Close */}
-            <div className="flex justify-end pt-1">
+            {/* Close + QR Scanner link */}
+            <div className="flex items-center justify-between pt-1">
+              <a
+                href="/pos/qr-scanner"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground hover:text-primary underline"
+              >
+                📱 Usar celular como lector QR
+              </a>
               <Button variant="ghost" size="sm" onClick={onClose}>
                 Cerrar
               </Button>

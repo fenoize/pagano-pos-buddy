@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product, Customer, OrderItem, FulfillmentType, CouponApplication, PickupMode } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,6 +69,10 @@ export default function NewSale() {
   const { deductInventoryFromOrder } = useInventory();
   const { config: posConfig } = usePOSConfig();
   const { discountPercent: subscriptionDiscountPercent, rules: subscriptionRules } = useCustomerDiscountSubscription(customer?.id as string | undefined);
+
+  // Listen for remote QR scans from smartphone
+  const handleRemoteCustomer = useCallback((c: Customer) => setCustomer(c), []);
+  useRemoteQRScanner(handleRemoteCustomer);
 
   const subtotal = cartItems.reduce((sum, item) => {
     const extrasTotal = item.extras.reduce((extraSum, extra) => extraSum + (extra.price * (extra.quantity || 1)), 0);
@@ -1129,4 +1133,29 @@ export default function NewSale() {
       />
     </div>
   );
+}
+
+// Hook: listen for remote QR scans via Supabase Broadcast
+function useRemoteQRScanner(onCustomerScanned: (customer: Customer) => void) {
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const channel = supabase.channel('pos-qr-scan')
+      .on('broadcast', { event: 'customer-scanned' }, ({ payload }: any) => {
+        if (payload?.customer) {
+          const c = payload.customer as Customer;
+          onCustomerScanned(c);
+          const name = `${c.nombres || c.name || ''} ${c.apellidos || c.apellido || ''}`.trim();
+          toast({
+            title: '📱 Cliente escaneado',
+            description: name || 'Cliente vinculado a la venta',
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [onCustomerScanned, toast]);
 }
