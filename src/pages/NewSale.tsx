@@ -1130,3 +1130,28 @@ export default function NewSale() {
     </div>
   );
 }
+
+// Hook: listen for remote QR scans via Supabase Broadcast
+function useRemoteQRScanner(onCustomerScanned: (customer: Customer) => void) {
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const channel = supabase.channel('pos-qr-scan')
+      .on('broadcast', { event: 'customer-scanned' }, ({ payload }: any) => {
+        if (payload?.customer) {
+          const c = payload.customer as Customer;
+          onCustomerScanned(c);
+          const name = `${c.nombres || c.name || ''} ${c.apellidos || c.apellido || ''}`.trim();
+          toast({
+            title: '📱 Cliente escaneado',
+            description: name || 'Cliente vinculado a la venta',
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [onCustomerScanned, toast]);
+}
