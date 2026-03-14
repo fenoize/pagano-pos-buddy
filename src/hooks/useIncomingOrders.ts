@@ -235,22 +235,20 @@
      }
    }, [canAcceptAppOrders, fetchPendingOrders, fetchDeliveryPersons]);
  
-    // Subscribe to realtime updates with auto-reconnect
+    // Subscribe to realtime updates with auto-reconnect on failure
     useEffect(() => {
       if (!canAcceptAppOrders) return;
 
       let channel: ReturnType<typeof supabase.channel> | null = null;
-      let pollInterval: ReturnType<typeof setInterval>;
       let reconnectTimeout: ReturnType<typeof setTimeout>;
 
       const setupChannel = () => {
-        // Remove previous channel if exists
         if (channel) {
           supabase.removeChannel(channel);
         }
 
         channel = supabase
-          .channel('incoming-orders-' + Date.now())
+          .channel('incoming-orders')
           .on(
             'postgres_changes',
             {
@@ -265,43 +263,37 @@
             }
           )
           .subscribe((status) => {
-            console.log('📡 Incoming orders channel:', status);
             if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
               console.warn('📡 Channel lost, reconnecting in 5s...');
               reconnectTimeout = setTimeout(setupChannel, 5000);
-            }
-            if (status === 'SUBSCRIBED') {
-              // Fetch immediately on reconnect to catch missed orders
-              fetchPendingOrders();
             }
           });
       };
 
       setupChannel();
 
-      // Polling as backup every 15 seconds (more aggressive for reliability)
-      pollInterval = setInterval(fetchPendingOrders, 15000);
+      // Polling backup every 20 seconds (lightweight SELECT, ~1KB response)
+      const pollInterval = setInterval(fetchPendingOrders, 20000);
 
-      // Reconnect when tab becomes visible again (covers sleep/background)
+      // Only reconnect channel when tab returns from background (not on every focus)
       const handleVisibility = () => {
         if (document.visibilityState === 'visible') {
-          console.log('📡 Tab visible, refreshing orders & reconnecting channel');
           fetchPendingOrders();
-          setupChannel();
+          // Only recreate channel if it's not healthy
+          if (channel) {
+            const state = (channel as any).state;
+            if (state !== 'joined' && state !== 'joining') {
+              console.log('📡 Tab visible + channel stale, reconnecting');
+              setupChannel();
+            }
+          }
         }
       };
       document.addEventListener('visibilitychange', handleVisibility);
 
-      // Heartbeat: force reconnect every 5 minutes to prevent stale connections
-      const heartbeat = setInterval(() => {
-        console.log('📡 Heartbeat: refreshing realtime channel');
-        setupChannel();
-      }, 5 * 60 * 1000);
-
       return () => {
         if (channel) supabase.removeChannel(channel);
         clearInterval(pollInterval);
-        clearInterval(heartbeat);
         clearTimeout(reconnectTimeout);
         document.removeEventListener('visibilitychange', handleVisibility);
       };
