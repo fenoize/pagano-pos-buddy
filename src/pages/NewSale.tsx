@@ -70,6 +70,10 @@ export default function NewSale() {
   const { config: posConfig } = usePOSConfig();
   const { discountPercent: subscriptionDiscountPercent, rules: subscriptionRules } = useCustomerDiscountSubscription(customer?.id as string | undefined);
 
+  // Listen for remote QR scans from smartphone
+  const handleRemoteCustomer = useCallback((c: Customer) => setCustomer(c), []);
+  useRemoteQRScanner(handleRemoteCustomer);
+
   const subtotal = cartItems.reduce((sum, item) => {
     const extrasTotal = item.extras.reduce((extraSum, extra) => extraSum + (extra.price * (extra.quantity || 1)), 0);
     const itemTotal = (item.basePrice + extrasTotal) * item.quantity;
