@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Product, Customer, OrderItem, FulfillmentType, CouponApplication, PickupMode } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
