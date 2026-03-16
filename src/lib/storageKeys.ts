@@ -18,6 +18,9 @@ export const STORAGE_KEYS = {
 
   // TV Screen
   TV_SCREEN_ID: 'paganos_tv_screen_id',
+
+  // QR Reader dedicated session
+  QR_READER_SESSION: 'paganos_qr_reader_session',
 } as const;
 
 /**
