@@ -10,7 +10,8 @@ import {
   User,
   Settings,
   TruckIcon,
-  Briefcase
+  Briefcase,
+  Camera
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -23,6 +24,7 @@ const menuItems = [
   { title: "Ventas", url: "/pos/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
   { title: "Cocina", url: "/pos/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
   { title: "Delivery", url: "/pos/delivery", icon: TruckIcon, roles: ['Administrador', 'Reparto'] },
+  { title: "Lector QR", url: "/pos/qr-reader", icon: Camera, roles: ['Leer QR'] },
   { title: "RRHH", url: "/pos/rrhh/turnos", icon: Briefcase, roles: ['Administrador'] },
 ];
 

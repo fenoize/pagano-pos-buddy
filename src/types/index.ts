@@ -1,4 +1,4 @@
-export type AppRole = 'Administrador' | 'Cajero' | 'Cocinero' | 'Preparador' | 'Reparto' | 'Viewer' | 'TV';
+export type AppRole = 'Administrador' | 'Cajero' | 'Cocinero' | 'Preparador' | 'Reparto' | 'Viewer' | 'TV' | 'Leer QR';
 
  export type OrderStatus = 'PendientePago' | 'PendienteAceptacion' | 'Pendiente' | 'En preparación' | 'En pausa' | 'Listo' | 'En camino' | 'Entregado' | 'Cancelado';
 

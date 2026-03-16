@@ -25,6 +25,17 @@ export function StaffProtectedRoute({ children }: { children: React.ReactNode })
       return <Navigate to="/pos/pedido-listo" replace />;
     }
   }
+
+  // Rol Leer QR solo puede acceder a /pos/qr-reader y /pos/mi-configuracion
+  const userRoles = user.roles?.length ? user.roles : (user.role ? [user.role] : []);
+  const isQROnly = userRoles.length === 1 && userRoles[0] === 'Leer QR';
+  if (isQROnly) {
+    const allowedPaths = ['/pos/qr-reader', '/pos/mi-configuracion'];
+    const isAllowed = allowedPaths.some(path => location.pathname.startsWith(path));
+    if (!isAllowed) {
+      return <Navigate to="/pos/qr-reader" replace />;
+    }
+  }
   
   return <>{children}</>;
 }
