@@ -31,6 +31,7 @@ const AVAILABLE_ROLES: { value: AppRole; label: string; description: string }[] 
   { value: 'Reparto', label: 'Reparto', description: 'Acceso a módulo de delivery' },
   { value: 'Viewer', label: 'Viewer', description: 'Solo lectura, para casos especiales' },
   { value: 'TV', label: 'TV', description: 'Acceso exclusivo a pantallas TV' },
+  { value: 'Leer QR', label: 'Leer QR', description: 'Acceso exclusivo al lector QR dedicado' },
 ];
 
 export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormProps) {
