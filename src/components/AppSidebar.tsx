@@ -36,7 +36,8 @@ import {
   MessageSquare,
   Briefcase,
   Calendar,
-  FlaskConical
+  FlaskConical,
+  Camera
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {

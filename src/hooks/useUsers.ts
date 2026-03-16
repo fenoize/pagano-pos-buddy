@@ -22,7 +22,8 @@ const mapAppRoleToDatabase = (appRole: AppRole): string => {
     'Administrador': 'Administrador',
     'Preparador': 'Cocina',
     'Viewer': 'Viewer',
-    'TV': 'TV'
+    'TV': 'TV',
+    'Leer QR': 'Leer QR'
   };
   return mapping[appRole] || appRole;
 };
