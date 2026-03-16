@@ -366,6 +366,11 @@ const App = () => (
                   <QRScannerPage />
                 </StaffProtectedRoute>
               } />
+              <Route path="/pos/qr-reader" element={
+                <StaffProtectedRoute>
+                  <QRReaderPage />
+                </StaffProtectedRoute>
+              } />
               
               <Route path="/pos" element={
                 <StaffProtectedRoute>

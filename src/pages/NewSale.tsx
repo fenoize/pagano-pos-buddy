@@ -1136,26 +1136,53 @@ export default function NewSale() {
 }
 
 // Hook: listen for remote QR scans via Supabase Broadcast
+// Listens on both the generic channel (backward compat) and session-specific channel
 function useRemoteQRScanner(onCustomerScanned: (customer: Customer) => void) {
   const { toast } = useToast();
+  const { hasActiveSession } = useCashSession();
 
   useEffect(() => {
-    const channel = supabase.channel('pos-qr-scan')
-      .on('broadcast', { event: 'customer-scanned' }, ({ payload }: any) => {
-        if (payload?.customer) {
-          const c = payload.customer as Customer;
-          onCustomerScanned(c);
-          const name = `${c.nombres || c.name || ''} ${c.apellidos || c.apellido || ''}`.trim();
-          toast({
-            title: '📱 Cliente escaneado',
-            description: name || 'Cliente vinculado a la venta',
-          });
-        }
-      })
+    const handler = ({ payload }: any) => {
+      if (payload?.customer) {
+        const c = payload.customer as Customer;
+        onCustomerScanned(c);
+        const name = `${c.nombres || c.name || ''} ${c.apellidos || c.apellido || ''}`.trim();
+        toast({
+          title: '📱 Cliente escaneado',
+          description: name || 'Cliente vinculado a la venta',
+        });
+      }
+    };
+
+    // Generic channel (from /pos/qr-scanner)
+    const genericChannel = supabase.channel('pos-qr-scan')
+      .on('broadcast', { event: 'customer-scanned' }, handler)
       .subscribe();
 
+    // Session-specific channel (from /pos/qr-reader)
+    let sessionChannel: ReturnType<typeof supabase.channel> | null = null;
+
+    const setupSessionChannel = async () => {
+      const { data } = await supabase
+        .from('cash_sessions')
+        .select('id')
+        .is('closed_at', null)
+        .order('opened_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data?.id) {
+        sessionChannel = supabase.channel(`pos-qr-scan-${data.id}`)
+          .on('broadcast', { event: 'customer-scanned' }, handler)
+          .subscribe();
+      }
+    };
+
+    setupSessionChannel();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(genericChannel);
+      if (sessionChannel) supabase.removeChannel(sessionChannel);
     };
   }, [onCustomerScanned, toast]);
 }
