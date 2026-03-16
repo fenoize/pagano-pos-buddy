@@ -55,6 +55,7 @@ const CustomerProfile = lazy(() => import('@/pages/customer/CustomerProfile'));
 // Staff Pages - Lazy loading para code splitting
 const Login = lazy(() => import("./pages/Login"));
 const QRScannerPage = lazy(() => import("@/pages/pos/QRScannerPage"));
+const QRReaderPage = lazy(() => import("@/pages/pos/QRReaderPage"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Clientes = lazy(() => import("@/pages/Clientes"));
 const NewSale = lazy(() => import("@/pages/NewSale"));
