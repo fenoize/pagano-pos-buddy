@@ -57,8 +57,8 @@ export default function CustomerCheckout() {
   const [runasToUse, setRunasToUse] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [processingRunas, setProcessingRunas] = useState(false);
-
-  // Fulfillment state
+  const [couponApplication, setCouponApplication] = useState<CouponApplication | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<'retiro' | 'delivery'>('retiro');
   const [customerAddresses, setCustomerAddresses] = useState<CustomerAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
