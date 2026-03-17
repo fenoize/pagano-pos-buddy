@@ -571,6 +571,25 @@ export default function CustomerCheckout() {
           </CardContent>
         </Card>
 
+        {/* Coupon Code */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ticket className="h-5 w-5" />
+              Cupón de descuento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CustomerCouponInput
+              cartItems={items}
+              subtotal={subtotal}
+              customerId={customer?.id}
+              deliveryFee={fulfillmentType === 'delivery' ? deliveryFee : 0}
+              onCouponApplied={handleCouponApplied}
+            />
+          </CardContent>
+        </Card>
+
         {/* Payment Method Selection */}
         <Card>
           <CardHeader>
