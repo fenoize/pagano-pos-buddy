@@ -168,6 +168,19 @@ export default function CustomerCart() {
           ))}
         </div>
 
+        {/* Coupon Input */}
+        <Card>
+          <CardContent className="p-4">
+            <CustomerCouponInput
+              cartItems={items}
+              subtotal={subtotal}
+              customerId={customer?.id}
+              deliveryFee={0}
+              onCouponApplied={handleCouponApplied}
+            />
+          </CardContent>
+        </Card>
+
         {/* Summary */}
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -175,10 +188,18 @@ export default function CustomerCart() {
               <span>Subtotal</span>
               <span className="font-semibold">{formatCurrency(subtotal)}</span>
             </div>
+            {couponDiscountProducts > 0 && (
+              <>
+                <div className="flex justify-between text-sm text-emerald-600">
+                  <span>Cupón ({appliedCoupon?.code})</span>
+                  <span>-{formatCurrency(couponDiscountProducts)}</span>
+                </div>
+              </>
+            )}
             <Separator />
             <div className="flex justify-between text-xl font-bold">
               <span>Total</span>
-              <span>{formatCurrency(subtotal)}</span>
+              <span>{formatCurrency(totalAfterCoupon)}</span>
             </div>
             <Button
               size="lg"
