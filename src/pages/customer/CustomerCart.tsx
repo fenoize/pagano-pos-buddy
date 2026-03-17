@@ -7,13 +7,27 @@ import { Separator } from '@/components/ui/separator';
 import { ShoppingCart, Trash2, Plus, Minus, Flame, ArrowRight } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
+import { CustomerCouponInput } from '@/components/customer/CustomerCouponInput';
 import { useCart } from '@/contexts/CartContext';
+import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { formatCurrency } from '@/lib/utils';
+import { CouponApplication, Coupon } from '@/types';
 
 export default function CustomerCart() {
   const navigate = useNavigate();
   const { items, itemCount, subtotal, removeItem, updateQuantity, getItemTotal } = useCart();
+  const { customer } = useCustomerAuth();
   const [canOrder, setCanOrder] = useState(true);
+  const [couponApplication, setCouponApplication] = useState<CouponApplication | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+
+  const couponDiscountProducts = couponApplication?.discount_products || 0;
+  const totalAfterCoupon = Math.max(0, subtotal - couponDiscountProducts);
+
+  const handleCouponApplied = (application: CouponApplication | null, coupon: Coupon | null) => {
+    setCouponApplication(application);
+    setAppliedCoupon(coupon);
+  };
 
   if (items.length === 0) {
     return (
@@ -154,6 +168,19 @@ export default function CustomerCart() {
           ))}
         </div>
 
+        {/* Coupon Input */}
+        <Card>
+          <CardContent className="p-4">
+            <CustomerCouponInput
+              cartItems={items}
+              subtotal={subtotal}
+              customerId={customer?.id}
+              deliveryFee={0}
+              onCouponApplied={handleCouponApplied}
+            />
+          </CardContent>
+        </Card>
+
         {/* Summary */}
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -161,10 +188,18 @@ export default function CustomerCart() {
               <span>Subtotal</span>
               <span className="font-semibold">{formatCurrency(subtotal)}</span>
             </div>
+            {couponDiscountProducts > 0 && (
+              <>
+                <div className="flex justify-between text-sm text-primary">
+                  <span>Cupón ({appliedCoupon?.code})</span>
+                  <span>-{formatCurrency(couponDiscountProducts)}</span>
+                </div>
+              </>
+            )}
             <Separator />
             <div className="flex justify-between text-xl font-bold">
               <span>Total</span>
-              <span>{formatCurrency(subtotal)}</span>
+              <span>{formatCurrency(totalAfterCoupon)}</span>
             </div>
             <Button
               size="lg"
