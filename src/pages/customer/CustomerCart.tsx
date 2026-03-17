@@ -190,7 +190,7 @@ export default function CustomerCart() {
             </div>
             {couponDiscountProducts > 0 && (
               <>
-                <div className="flex justify-between text-sm text-emerald-600">
+                <div className="flex justify-between text-sm text-primary">
                   <span>Cupón ({appliedCoupon?.code})</span>
                   <span>-{formatCurrency(couponDiscountProducts)}</span>
                 </div>
