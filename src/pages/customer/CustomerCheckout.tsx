@@ -13,6 +13,7 @@ import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2, Coins, Truck, Ma
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { RunasPaymentSection } from '@/components/customer/RunasPaymentSection';
+import { CustomerCouponInput } from '@/components/customer/CustomerCouponInput';
 import { useCart } from '@/contexts/CartContext';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
@@ -24,6 +25,7 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
+import { Coupon, CouponApplication } from '@/types';
 
 interface CustomerAddress {
   id: string;
