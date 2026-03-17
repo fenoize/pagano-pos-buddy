@@ -677,17 +677,25 @@ export default function CustomerCheckout() {
               ))}
             </div>
 
-            {subscriptionDiscountAmount > 0 && (
+            {(subscriptionDiscountAmount > 0 || couponDiscountProducts > 0) && (
               <>
                 <Separator />
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-emerald-600 font-medium">
-                  <span>Descuento suscripción ({subscriptionDiscount}%)</span>
-                  <span>-{formatCurrency(subscriptionDiscountAmount)}</span>
-                </div>
+                {subscriptionDiscountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                    <span>Descuento suscripción ({subscriptionDiscount}%)</span>
+                    <span>-{formatCurrency(subscriptionDiscountAmount)}</span>
+                  </div>
+                )}
+                {couponDiscountProducts > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                    <span>Cupón {appliedCoupon?.code}</span>
+                    <span>-{formatCurrency(couponDiscountProducts)}</span>
+                  </div>
+                )}
               </>
             )}
             
@@ -696,7 +704,14 @@ export default function CustomerCheckout() {
                 <Separator />
                 <div className="flex justify-between text-sm">
                   <span>Delivery</span>
-                  <span>{formatCurrency(deliveryFee)}</span>
+                  <span>
+                    {effectiveDeliveryFee < deliveryFee ? (
+                      <>
+                        <span className="line-through text-muted-foreground mr-2">{formatCurrency(deliveryFee)}</span>
+                        {formatCurrency(effectiveDeliveryFee)}
+                      </>
+                    ) : formatCurrency(deliveryFee)}
+                  </span>
                 </div>
               </>
             )}
