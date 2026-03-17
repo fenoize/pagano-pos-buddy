@@ -7,8 +7,11 @@ import { Separator } from '@/components/ui/separator';
 import { ShoppingCart, Trash2, Plus, Minus, Flame, ArrowRight } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
+import { CustomerCouponInput } from '@/components/customer/CustomerCouponInput';
 import { useCart } from '@/contexts/CartContext';
+import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { formatCurrency } from '@/lib/utils';
+import { CouponApplication, Coupon } from '@/types';
 
 export default function CustomerCart() {
   const navigate = useNavigate();
