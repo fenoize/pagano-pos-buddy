@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2, Coins, Truck, MapPin, Plus } from 'lucide-react';
+import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2, Coins, Truck, MapPin, Plus, Ticket } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { RunasPaymentSection } from '@/components/customer/RunasPaymentSection';
