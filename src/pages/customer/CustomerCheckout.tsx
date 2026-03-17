@@ -9,10 +9,11 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2, Coins, Truck, MapPin, Plus } from 'lucide-react';
+import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2, Coins, Truck, MapPin, Plus, Ticket } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { RunasPaymentSection } from '@/components/customer/RunasPaymentSection';
+import { CustomerCouponInput } from '@/components/customer/CustomerCouponInput';
 import { useCart } from '@/contexts/CartContext';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
@@ -24,6 +25,7 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
+import { Coupon, CouponApplication } from '@/types';
 
 interface CustomerAddress {
   id: string;
@@ -55,8 +57,8 @@ export default function CustomerCheckout() {
   const [runasToUse, setRunasToUse] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [processingRunas, setProcessingRunas] = useState(false);
-
-  // Fulfillment state
+  const [couponApplication, setCouponApplication] = useState<CouponApplication | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<'retiro' | 'delivery'>('retiro');
   const [customerAddresses, setCustomerAddresses] = useState<CustomerAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -188,9 +190,16 @@ export default function CustomerCheckout() {
     if (subscriptionRules.deliveryMode === 'percent') return Math.round(deliveryFee * (subscriptionRules.deliveryAmount || 0) / 100);
     return 0;
   })();
-  const subtotalAfterDiscount = Math.max(0, subtotal - subscriptionDiscountAmount);
-  const effectiveDeliveryFee = Math.max(0, deliveryFee - subscriptionDeliveryDiscount);
+  const couponDiscountProducts = couponApplication?.discount_products || 0;
+  const couponDiscountDelivery = couponApplication?.discount_delivery || 0;
+  const subtotalAfterDiscount = Math.max(0, subtotal - subscriptionDiscountAmount - couponDiscountProducts);
+  const effectiveDeliveryFee = Math.max(0, deliveryFee - subscriptionDeliveryDiscount - couponDiscountDelivery);
   const total = subtotalAfterDiscount + (fulfillmentType === 'delivery' ? effectiveDeliveryFee : 0);
+
+  const handleCouponApplied = (application: CouponApplication | null, coupon: Coupon | null) => {
+    setCouponApplication(application);
+    setAppliedCoupon(coupon);
+  };
 
   const handlePayment = async () => {
     if (!canOrder) {
@@ -562,6 +571,25 @@ export default function CustomerCheckout() {
           </CardContent>
         </Card>
 
+        {/* Coupon Code */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ticket className="h-5 w-5" />
+              Cupón de descuento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CustomerCouponInput
+              cartItems={items}
+              subtotal={subtotal}
+              customerId={customer?.id}
+              deliveryFee={fulfillmentType === 'delivery' ? deliveryFee : 0}
+              onCouponApplied={handleCouponApplied}
+            />
+          </CardContent>
+        </Card>
+
         {/* Payment Method Selection */}
         <Card>
           <CardHeader>
@@ -649,17 +677,25 @@ export default function CustomerCheckout() {
               ))}
             </div>
 
-            {subscriptionDiscountAmount > 0 && (
+            {(subscriptionDiscountAmount > 0 || couponDiscountProducts > 0) && (
               <>
                 <Separator />
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-emerald-600 font-medium">
-                  <span>Descuento suscripción ({subscriptionDiscount}%)</span>
-                  <span>-{formatCurrency(subscriptionDiscountAmount)}</span>
-                </div>
+                {subscriptionDiscountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                    <span>Descuento suscripción ({subscriptionDiscount}%)</span>
+                    <span>-{formatCurrency(subscriptionDiscountAmount)}</span>
+                  </div>
+                )}
+                {couponDiscountProducts > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                    <span>Cupón {appliedCoupon?.code}</span>
+                    <span>-{formatCurrency(couponDiscountProducts)}</span>
+                  </div>
+                )}
               </>
             )}
             
@@ -668,7 +704,14 @@ export default function CustomerCheckout() {
                 <Separator />
                 <div className="flex justify-between text-sm">
                   <span>Delivery</span>
-                  <span>{formatCurrency(deliveryFee)}</span>
+                  <span>
+                    {effectiveDeliveryFee < deliveryFee ? (
+                      <>
+                        <span className="line-through text-muted-foreground mr-2">{formatCurrency(deliveryFee)}</span>
+                        {formatCurrency(effectiveDeliveryFee)}
+                      </>
+                    ) : formatCurrency(deliveryFee)}
+                  </span>
                 </div>
               </>
             )}
