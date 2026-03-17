@@ -190,9 +190,16 @@ export default function CustomerCheckout() {
     if (subscriptionRules.deliveryMode === 'percent') return Math.round(deliveryFee * (subscriptionRules.deliveryAmount || 0) / 100);
     return 0;
   })();
-  const subtotalAfterDiscount = Math.max(0, subtotal - subscriptionDiscountAmount);
-  const effectiveDeliveryFee = Math.max(0, deliveryFee - subscriptionDeliveryDiscount);
+  const couponDiscountProducts = couponApplication?.discount_products || 0;
+  const couponDiscountDelivery = couponApplication?.discount_delivery || 0;
+  const subtotalAfterDiscount = Math.max(0, subtotal - subscriptionDiscountAmount - couponDiscountProducts);
+  const effectiveDeliveryFee = Math.max(0, deliveryFee - subscriptionDeliveryDiscount - couponDiscountDelivery);
   const total = subtotalAfterDiscount + (fulfillmentType === 'delivery' ? effectiveDeliveryFee : 0);
+
+  const handleCouponApplied = (application: CouponApplication | null, coupon: Coupon | null) => {
+    setCouponApplication(application);
+    setAppliedCoupon(coupon);
+  };
 
   const handlePayment = async () => {
     if (!canOrder) {
