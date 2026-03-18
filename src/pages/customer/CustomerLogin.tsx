@@ -408,11 +408,32 @@ export default function CustomerLogin() {
                     type="email"
                     placeholder="tu@email.com"
                     value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
+                    onChange={(e) => {
+                      setSignupEmail(e.target.value);
+                      setSignupEmailExists(false);
+                    }}
                     required
                     disabled={loading}
                     className="bg-muted/50"
                   />
+                  {signupEmailExists && (
+                    <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 space-y-2">
+                      <p className="text-sm text-destructive font-medium">
+                        Este correo ya está registrado
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          setShowForgotPassword(true);
+                        }}
+                      >
+                        Recuperar contraseña
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
