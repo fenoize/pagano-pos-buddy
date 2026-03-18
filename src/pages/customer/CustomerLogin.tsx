@@ -63,6 +63,7 @@ export default function CustomerLogin() {
   const [signupPhone, setSignupPhone] = useState('');
   const [signupBirthDate, setSignupBirthDate] = useState('');
   const [signupCaptchaToken, setSignupCaptchaToken] = useState<string | null>(null);
+  const [signupEmailExists, setSignupEmailExists] = useState(false);
 
   // ReCAPTCHA refs
   const loginCaptchaRef = useRef<ReCAPTCHA>(null);
