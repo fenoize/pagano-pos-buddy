@@ -28,8 +28,14 @@ export async function triggerOrderStatusNotification(
   // Customize message based on fulfillment type
   if (newStatus === 'Listo') {
     body = fulfillment === 'pickup' 
-      ? `La orden #${orderNumber} está lista para retirar en tienda.`
+      ? `La orden #${orderNumber} está lista para retirar en tienda. ¡Te esperamos!`
       : `La orden #${orderNumber} está lista y será despachada pronto.`;
+  } else if (newStatus === 'En camino') {
+    body = `La orden #${orderNumber} está en camino a tu ubicación.`;
+  } else if (newStatus === 'Entregado') {
+    body = fulfillment === 'pickup'
+      ? `La orden #${orderNumber} fue entregada. ¡Buen provecho!`
+      : `La orden #${orderNumber} ha sido entregada en tu dirección. ¡Buen provecho!`;
   }
 
   try {
