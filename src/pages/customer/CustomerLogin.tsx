@@ -131,13 +131,23 @@ export default function CustomerLogin() {
     const { error } = await signUp(signupEmail, signupPassword, signupNombre, signupApellido, signupPhone, signupBirthDate);
 
     if (error) {
-      toast.error('Error al registrarse', {
-        description: error.message,
-      });
+      const isDuplicate = error.message?.toLowerCase().includes('already registered') ||
+        error.message?.toLowerCase().includes('ya está registrado') ||
+        error.message?.toLowerCase().includes('user already registered') ||
+        error.message?.toLowerCase().includes('already been registered');
+      
+      if (isDuplicate) {
+        setSignupEmailExists(true);
+      } else {
+        toast.error('Error al registrarse', {
+          description: error.message,
+        });
+      }
       // Resetear CAPTCHA en caso de error
       signupCaptchaRef.current?.reset();
       setSignupCaptchaToken(null);
     } else {
+      setSignupEmailExists(false);
       toast.success('¡Cuenta creada exitosamente!', {
         description: 'Revisa tu correo para verificar tu cuenta',
       });
