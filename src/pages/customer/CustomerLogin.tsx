@@ -63,6 +63,7 @@ export default function CustomerLogin() {
   const [signupPhone, setSignupPhone] = useState('');
   const [signupBirthDate, setSignupBirthDate] = useState('');
   const [signupCaptchaToken, setSignupCaptchaToken] = useState<string | null>(null);
+  const [signupEmailExists, setSignupEmailExists] = useState(false);
 
   // ReCAPTCHA refs
   const loginCaptchaRef = useRef<ReCAPTCHA>(null);
@@ -130,13 +131,23 @@ export default function CustomerLogin() {
     const { error } = await signUp(signupEmail, signupPassword, signupNombre, signupApellido, signupPhone, signupBirthDate);
 
     if (error) {
-      toast.error('Error al registrarse', {
-        description: error.message,
-      });
+      const isDuplicate = error.message?.toLowerCase().includes('already registered') ||
+        error.message?.toLowerCase().includes('ya está registrado') ||
+        error.message?.toLowerCase().includes('user already registered') ||
+        error.message?.toLowerCase().includes('already been registered');
+      
+      if (isDuplicate) {
+        setSignupEmailExists(true);
+      } else {
+        toast.error('Error al registrarse', {
+          description: error.message,
+        });
+      }
       // Resetear CAPTCHA en caso de error
       signupCaptchaRef.current?.reset();
       setSignupCaptchaToken(null);
     } else {
+      setSignupEmailExists(false);
       toast.success('¡Cuenta creada exitosamente!', {
         description: 'Revisa tu correo para verificar tu cuenta',
       });
@@ -397,11 +408,32 @@ export default function CustomerLogin() {
                     type="email"
                     placeholder="tu@email.com"
                     value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
+                    onChange={(e) => {
+                      setSignupEmail(e.target.value);
+                      setSignupEmailExists(false);
+                    }}
                     required
                     disabled={loading}
                     className="bg-muted/50"
                   />
+                  {signupEmailExists && (
+                    <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 space-y-2">
+                      <p className="text-sm text-destructive font-medium">
+                        Este correo ya está registrado
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          setShowForgotPassword(true);
+                        }}
+                      >
+                        Recuperar contraseña
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
