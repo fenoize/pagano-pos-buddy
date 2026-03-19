@@ -128,7 +128,12 @@ export default function CustomerPaymentFailure() {
               )}
             </Button>
             <Button 
-              onClick={() => navigate('/menu')}
+              onClick={async () => {
+                if (orderId) {
+                  await supabase.from('orders').update({ status: 'Cancelado' }).eq('id', orderId);
+                }
+                navigate('/menu');
+              }}
               variant="outline"
               className="w-full"
             >
