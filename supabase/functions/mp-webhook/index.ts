@@ -127,10 +127,11 @@ serve(async (req) => {
         notes: `${currentOrder.notes || ''}\n\n⏳ Pago pendiente\nMP ID: ${payment.id}\nDetalle: ${payment.status_detail || 'En proceso'}`.trim()
       };
     } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
-      console.log('❌ Payment rejected/cancelled - mantener en PendientePago para permitir reintento');
-      // Mantener en PendientePago para permitir reintento
+      console.log('❌ Payment rejected/cancelled - cancelando orden');
+      newStatus = 'Cancelado';
       updateData = {
-        notes: `${currentOrder.notes || ''}\n\n❌ Pago ${payment.status === 'rejected' ? 'rechazado' : 'cancelado'}\nMP ID: ${payment.id}\nRazón: ${payment.status_detail || 'No especificada'}\n\n💡 El cliente puede reintentar el pago`.trim()
+        status: 'Cancelado',
+        notes: `${currentOrder.notes || ''}\n\n❌ Pago ${payment.status === 'rejected' ? 'rechazado' : 'cancelado'}\nMP ID: ${payment.id}\nRazón: ${payment.status_detail || 'No especificada'}`.trim()
       };
     } else if (payment.status === 'refunded' || payment.status === 'charged_back') {
       console.log('💸 Payment refunded or charged back - cancelar orden');
