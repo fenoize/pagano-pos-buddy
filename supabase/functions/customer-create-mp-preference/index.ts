@@ -90,7 +90,8 @@ serve(async (req) => {
     
     // 3. CREAR ORDEN EN DB con status='PendientePago' (pago no completado aún)
     const actualDeliveryFee = delivery_fee || 0;
-    const actualFulfillment = fulfillment === 'delivery' ? 'delivery' : 'pickup';
+    // Enum en DB: fulfillment_type = ('retiro', 'delivery')
+    const actualFulfillment = fulfillment === 'delivery' ? 'delivery' : 'retiro';
     const total = subtotal + actualDeliveryFee;
     
     const orderData = {
