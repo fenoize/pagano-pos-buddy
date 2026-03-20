@@ -225,6 +225,11 @@ export function useDeliveryCashPending() {
     if (user?.id) {
       fetchPendingCash();
     }
+
+    // Listen for cross-instance refetch events
+    const handler = () => { fetchPendingCash(); };
+    window.addEventListener('delivery-cash-updated', handler);
+    return () => window.removeEventListener('delivery-cash-updated', handler);
   }, [user?.id, fetchPendingCash]);
 
   return {
