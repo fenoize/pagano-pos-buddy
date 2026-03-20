@@ -560,7 +560,8 @@ export default function NewSale() {
       // Determine payment method - use methodName for accurate mapping
       const knownMethods: Record<string, string> = {
         efectivo: 'efectivo', pos: 'pos', mp: 'mp', transferencia: 'transferencia',
-        aplicacion: 'aplicacion', runas: 'runas', pendiente: 'pendiente', colacion: 'colacion'
+        aplicacion: 'aplicacion', runas: 'runas', pendiente: 'pendiente', colacion: 'colacion',
+        canje: 'canje'
       };
 
       const paymentMethod: string =

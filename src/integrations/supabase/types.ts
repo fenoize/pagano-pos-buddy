@@ -7007,6 +7007,7 @@ export type Database = {
         | "pendiente"
         | "transferencia"
         | "colacion"
+        | "canje"
       po_status:
         | "draft"
         | "sent"
@@ -7198,6 +7199,7 @@ export const Constants = {
         "pendiente",
         "transferencia",
         "colacion",
+        "canje",
       ],
       po_status: [
         "draft",
