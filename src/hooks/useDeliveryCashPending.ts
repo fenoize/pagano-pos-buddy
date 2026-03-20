@@ -163,6 +163,8 @@ export function useDeliveryCashPending() {
 
         toast.success('Efectivo depositado correctamente');
         await fetchPendingCash();
+        // Notify all other hook instances to refetch
+        window.dispatchEvent(new Event('delivery-cash-updated'));
         return true;
       } catch (error) {
         console.error('Error depositing cash:', error);
@@ -223,6 +225,11 @@ export function useDeliveryCashPending() {
     if (user?.id) {
       fetchPendingCash();
     }
+
+    // Listen for cross-instance refetch events
+    const handler = () => { fetchPendingCash(); };
+    window.addEventListener('delivery-cash-updated', handler);
+    return () => window.removeEventListener('delivery-cash-updated', handler);
   }, [user?.id, fetchPendingCash]);
 
   return {
