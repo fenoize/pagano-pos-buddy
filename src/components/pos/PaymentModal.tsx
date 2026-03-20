@@ -124,8 +124,9 @@ export default function PaymentModal({
     
     const remainingBalance = getRemainingBalance();
     
-    // Auto-llenar monto para métodos que requieren comprobante/operación
-    if (['pos', 'transferencia', 'aplicacion'].includes(currentMethod)) {
+    // Auto-llenar monto para métodos que no son efectivo ni runas ni pendiente
+    const methodConfig = getCurrentMethodConfig();
+    if (currentMethod !== 'efectivo' && currentMethod !== 'runas' && currentMethod !== 'pendiente' && !methodConfig?.requires_change) {
       setCurrentAmount(remainingBalance.toString());
     }
     
