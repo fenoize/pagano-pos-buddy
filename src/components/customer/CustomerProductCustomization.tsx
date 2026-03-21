@@ -277,7 +277,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     );
   };
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     const selectedExtrasArray = Object.entries(selectedExtras).map(([extraId, qty]) => {
       const extra = extras.find(e => e.id === extraId);
       return {
@@ -301,8 +301,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     const itemTotal = (finalBasePrice + extrasTotal) * quantity;
 
     if (itemTotal <= 0) {
-      const { toast } = await import('sonner');
-      toast.error('No se puede agregar un producto con valor $0');
+      toast({ title: 'No se puede agregar un producto con valor $0', variant: 'destructive' });
       return;
     }
 
