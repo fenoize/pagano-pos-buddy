@@ -161,12 +161,16 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
                </CardTitle>
              </CardHeader>
              <CardContent className="space-y-2 text-sm">
-               {order.items.map((item, idx) => (
-                 <div key={idx} className="flex justify-between">
-                   <span>{item.quantity}x {item.product_name}</span>
-                   <span>{formatCurrency(item.unit_price * item.quantity)}</span>
-                 </div>
-               ))}
+                {order.items.map((item, idx) => {
+                  const name = item.product_name || item.productName || item.name || 'Producto';
+                  const price = item.unit_price ?? item.basePrice ?? item.price ?? 0;
+                  return (
+                    <div key={idx} className="flex justify-between">
+                      <span>{item.quantity}x {name}</span>
+                      <span>{formatCurrency(price * item.quantity)}</span>
+                    </div>
+                  );
+                })}
                <Separator />
                <div className="flex justify-between font-bold">
                  <span>Total a cobrar:</span>
