@@ -277,7 +277,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     );
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     const selectedExtrasArray = Object.entries(selectedExtras).map(([extraId, qty]) => {
       const extra = extras.find(e => e.id === extraId);
       return {
