@@ -134,7 +134,12 @@ export function CashSessionReport() {
               const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
               const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
 
-              const expectedCash = session.opening_cash + totalCash + ingresos - egresos;
+              // Subtract delivery cash — drivers hold it, not the register
+              const deliveryCashFromOrders = (orders || [])
+                .filter(o => o.fulfillment === 'delivery' && (o.payment_efectivo || 0) > 0)
+                .reduce((sum, o) => sum + (o.payment_efectivo || 0), 0);
+              const cashInRegister = totalCash - deliveryCashFromOrders;
+              const expectedCash = session.opening_cash + cashInRegister + ingresos - egresos;
               const difference = (session.closing_cash || 0) - expectedCash;
 
               return {
