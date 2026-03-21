@@ -390,8 +390,18 @@ export function useCashSession() {
         }
       });
 
-      // expectedCash now excludes delivery cash that hasn't been deposited
-      const expectedCash = (session.opening_cash || 0) + totalCash + ingresos - egresos - totalCashDeliveryPending;
+      // Calculate cash from delivery orders (collected by drivers, not directly in register)
+      const deliveryCashFromOrders = (orders || [])
+        .filter(o => o.fulfillment === 'delivery' && (o.payment_efectivo || 0) > 0)
+        .reduce((sum, o) => sum + (o.payment_efectivo || 0), 0);
+
+      // expectedCash: totalCash includes ALL cash (retiro + delivery), but delivery cash
+      // goes to the driver first, not the register. We subtract it and add back only what
+      // was actually deposited (which appears as 'ingreso' movements).
+      // We also subtract the delivery deposit ingresos to avoid double-counting, since
+      // the deposit movements are already included in 'ingresos'.
+      const cashInRegister = totalCash - deliveryCashFromOrders; // only retiro/in-store cash
+      const expectedCash = (session.opening_cash || 0) + cashInRegister + ingresos - egresos;
 
       // Calculate runas totals from transactions (for reference)
       const totalRunasCanjeadas = runasTransactions?.filter(t => t.type === 'canje').reduce((sum, t) => sum + t.runas, 0) || 0;
