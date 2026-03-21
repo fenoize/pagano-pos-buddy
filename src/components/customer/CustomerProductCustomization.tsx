@@ -296,10 +296,19 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       };
     });
 
+    const finalBasePrice = useCombo ? comboTotal : getBasePrice();
+    const extrasTotal = selectedExtrasArray.reduce((sum, e) => sum + (e.price * (e.quantity || 1)), 0);
+    const itemTotal = (finalBasePrice + extrasTotal) * quantity;
+
+    if (itemTotal <= 0) {
+      toast({ title: 'No se puede agregar un producto con valor $0', variant: 'destructive' });
+      return;
+    }
+
     const orderItem: any = {
       productId: product.id!,
       productName: product.name,
-      basePrice: useCombo ? comboTotal : getBasePrice(),
+      basePrice: finalBasePrice,
       quantity,
       extras: selectedExtrasArray.length > 0 ? selectedExtrasArray : undefined,
       modifiers: selectedModifiersArray.length > 0 ? selectedModifiersArray : undefined,
