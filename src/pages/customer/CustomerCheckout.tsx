@@ -64,6 +64,7 @@ export default function CustomerCheckout() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [matchedZoneInfo, setMatchedZoneInfo] = useState<{ id: string; name: string } | null>(null);
 
   const mpEnabled = paymentSettings?.mp_payment_enabled ?? true;
   const runasEnabled = paymentSettings?.runas_payment_enabled ?? true;
