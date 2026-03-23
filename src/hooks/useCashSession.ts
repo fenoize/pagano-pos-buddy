@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CashSession, CashMovement } from '@/types';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { getNonRealSaleMethods } from '@/lib/paymentMethodUtils';
+import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
 import { usePermissions } from './usePermissions';
 import { 
   triggerCashSessionOpenNotification, 
