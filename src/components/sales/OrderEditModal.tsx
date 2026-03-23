@@ -541,18 +541,24 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                       <div>
                         {order.customer_id ? (
                           (() => {
-                            const customer = customers.find(c => c.id === order.customer_id);
+                            // Try inline customer from join first, then fall back to customers list
+                            const inlineCustomer = (order as any).customer;
+                            const listedCustomer = customers.find(c => c.id === order.customer_id);
+                            const customer = listedCustomer || inlineCustomer;
                             if (customer) {
+                              const displayName = customer.nombres 
+                                ? `${customer.nombres} ${customer.apellidos || ''}`.trim()
+                                : `${customer.name || ''} ${customer.apellido || ''}`.trim();
                               return (
                                 <button
                                   className="text-primary hover:underline text-left"
                                   onClick={() => console.log('Ver cliente:', customer.id)}
                                 >
-                                  {`${customer.name} ${customer.apellido || ''}`.trim()}
+                                  {displayName || order.nombre_resumen || 'Cliente'}
                                 </button>
                               );
                             }
-                            return <span className="text-muted-foreground">{order.nombre_resumen || 'Cliente'}</span>;
+                            return <span className="text-muted-foreground">{order.nombre_resumen || 'Cargando...'}</span>;
                           })()
                         ) : (
                           <span className="text-muted-foreground">{order.nombre_resumen || 'Sin cliente'}</span>
