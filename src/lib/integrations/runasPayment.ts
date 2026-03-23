@@ -10,6 +10,8 @@ export interface CreateRunasOrderParams {
   fulfillment?: 'retiro' | 'delivery';
   delivery_address?: string;
   delivery_fee?: number;
+  delivery_zone_id?: string;
+  delivery_zone_name?: string;
 }
 
 export interface CreateRunasOrderResponse {
