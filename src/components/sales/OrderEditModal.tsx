@@ -46,6 +46,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const [runasEditadas, setRunasEditadas] = useState(0);
   const [saldoRunasCliente, setSaldoRunasCliente] = useState(0);
   const [valorRunaActual, setValorRunaActual] = useState(0);
+  const [valorRunaCanje, setValorRunaCanje] = useState(600);
   const [belongsToClosedSession, setBelongsToClosedSession] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<any>(null);
   
