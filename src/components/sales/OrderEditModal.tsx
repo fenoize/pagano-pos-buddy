@@ -976,7 +976,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                                 <Icon className="w-4 h-4" />
                                 {method.display_name}:
                               </span>
-                              <span className="font-medium">{amount} runas ({formatCurrency(amount * valorRunaActual)})</span>
+                              <span className="font-medium">{Math.ceil(amount / (valorRunaActual || 1))} runas ({formatCurrency(amount)})</span>
                             </div>
                           );
                         }
