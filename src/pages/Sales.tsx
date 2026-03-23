@@ -742,7 +742,7 @@ export default function Sales() {
                             try {
                               const { data: fullOrder, error } = await supabase
                                 .from('orders')
-                                .select('*')
+                                .select('*, customer:customers(id, name, apellido, nombres, apellidos, phone, rut, email)')
                                 .eq('id', order.id)
                                 .single();
                               
