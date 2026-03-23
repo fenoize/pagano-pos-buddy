@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, startOfDay, endOfDay, format, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getNonRealSaleMethods } from '@/lib/paymentMethodUtils';
 
 export type PeriodPreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
 export type ChartInterval = 'day' | 'week' | 'month';
