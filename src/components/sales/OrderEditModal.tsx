@@ -46,6 +46,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const [runasEditadas, setRunasEditadas] = useState(0);
   const [saldoRunasCliente, setSaldoRunasCliente] = useState(0);
   const [valorRunaActual, setValorRunaActual] = useState(0);
+  const [valorRunaCanje, setValorRunaCanje] = useState(600);
   const [belongsToClosedSession, setBelongsToClosedSession] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<any>(null);
   
@@ -128,6 +129,14 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
           const value = await fetchRunaValue();
           setSaldoRunasCliente(balance);
           setValorRunaActual(value);
+          
+          // Fetch redemption value separately
+          const { data: rewData } = await supabase
+            .from('config')
+            .select('value')
+            .eq('key', 'runa_reward_value')
+            .single();
+          if (rewData) setValorRunaCanje(rewData.value as number);
         }
 
         // Check if order belongs to closed session
@@ -725,7 +734,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                                 order.delivery_comuna,
                                 order.delivery_reference || undefined
                               )
-                            : 'N/A'}
+                            : order.delivery_address || 'N/A'}
                         </div>
                       </div>
                       <Separator />
@@ -976,7 +985,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                                 <Icon className="w-4 h-4" />
                                 {method.display_name}:
                               </span>
-                              <span className="font-medium">{Math.ceil(amount / (valorRunaActual || 1))} runas ({formatCurrency(amount)})</span>
+                              <span className="font-medium">{Math.ceil(amount / (valorRunaCanje || 600))} runas ({formatCurrency(amount)})</span>
                             </div>
                           );
                         }
