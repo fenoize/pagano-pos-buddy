@@ -257,7 +257,9 @@ export default function CustomerCheckout() {
           notes: notes || 'Pedido desde app cliente',
           fulfillment: fulfillmentType,
           delivery_address: deliveryAddress,
-          delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0
+          delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0,
+          delivery_zone_id: fulfillmentType === 'delivery' ? matchedZoneInfo?.id : undefined,
+          delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined
         });
       } else if (selectedPaymentMethod === 'runas') {
         // Flujo de Runas (sin redirección)
