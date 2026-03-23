@@ -120,9 +120,12 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
       const startStr = dateRange.start.toISOString();
       const endStr = dateRange.end.toISOString();
 
+      // Get non-real payment methods
+      const nonRealMethods = await getNonRealSaleMethods();
+
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('items, total, created_at')
+        .select('items, total, created_at, payment_method, payment_runas')
         .gte('created_at', startStr)
         .lte('created_at', endStr)
         .neq('status', 'Cancelado');
