@@ -129,6 +129,14 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
           const value = await fetchRunaValue();
           setSaldoRunasCliente(balance);
           setValorRunaActual(value);
+          
+          // Fetch redemption value separately
+          const { data: rewData } = await supabase
+            .from('config')
+            .select('value')
+            .eq('key', 'runa_reward_value')
+            .single();
+          if (rewData) setValorRunaCanje(rewData.value as number);
         }
 
         // Check if order belongs to closed session
