@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, startOfDay, endOfDay, format, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getNonRealSaleMethods } from '@/lib/paymentMethodUtils';
 
 export type PeriodPreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
 export type ChartInterval = 'day' | 'week' | 'month';
@@ -119,24 +120,34 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
       const startStr = dateRange.start.toISOString();
       const endStr = dateRange.end.toISOString();
 
+      // Get non-real payment methods
+      const nonRealMethods = await getNonRealSaleMethods();
+
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('items, total, created_at')
+        .select('items, total, created_at, payment_method, payment_runas')
         .gte('created_at', startStr)
         .lte('created_at', endStr)
         .neq('status', 'Cancelado');
 
       if (ordersError) throw ordersError;
 
-      // Store raw orders for chart recalculation
-      setOrdersRaw(orders || []);
+      // Filter out orders paid entirely with non-real methods (runas, colación, canje)
+      // Keep mixto orders (they have partial real revenue)
+      const realOrders = (orders || []).filter(o => {
+        if (o.payment_method === 'mixto') return true;
+        return !nonRealMethods.has(o.payment_method);
+      });
+
+      // Store filtered orders for chart recalculation
+      setOrdersRaw(realOrders);
 
       // Process orders to aggregate by product
       const productMap = new Map<string, { name: string; category: string; quantity: number; revenue: number }>();
       const categorySet = new Set<string>();
       let totalRevenue = 0;
 
-      (orders || []).forEach((order: any) => {
+      realOrders.forEach((order: any) => {
         const itemsRaw = order.items;
         const items: any[] = Array.isArray(itemsRaw) ? itemsRaw : (typeof itemsRaw === 'string' ? JSON.parse(itemsRaw) : []);
 

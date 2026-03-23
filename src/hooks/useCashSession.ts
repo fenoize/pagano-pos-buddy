@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CashSession, CashMovement } from '@/types';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { getNonRealSaleMethods } from '@/lib/paymentMethodUtils';
+import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
 import { usePermissions } from './usePermissions';
 import { 
   triggerCashSessionOpenNotification, 
@@ -312,13 +312,8 @@ export function useCashSession() {
       // Get non-real payment methods
       const nonRealMethods = await getNonRealSaleMethods();
 
-      // Calculate totals - separate real sales from non-real
+      // Calculate totals - use standard utility for real revenue
       const totalSales = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
-      
-      // Only count payment columns from orders with real payment methods
-      const realOrders = (orders || []).filter(o => !nonRealMethods.has(o.payment_method));
-      const nonRealOrders = (orders || []).filter(o => nonRealMethods.has(o.payment_method) && o.payment_method !== 'mixto');
-      const nonRealTotal = nonRealOrders.reduce((sum, o) => sum + o.total, 0);
       
       const totalCash = orders?.reduce((sum, order) => sum + (order.payment_efectivo || 0), 0) || 0;
       const totalMP = orders?.reduce((sum, order) => sum + (order.payment_mp || 0), 0) || 0;
@@ -348,8 +343,8 @@ export function useCashSession() {
         ventasConRunas = orders?.filter(order => (order.payment_runas || 0) > 0).length || 0;
       }
 
-      // Adjust total sales to exclude runas value AND non-real payment methods
-      const totalSalesReal = totalSales - totalRunasAmount - nonRealTotal;
+      // Calculate real sales using standard utility (excludes runas, colación, canje, etc.)
+      const totalSalesReal = (orders || []).reduce((sum, order) => sum + getOrderRealRevenue(order, nonRealMethods), 0);
 
       const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
       const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
