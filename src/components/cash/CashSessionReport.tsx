@@ -28,6 +28,7 @@ import { CashSessionDetailButton } from './CashSessionDetailButton';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { ForceCloseSessionModal } from './ForceCloseSessionModal';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
