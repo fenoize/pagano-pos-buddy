@@ -144,6 +144,7 @@ export default function CustomerCheckout() {
 
     if (matchedZone) {
       setDeliveryFee(matchedZone.delivery_fee);
+      setMatchedZoneInfo({ id: matchedZone.id, name: matchedZone.name });
     } else {
       // No zone matched - use fallback or show error
       const fallbackFee = deliveryZones.filter(z => z.active).reduce(
@@ -151,6 +152,7 @@ export default function CustomerCheckout() {
         0
       );
       setDeliveryFee(fallbackFee);
+      setMatchedZoneInfo(null);
     }
   }, [fulfillmentType, selectedAddressId, deliveryZones, customerAddresses, findZoneByCoordinates]);
 
