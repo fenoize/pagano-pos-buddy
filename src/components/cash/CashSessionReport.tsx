@@ -104,6 +104,9 @@ export function CashSessionReport() {
       // Map users to sessions
       const userMap = new Map(usersData?.map(user => [user.id, user]) || []);
 
+      // Get non-real payment methods once
+      const nonRealMethods = await getNonRealSaleMethods();
+
       // Calculate summaries for closed sessions
       const sessionsWithSummary = await Promise.all(
         (sessionsData || []).map(async (session) => {
@@ -124,8 +127,8 @@ export function CashSessionReport() {
                 .select('*')
                 .eq('session_id', session.id);
 
-              // Calculate totals
-              const totalSales = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
+              // Calculate totals - only count real revenue
+              const totalSales = (orders || []).reduce((sum, order) => sum + getOrderRealRevenue(order, nonRealMethods), 0);
               const totalCash = orders?.reduce((sum, order) => sum + (order.payment_efectivo || 0), 0) || 0;
               const totalMP = orders?.reduce((sum, order) => sum + (order.payment_mp || 0), 0) || 0;
               const totalPOS = orders?.reduce((sum, order) => sum + (order.payment_pos || 0), 0) || 0;

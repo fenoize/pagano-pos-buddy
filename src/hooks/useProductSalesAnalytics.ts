@@ -147,7 +147,7 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
       const categorySet = new Set<string>();
       let totalRevenue = 0;
 
-      (orders || []).forEach((order: any) => {
+      realOrders.forEach((order: any) => {
         const itemsRaw = order.items;
         const items: any[] = Array.isArray(itemsRaw) ? itemsRaw : (typeof itemsRaw === 'string' ? JSON.parse(itemsRaw) : []);
 

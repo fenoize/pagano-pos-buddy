@@ -343,8 +343,8 @@ export function useCashSession() {
         ventasConRunas = orders?.filter(order => (order.payment_runas || 0) > 0).length || 0;
       }
 
-      // Adjust total sales to exclude runas value AND non-real payment methods
-      const totalSalesReal = totalSales - totalRunasAmount - nonRealTotal;
+      // Calculate real sales using standard utility (excludes runas, colación, canje, etc.)
+      const totalSalesReal = (orders || []).reduce((sum, order) => sum + getOrderRealRevenue(order, nonRealMethods), 0);
 
       const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
       const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
