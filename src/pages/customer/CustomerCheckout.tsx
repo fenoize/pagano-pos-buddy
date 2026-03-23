@@ -64,6 +64,7 @@ export default function CustomerCheckout() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [matchedZoneInfo, setMatchedZoneInfo] = useState<{ id: string; name: string } | null>(null);
 
   const mpEnabled = paymentSettings?.mp_payment_enabled ?? true;
   const runasEnabled = paymentSettings?.runas_payment_enabled ?? true;
@@ -143,6 +144,7 @@ export default function CustomerCheckout() {
 
     if (matchedZone) {
       setDeliveryFee(matchedZone.delivery_fee);
+      setMatchedZoneInfo({ id: matchedZone.id, name: matchedZone.name });
     } else {
       // No zone matched - use fallback or show error
       const fallbackFee = deliveryZones.filter(z => z.active).reduce(
@@ -150,6 +152,7 @@ export default function CustomerCheckout() {
         0
       );
       setDeliveryFee(fallbackFee);
+      setMatchedZoneInfo(null);
     }
   }, [fulfillmentType, selectedAddressId, deliveryZones, customerAddresses, findZoneByCoordinates]);
 
@@ -254,7 +257,9 @@ export default function CustomerCheckout() {
           notes: notes || 'Pedido desde app cliente',
           fulfillment: fulfillmentType,
           delivery_address: deliveryAddress,
-          delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0
+          delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0,
+          delivery_zone_id: fulfillmentType === 'delivery' ? matchedZoneInfo?.id : undefined,
+          delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined
         });
       } else if (selectedPaymentMethod === 'runas') {
         // Flujo de Runas (sin redirección)
@@ -268,7 +273,9 @@ export default function CustomerCheckout() {
           discount_amount: discountAmount,
           fulfillment: fulfillmentType,
           delivery_address: deliveryAddress,
-          delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0
+          delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0,
+          delivery_zone_id: fulfillmentType === 'delivery' ? matchedZoneInfo?.id : undefined,
+          delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined
         });
 
         if (result.success) {

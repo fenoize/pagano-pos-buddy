@@ -9,12 +9,15 @@ export interface CreateMPPreferenceParams {
     selectedExtras?: any[];
     selectedModifiers?: any[];
     selectedVariant?: any;
+    [key: string]: any;
   }>;
   customer_id?: string;
   notes?: string;
   fulfillment?: 'retiro' | 'delivery';
   delivery_address?: string;
   delivery_fee?: number;
+  delivery_zone_id?: string;
+  delivery_zone_name?: string;
 }
 
 export interface CreateMPPreferenceResponse {
