@@ -157,7 +157,7 @@ export async function createRunasOrder(
           delivery_fee: actualDeliveryFee,
           delivery_address: delivery_address || null,
           discount: discount_amount,
-          total: subtotal + actualDeliveryFee - discount_amount,
+          total: 0, // Pago 100% con runas = $0 para el cliente
           payment_efectivo: 0,
           payment_mp: 0,
           payment_pos: 0,
