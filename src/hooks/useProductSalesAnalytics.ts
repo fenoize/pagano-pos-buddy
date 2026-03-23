@@ -132,8 +132,15 @@ export function useProductSalesAnalytics(): UseProductSalesAnalyticsReturn {
 
       if (ordersError) throw ordersError;
 
-      // Store raw orders for chart recalculation
-      setOrdersRaw(orders || []);
+      // Filter out orders paid entirely with non-real methods (runas, colación, canje)
+      // Keep mixto orders (they have partial real revenue)
+      const realOrders = (orders || []).filter(o => {
+        if (o.payment_method === 'mixto') return true;
+        return !nonRealMethods.has(o.payment_method);
+      });
+
+      // Store filtered orders for chart recalculation
+      setOrdersRaw(realOrders);
 
       // Process orders to aggregate by product
       const productMap = new Map<string, { name: string; category: string; quantity: number; revenue: number }>();
