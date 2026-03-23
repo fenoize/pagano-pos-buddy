@@ -312,13 +312,8 @@ export function useCashSession() {
       // Get non-real payment methods
       const nonRealMethods = await getNonRealSaleMethods();
 
-      // Calculate totals - separate real sales from non-real
+      // Calculate totals - use standard utility for real revenue
       const totalSales = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
-      
-      // Only count payment columns from orders with real payment methods
-      const realOrders = (orders || []).filter(o => !nonRealMethods.has(o.payment_method));
-      const nonRealOrders = (orders || []).filter(o => nonRealMethods.has(o.payment_method) && o.payment_method !== 'mixto');
-      const nonRealTotal = nonRealOrders.reduce((sum, o) => sum + o.total, 0);
       
       const totalCash = orders?.reduce((sum, order) => sum + (order.payment_efectivo || 0), 0) || 0;
       const totalMP = orders?.reduce((sum, order) => sum + (order.payment_mp || 0), 0) || 0;
