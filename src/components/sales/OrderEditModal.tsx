@@ -734,7 +734,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                                 order.delivery_comuna,
                                 order.delivery_reference || undefined
                               )
-                            : 'N/A'}
+                            : order.delivery_address || 'N/A'}
                         </div>
                       </div>
                       <Separator />
