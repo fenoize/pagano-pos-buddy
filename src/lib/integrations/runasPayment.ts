@@ -162,6 +162,8 @@ export async function createRunasOrder(
           delivery_address: delivery_address || null,
           delivery_zone_id: delivery_zone_id || null,
           delivery_zone_name: delivery_zone_name || null,
+          delivery_lat: delivery_lat || null,
+          delivery_lng: delivery_lng || null,
           discount: discount_amount,
           total: 0, // Pago 100% con runas = $0 para el cliente
           payment_efectivo: 0,

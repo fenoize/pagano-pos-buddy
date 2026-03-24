@@ -43,6 +43,7 @@ function generateClickUrl(type: string, payload: Record<string, any>, baseUrl: s
   switch (type) {
     case 'order_status':
     case 'delivery_assigned':
+    case 'delivery_near':
       // Use order_id (UUID) for tracking page
       if (payload?.order_id) {
         return `${baseUrl}/track/${payload.order_id}`;
