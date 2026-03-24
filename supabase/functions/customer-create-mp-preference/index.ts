@@ -106,6 +106,8 @@ serve(async (req) => {
       delivery_address: delivery_address || null,
       delivery_zone_id: delivery_zone_id || null,
       delivery_zone_name: delivery_zone_name || null,
+      delivery_lat: delivery_lat || null,
+      delivery_lng: delivery_lng || null,
       status: 'PendientePago',  // ⚠️ CRÍTICO: No enviar a cocina hasta que se confirme el pago
       payment_method: 'mp',
       payment_mp: 0,
