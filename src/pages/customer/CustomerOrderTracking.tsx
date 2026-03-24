@@ -338,6 +338,16 @@ export default function CustomerOrderTracking() {
           </CardContent>
         </Card>
 
+        {/* Delivery Tracking Map - show when delivery + En camino */}
+        {order.fulfillment === 'delivery' && order.status === 'En camino' && mapboxToken && (
+          <DeliveryTrackingMap
+            orderId={order.id}
+            destinationLat={order.delivery_lat || null}
+            destinationLng={order.delivery_lng || null}
+            mapboxToken={mapboxToken}
+          />
+        )}
+
         {/* Progress Timeline */}
         {!isCompleted(order.status) && (
           <Card>
