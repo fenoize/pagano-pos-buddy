@@ -45,6 +45,7 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
 }) => {
   const [showDeliveredConfirm, setShowDeliveredConfirm] = useState(false);
   const [showCollectModal, setShowCollectModal] = useState(false);
+  const { isTracking, permissionState, lastError, startTracking, stopTracking, requestPermission } = useDeliveryTracking();
 
   const isPendingPayment = order.payment_method?.toLowerCase() === 'pendiente';
 
