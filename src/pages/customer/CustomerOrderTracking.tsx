@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { OrderFeedbackModal } from '@/components/customer/OrderFeedbackModal';
+import { DeliveryTrackingMap } from '@/components/customer/DeliveryTrackingMap';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { useRunasConfig } from '@/hooks/useRunasConfig';
