@@ -1777,6 +1777,84 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_tracking: {
+        Row: {
+          accuracy: number | null
+          created_at: string | null
+          delivery_person_id: string
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          near_destination_notified: boolean | null
+          order_id: string
+          tracking_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string | null
+          delivery_person_id: string
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          near_destination_notified?: boolean | null
+          order_id: string
+          tracking_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string | null
+          delivery_person_id?: string
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          near_destination_notified?: boolean | null
+          order_id?: string
+          tracking_active?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "delivery_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_zones: {
         Row: {
           active: boolean
@@ -3786,6 +3864,8 @@ export type Database = {
           delivery_delivered_at: string | null
           delivery_distance: number | null
           delivery_fee: number | null
+          delivery_lat: number | null
+          delivery_lng: number | null
           delivery_number: string | null
           delivery_payment_amount: number | null
           delivery_person_id: string | null
@@ -3827,6 +3907,8 @@ export type Database = {
           delivery_delivered_at?: string | null
           delivery_distance?: number | null
           delivery_fee?: number | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
           delivery_number?: string | null
           delivery_payment_amount?: number | null
           delivery_person_id?: string | null
@@ -3868,6 +3950,8 @@ export type Database = {
           delivery_delivered_at?: string | null
           delivery_distance?: number | null
           delivery_fee?: number | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
           delivery_number?: string | null
           delivery_payment_amount?: number | null
           delivery_person_id?: string | null
@@ -6912,6 +6996,10 @@ export type Database = {
         Returns: boolean
       }
       staff_has_permission: { Args: { perm: string }; Returns: boolean }
+      stop_delivery_tracking: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       sync_cash_movement_to_finance: {
         Args: {
           p_account_id: string
@@ -6948,6 +7036,17 @@ export type Database = {
           p_new_status: Database["public"]["Enums"]["order_status"]
           p_order_id: string
           p_user_id: string
+        }
+        Returns: Json
+      }
+      upsert_delivery_tracking: {
+        Args: {
+          p_accuracy?: number
+          p_driver_id: string
+          p_heading?: number
+          p_lat: number
+          p_lng: number
+          p_order_id: string
         }
         Returns: Json
       }
