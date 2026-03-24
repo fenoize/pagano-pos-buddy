@@ -15,7 +15,7 @@ const DEFAULT_APP_BASE_URL = 'https://app.paganosburger.cl';
 interface NotificationRequest {
   customer_id?: string;
   user_id?: string;
-  type: 'order_status' | 'delivery_assigned' | 'runas_earned' | 'marketing' | 'rider_new_order' | 'test';
+  type: 'order_status' | 'delivery_assigned' | 'runas_earned' | 'marketing' | 'rider_new_order' | 'delivery_near' | 'test';
   title: string;
   body: string;
   payload?: Record<string, any>;
