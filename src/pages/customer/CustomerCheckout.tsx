@@ -259,7 +259,9 @@ export default function CustomerCheckout() {
           delivery_address: deliveryAddress,
           delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0,
           delivery_zone_id: fulfillmentType === 'delivery' ? matchedZoneInfo?.id : undefined,
-          delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined
+          delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined,
+          delivery_lat: fulfillmentType === 'delivery' ? selectedAddress?.latitude : undefined,
+          delivery_lng: fulfillmentType === 'delivery' ? selectedAddress?.longitude : undefined
         });
       } else if (selectedPaymentMethod === 'runas') {
         // Flujo de Runas (sin redirección)
@@ -275,7 +277,9 @@ export default function CustomerCheckout() {
           delivery_address: deliveryAddress,
           delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0,
           delivery_zone_id: fulfillmentType === 'delivery' ? matchedZoneInfo?.id : undefined,
-          delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined
+          delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined,
+          delivery_lat: fulfillmentType === 'delivery' ? selectedAddress?.latitude : undefined,
+          delivery_lng: fulfillmentType === 'delivery' ? selectedAddress?.longitude : undefined
         });
 
         if (result.success) {

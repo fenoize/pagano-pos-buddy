@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { OrderFeedbackModal } from '@/components/customer/OrderFeedbackModal';
+import { DeliveryTrackingMap } from '@/components/customer/DeliveryTrackingMap';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { useRunasConfig } from '@/hooks/useRunasConfig';
@@ -43,6 +44,8 @@ interface OrderData {
   customer_id?: string;
   delivery_address?: string;
   delivery_comuna?: string;
+  delivery_lat?: number | null;
+  delivery_lng?: number | null;
   notes?: string;
   payment_method?: string;
   payment_runas?: number;
@@ -57,6 +60,7 @@ export default function CustomerOrderTracking() {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   
   // Feedback state
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -64,6 +68,19 @@ export default function CustomerOrderTracking() {
   const { getFeedbackForOrder } = useOrderFeedback();
   const { customer } = useCustomerAuth();
   const { runaRedemptionValue } = useRunasConfig();
+
+  // Fetch mapbox token for tracking map
+  useEffect(() => {
+    const fetchToken = async () => {
+      const { data } = await supabase
+        .from('delivery_settings')
+        .select('mapbox_token')
+        .limit(1)
+        .maybeSingle();
+      if (data?.mapbox_token) setMapboxToken(data.mapbox_token);
+    };
+    fetchToken();
+  }, []);
 
   // Check if order already has feedback
   const checkExistingFeedback = useCallback(async () => {
@@ -320,6 +337,16 @@ export default function CustomerOrderTracking() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Delivery Tracking Map - show when delivery + En camino */}
+        {order.fulfillment === 'delivery' && order.status === 'En camino' && mapboxToken && (
+          <DeliveryTrackingMap
+            orderId={order.id}
+            destinationLat={order.delivery_lat || null}
+            destinationLng={order.delivery_lng || null}
+            mapboxToken={mapboxToken}
+          />
+        )}
 
         {/* Progress Timeline */}
         {!isCompleted(order.status) && (

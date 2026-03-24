@@ -12,6 +12,8 @@ export interface CreateRunasOrderParams {
   delivery_fee?: number;
   delivery_zone_id?: string;
   delivery_zone_name?: string;
+  delivery_lat?: number | null;
+  delivery_lng?: number | null;
 }
 
 export interface CreateRunasOrderResponse {
@@ -101,7 +103,7 @@ export async function calculateRunasDiscount(runas: number): Promise<number> {
 export async function createRunasOrder(
   params: CreateRunasOrderParams
 ): Promise<CreateRunasOrderResponse> {
-  const { items, customer_id, notes, runas_to_use, discount_amount, fulfillment, delivery_address, delivery_fee, delivery_zone_id, delivery_zone_name } = params;
+  const { items, customer_id, notes, runas_to_use, discount_amount, fulfillment, delivery_address, delivery_fee, delivery_zone_id, delivery_zone_name, delivery_lat, delivery_lng } = params;
 
   try {
     // 1. Validar saldo de runas
@@ -160,6 +162,8 @@ export async function createRunasOrder(
           delivery_address: delivery_address || null,
           delivery_zone_id: delivery_zone_id || null,
           delivery_zone_name: delivery_zone_name || null,
+          delivery_lat: delivery_lat || null,
+          delivery_lng: delivery_lng || null,
           discount: discount_amount,
           total: 0, // Pago 100% con runas = $0 para el cliente
           payment_efectivo: 0,

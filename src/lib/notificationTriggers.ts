@@ -130,6 +130,39 @@ export async function triggerRiderNewOrderNotification(
  * Trigger notification for runas earned
  * Call this after successfully crediting runas to a customer
  */
+/**
+ * Trigger notification when delivery rider is near destination (500m)
+ */
+export async function triggerDeliveryNearNotification(
+  customerId: string,
+  orderId: string,
+  orderNumber: number
+): Promise<void> {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-push-notification', {
+      body: {
+        customer_id: customerId,
+        type: 'delivery_near',
+        title: '¡Tu pedido está muy cerca! 📍',
+        body: `Prepárate, tu repartidor llegará en minutos. Orden #${orderNumber}`,
+        payload: { order_id: orderId, order_number: orderNumber }
+      }
+    });
+
+    if (error) {
+      console.error('Error sending delivery near notification:', error);
+    } else {
+      console.log('Delivery near notification sent:', data);
+    }
+  } catch (error) {
+    console.error('Error triggering delivery near notification:', error);
+  }
+}
+
+/**
+ * Trigger notification for runas earned
+ * Call this after successfully crediting runas to a customer
+ */
 export async function triggerRunasEarnedNotification(
   customerId: string,
   runasAmount: number

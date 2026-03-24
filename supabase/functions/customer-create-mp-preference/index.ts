@@ -19,7 +19,7 @@ serve(async (req) => {
     );
     
     const body = await req.json();
-    const { items, customer_id, notes, fulfillment, delivery_address, delivery_fee, delivery_zone_id, delivery_zone_name } = body;
+    const { items, customer_id, notes, fulfillment, delivery_address, delivery_fee, delivery_zone_id, delivery_zone_name, delivery_lat, delivery_lng } = body;
     
     if (!items || !Array.isArray(items) || items.length === 0) {
       throw new Error('Items are required');
@@ -106,6 +106,8 @@ serve(async (req) => {
       delivery_address: delivery_address || null,
       delivery_zone_id: delivery_zone_id || null,
       delivery_zone_name: delivery_zone_name || null,
+      delivery_lat: delivery_lat || null,
+      delivery_lng: delivery_lng || null,
       status: 'PendientePago',  // ⚠️ CRÍTICO: No enviar a cocina hasta que se confirme el pago
       payment_method: 'mp',
       payment_mp: 0,

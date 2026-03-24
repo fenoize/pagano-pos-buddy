@@ -17,7 +17,7 @@ export interface NotificationEvent {
   id: string;
   customer_id?: string;
   user_id?: string;
-  type: 'order_status' | 'delivery_assigned' | 'runas_earned' | 'marketing' | 'rider_new_order';
+  type: 'order_status' | 'delivery_assigned' | 'runas_earned' | 'marketing' | 'rider_new_order' | 'delivery_near';
   title: string;
   body: string;
   payload: Record<string, any>;

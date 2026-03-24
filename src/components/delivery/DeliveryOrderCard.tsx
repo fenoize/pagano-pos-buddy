@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Phone, Map, TruckIcon, CheckCircle2, Clock, User, MapPin, 
-  MessageSquare, DollarSign, Wallet, CreditCard, Loader2, Package 
+  MessageSquare, DollarSign, Wallet, CreditCard, Loader2, Package,
+  Navigation
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -20,6 +21,8 @@ import { DeliveryOrder } from '@/hooks/useDeliveryOrders';
 import { MapProvider } from '@/hooks/useDeliverySettings';
 import { calculateDeliveryPaymentInfo } from '@/lib/deliveryHelpers';
 import { DeliveryCollectPaymentModal } from './DeliveryCollectPaymentModal';
+import { LocationPermissionHelper } from './LocationPermissionHelper';
+import { useDeliveryTracking } from '@/hooks/useDeliveryTracking';
 
 interface DeliveryOrderCardProps {
   order: DeliveryOrder;
@@ -42,6 +45,7 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
 }) => {
   const [showDeliveredConfirm, setShowDeliveredConfirm] = useState(false);
   const [showCollectModal, setShowCollectModal] = useState(false);
+  const { isTracking, permissionState, lastError, startTracking, stopTracking, requestPermission } = useDeliveryTracking();
 
   const isPendingPayment = order.payment_method?.toLowerCase() === 'pendiente';
 
@@ -104,7 +108,8 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
     }
   };
 
-  const handleDeliveredConfirm = () => {
+  const handleDeliveredConfirm = async () => {
+    await stopTracking();
     onMarkAsDelivered(order.id);
     setShowDeliveredConfirm(false);
   };
@@ -119,9 +124,16 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
 
   const handleCollectConfirm = async (method: string, cashGiven?: number) => {
     if (onCollectAndDeliver) {
+      await stopTracking();
       const success = await onCollectAndDeliver(order.id, method, cashGiven);
       if (success) setShowCollectModal(false);
     }
+  };
+
+  const handleMarkAsOnTheWay = async () => {
+    onMarkAsOnTheWay(order.id);
+    // Start tracking after marking as on the way
+    startTracking(order.id);
   };
 
   // Calcular información de pago
@@ -268,6 +280,42 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
             </div>
           )}
 
+          {/* Tracking Status & Permission */}
+          {order.status === 'Listo' && permissionState !== 'granted' && (
+            <LocationPermissionHelper
+              permissionState={permissionState}
+              onRequestPermission={requestPermission}
+              lastError={lastError}
+            />
+          )}
+
+          {/* Tracking indicator for En camino */}
+          {order.status === 'En camino' && (
+            <div className={`flex items-center gap-2 p-2 rounded-md text-sm ${
+              isTracking 
+                ? 'bg-green-50 text-green-800 dark:bg-green-950/20 dark:text-green-300' 
+                : 'bg-amber-50 text-amber-800 dark:bg-amber-950/20 dark:text-amber-300'
+            }`}>
+              <Navigation className={`w-4 h-4 ${isTracking ? 'text-green-600' : 'text-amber-600'}`} />
+              <span className="flex-1">
+                {isTracking 
+                  ? '📱 Compartiendo ubicación con el cliente'
+                  : lastError || '⚠️ No se está compartiendo la ubicación'
+                }
+              </span>
+              {isTracking && (
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              )}
+            </div>
+          )}
+
+          {/* iOS background warning */}
+          {order.status === 'En camino' && isTracking && /iPad|iPhone|iPod/.test(navigator.userAgent) && (
+            <p className="text-xs text-muted-foreground text-center">
+              En iPhone, mantén la app visible para compartir tu ubicación
+            </p>
+          )}
+
           {/* Botones de acción */}
           {!showInPreparation && (
             <div className="grid grid-cols-2 gap-2 pt-2">
@@ -295,7 +343,7 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
               {order.status === 'Listo' && (
                 <Button
                   className="col-span-2"
-                  onClick={() => onMarkAsOnTheWay(order.id)}
+                  onClick={handleMarkAsOnTheWay}
                   disabled={isUpdating}
                 >
                   {isUpdating ? (
