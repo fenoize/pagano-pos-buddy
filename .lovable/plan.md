@@ -1,52 +1,98 @@
 
 
-## Problem
+## Plan Final: Tracking en Tiempo Real para Delivery
 
-Orders paid with non-real payment methods (runas, colación, canje, etc.) are being counted as real revenue in several parts of the system. The `counts_as_real_sale` flag on `payment_methods` exists but isn't consistently applied everywhere.
+### Resumen
 
-### Where it's already working
-- `Dashboard.tsx` — uses `getNonRealSaleMethods()` + `getOrderRealRevenue()`
-- `CajeroDashboard.tsx` — same
-- `useActiveShiftStats.ts` — same
-- `useAllActiveShifts.ts` — same
-- `useCashSession.ts` — partially (uses nonRealMethods for some calcs but `totalSales` still sums all `order.total`)
+Permitir al cliente ver la ubicación del repartidor en un mapa en tiempo real cuando el pedido está "En camino", y enviar una notificación push automática cuando el repartidor esté a 500m del destino.
 
-### Where it's NOT filtering (the bugs)
+---
 
-1. **`CashSessionReport.tsx`** (Cierres Diarios list) — line 127: `totalSales = orders.reduce(sum + order.total)` counts ALL orders including runas/colación/canje
-2. **`useCashSession.ts`** — line 316: same issue, `totalSales` sums all totals, then subtracts runas separately but doesn't subtract colación/canje
-3. **`useProductSalesAnalytics.ts`** — line 122-127: fetches all non-cancelled orders without filtering by payment method, counts revenue from runas/colación orders
-4. **`finance_get_kpis` RPC** — SQL function sums all non-cancelled orders' totals without checking `counts_as_real_sale`
-5. **`finance_get_daily_data` RPC** — same issue
+### 1. Base de datos (1 migración)
 
-## Plan
+- **Agregar `delivery_lat` / `delivery_lng`** a la tabla `orders` para guardar coordenadas del destino.
+- **Crear tabla `delivery_tracking`** (solo última posición conocida, sin historial en V1):
+  - `order_id` (unique), `delivery_person_id`, `latitude`, `longitude`, `heading`, `accuracy`, `tracking_active`, `near_destination_notified`, timestamps.
+  - RLS: clientes solo leen tracking de sus propios pedidos.
+  - Realtime habilitado.
+- **RPC `upsert_delivery_tracking`** (SECURITY DEFINER): Upsert posición + cálculo Haversine de distancia al destino. Si <= 500m y no notificado, marca flag y retorna `should_notify_near = true`.
+- **RPC `stop_delivery_tracking`** (SECURITY DEFINER): Desactiva tracking al entregar.
 
-### 1. Fix `CashSessionReport.tsx` — filter totalSales
+### 2. Checkout: guardar coordenadas destino (3 archivos)
 
-Import and use `getNonRealSaleMethods` + `getOrderRealRevenue`. Fetch `payment_method` in the orders query. Calculate `totalSales` using only real revenue.
+- **`CustomerCheckout.tsx`**: Pasar `delivery_lat`/`delivery_lng` del address seleccionado.
+- **`runasPayment.ts`**: Aceptar y guardar coords. Fallback: si no hay coords, geocodificar via `mapbox-geocode` edge function.
+- **`mercadopago.ts` + edge function `customer-create-mp-preference`**: Idem, aceptar y persistir coords.
 
-### 2. Fix `useCashSession.ts` — use getOrderRealRevenue for totalSales
+### 3. Lado repartidor (3 archivos)
 
-Replace the current manual subtraction logic (totalSales - totalRunasAmount - nonRealTotal) with the standard `getOrderRealRevenue` utility for consistency.
+- **`useDeliveryTracking.ts`** (nuevo hook):
+  - `startTracking(orderId)`: Verifica permisos → `watchPosition` con `enableHighAccuracy`.
+  - Envía al RPC solo si desplazamiento >= **20m** o han pasado **15 segundos**.
+  - Si RPC retorna `should_notify_near = true` → dispara push `delivery_near`.
+  - `stopTracking()`: Limpia watch + llama `stop_delivery_tracking`.
 
-### 3. Fix `useProductSalesAnalytics.ts` — exclude non-real orders
+- **`DeliveryOrderCard.tsx`** (modificar):
+  - Al presionar "He retirado este pedido" → `startTracking(order.id)`.
+  - Al entregar → `stopTracking()`.
+  - Indicador visual de estado del tracking (verde = compartiendo, rojo = error).
+  - Mensaje: "Mantén la app abierta para compartir tu ubicación".
 
-Fetch `payment_method` in the orders query. Use `getNonRealSaleMethods()` to filter out orders paid entirely with non-real methods. For mixto orders, keep the items but note the revenue is already item-level (so this mostly means excluding full runas/colación/canje orders).
+- **`LocationPermissionHelper.tsx`** (nuevo):
+  - Detecta estado real del permiso con `navigator.permissions.query` + fallback `getCurrentPosition`.
+  - Si denegado: instrucciones específicas por plataforma (iOS Safari / Android Chrome / genérico).
+  - Si prompt: botón "Activar ubicación".
 
-### 4. Fix `finance_get_kpis` RPC — JOIN with payment_methods
+### 4. Lado cliente (3 archivos)
 
-Update the SQL to LEFT JOIN `payment_methods` and exclude orders where `counts_as_real_sale = false`. For `mixto` orders, subtract `payment_runas` from the total. This requires a new migration.
+- **`useDeliveryTrackingCustomer.ts`** (nuevo hook):
+  - Fetch inicial + suscripción Realtime a `delivery_tracking` filtrado por `order_id`.
+  - Retorna: posición rider, última actualización, isActive, isNear, isStale (>60s).
 
-### 5. Fix `finance_get_daily_data` RPC — same JOIN
+- **`DeliveryTrackingMap.tsx`** (nuevo componente):
+  - Mapa Mapbox con marker del repartidor (rotado por heading) y marker destino.
+  - Auto-fit bounds.
+  - Mensajes dinámicos (sin ETA exacto):
+    - "Tu repartidor va en camino 🛵"
+    - "¡Estamos muy cerca! Prepárate 📍"
+    - "Última ubicación disponible · hace X min" (si stale)
+  - UI premium, mobile-first.
 
-Apply the same filter to the daily data function.
+- **`CustomerOrderTracking.tsx`** (modificar):
+  - Mostrar `DeliveryTrackingMap` cuando el pedido es delivery y está "En camino".
 
-### Files to modify
+### 5. Notificaciones push (3 archivos)
 
-| File | Change |
-|------|--------|
-| `src/components/cash/CashSessionReport.tsx` | Use `getNonRealSaleMethods` + `getOrderRealRevenue` for totalSales |
-| `src/hooks/useCashSession.ts` | Replace manual subtraction with `getOrderRealRevenue` |
-| `src/hooks/useProductSalesAnalytics.ts` | Filter out non-real payment orders |
-| New migration SQL | Update `finance_get_kpis` and `finance_get_daily_data` to exclude non-real payment methods |
+- **`src/types/notifications.ts`**: Agregar `'delivery_near'` al type union.
+- **`src/lib/notificationTriggers.ts`**: Nueva función `triggerDeliveryNearNotification` — titulo: "¡Tu pedido está muy cerca! 📍", body: "Prepárate, tu repartidor llegará en minutos."
+- **`send-push-notification/index.ts`**: Agregar caso `delivery_near` en `generateClickUrl` → `/track/{order_id}`.
+
+### 6. Limitaciones V1 (explícitas en UI)
+
+- Tracking solo funciona con la app del repartidor en primer plano.
+- En iPhone/iOS, la ubicación no se comparte si la app entra en background.
+- Diseñado para 1 pedido activo por repartidor.
+- No hay historial de recorrido (solo última posición conocida).
+- La notificación de 500m se dispara desde el frontend del rider tras respuesta del RPC (preparado para migrar a 100% backend en V2).
+
+---
+
+### Archivos totales
+
+| Acción | Archivo |
+|--------|---------|
+| Migración | Tabla `delivery_tracking`, columnas `delivery_lat/lng` en orders, 2 RPCs, Realtime |
+| Modificar | `CustomerCheckout.tsx` — pasar lat/lng |
+| Modificar | `runasPayment.ts` — aceptar lat/lng + geocode fallback |
+| Modificar | `mercadopago.ts` — aceptar lat/lng |
+| Modificar | `customer-create-mp-preference/index.ts` — persistir lat/lng |
+| Nuevo | `src/hooks/useDeliveryTracking.ts` (rider) |
+| Nuevo | `src/hooks/useDeliveryTrackingCustomer.ts` (customer) |
+| Nuevo | `src/components/delivery/LocationPermissionHelper.tsx` |
+| Nuevo | `src/components/customer/DeliveryTrackingMap.tsx` |
+| Modificar | `src/components/delivery/DeliveryOrderCard.tsx` |
+| Modificar | `src/pages/customer/CustomerOrderTracking.tsx` |
+| Modificar | `src/types/notifications.ts` |
+| Modificar | `src/lib/notificationTriggers.ts` |
+| Modificar | `supabase/functions/send-push-notification/index.ts` |
 
