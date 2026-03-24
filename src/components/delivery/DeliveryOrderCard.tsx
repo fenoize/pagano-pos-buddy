@@ -124,9 +124,16 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
 
   const handleCollectConfirm = async (method: string, cashGiven?: number) => {
     if (onCollectAndDeliver) {
+      await stopTracking();
       const success = await onCollectAndDeliver(order.id, method, cashGiven);
       if (success) setShowCollectModal(false);
     }
+  };
+
+  const handleMarkAsOnTheWay = async () => {
+    onMarkAsOnTheWay(order.id);
+    // Start tracking after marking as on the way
+    startTracking(order.id);
   };
 
   // Calcular información de pago
