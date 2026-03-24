@@ -12,6 +12,8 @@ export interface CreateRunasOrderParams {
   delivery_fee?: number;
   delivery_zone_id?: string;
   delivery_zone_name?: string;
+  delivery_lat?: number | null;
+  delivery_lng?: number | null;
 }
 
 export interface CreateRunasOrderResponse {
