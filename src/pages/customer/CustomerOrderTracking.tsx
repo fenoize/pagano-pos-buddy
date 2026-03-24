@@ -44,6 +44,8 @@ interface OrderData {
   customer_id?: string;
   delivery_address?: string;
   delivery_comuna?: string;
+  delivery_lat?: number | null;
+  delivery_lng?: number | null;
   notes?: string;
   payment_method?: string;
   payment_runas?: number;
