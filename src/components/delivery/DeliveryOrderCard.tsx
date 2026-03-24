@@ -108,7 +108,8 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
     }
   };
 
-  const handleDeliveredConfirm = () => {
+  const handleDeliveredConfirm = async () => {
+    await stopTracking();
     onMarkAsDelivered(order.id);
     setShowDeliveredConfirm(false);
   };
