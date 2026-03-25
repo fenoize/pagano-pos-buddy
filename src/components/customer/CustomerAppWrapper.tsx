@@ -17,6 +17,7 @@ interface CustomerAppWrapperProps {
 export function CustomerAppWrapper({ children }: CustomerAppWrapperProps) {
   const { isLoading } = useCustomerAppBootstrap();
   const { showBanner, requestPermission, dismissBanner } = useCustomerOneSignal();
+  const { activeOrder } = useCustomerActiveOrder();
 
   return (
     <>

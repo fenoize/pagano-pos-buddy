@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 
-const ACTIVE_STATUSES = ['Pendiente', 'En preparacion', 'En pausa', 'Listo', 'En camino'];
+const ACTIVE_STATUSES = ['Pendiente', 'En preparación', 'En pausa', 'Listo', 'En camino', 'PendienteAceptacion', 'PendientePago'] as const;
 
 interface ActiveOrder {
   id: string;
