@@ -6180,41 +6180,77 @@ export type Database = {
       app_orders_kitchen: {
         Row: {
           created_at: string | null
+          customer_id: string | null
+          delivery_address: string | null
+          delivery_comuna: string | null
+          delivery_lat: number | null
+          delivery_lng: number | null
           fulfillment: Database["public"]["Enums"]["fulfillment_type"] | null
           id: string | null
           items: Json | null
           nombre_resumen: string | null
           notes: string | null
           order_number: number | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_runas: number | null
           status: Database["public"]["Enums"]["order_status"] | null
           total: number | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          customer_id?: string | null
+          delivery_address?: string | null
+          delivery_comuna?: string | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"] | null
           id?: string | null
           items?: Json | null
           nombre_resumen?: string | null
           notes?: string | null
           order_number?: number | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_runas?: number | null
           status?: Database["public"]["Enums"]["order_status"] | null
           total?: number | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          customer_id?: string | null
+          delivery_address?: string | null
+          delivery_comuna?: string | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"] | null
           id?: string | null
           items?: Json | null
           nombre_resumen?: string | null
           notes?: string | null
           order_number?: number | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_runas?: number | null
           status?: Database["public"]["Enums"]["order_status"] | null
           total?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       app_public_users: {
         Row: {
@@ -6673,6 +6709,10 @@ export type Database = {
           tax_percentage: number
           updated_at: string
         }[]
+      }
+      get_delivery_tracking_for_order: {
+        Args: { p_order_id: string }
+        Returns: Json
       }
       get_finance_accounts: {
         Args: never
