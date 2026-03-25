@@ -14,7 +14,9 @@ interface ActiveOrderBubbleProps {
 
 const STATUS_CONFIG: Record<string, { icon: typeof Clock; label: string; pulse?: boolean }> = {
   'Pendiente': { icon: Clock, label: 'Pendiente' },
-  'En preparacion': { icon: ChefHat, label: 'En preparación', pulse: true },
+  'PendienteAceptacion': { icon: Clock, label: 'Pendiente' },
+  'PendientePago': { icon: Clock, label: 'Pendiente de pago' },
+  'En preparación': { icon: ChefHat, label: 'En preparación', pulse: true },
   'En pausa': { icon: Pause, label: 'En pausa' },
   'Listo': { icon: Package, label: 'Listo para retiro' },
   'En camino': { icon: Truck, label: 'En camino', pulse: true },
