@@ -31,7 +31,7 @@ export const useDeliveryTrackingCustomer = (orderId: string | undefined) => {
     return Date.now() - new Date(lastUpdated).getTime() > STALE_THRESHOLD_MS;
   }, []);
 
-  // Initial fetch
+  // Initial fetch via RPC (bypasses RLS for custom auth customers)
   useEffect(() => {
     if (!orderId) {
       setData(d => ({ ...d, loading: false }));
@@ -40,10 +40,7 @@ export const useDeliveryTrackingCustomer = (orderId: string | undefined) => {
 
     const fetchTracking = async () => {
       const { data: tracking, error } = await supabase
-        .from('delivery_tracking')
-        .select('*')
-        .eq('order_id', orderId)
-        .maybeSingle();
+        .rpc('get_delivery_tracking_for_order', { p_order_id: orderId });
 
       if (error) {
         console.error('[CustomerTracking] Fetch error:', error);
@@ -52,14 +49,15 @@ export const useDeliveryTrackingCustomer = (orderId: string | undefined) => {
       }
 
       if (tracking) {
+        const t = tracking as any;
         setData({
-          riderLat: tracking.latitude,
-          riderLng: tracking.longitude,
-          heading: tracking.heading,
-          lastUpdated: tracking.updated_at,
-          isActive: tracking.tracking_active ?? false,
-          isNear: tracking.near_destination_notified ?? false,
-          isStale: updateStaleStatus(tracking.updated_at),
+          riderLat: t.latitude,
+          riderLng: t.longitude,
+          heading: t.heading,
+          lastUpdated: t.updated_at,
+          isActive: t.tracking_active ?? false,
+          isNear: t.near_destination_notified ?? false,
+          isStale: updateStaleStatus(t.updated_at),
           loading: false,
         });
       } else {
@@ -70,7 +68,7 @@ export const useDeliveryTrackingCustomer = (orderId: string | undefined) => {
     fetchTracking();
   }, [orderId, updateStaleStatus]);
 
-  // Realtime subscription
+  // Realtime subscription (works without RLS on filtered channels)
   useEffect(() => {
     if (!orderId) return;
 
@@ -94,7 +92,7 @@ export const useDeliveryTrackingCustomer = (orderId: string | undefined) => {
               lastUpdated: row.updated_at,
               isActive: row.tracking_active ?? false,
               isNear: row.near_destination_notified ?? false,
-              isStale: false, // Just received an update, not stale
+              isStale: false,
               loading: false,
             });
           }

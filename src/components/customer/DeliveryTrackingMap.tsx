@@ -23,8 +23,10 @@ export const DeliveryTrackingMap: React.FC<DeliveryTrackingMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const riderMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const riderInnerRef = useRef<HTMLDivElement | null>(null);
   const destMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const hasFittedBounds = useRef(false);
 
   // Initialize map
   useEffect(() => {
@@ -63,8 +65,10 @@ export const DeliveryTrackingMap: React.FC<DeliveryTrackingMapProps> = ({
       map.remove();
       mapRef.current = null;
       riderMarkerRef.current = null;
+      riderInnerRef.current = null;
       destMarkerRef.current = null;
       setMapReady(false);
+      hasFittedBounds.current = false;
     };
   }, [mapboxToken, destinationLat, destinationLng]);
 
@@ -75,10 +79,20 @@ export const DeliveryTrackingMap: React.FC<DeliveryTrackingMapProps> = ({
     const lngLat: [number, number] = [tracking.riderLng, tracking.riderLat];
 
     if (!riderMarkerRef.current) {
+      // Create marker with inner element for rotation (avoids conflicting with Mapbox's transform)
       const riderEl = document.createElement('div');
-      riderEl.innerHTML = '🛵';
-      riderEl.style.fontSize = '32px';
-      riderEl.style.transition = 'transform 0.5s ease';
+      riderEl.style.width = '36px';
+      riderEl.style.height = '36px';
+      riderEl.style.display = 'flex';
+      riderEl.style.alignItems = 'center';
+      riderEl.style.justifyContent = 'center';
+
+      const inner = document.createElement('div');
+      inner.innerHTML = '🛵';
+      inner.style.fontSize = '32px';
+      inner.style.transition = 'transform 0.5s ease';
+      riderEl.appendChild(inner);
+      riderInnerRef.current = inner;
 
       riderMarkerRef.current = new mapboxgl.Marker({ element: riderEl })
         .setLngLat(lngLat)
@@ -87,20 +101,22 @@ export const DeliveryTrackingMap: React.FC<DeliveryTrackingMapProps> = ({
       riderMarkerRef.current.setLngLat(lngLat);
     }
 
-    // Rotate by heading
-    if (tracking.heading != null && riderMarkerRef.current) {
-      const el = riderMarkerRef.current.getElement();
-      el.style.transform = `rotate(${tracking.heading}deg)`;
+    // Rotate inner element by heading
+    if (tracking.heading != null && riderInnerRef.current) {
+      riderInnerRef.current.style.transform = `rotate(${tracking.heading}deg)`;
     }
 
-    // Fit bounds to show both markers
-    if (destinationLat && destinationLng) {
-      const bounds = new mapboxgl.LngLatBounds();
-      bounds.extend(lngLat);
-      bounds.extend([destinationLng, destinationLat]);
-      mapRef.current.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 1000 });
-    } else {
-      mapRef.current.flyTo({ center: lngLat, zoom: 15, duration: 1000 });
+    // Fit bounds only on first position, then use flyTo
+    if (!hasFittedBounds.current) {
+      hasFittedBounds.current = true;
+      if (destinationLat && destinationLng) {
+        const bounds = new mapboxgl.LngLatBounds();
+        bounds.extend(lngLat);
+        bounds.extend([destinationLng, destinationLat]);
+        mapRef.current.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 1000 });
+      } else {
+        mapRef.current.flyTo({ center: lngLat, zoom: 15, duration: 1000 });
+      }
     }
   }, [tracking.riderLat, tracking.riderLng, tracking.heading, mapReady, destinationLat, destinationLng]);
 
@@ -126,7 +142,7 @@ export const DeliveryTrackingMap: React.FC<DeliveryTrackingMapProps> = ({
   const status = getStatusMessage();
 
   if (!tracking.isActive && !tracking.loading && !tracking.riderLat) {
-    return null; // No tracking data at all
+    return null;
   }
 
   return (
