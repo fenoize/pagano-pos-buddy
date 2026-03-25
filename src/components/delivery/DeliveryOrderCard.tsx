@@ -297,10 +297,17 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
           )}
 
           {/* Tracking Status & Permission */}
-          {order.status === 'Listo' && permissionState !== 'granted' && (
+          {/* Permission helper: show when not tracking and permission not granted */}
+          {(order.status === 'Listo' || (order.status === 'En camino' && !isTracking)) && permissionState !== 'granted' && (
             <LocationPermissionHelper
               permissionState={permissionState}
-              onRequestPermission={requestPermission}
+              onRequestPermission={async () => {
+                const granted = await requestPermission();
+                // If permission just granted and already En camino, auto-start
+                if (granted && order.status === 'En camino') {
+                  startTracking(order.id);
+                }
+              }}
               lastError={lastError}
             />
           )}
