@@ -1,82 +1,50 @@
 
 
-## Flow Review: Issues Found & Fixes
+## Floating Order Tracker Bubble (estilo Uber)
 
-### Issues Identified
+### Objetivo
+Mostrar un "globo" flotante persistente en toda la app del cliente cuando hay un pedido activo (estados: Pendiente, En preparacion, En pausa, Listo, En camino). Al tocarlo, navega a `/track/{orderId}`. Desaparece cuando el pedido es Entregado o Cancelado.
 
-**1. CRITICAL: `app_orders_kitchen` view missing fields for tracking**
+### Arquitectura
 
-`CustomerOrderTracking.tsx` fetches from `app_orders_kitchen`, but this view only returns: `id, order_number, status, created_at, updated_at, fulfillment, items, total, notes, nombre_resumen`.
+**1. Nuevo hook: `src/hooks/useCustomerActiveOrder.ts`**
+- Consulta `app_orders_kitchen` filtrando por `customer_id` del customer autenticado y estados activos (no Entregado, no Cancelado).
+- Suscripcion Realtime a la tabla `orders` filtrada por `customer_id` para detectar cambios de estado y nuevos pedidos.
+- Retorna: `{ activeOrder: { id, order_number, status, fulfillment } | null, loading }`.
+- Usa el customer del `CustomerAuthContext`.
 
-It does NOT include: `delivery_lat`, `delivery_lng`, `customer_id`, `delivery_address`, `delivery_comuna`, `payment_method`, `payment_runas`.
+**2. Nuevo componente: `src/components/customer/ActiveOrderBubble.tsx`**
+- Globo flotante posicionado `fixed` encima del bottom nav (`bottom: 5rem`), centrado horizontalmente.
+- Muestra: icono de estado animado, `#order_number`, estado actual, tipo (delivery/retiro).
+- Animacion de entrada (scale-in + fade-in). Pulso suave continuo para llamar la atencion.
+- Al tocar: `navigate('/track/{orderId}')`.
+- Boton de minimizar (X) que lo colapsa a un mini-circulo con el icono de estado. Tocar el mini-circulo lo expande de nuevo.
+- Tema oscuro (hereda `.customer-app`).
 
-Result: The `DeliveryTrackingMap` always receives `null` for destination coordinates, and the delivery address section never shows. The map will center on Santiago defaults instead of the actual destination.
+**3. Integrar en `CustomerAppWrapper.tsx`**
+- Renderizar `<ActiveOrderBubble />` dentro del wrapper, despues de `{children}`, para que aparezca en todas las paginas del cliente.
+- Solo se renderiza si hay un pedido activo y el customer esta autenticado.
 
-**Fix**: Update the `app_orders_kitchen` view via migration to include the missing columns: `delivery_lat`, `delivery_lng`, `customer_id`, `delivery_address`, `delivery_comuna`, `payment_method`, `payment_runas`.
+### Diseno del bubble
 
----
-
-**2. CRITICAL: `create_order_with_context` RPC doesn't persist `delivery_lat`/`delivery_lng`**
-
-The latest version of the RPC (migration `20260205042048`) does not include `delivery_lat` or `delivery_lng` in its INSERT statement. Orders created via runas payment pass these values but they are silently dropped.
-
-**Fix**: Update `create_order_with_context` to include `delivery_lat` and `delivery_lng` in the INSERT.
-
----
-
-**3. MODERATE: RLS on `delivery_tracking` won't work for customer reads**
-
-The RLS policy uses `auth.uid()`:
-```sql
-USING (order_id IN (SELECT id FROM orders WHERE customer_id = auth.uid()))
+```text
+┌─────────────────────────────────┐
+│  🔥  Pedido #2130               │
+│  En preparacion · Delivery      │
+│  Toca para ver detalle →        │
+└─────────────────────────────────┘
 ```
 
-But customers authenticate via `CustomerAuthContext` which uses a custom token system (not Supabase Auth). `auth.uid()` will be null, so the SELECT will always return empty.
+- Fondo `bg-primary` con texto `primary-foreground`.
+- Bordes redondeados (`rounded-2xl`), sombra elevada.
+- Icono segun estado: Clock (Pendiente), ChefHat (En preparacion), Package (Listo), Truck (En camino).
+- Animacion pulse en el icono cuando esta "En preparacion".
 
-**Fix**: The customer tracking hook should use an RPC (SECURITY DEFINER) to fetch tracking data, or we need to adjust the approach. Since the `useDeliveryTrackingCustomer` hook uses both a direct query and realtime subscription, we should:
-- Create an RPC `get_delivery_tracking_for_order(p_order_id uuid)` that validates ownership and returns tracking data
-- For realtime, since Supabase Realtime doesn't respect RLS by default on channels with filters, the subscription should still work. But the initial fetch won't. Use the RPC for the initial fetch.
+### Archivos
 
----
-
-**4. MODERATE: Realtime subscription on `app_orders_kitchen` (a VIEW) may not emit events**
-
-`CustomerOrderTracking.tsx` subscribes to realtime changes on `app_orders_kitchen`, which is a VIEW, not a table. Supabase Realtime only works on tables. The subscription likely does nothing.
-
-**Fix**: This is a pre-existing issue, not caused by the tracking feature. No change needed for this plan — the page already does a manual fetch. But worth noting.
-
----
-
-**5. MINOR: `DeliveryTrackingMap` marker rotation conflicts with Mapbox's marker transform**
-
-Line 93-94: `el.style.transform = \`rotate(${tracking.heading}deg)\`` — but Mapbox's `Marker` class also sets `transform` on the element for positioning. This will overwrite Mapbox's transform and break marker placement.
-
-**Fix**: Wrap the emoji in an inner `<div>` and rotate the inner element instead of the marker's root element.
-
----
-
-**6. MINOR: Map re-fits bounds on every position update**
-
-Every time the rider's position updates, `fitBounds` runs with animation. This creates a jarring experience if the customer is panning/zooming the map. 
-
-**Fix**: Only fit bounds on first position or when rider marker is first created. Use `flyTo` for subsequent updates with gentler zoom.
-
----
-
-### Implementation Plan
-
-**Migration (1 file)**:
-- Update `app_orders_kitchen` view to include `delivery_lat`, `delivery_lng`, `customer_id`, `delivery_address`, `delivery_comuna`, `payment_method`, `payment_runas`
-- Update `create_order_with_context` to include `delivery_lat`, `delivery_lng` in INSERT
-- Create RPC `get_delivery_tracking_for_order(p_order_id uuid)` — validates customer ownership, returns tracking row
-
-**Frontend fixes (2 files)**:
-- `useDeliveryTrackingCustomer.ts`: Use new RPC for initial fetch instead of direct table query
-- `DeliveryTrackingMap.tsx`: Fix marker rotation (use inner element), only fitBounds on first load
-
-| Action | File |
-|--------|------|
-| Migration | View update, RPC update, new RPC |
-| Modify | `src/hooks/useDeliveryTrackingCustomer.ts` |
-| Modify | `src/components/customer/DeliveryTrackingMap.tsx` |
+| Accion | Archivo |
+|--------|---------|
+| Nuevo | `src/hooks/useCustomerActiveOrder.ts` |
+| Nuevo | `src/components/customer/ActiveOrderBubble.tsx` |
+| Modificar | `src/components/customer/CustomerAppWrapper.tsx` — agregar bubble |
 
