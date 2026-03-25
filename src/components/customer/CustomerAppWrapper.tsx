@@ -26,6 +26,11 @@ export function CustomerAppWrapper({ children }: CustomerAppWrapperProps) {
         {children}
       </div>
       
+      {/* Active order floating bubble */}
+      {!isLoading && activeOrder && (
+        <ActiveOrderBubble order={activeOrder} />
+      )}
+      
       {/* OneSignal notification permission banner */}
       {!isLoading && showBanner && (
         <NotificationPermissionBanner
