@@ -1,0 +1,1 @@
+UPDATE orders SET status = 'Entregado', updated_at = now() WHERE id = '874636df-af24-436a-b0e8-f03efe115e61'
