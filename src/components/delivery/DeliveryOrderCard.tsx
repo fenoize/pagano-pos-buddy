@@ -45,7 +45,23 @@ export const DeliveryOrderCard: React.FC<DeliveryOrderCardProps> = ({
 }) => {
   const [showDeliveredConfirm, setShowDeliveredConfirm] = useState(false);
   const [showCollectModal, setShowCollectModal] = useState(false);
-  const { isTracking, permissionState, lastError, startTracking, stopTracking, requestPermission } = useDeliveryTracking();
+  const tracking = useDeliveryTracking();
+  const { isTracking, permissionState, lastError, startTracking, stopTracking, requestPermission } = tracking;
+
+  // Auto-start tracking when card mounts/updates with "En camino" status
+  // This handles the case where the component remounts after status change
+  const autoStartAttempted = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (
+      order.status === 'En camino' && 
+      !isTracking && 
+      permissionState === 'granted' &&
+      autoStartAttempted.current !== order.id
+    ) {
+      autoStartAttempted.current = order.id;
+      startTracking(order.id);
+    }
+  }, [order.status, order.id, isTracking, permissionState, startTracking]);
 
   const isPendingPayment = order.payment_method?.toLowerCase() === 'pendiente';
 
