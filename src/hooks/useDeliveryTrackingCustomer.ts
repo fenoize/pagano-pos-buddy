@@ -39,7 +39,7 @@ export const useDeliveryTrackingCustomer = (orderId: string | undefined) => {
     }
 
     const fetchTracking = async () => {
-      const { data: tracking, error } = await supabase
+      const { data: tracking, error } = await (supabase as any)
         .rpc('get_delivery_tracking_for_order', { p_order_id: orderId });
 
       if (error) {
