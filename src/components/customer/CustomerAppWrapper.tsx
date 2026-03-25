@@ -1,8 +1,10 @@
 import { ReactNode } from 'react';
 import { CustomerSplashScreen } from './CustomerSplashScreen';
 import { NotificationPermissionBanner } from './NotificationPermissionBanner';
+import { ActiveOrderBubble } from './ActiveOrderBubble';
 import { useCustomerAppBootstrap } from '@/hooks/useCustomerAppBootstrap';
 import { useCustomerOneSignal } from '@/hooks/useCustomerOneSignal';
+import { useCustomerActiveOrder } from '@/hooks/useCustomerActiveOrder';
 
 interface CustomerAppWrapperProps {
   children: ReactNode;
