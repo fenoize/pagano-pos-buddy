@@ -1,8 +1,10 @@
 import { ReactNode } from 'react';
 import { CustomerSplashScreen } from './CustomerSplashScreen';
 import { NotificationPermissionBanner } from './NotificationPermissionBanner';
+import { ActiveOrderBubble } from './ActiveOrderBubble';
 import { useCustomerAppBootstrap } from '@/hooks/useCustomerAppBootstrap';
 import { useCustomerOneSignal } from '@/hooks/useCustomerOneSignal';
+import { useCustomerActiveOrder } from '@/hooks/useCustomerActiveOrder';
 
 interface CustomerAppWrapperProps {
   children: ReactNode;
@@ -15,6 +17,7 @@ interface CustomerAppWrapperProps {
 export function CustomerAppWrapper({ children }: CustomerAppWrapperProps) {
   const { isLoading } = useCustomerAppBootstrap();
   const { showBanner, requestPermission, dismissBanner } = useCustomerOneSignal();
+  const { activeOrder } = useCustomerActiveOrder();
 
   return (
     <>
@@ -22,6 +25,11 @@ export function CustomerAppWrapper({ children }: CustomerAppWrapperProps) {
       <div className="customer-app" style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s' }}>
         {children}
       </div>
+      
+      {/* Active order floating bubble */}
+      {!isLoading && activeOrder && (
+        <ActiveOrderBubble order={activeOrder} />
+      )}
       
       {/* OneSignal notification permission banner */}
       {!isLoading && showBanner && (
