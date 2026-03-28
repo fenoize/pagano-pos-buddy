@@ -317,7 +317,7 @@ export function NivelesContent() {
                         <span className="font-medium">
                           {level.max_points ?? '∞'}
                         </span>
-                        {' runas'}
+                        {' puntos'}
                       </div>
                     </TableCell>
                     <TableCell>

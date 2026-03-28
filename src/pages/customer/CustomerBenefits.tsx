@@ -53,7 +53,7 @@ export default function CustomerBenefits() {
               <div>
                 <h2 className="text-2xl font-bold">{levelName}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {runas} runas acumuladas
+                  {puntos} puntos disponibles · {puntosLifetime} puntos totales
                 </p>
               </div>
               <Flame className="h-12 w-12 text-primary" />
@@ -62,7 +62,7 @@ export default function CustomerBenefits() {
             {customerLevel && (
               <LevelProgress
                 currentLevel={levelName}
-                currentRunas={runas}
+                currentPoints={puntosLifetime}
                 minPoints={minPoints}
                 nextLevelPoints={nextLevelPoints}
                 nextLevelName={nextLevelName}
