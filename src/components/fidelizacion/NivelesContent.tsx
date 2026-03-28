@@ -118,6 +118,7 @@ export function NivelesContent() {
       level_order: level.level_order,
       min_points: level.min_points,
       max_points: level.max_points?.toString() || '',
+      points_cost: level.points_cost || 0,
       icon: level.icon,
       color: level.color,
       description: level.description || '',
