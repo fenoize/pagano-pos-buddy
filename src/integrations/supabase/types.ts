@@ -7396,7 +7396,7 @@ export type Database = {
         | "Entregado"
         | "Cancelado"
         | "En camino"
-      origen_movimiento: "POS" | "Web" | "Manual" | "Edición"
+      origen_movimiento: "POS" | "Web" | "Manual" | "Edición" | "Campaña"
       payment_method:
         | "efectivo"
         | "mp"
@@ -7594,7 +7594,7 @@ export const Constants = {
         "Cancelado",
         "En camino",
       ],
-      origen_movimiento: ["POS", "Web", "Manual", "Edición"],
+      origen_movimiento: ["POS", "Web", "Manual", "Edición", "Campaña"],
       payment_method: [
         "efectivo",
         "mp",
