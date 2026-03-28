@@ -5,6 +5,7 @@ import type { User, Session } from '@supabase/supabase-js';
 import { STORAGE_KEYS, clearCustomerStorage } from '@/lib/storageKeys';
 import { setCustomerContext, clearDBContext } from '@/lib/dbContext';
 import { logoutOneSignal } from '@/lib/onesignal';
+import { evaluateRegistrationCampaigns } from '@/lib/campaignEvaluator';
 
 type Customer = Database['public']['Tables']['customers']['Row'];
 
@@ -129,20 +130,17 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Fallback: verificar si se creó el customer, si no, crearlo manualmente
       if (data.user) {
         try {
-          // Esperar un momento para que el trigger se ejecute
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Verificar si existe el customer
           const { data: existingCustomer, error: checkError } = await supabase
             .from('customers')
             .select('id')
             .eq('auth_user_id', data.user.id)
             .maybeSingle();
 
-          // Si no existe y no hubo error de permisos, intentar crearlo manualmente
           if (!existingCustomer && !checkError) {
             console.log('Trigger did not create customer, creating manually...');
-            const { error: insertError } = await supabase
+            const { data: newCustomer, error: insertError } = await supabase
               .from('customers')
               .insert({
                 auth_user_id: data.user.id,
@@ -154,16 +152,26 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 phone: phone,
                 fecha_nacimiento: birthDate || null,
                 estado_cliente: 'Activo',
-              });
+              })
+              .select('id')
+              .single();
 
             if (insertError) {
               console.error('Failed to create customer manually:', insertError);
-              // No lanzar error, el trigger podría haberlo creado después
+            } else if (newCustomer) {
+              // Evaluate registration campaigns for new customer
+              evaluateRegistrationCampaigns(newCustomer.id).catch(err =>
+                console.error('Error evaluating registration campaigns:', err)
+              );
             }
+          } else if (existingCustomer) {
+            // Customer created by trigger, evaluate registration campaigns
+            evaluateRegistrationCampaigns(existingCustomer.id).catch(err =>
+              console.error('Error evaluating registration campaigns:', err)
+            );
           }
         } catch (fallbackError) {
           console.error('Error in customer creation fallback:', fallbackError);
-          // No lanzar error, esto no debe bloquear el registro
         }
       }
 

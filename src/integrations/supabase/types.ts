@@ -3027,6 +3027,132 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_campaign_claims: {
+        Row: {
+          campaign_id: string
+          claimed_at: string
+          customer_id: string
+          id: string
+          order_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          claimed_at?: string
+          customer_id: string
+          id?: string
+          order_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          claimed_at?: string
+          customer_id?: string
+          id?: string
+          order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_campaign_claims_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_campaign_claims_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "loyalty_campaign_claims_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_campaign_claims_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_campaign_claims_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_campaign_claims_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "loyalty_campaign_claims_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_campaign_claims_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_campaigns: {
+        Row: {
+          campaign_type: Database["public"]["Enums"]["loyalty_campaign_type"]
+          conditions: Json
+          created_at: string
+          description: string | null
+          ends_at: string
+          id: string
+          is_active: boolean
+          max_claims: number | null
+          one_per_customer: boolean
+          reward_runas: number
+          starts_at: string
+          title: string
+        }
+        Insert: {
+          campaign_type: Database["public"]["Enums"]["loyalty_campaign_type"]
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          ends_at: string
+          id?: string
+          is_active?: boolean
+          max_claims?: number | null
+          one_per_customer?: boolean
+          reward_runas: number
+          starts_at: string
+          title: string
+        }
+        Update: {
+          campaign_type?: Database["public"]["Enums"]["loyalty_campaign_type"]
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          ends_at?: string
+          id?: string
+          is_active?: boolean
+          max_claims?: number | null
+          one_per_customer?: boolean
+          reward_runas?: number
+          starts_at?: string
+          title?: string
+        }
+        Relationships: []
+      }
       manufacturing_formula_ingredients: {
         Row: {
           created_at: string
@@ -6465,6 +6591,14 @@ export type Database = {
         Args: { p_badge_code: string; p_customer_id: string }
         Returns: boolean
       }
+      check_and_claim_campaign: {
+        Args: {
+          p_campaign_id: string
+          p_customer_id: string
+          p_order_id?: string
+        }
+        Returns: boolean
+      }
       check_notification_allowed: {
         Args: { p_customer_id: string; p_type: string }
         Returns: boolean
@@ -6566,6 +6700,14 @@ export type Database = {
           p_warehouse_id: string
         }
         Returns: string
+      }
+      evaluate_campaigns_for_order: {
+        Args: { p_customer_id: string; p_order_id: string }
+        Returns: Json
+      }
+      evaluate_registration_campaigns: {
+        Args: { p_customer_id: string }
+        Returns: Json
       }
       finance_generate_closure: {
         Args: {
@@ -7125,6 +7267,11 @@ export type Database = {
       cash_movement_type: "ingreso" | "egreso"
       estado_cliente: "Activo" | "Inactivo" | "Bloqueado"
       fulfillment_type: "retiro" | "delivery"
+      loyalty_campaign_type:
+        | "registration"
+        | "product_purchase"
+        | "accumulated_spend"
+        | "first_purchase"
       order_status:
         | "PendientePago"
         | "PendienteAceptacion"
@@ -7316,6 +7463,12 @@ export const Constants = {
       cash_movement_type: ["ingreso", "egreso"],
       estado_cliente: ["Activo", "Inactivo", "Bloqueado"],
       fulfillment_type: ["retiro", "delivery"],
+      loyalty_campaign_type: [
+        "registration",
+        "product_purchase",
+        "accumulated_spend",
+        "first_purchase",
+      ],
       order_status: [
         "PendientePago",
         "PendienteAceptacion",
