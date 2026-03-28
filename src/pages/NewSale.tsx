@@ -26,6 +26,7 @@ import { usePOSConfig } from '@/hooks/usePOSConfig';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { checkAndAwardBadges } from '@/lib/badgeAwarder';
+import { evaluateCampaignsForOrder } from '@/lib/campaignEvaluator';
 import { RecentOrdersModal } from '@/components/sales/RecentOrdersModal';
 
 export default function NewSale() {
