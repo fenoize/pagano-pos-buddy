@@ -20,6 +20,7 @@ import CustomerRunes from '@/components/clientes/CustomerRunes';
 import CustomerRunaSubscriptions from '@/components/clientes/CustomerRunaSubscriptions';
 import CustomerDiscountSubscription from '@/components/clientes/CustomerDiscountSubscription';
 import CustomerOrders from '@/components/clientes/CustomerOrders';
+import CustomerLevelsBadges from '@/components/clientes/CustomerLevelsBadges';
 import DeleteCustomerModal from '@/components/clientes/DeleteCustomerModal';
 import { CustomerAuthManagementModal } from '@/components/clientes/CustomerAuthManagementModal';
 
