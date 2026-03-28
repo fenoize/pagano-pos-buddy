@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
+import { useCustomerLevel } from '@/hooks/useCustomerLevel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { 
   User, 
   ShoppingBag, 
@@ -20,7 +23,9 @@ import {
   Save,
   CheckCircle,
   LogOut,
-  QrCode
+  QrCode,
+  Crown,
+  TrendingUp
 } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { configuredSupabase } from '@/lib/supabaseClient';
