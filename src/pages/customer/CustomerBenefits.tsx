@@ -30,6 +30,8 @@ export default function CustomerBenefits() {
   }
 
   const runas = customerLevel?.cantidad_runas || customer?.cantidad_runas || 0;
+  const puntos = customerLevel?.puntos || 0;
+  const puntosLifetime = customerLevel?.puntos_lifetime || 0;
   const levelName = customerLevel?.level_name || 'Bronce';
   const minPoints = customerLevel?.min_points || 0;
   const nextLevelPoints = customerLevel?.next_level_points;
