@@ -21,6 +21,7 @@ interface Level {
   level_order: number;
   min_points: number;
   max_points: number | null;
+  points_cost: number;
   icon: string;
   color: string;
   description: string | null;
