@@ -105,7 +105,8 @@ export function CustomerCouponInput({
         subtotal,
         customerId ? { id: customerId } : undefined,
         undefined, // no staff role
-        [] // no existing coupons
+        [], // no existing coupons
+        deliveryFee
       );
 
       if (!result.valid) {
