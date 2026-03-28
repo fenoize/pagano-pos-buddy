@@ -462,6 +462,14 @@ const App = () => (
                 </StaffProtectedRoute>
               } />
               
+              <Route path="/pos/fidelizacion/campanas" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <FidelizacionHub />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
               <Route path="/pos/niveles" element={
                 <Navigate to="/pos/fidelizacion/niveles" replace />
               } />

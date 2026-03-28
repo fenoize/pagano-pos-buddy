@@ -87,6 +87,7 @@ const fidelizacionItems = [
   { title: "Runas", url: "/pos/fidelizacion/runas", icon: Star, roles: ['Administrador'] },
   { title: "Niveles", url: "/pos/fidelizacion/niveles", icon: TrendingUpIcon, roles: ['Administrador'] },
   { title: "Insignias", url: "/pos/fidelizacion/insignias", icon: Award, roles: ['Administrador'] },
+  { title: "Campañas", url: "/pos/fidelizacion/campanas", icon: Megaphone, roles: ['Administrador'] },
   { title: "Feedback", url: "/pos/fidelizacion/feedback", icon: MessageSquare, roles: ['Administrador'] },
 ];
 
