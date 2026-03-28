@@ -3,12 +3,41 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.3.4 (beta)";
- export const APP_BUILD_DATE = "2026-02-21";
+ export const APP_VERSION = "1.4.0";
+ export const APP_BUILD_DATE = "2026-03-28";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.4.0",
+     date: "2026-03-28",
+     changes: [
+       "Nuevo sistema de Puntos de Progresión: los clientes acumulan 1 punto por cada $100 gastados en ventas reales",
+       "Separación completa de Runas (moneda de canje) y Puntos (progresión de nivel)",
+       "Los puntos se consumen al subir de nivel según el costo definido por cada rango",
+       "Nuevo tab 'Niveles e Insignias' en el modal de Clientes del panel admin",
+       "Gestión admin de puntos: agregar, restar y forzar nivel manualmente",
+       "Gestión admin de insignias: otorgar y eliminar insignias desde el panel",
+       "Historial de movimientos de puntos visible en el panel admin",
+       "Campañas de Fidelización: sistema de desafíos de marketing con recompensas en runas",
+       "Soporte para campañas de tipo: registro, compra de productos, monto acumulado y primera compra",
+       "Evaluación automática de campañas tras confirmar pedido o registrar cliente",
+       "Gestión de campañas desde el módulo de Fidelización (solo administradores)",
+       "Visualización de nivel, puntos y barra de progreso en el perfil del cliente (app)",
+       "Indicador de Runas, Nivel y Puntos en la pantalla de inicio del cliente",
+       "Barra de progreso al siguiente nivel basada en puntos en el portal del cliente",
+       "Mejoras de seguridad en RLS para insignias otorgadas y log de puntos",
+     ]
+   },
+   {
+     version: "1.3.5 (beta)",
+     date: "2026-03-15",
+     changes: [
+       "Mejoras de estabilidad y correcciones menores",
+       "Preparación de infraestructura para el sistema de puntos y campañas"
+     ]
+   },
    {
      version: "1.3.4 (beta)",
      date: "2026-02-21",
