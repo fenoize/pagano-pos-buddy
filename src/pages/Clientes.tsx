@@ -20,6 +20,7 @@ import CustomerRunes from '@/components/clientes/CustomerRunes';
 import CustomerRunaSubscriptions from '@/components/clientes/CustomerRunaSubscriptions';
 import CustomerDiscountSubscription from '@/components/clientes/CustomerDiscountSubscription';
 import CustomerOrders from '@/components/clientes/CustomerOrders';
+import CustomerLevelsBadges from '@/components/clientes/CustomerLevelsBadges';
 import DeleteCustomerModal from '@/components/clientes/DeleteCustomerModal';
 import { CustomerAuthManagementModal } from '@/components/clientes/CustomerAuthManagementModal';
 
@@ -479,10 +480,11 @@ export default function Clientes() {
           
           {selectedCustomer && (
             <Tabs defaultValue="datos" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="datos">Datos</TabsTrigger>
                 <TabsTrigger value="direcciones">Direcciones</TabsTrigger>
                 <TabsTrigger value="runas">Runas</TabsTrigger>
+                <TabsTrigger value="niveles">Niveles</TabsTrigger>
                 <TabsTrigger value="suscripciones">Suscripciones</TabsTrigger>
                 <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
               </TabsList>
@@ -506,6 +508,10 @@ export default function Clientes() {
                     setSelectedCustomer(prev => prev ? { ...prev, cantidad_runas: newBalance } : prev);
                   }}
                 />
+              </TabsContent>
+
+              <TabsContent value="niveles" className="space-y-4">
+                <CustomerLevelsBadges customerId={selectedCustomer.id} />
               </TabsContent>
               
               <TabsContent value="suscripciones" className="space-y-6">
