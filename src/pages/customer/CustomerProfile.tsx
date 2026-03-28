@@ -359,6 +359,57 @@ export default function CustomerProfile() {
           </CardContent>
         </Card>
 
+        {/* Level & Points */}
+        {levelData && (
+          <Card className="border-border bg-card">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Crown className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-foreground">{levelData.level_name || 'Sin nivel'}</p>
+                    <p className="text-xs text-muted-foreground">Nivel actual</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-primary">{(levelData.puntos || 0).toLocaleString('es-CL')}</p>
+                  <p className="text-xs text-muted-foreground">puntos</p>
+                </div>
+              </div>
+
+              {levelData.next_level_name && levelData.next_level_points ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{levelData.level_name}</span>
+                    <span>{levelData.next_level_name}</span>
+                  </div>
+                  <Progress 
+                    value={Math.min(100, (((levelData.puntos || 0) - (levelData.min_points || 0)) / ((levelData.next_level_points) - (levelData.min_points || 0))) * 100)} 
+                    className="h-2" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">
+                    Faltan <strong>{Math.max(0, (levelData.next_level_points) - (levelData.puntos || 0)).toLocaleString('es-CL')}</strong> puntos para {levelData.next_level_name}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-center text-muted-foreground">🎉 ¡Nivel máximo alcanzado!</p>
+              )}
+
+              <div className="flex items-center justify-between pt-1 border-t border-border">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <TrendingUp className="h-3 w-3" />
+                  <span>Puntos históricos: <strong>{(levelData.puntos_lifetime || 0).toLocaleString('es-CL')}</strong></span>
+                </div>
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => navigate('/my-badges')}>
+                  Ver beneficios <ChevronRight className="h-3 w-3 ml-1" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* QR Code Button */}
         <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
           <CardContent className="p-0">
