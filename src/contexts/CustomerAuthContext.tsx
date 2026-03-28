@@ -5,6 +5,7 @@ import type { User, Session } from '@supabase/supabase-js';
 import { STORAGE_KEYS, clearCustomerStorage } from '@/lib/storageKeys';
 import { setCustomerContext, clearDBContext } from '@/lib/dbContext';
 import { logoutOneSignal } from '@/lib/onesignal';
+import { evaluateRegistrationCampaigns } from '@/lib/campaignEvaluator';
 
 type Customer = Database['public']['Tables']['customers']['Row'];
 
