@@ -119,11 +119,12 @@ export default function CustomerPortal() {
   }
 
   const runas = customerLevel?.cantidad_runas || customer.cantidad_runas || 0;
-  const levelName = customerLevel?.level_name || 'Bronce';
+  const puntos = customerLevel?.puntos || customer.puntos || 0;
+  const levelName = customerLevel?.level_name || 'Iniciado';
   const nextLevelPoints = customerLevel?.next_level_points;
   const minPoints = customerLevel?.min_points || 0;
   const progressPercent = nextLevelPoints
-    ? Math.min(100, ((runas - minPoints) / (nextLevelPoints - minPoints)) * 100)
+    ? Math.min(100, ((puntos - minPoints) / (nextLevelPoints - minPoints)) * 100)
     : 100;
 
   const handlePromoAction = async (promo: any, event?: React.MouseEvent) => {
@@ -219,24 +220,34 @@ export default function CustomerPortal() {
             </div>
 
             {/* Runas y Nivel */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="flex items-center gap-3 bg-background/50 rounded-lg p-3">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Flame className="h-6 w-6 text-primary" />
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="flex items-center gap-2 bg-background/50 rounded-lg p-3">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <Flame className="h-5 w-5 text-primary" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Runas</p>
-                  <p className="text-2xl font-bold text-foreground">{runas}</p>
+                  <p className="text-xl font-bold text-foreground">{runas.toLocaleString('es-CL')}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 bg-background/50 rounded-lg p-3">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Award className="h-6 w-6 text-primary" />
+              <div className="flex items-center gap-2 bg-background/50 rounded-lg p-3">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <Award className="h-5 w-5 text-primary" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Nivel</p>
-                  <p className="text-lg font-bold text-foreground">{levelName}</p>
+                  <p className="text-base font-bold text-foreground truncate">{levelName}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 bg-background/50 rounded-lg p-3">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <ShoppingBag className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Puntos</p>
+                  <p className="text-xl font-bold text-foreground">{puntos.toLocaleString('es-CL')}</p>
                 </div>
               </div>
             </div>
@@ -250,7 +261,7 @@ export default function CustomerPortal() {
                 </div>
                 <Progress value={progressPercent} className="h-2 bg-muted" />
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-primary font-semibold">{nextLevelPoints - runas}</span> runas para {customerLevel?.next_level_name}
+                  <span className="text-primary font-semibold">{Math.max(0, nextLevelPoints - puntos).toLocaleString('es-CL')}</span> puntos para {customerLevel?.next_level_name}
                 </p>
               </div>
             )}
