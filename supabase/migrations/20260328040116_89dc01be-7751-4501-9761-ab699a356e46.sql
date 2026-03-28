@@ -1,0 +1,2 @@
+ALTER TABLE customer_points_log DROP CONSTRAINT customer_points_log_type_check;
+ALTER TABLE customer_points_log ADD CONSTRAINT customer_points_log_type_check CHECK (type = ANY (ARRAY['acumulacion'::text, 'consumo'::text, 'ajuste'::text]));
