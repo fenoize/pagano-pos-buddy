@@ -29,7 +29,7 @@ export interface CampaignClaim {
 
 function getStaffId() {
   const id = getStaffUserId();
-  if (!id) throw new Error('No staff session');
+  if (!id || id === '') throw new Error('No staff context');
   return id;
 }
 
