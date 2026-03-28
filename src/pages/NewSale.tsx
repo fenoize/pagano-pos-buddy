@@ -765,6 +765,22 @@ export default function NewSale() {
         } catch (campaignError) {
           console.error('Error evaluando campañas:', campaignError);
         }
+
+        // Accrue points (1 pt per $100 real spend) and evaluate level-up
+        try {
+          const pointsResult = await accruePointsForOrder(customerId, fullOrderData.id);
+          if (pointsResult && pointsResult.points > 0) {
+            console.log(`⭐ ${pointsResult.points} puntos acumulados, saldo: ${pointsResult.new_balance}`);
+            if (pointsResult.leveled_up) {
+              toast({
+                title: '🎉 ¡Subió de nivel!',
+                description: `El cliente alcanzó el nivel ${pointsResult.new_level}`,
+              });
+            }
+          }
+        } catch (pointsError) {
+          console.error('Error acumulando puntos:', pointsError);
+        }
       }
 
       // Incrementar usage_count de suscripción de descuento
