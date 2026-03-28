@@ -7066,6 +7066,14 @@ export type Database = {
       is_delivery_courier: { Args: never; Returns: boolean }
       is_staff_admin: { Args: never; Returns: boolean }
       is_user_admin: { Args: { p_user_id: string }; Returns: boolean }
+      manage_loyalty_campaign: {
+        Args: {
+          p_action: string
+          p_campaign_data?: Json
+          p_campaign_id?: string
+        }
+        Returns: Json
+      }
       process_auto_runas: { Args: never; Returns: Json }
       process_purchase_receipt: {
         Args: {
