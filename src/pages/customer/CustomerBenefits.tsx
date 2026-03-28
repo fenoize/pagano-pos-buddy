@@ -129,43 +129,43 @@ export default function CustomerBenefits() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              ¿Cómo ganar más runas?
+              ¿Cómo funciona?
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Flame className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold">Compra y acumula</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Ganas runas con cada compra que realices
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Award className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold">Completa desafíos</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Desbloquea insignias y gana runas extra
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <Star className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-semibold">Gana puntos</h4>
+                  <p className="text-sm text-muted-foreground">
+                    1 punto por cada $100 gastados en compras reales
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="h-4 w-4 text-primary" />
                 </div>
                 <div>
                   <h4 className="font-semibold">Sube de nivel</h4>
                   <p className="text-sm text-muted-foreground">
-                    Accede a beneficios exclusivos en niveles superiores
+                    Acumula puntos para desbloquear niveles con beneficios exclusivos
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Flame className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-semibold">Runas = descuentos</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Canjea tus runas como descuento en tus pedidos
                   </p>
                 </div>
               </div>
