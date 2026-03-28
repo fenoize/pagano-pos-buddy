@@ -43,7 +43,7 @@ export function CampaignFormModal({ open, onOpenChange, campaign, onSubmit, load
   const [minQuantity, setMinQuantity] = useState(1);
   const [minAmount, setMinAmount] = useState(0);
 
-  const { products } = useAllProducts();
+  const { data: products = [] } = useAllProducts();
   const { data: categories = [] } = useQuery({
     queryKey: ['categories-for-campaigns'],
     queryFn: async () => {

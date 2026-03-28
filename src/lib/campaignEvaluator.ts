@@ -24,7 +24,7 @@ export async function evaluateCampaignsForOrder(
       return [];
     }
 
-    return (data as CampaignResult[]) || [];
+    return (data as unknown as CampaignResult[]) || [];
   } catch (err) {
     console.error('Error evaluating campaigns:', err);
     return [];
@@ -47,7 +47,7 @@ export async function evaluateRegistrationCampaigns(
       return [];
     }
 
-    return (data as CampaignResult[]) || [];
+    return (data as unknown as CampaignResult[]) || [];
   } catch (err) {
     console.error('Error evaluating registration campaigns:', err);
     return [];
