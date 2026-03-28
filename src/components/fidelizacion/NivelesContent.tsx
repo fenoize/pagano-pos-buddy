@@ -293,6 +293,7 @@ export function NivelesContent() {
                   <TableHead>Código</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Rango Puntos</TableHead>
+                  <TableHead>Costo</TableHead>
                   <TableHead>Beneficios</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
