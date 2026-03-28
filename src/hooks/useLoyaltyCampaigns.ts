@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { withStaffContext } from '@/lib/dbContext';
 import { getStaffUserId } from '@/lib/staffSession';
 import { toast } from 'sonner';
 
@@ -29,7 +28,7 @@ export interface CampaignClaim {
 
 function getStaffId() {
   const id = getStaffUserId();
-  if (!id || id === '') throw new Error('No staff context');
+  if (!id) throw new Error('No hay sesión de staff activa');
   return id;
 }
 
@@ -50,17 +49,14 @@ export function useLoyaltyCampaigns() {
 
   const createCampaign = useMutation({
     mutationFn: async (campaign: Omit<LoyaltyCampaign, 'id' | 'created_at'>) => {
-      const userId = getStaffId();
-      let result: any;
-      await withStaffContext(userId, async () => {
-        const { data, error } = await supabase.rpc('manage_loyalty_campaign', {
-          p_action: 'insert',
-          p_campaign_data: campaign as any,
-        });
-        if (error) throw error;
-        result = data;
+      const staffId = getStaffId();
+      const { data, error } = await supabase.rpc('manage_loyalty_campaign', {
+        p_action: 'insert',
+        p_campaign_data: campaign as any,
+        p_staff_user_id: staffId,
       });
-      return result;
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loyalty-campaigns'] });
@@ -73,15 +69,14 @@ export function useLoyaltyCampaigns() {
 
   const updateCampaign = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<LoyaltyCampaign> & { id: string }) => {
-      const userId = getStaffId();
-      await withStaffContext(userId, async () => {
-        const { error } = await supabase.rpc('manage_loyalty_campaign', {
-          p_action: 'update',
-          p_campaign_data: updates as any,
-          p_campaign_id: id,
-        });
-        if (error) throw error;
+      const staffId = getStaffId();
+      const { error } = await supabase.rpc('manage_loyalty_campaign', {
+        p_action: 'update',
+        p_campaign_data: updates as any,
+        p_campaign_id: id,
+        p_staff_user_id: staffId,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loyalty-campaigns'] });
@@ -94,15 +89,14 @@ export function useLoyaltyCampaigns() {
 
   const toggleActive = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const userId = getStaffId();
-      await withStaffContext(userId, async () => {
-        const { error } = await supabase.rpc('manage_loyalty_campaign', {
-          p_action: 'toggle',
-          p_campaign_data: { is_active } as any,
-          p_campaign_id: id,
-        });
-        if (error) throw error;
+      const staffId = getStaffId();
+      const { error } = await supabase.rpc('manage_loyalty_campaign', {
+        p_action: 'toggle',
+        p_campaign_data: { is_active } as any,
+        p_campaign_id: id,
+        p_staff_user_id: staffId,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loyalty-campaigns'] });
@@ -111,14 +105,13 @@ export function useLoyaltyCampaigns() {
 
   const deleteCampaign = useMutation({
     mutationFn: async (id: string) => {
-      const userId = getStaffId();
-      await withStaffContext(userId, async () => {
-        const { error } = await supabase.rpc('manage_loyalty_campaign', {
-          p_action: 'delete',
-          p_campaign_id: id,
-        });
-        if (error) throw error;
+      const staffId = getStaffId();
+      const { error } = await supabase.rpc('manage_loyalty_campaign', {
+        p_action: 'delete',
+        p_campaign_id: id,
+        p_staff_user_id: staffId,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loyalty-campaigns'] });
