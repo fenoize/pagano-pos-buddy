@@ -259,8 +259,8 @@ export function NivelesContent() {
 
       <Alert className="mb-6">
         <AlertDescription>
-          Los niveles se asignan automáticamente a los clientes según su cantidad de runas acumuladas.
-          El sistema evalúa el rango de puntos (min_points - max_points) para determinar el nivel actual.
+          Los niveles se asignan según los <strong>puntos</strong> del cliente (1 punto = $100 gastados en ventas reales).
+          Al alcanzar un nivel, se consumen los puntos indicados en "Costo en puntos".
         </AlertDescription>
       </Alert>
 
