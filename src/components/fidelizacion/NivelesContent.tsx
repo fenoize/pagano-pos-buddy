@@ -436,7 +436,20 @@ export function NivelesContent() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="points_cost">Costo en puntos (se consumen al subir)</Label>
+              <Input
+                id="points_cost"
+                type="number"
+                min="0"
+                value={formData.points_cost}
+                onChange={(e) => setFormData(prev => ({ ...prev, points_cost: parseInt(e.target.value) || 0 }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Puntos que se descuentan del saldo del cliente al alcanzar este nivel. 0 = gratis.
+              </p>
+            </div>
+
               <div className="space-y-2">
                 <Label htmlFor="icon">Ícono</Label>
                 <select
