@@ -146,7 +146,8 @@ export const validateCouponEligibility = async (
   subtotal: number,
   customer?: Partial<Customer>,
   userRole?: AppRole,
-  existingCoupons?: CouponApplication[]
+  existingCoupons?: CouponApplication[],
+  deliveryFee: number = 0
 ): Promise<CouponEligibilityResult> => {
   const errors: string[] = [];
   const now = new Date();
