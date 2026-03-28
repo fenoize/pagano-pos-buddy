@@ -327,6 +327,9 @@ export function NivelesContent() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      <span className="text-sm font-medium">{level.points_cost || 0} pts</span>
+                    </TableCell>
+                    <TableCell>
                       <div className="text-xs text-muted-foreground">
                         {Array.isArray(level.benefits) ? level.benefits.length : 0} beneficio{Array.isArray(level.benefits) && level.benefits.length !== 1 ? 's' : ''}
                       </div>
