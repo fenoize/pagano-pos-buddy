@@ -749,7 +749,20 @@ export default function NewSale() {
           }
         } catch (badgeError) {
           console.error('Error otorgando insignias:', badgeError);
-          // Not critical, don't interrupt flow
+        }
+
+        // Evaluate loyalty campaigns
+        try {
+          const campaignResults = await evaluateCampaignsForOrder(customerId, fullOrderData.id);
+          if (campaignResults.length > 0) {
+            const totalRunas = campaignResults.reduce((sum, r) => sum + r.runas, 0);
+            toast({
+              title: '🎯 ¡Campaña completada!',
+              description: `El cliente ganó ${totalRunas} runa(s) por campaña(s)`,
+            });
+          }
+        } catch (campaignError) {
+          console.error('Error evaluando campañas:', campaignError);
         }
       }
 
