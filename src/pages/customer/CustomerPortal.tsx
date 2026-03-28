@@ -119,11 +119,12 @@ export default function CustomerPortal() {
   }
 
   const runas = customerLevel?.cantidad_runas || customer.cantidad_runas || 0;
-  const levelName = customerLevel?.level_name || 'Bronce';
+  const puntos = customerLevel?.puntos || customer.puntos || 0;
+  const levelName = customerLevel?.level_name || 'Iniciado';
   const nextLevelPoints = customerLevel?.next_level_points;
   const minPoints = customerLevel?.min_points || 0;
   const progressPercent = nextLevelPoints
-    ? Math.min(100, ((runas - minPoints) / (nextLevelPoints - minPoints)) * 100)
+    ? Math.min(100, ((puntos - minPoints) / (nextLevelPoints - minPoints)) * 100)
     : 100;
 
   const handlePromoAction = async (promo: any, event?: React.MouseEvent) => {
