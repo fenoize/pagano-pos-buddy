@@ -21,6 +21,7 @@ interface Level {
   level_order: number;
   min_points: number;
   max_points: number | null;
+  points_cost: number;
   icon: string;
   color: string;
   description: string | null;
@@ -57,6 +58,7 @@ export function NivelesContent() {
     level_order: 0,
     min_points: 0,
     max_points: '',
+    points_cost: 0,
     icon: 'Star',
     color: 'text-gray-500',
     description: '',
@@ -97,6 +99,7 @@ export function NivelesContent() {
       level_order: levels.length + 1,
       min_points: 0,
       max_points: '',
+      points_cost: 0,
       icon: 'Star',
       color: 'text-gray-500',
       description: '',
@@ -115,6 +118,7 @@ export function NivelesContent() {
       level_order: level.level_order,
       min_points: level.min_points,
       max_points: level.max_points?.toString() || '',
+      points_cost: level.points_cost || 0,
       icon: level.icon,
       color: level.color,
       description: level.description || '',
@@ -134,6 +138,7 @@ export function NivelesContent() {
         level_order: formData.level_order,
         min_points: formData.min_points,
         max_points: formData.max_points ? parseInt(formData.max_points) : null,
+        points_cost: formData.points_cost,
         icon: formData.icon,
         color: formData.color,
         description: formData.description.trim() || null,
@@ -259,8 +264,8 @@ export function NivelesContent() {
 
       <Alert className="mb-6">
         <AlertDescription>
-          Los niveles se asignan automáticamente a los clientes según su cantidad de runas acumuladas.
-          El sistema evalúa el rango de puntos (min_points - max_points) para determinar el nivel actual.
+          Los niveles se asignan según los <strong>puntos</strong> del cliente (1 punto = $100 gastados en ventas reales).
+          Al alcanzar un nivel, se consumen los puntos indicados en "Costo en puntos".
         </AlertDescription>
       </Alert>
 
@@ -288,6 +293,7 @@ export function NivelesContent() {
                   <TableHead>Código</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Rango Puntos</TableHead>
+                  <TableHead>Costo</TableHead>
                   <TableHead>Beneficios</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -317,8 +323,11 @@ export function NivelesContent() {
                         <span className="font-medium">
                           {level.max_points ?? '∞'}
                         </span>
-                        {' runas'}
+                        {' puntos'}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm font-medium">{level.points_cost || 0} pts</span>
                     </TableCell>
                     <TableCell>
                       <div className="text-xs text-muted-foreground">
@@ -429,6 +438,20 @@ export function NivelesContent() {
                   onChange={(e) => setFormData(prev => ({ ...prev, max_points: e.target.value }))}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="points_cost">Costo en puntos (se consumen al subir)</Label>
+              <Input
+                id="points_cost"
+                type="number"
+                min="0"
+                value={formData.points_cost}
+                onChange={(e) => setFormData(prev => ({ ...prev, points_cost: parseInt(e.target.value) || 0 }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Puntos que se descuentan del saldo del cliente al alcanzar este nivel. 0 = gratis.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

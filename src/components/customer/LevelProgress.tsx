@@ -1,12 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { formatRunas } from '@/lib/utils';
 import { TrendingUp } from 'lucide-react';
 
 interface LevelProgressProps {
   currentLevel: string;
-  currentRunas: number;
+  currentPoints: number;
   minPoints: number;
   nextLevelPoints: number | null;
   nextLevelName: string | null;
@@ -14,19 +13,18 @@ interface LevelProgressProps {
 
 export function LevelProgress({
   currentLevel,
-  currentRunas,
+  currentPoints,
   minPoints,
   nextLevelPoints,
   nextLevelName,
 }: LevelProgressProps) {
-  // Si no hay próximo nivel, está en el nivel máximo
   const isMaxLevel = !nextLevelPoints || !nextLevelName;
 
   const progress = isMaxLevel
     ? 100
-    : Math.min(100, ((currentRunas - minPoints) / (nextLevelPoints - minPoints)) * 100);
+    : Math.min(100, ((currentPoints - minPoints) / (nextLevelPoints - minPoints)) * 100);
 
-  const remaining = isMaxLevel ? 0 : Math.max(0, nextLevelPoints - currentRunas);
+  const remaining = isMaxLevel ? 0 : Math.max(0, nextLevelPoints - currentPoints);
 
   return (
     <Card>
@@ -58,7 +56,7 @@ export function LevelProgress({
               </p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Te faltan <strong>{formatRunas(remaining)} runas</strong> para {nextLevelName}
+                Te faltan <strong>{remaining.toLocaleString()} puntos</strong> para {nextLevelName}
               </p>
             )}
           </div>

@@ -1307,6 +1307,7 @@ export type Database = {
           level_order: number
           max_points: number | null
           min_points: number
+          points_cost: number
         }
         Insert: {
           benefits?: Json | null
@@ -1321,6 +1322,7 @@ export type Database = {
           level_order: number
           max_points?: number | null
           min_points: number
+          points_cost?: number
         }
         Update: {
           benefits?: Json | null
@@ -1335,6 +1337,7 @@ export type Database = {
           level_order?: number
           max_points?: number | null
           min_points?: number
+          points_cost?: number
         }
         Relationships: []
       }
@@ -1372,6 +1375,86 @@ export type Database = {
             columns: ["customer_account_id"]
             isOneToOne: false
             referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_points_log: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string
+          description: string | null
+          id: string
+          order_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_id: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_points_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_points_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_points_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_points_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_points_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "customer_points_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_points_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -1474,6 +1557,8 @@ export type Database = {
           name: string | null
           nombres: string | null
           phone: string | null
+          puntos: number
+          puntos_lifetime: number
           rut: string | null
           ultima_compra: string | null
           updated_at: string | null
@@ -1500,6 +1585,8 @@ export type Database = {
           name?: string | null
           nombres?: string | null
           phone?: string | null
+          puntos?: number
+          puntos_lifetime?: number
           rut?: string | null
           ultima_compra?: string | null
           updated_at?: string | null
@@ -1526,6 +1613,8 @@ export type Database = {
           name?: string | null
           nombres?: string | null
           phone?: string | null
+          puntos?: number
+          puntos_lifetime?: number
           rut?: string | null
           ultima_compra?: string | null
           updated_at?: string | null
@@ -6423,6 +6512,9 @@ export type Database = {
           min_points: number | null
           next_level_name: string | null
           next_level_points: number | null
+          points_cost: number | null
+          puntos: number | null
+          puntos_lifetime: number | null
         }
         Relationships: []
       }
@@ -6559,6 +6651,10 @@ export type Database = {
       }
     }
     Functions: {
+      accrue_points_for_order: {
+        Args: { p_customer_id: string; p_order_id: string }
+        Returns: Json
+      }
       adjust_stock_quick: {
         Args: {
           p_current_stock: number
