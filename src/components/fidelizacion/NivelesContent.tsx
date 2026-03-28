@@ -99,6 +99,7 @@ export function NivelesContent() {
       level_order: levels.length + 1,
       min_points: 0,
       max_points: '',
+      points_cost: 0,
       icon: 'Star',
       color: 'text-gray-500',
       description: '',
