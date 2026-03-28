@@ -138,6 +138,7 @@ export function NivelesContent() {
         level_order: formData.level_order,
         min_points: formData.min_points,
         max_points: formData.max_points ? parseInt(formData.max_points) : null,
+        points_cost: formData.points_cost,
         icon: formData.icon,
         color: formData.color,
         description: formData.description.trim() || null,
