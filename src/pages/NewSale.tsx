@@ -27,6 +27,7 @@ import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubs
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { checkAndAwardBadges } from '@/lib/badgeAwarder';
 import { evaluateCampaignsForOrder } from '@/lib/campaignEvaluator';
+import { accruePointsForOrder } from '@/lib/pointsAccruer';
 import { RecentOrdersModal } from '@/components/sales/RecentOrdersModal';
 
 export default function NewSale() {
