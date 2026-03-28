@@ -241,7 +241,7 @@ export const validateCouponEligibility = async (
     cartItems,
     eligibleLineIndices,
     eligibleLineIndices, // Por defecto, todas las líneas elegibles
-    0
+    deliveryFee
   );
 
   return {
