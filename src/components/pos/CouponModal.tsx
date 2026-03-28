@@ -80,7 +80,8 @@ export const CouponModal = ({
         subtotal,
         customer,
         user?.role as AppRole,
-        existingCoupons
+        existingCoupons,
+        deliveryFee
       );
 
       setValidationResult(result);
