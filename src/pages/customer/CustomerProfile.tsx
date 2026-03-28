@@ -44,7 +44,7 @@ import { CustomerQRModal } from '@/components/customer/CustomerQRModal';
 export default function CustomerProfile() {
   const navigate = useNavigate();
   const { customer, refreshCustomerData, signOut } = useCustomerAuth();
-  
+  const { data: levelData } = useCustomerLevel(customer?.id);
   // Profile edit state
   const [isEditing, setIsEditing] = useState(false);
   const [editNombre, setEditNombre] = useState(customer?.name || customer?.nombres || '');
