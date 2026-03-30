@@ -220,8 +220,8 @@ export default function CustomerPortal() {
             </div>
 
             {/* Runas y Nivel */}
-            <div className="grid grid-cols-3 gap-3 mt-4">
-              <div className="flex items-center gap-2 bg-background/50 rounded-lg p-3">
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="flex items-center gap-3 bg-background/50 rounded-lg p-3">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                   <Flame className="h-5 w-5 text-primary" />
                 </div>
@@ -231,7 +231,7 @@ export default function CustomerPortal() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 bg-background/50 rounded-lg p-3">
+              <div className="flex items-center gap-3 bg-background/50 rounded-lg p-3">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                   <Award className="h-5 w-5 text-primary" />
                 </div>
@@ -240,31 +240,31 @@ export default function CustomerPortal() {
                   <p className="text-base font-bold text-foreground truncate">{levelName}</p>
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 bg-background/50 rounded-lg p-3">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                  <ShoppingBag className="h-5 w-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Puntos</p>
-                  <p className="text-xl font-bold text-foreground">{puntos.toLocaleString('es-CL')}</p>
-                </div>
-              </div>
             </div>
 
-            {/* Progress to next level */}
-            {nextLevelPoints && (
-              <div className="mt-4 space-y-2">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Progreso al siguiente nivel</span>
-                  <span className="text-primary font-semibold">{Math.round(progressPercent)}%</span>
+            {/* Puntos y progreso al siguiente nivel */}
+            <div className="mt-4 bg-background/50 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">Puntos</span>
                 </div>
-                <Progress value={progressPercent} className="h-2 bg-muted" />
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-primary font-semibold">{Math.max(0, nextLevelPoints - puntos).toLocaleString('es-CL')}</span> puntos para {customerLevel?.next_level_name}
-                </p>
+                <span className="text-lg font-bold text-foreground">{puntos.toLocaleString('es-CL')}</span>
               </div>
-            )}
+              {nextLevelPoints ? (
+                <>
+                  <Progress value={progressPercent} className="h-2 bg-muted" />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>
+                      <span className="text-primary font-semibold">{Math.max(0, nextLevelPoints - puntos).toLocaleString('es-CL')}</span> puntos para {customerLevel?.next_level_name}
+                    </span>
+                    <span className="text-primary font-semibold">{Math.round(progressPercent)}%</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">Nivel máximo alcanzado 🎉</p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
