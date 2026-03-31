@@ -149,8 +149,8 @@ export const DeliveryTrackingMap: React.FC<DeliveryTrackingMapProps> = ({
     <Card className="overflow-hidden border-2 border-primary/20">
       {/* Status banner */}
       <div className={`px-4 py-3 flex items-center gap-3 ${
-        tracking.isNear ? 'bg-green-50 dark:bg-green-950/20' :
-        tracking.isStale ? 'bg-amber-50 dark:bg-amber-950/20' :
+        tracking.isNear ? 'bg-green-950/30' :
+        tracking.isStale ? 'bg-amber-950/30' :
         'bg-primary/5'
       }`}>
         {status.icon}
