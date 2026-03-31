@@ -221,7 +221,7 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
                 
                 {/* Show badge if already rated */}
                 {isDelivered && hasFeedback === true && (
-                  <div className="flex items-center justify-center gap-2 py-2 text-sm text-green-600">
+                  <div className="flex items-center justify-center gap-2 py-2 text-sm text-green-400">
                     <CheckCircle className="w-4 h-4" />
                     Ya calificaste este pedido
                   </div>

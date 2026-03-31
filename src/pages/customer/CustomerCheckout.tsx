@@ -696,13 +696,13 @@ export default function CustomerCheckout() {
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
                 {subscriptionDiscountAmount > 0 && (
-                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                  <div className="flex justify-between text-sm text-emerald-400 font-medium">
                     <span>Descuento suscripción ({subscriptionDiscount}%)</span>
                     <span>-{formatCurrency(subscriptionDiscountAmount)}</span>
                   </div>
                 )}
                 {couponDiscountProducts > 0 && (
-                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                  <div className="flex justify-between text-sm text-emerald-400 font-medium">
                     <span>Cupón {appliedCoupon?.code}</span>
                     <span>-{formatCurrency(couponDiscountProducts)}</span>
                   </div>

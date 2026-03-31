@@ -86,7 +86,7 @@ export default function CustomerPaymentSuccess() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Estado:</span>
-                <span className="font-semibold text-green-600">
+                <span className="font-semibold text-green-400">
                   {order.status === 'Pendiente' ? 'En preparación' : order.status}
                 </span>
               </div>

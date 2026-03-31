@@ -155,11 +155,11 @@ export function CustomerCouponInput({
 
   if (appliedCoupon && preview) {
     return (
-      <div className="rounded-lg border-2 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 p-4 space-y-2">
+      <div className="rounded-lg border-2 border-emerald-500/30 bg-emerald-500/10 p-4 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-            <span className="font-semibold text-emerald-800 dark:text-emerald-300">
+            <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+            <span className="font-semibold text-emerald-200">
               {appliedCoupon.code}
             </span>
           </div>

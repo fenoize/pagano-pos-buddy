@@ -134,7 +134,7 @@ export const DeliveryTrackingMap: React.FC<DeliveryTrackingMapProps> = ({
   const getStatusMessage = () => {
     if (tracking.loading) return { icon: <Clock className="h-5 w-5 animate-pulse" />, text: 'Buscando ubicación del repartidor...' };
     if (!tracking.riderLat) return { icon: <Truck className="h-5 w-5" />, text: 'El repartidor aún no ha compartido su ubicación' };
-    if (tracking.isNear) return { icon: <MapPin className="h-5 w-5 text-green-600" />, text: '¡Estamos muy cerca! Prepárate 📍' };
+    if (tracking.isNear) return { icon: <MapPin className="h-5 w-5 text-green-400" />, text: '¡Estamos muy cerca! Prepárate 📍' };
     if (tracking.isStale) return { icon: <AlertCircle className="h-5 w-5 text-amber-500" />, text: `Última ubicación disponible · ${getTimeSinceUpdate()}` };
     return { icon: <Truck className="h-5 w-5 text-primary" />, text: 'Tu repartidor va en camino 🛵' };
   };
