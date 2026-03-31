@@ -173,9 +173,9 @@ export function CustomerCouponInput({
           </Button>
         </div>
         {appliedCoupon.description && (
-          <p className="text-sm text-emerald-700 dark:text-emerald-400">{appliedCoupon.description}</p>
+          <p className="text-sm text-emerald-300/80">{appliedCoupon.description}</p>
         )}
-        <div className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+        <div className="text-sm font-medium text-emerald-300/80">
           {preview.discount_products > 0 && (
             <span>Descuento: -{formatCurrency(preview.discount_products)}</span>
           )}
