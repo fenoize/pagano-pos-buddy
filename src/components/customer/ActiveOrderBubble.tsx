@@ -28,7 +28,7 @@ export function ActiveOrderBubble({ order }: ActiveOrderBubbleProps) {
 
   const config = STATUS_CONFIG[order.status] || STATUS_CONFIG['Pendiente'];
   const Icon = config.icon;
-  const isDelivery = order.fulfillment === 'Delivery';
+  const isDelivery = order.fulfillment === 'delivery';
 
   const handleTap = () => {
     if (minimized) {
