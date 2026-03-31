@@ -1,0 +1,1 @@
+UPDATE orders SET status = 'Entregado' WHERE order_number = 1454;
