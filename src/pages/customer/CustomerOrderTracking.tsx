@@ -72,12 +72,8 @@ export default function CustomerOrderTracking() {
   // Fetch mapbox token for tracking map
   useEffect(() => {
     const fetchToken = async () => {
-      const { data } = await supabase
-        .from('delivery_settings')
-        .select('mapbox_token')
-        .limit(1)
-        .maybeSingle();
-      if (data?.mapbox_token) setMapboxToken(data.mapbox_token);
+      const { data, error } = await (supabase as any).rpc('get_mapbox_token');
+      if (!error && data) setMapboxToken(data as string);
     };
     fetchToken();
   }, []);
