@@ -73,14 +73,14 @@ export default function CustomerBenefits() {
 
         {/* Discount Subscription */}
         {discountPercent > 0 && (
-          <Card className="border-emerald-300 bg-emerald-50">
+          <Card className="border-emerald-500/30 bg-emerald-500/10">
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0">
-                <Percent className="h-6 w-6 text-emerald-700" />
+              <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                <Percent className="h-6 w-6 text-emerald-400" />
               </div>
               <div>
-                <h3 className="font-bold text-emerald-800 text-lg">{discountPercent}% de descuento</h3>
-                <p className="text-sm text-emerald-700">
+                <h3 className="font-bold text-emerald-200 text-lg">{discountPercent}% de descuento</h3>
+                <p className="text-sm text-emerald-300/80">
                   Se aplica automáticamente en todas tus compras
                 </p>
               </div>

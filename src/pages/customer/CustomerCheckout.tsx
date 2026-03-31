@@ -336,9 +336,9 @@ export default function CustomerCheckout() {
 
         {/* Subscription Discount Banner */}
         {subscriptionDiscount > 0 && (
-          <Alert className="border-emerald-300 bg-emerald-50">
-            <Coins className="h-4 w-4 text-emerald-600" />
-            <AlertDescription className="text-emerald-800 font-medium">
+          <Alert className="border-emerald-500/30 bg-emerald-500/10">
+            <Coins className="h-4 w-4 text-emerald-400" />
+            <AlertDescription className="text-emerald-200 font-medium">
               ¡Tienes un {subscriptionDiscount}% de descuento aplicado automáticamente!
             </AlertDescription>
           </Alert>
@@ -696,13 +696,13 @@ export default function CustomerCheckout() {
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
                 {subscriptionDiscountAmount > 0 && (
-                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                  <div className="flex justify-between text-sm text-emerald-400 font-medium">
                     <span>Descuento suscripción ({subscriptionDiscount}%)</span>
                     <span>-{formatCurrency(subscriptionDiscountAmount)}</span>
                   </div>
                 )}
                 {couponDiscountProducts > 0 && (
-                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                  <div className="flex justify-between text-sm text-emerald-400 font-medium">
                     <span>Cupón {appliedCoupon?.code}</span>
                     <span>-{formatCurrency(couponDiscountProducts)}</span>
                   </div>

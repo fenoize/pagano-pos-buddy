@@ -76,8 +76,8 @@ export default function CustomerOrderSuccess() {
       <div className="max-w-screen-xl mx-auto p-4 space-y-6">
         {/* Success Icon */}
         <div className="text-center py-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/20 mb-4">
-            <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/15 mb-4">
+            <CheckCircle2 className="h-12 w-12 text-green-400" />
           </div>
           <h1 className="text-3xl font-bold mb-2">¡Pedido Confirmado!</h1>
           <p className="text-muted-foreground">

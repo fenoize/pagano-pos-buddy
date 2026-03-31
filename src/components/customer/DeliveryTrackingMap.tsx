@@ -134,7 +134,7 @@ export const DeliveryTrackingMap: React.FC<DeliveryTrackingMapProps> = ({
   const getStatusMessage = () => {
     if (tracking.loading) return { icon: <Clock className="h-5 w-5 animate-pulse" />, text: 'Buscando ubicación del repartidor...' };
     if (!tracking.riderLat) return { icon: <Truck className="h-5 w-5" />, text: 'El repartidor aún no ha compartido su ubicación' };
-    if (tracking.isNear) return { icon: <MapPin className="h-5 w-5 text-green-600" />, text: '¡Estamos muy cerca! Prepárate 📍' };
+    if (tracking.isNear) return { icon: <MapPin className="h-5 w-5 text-green-400" />, text: '¡Estamos muy cerca! Prepárate 📍' };
     if (tracking.isStale) return { icon: <AlertCircle className="h-5 w-5 text-amber-500" />, text: `Última ubicación disponible · ${getTimeSinceUpdate()}` };
     return { icon: <Truck className="h-5 w-5 text-primary" />, text: 'Tu repartidor va en camino 🛵' };
   };
@@ -149,8 +149,8 @@ export const DeliveryTrackingMap: React.FC<DeliveryTrackingMapProps> = ({
     <Card className="overflow-hidden border-2 border-primary/20">
       {/* Status banner */}
       <div className={`px-4 py-3 flex items-center gap-3 ${
-        tracking.isNear ? 'bg-green-50 dark:bg-green-950/20' :
-        tracking.isStale ? 'bg-amber-50 dark:bg-amber-950/20' :
+        tracking.isNear ? 'bg-green-950/30' :
+        tracking.isStale ? 'bg-amber-950/30' :
         'bg-primary/5'
       }`}>
         {status.icon}
@@ -163,8 +163,8 @@ export const DeliveryTrackingMap: React.FC<DeliveryTrackingMapProps> = ({
           )}
         </div>
         {tracking.isActive && (
-          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs">
-            <span className="w-2 h-2 rounded-full bg-green-500 mr-1 animate-pulse" />
+          <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/40 text-xs">
+            <span className="w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse" />
             En vivo
           </Badge>
         )}
