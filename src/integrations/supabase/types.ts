@@ -7016,6 +7016,7 @@ export type Database = {
           prorated_amount: number
         }[]
       }
+      get_mapbox_token: { Args: never; Returns: string }
       get_material_base_uom: {
         Args: { p_raw_material_id: string }
         Returns: string
