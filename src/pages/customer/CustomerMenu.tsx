@@ -269,6 +269,7 @@ export default function CustomerMenu() {
                             <img
                               src={product.image_url}
                               alt={product.name}
+                              loading="lazy"
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -336,6 +337,7 @@ export default function CustomerMenu() {
                       <img
                         src={product.image_url}
                         alt={product.name}
+                        loading="lazy"
                         className="w-full h-full object-cover"
                       />
                     ) : (
