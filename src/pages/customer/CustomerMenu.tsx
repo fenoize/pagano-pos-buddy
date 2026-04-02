@@ -266,18 +266,10 @@ export default function CustomerMenu() {
                       <div className="flex">
                         {/* Product Image - Left side */}
                         <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0 bg-muted relative">
-                          {product.image_url ? (
-                            <img
-                              src={product.image_url}
-                              alt={product.name}
-                              loading="lazy"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Flame className="h-12 w-12 text-muted-foreground" />
-                            </div>
-                          )}
+                          <OptimizedProductImage
+                            src={product.image_url}
+                            alt={product.name}
+                          />
                         </div>
                         
                         {/* Product Info - Right side */}
