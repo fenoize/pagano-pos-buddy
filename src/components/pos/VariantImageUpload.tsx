@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { compressImage } from '@/lib/imageCompression';
 
 interface VariantImageUploadProps {
   imageUrl?: string | null;
