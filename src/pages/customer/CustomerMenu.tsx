@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Plus, Flame, Search, X } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
+import { OptimizedProductImage } from '@/components/customer/OptimizedProductImage';
 import { useCart } from '@/contexts/CartContext';
 import { CustomerProductCustomization } from '@/components/customer/CustomerProductCustomization';
 import { useCustomerMenuProducts, getProductMinPrice, MenuProduct, MenuCategory } from '@/hooks/useCustomerMenuProducts';
