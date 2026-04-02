@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { Flame } from 'lucide-react';
-import { getOptimizedImageUrl } from '@/lib/imageOptimization';
 
 interface OptimizedProductImageProps {
   src?: string | null;
@@ -11,7 +10,6 @@ interface OptimizedProductImageProps {
 
 /**
  * Imagen de producto optimizada con:
- * - Thumbnail via Supabase transforms (320px por defecto)
  * - IntersectionObserver para lazy loading real
  * - Fade-in al cargar
  */
@@ -19,7 +17,6 @@ export function OptimizedProductImage({
   src, 
   alt, 
   className = 'w-full h-full object-cover',
-  width = 320
 }: OptimizedProductImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [inView, setInView] = useState(false);
@@ -37,7 +34,7 @@ export function OptimizedProductImage({
           observer.disconnect();
         }
       },
-      { rootMargin: '200px' } // Pre-cargar 200px antes de entrar en viewport
+      { rootMargin: '200px' }
     );
 
     observer.observe(el);
@@ -52,13 +49,11 @@ export function OptimizedProductImage({
     );
   }
 
-  const optimizedSrc = getOptimizedImageUrl(src, width);
-
   return (
     <div ref={ref} className="w-full h-full bg-muted relative overflow-hidden">
       {inView && (
         <img
-          src={optimizedSrc}
+          src={src}
           alt={alt}
           className={`${className} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setLoaded(true)}
