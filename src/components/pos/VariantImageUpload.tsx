@@ -23,7 +23,8 @@ export function VariantImageUpload({ imageUrl, onImageChange, variantName = 'var
       setUploading(true);
       if (!event.target.files || event.target.files.length === 0) return;
 
-      const file = event.target.files[0];
+      const rawFile = event.target.files[0];
+      const file = await compressImage(rawFile);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `variants/${fileName}`;
