@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, Layers, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Layers, ChevronDown, ChevronRight, Pencil, Check, X } from 'lucide-react';
 import { useVariantGroups } from '@/hooks/useVariantGroups';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -16,6 +16,10 @@ export default function VariantGroupsConfig() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newOptionNames, setNewOptionNames] = useState<Record<string, string>>({});
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingGroupName, setEditingGroupName] = useState('');
+  const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
+  const [editingOptionName, setEditingOptionName] = useState('');
 
   const toggleExpand = (id: string) => {
     setExpandedGroups(prev => {
