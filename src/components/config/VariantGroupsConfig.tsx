@@ -90,7 +90,44 @@ export default function VariantGroupsConfig() {
                 >
                   <div className="flex items-center gap-3">
                     {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                    <span className="font-medium">{group.name}</span>
+                    {editingGroupId === group.id ? (
+                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <Input
+                          value={editingGroupName}
+                          onChange={e => setEditingGroupName(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              if (editingGroupName.trim()) updateGroup(group.id, { name: editingGroupName.trim() });
+                              setEditingGroupId(null);
+                            }
+                            if (e.key === 'Escape') setEditingGroupId(null);
+                          }}
+                          className="h-7 w-40"
+                          autoFocus
+                        />
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                          if (editingGroupName.trim()) updateGroup(group.id, { name: editingGroupName.trim() });
+                          setEditingGroupId(null);
+                        }}>
+                          <Check className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingGroupId(null)}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-medium">{group.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={e => { e.stopPropagation(); setEditingGroupId(group.id); setEditingGroupName(group.name); }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </>
+                    )}
                     <Badge variant="secondary">{group.options.length} opciones</Badge>
                     {!group.active && <Badge variant="outline">Inactivo</Badge>}
                   </div>
