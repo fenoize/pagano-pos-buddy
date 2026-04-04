@@ -14,6 +14,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import CustomerComboSelector from '@/components/customer/CustomerComboSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+interface VariantGroupWithOptions {
+  group_id: string;
+  group_name: string;
+  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null }>;
+}
+
 interface ProductExtra {
   id: string;
   name: string;
