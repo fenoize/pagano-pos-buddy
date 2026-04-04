@@ -413,6 +413,37 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     }
   };
 
+  // Fetch variant groups for all products in the combo
+  const fetchProductVariantGroups = async (productIds: string[]) => {
+    if (productIds.length === 0) return;
+    try {
+      const { data: pvgData } = await supabase
+        .from('product_variant_groups')
+        .select('product_id, group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active))')
+        .in('product_id', productIds);
+
+      const grouped: Record<string, VariantGroupWithOptions[]> = {};
+      (pvgData || []).forEach((pvg: any) => {
+        if (!pvg.group) return;
+        if (!grouped[pvg.product_id]) grouped[pvg.product_id] = [];
+        grouped[pvg.product_id].push({
+          group_id: pvg.group.id,
+          group_name: pvg.group.name,
+          options: (pvg.group.options || [])
+            .filter((o: any) => o.active)
+            .sort((a: any, b: any) => a.display_order - b.display_order),
+        });
+      });
+      setProductVariantGroups(grouped);
+
+      // Set default group selections for each slot
+      return grouped;
+    } catch (error) {
+      console.error('Error fetching product variant groups:', error);
+      return {};
+    }
+  };
+
   // Recalcular total automáticamente cuando cambian las selecciones o extras
   useEffect(() => {
     if (selections.length > 0 && comboConfig) {
