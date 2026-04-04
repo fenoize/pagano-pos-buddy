@@ -414,26 +414,70 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         />
       ) : (
         <>
+          {/* Variant Group Selectors (multi-dimensional, UberEats style) */}
+          {variantGroups.length > 0 && variantGroups.map(group => (
+            <div key={group.group_id}>
+              <div className="mb-1">
+                <h3 className="text-lg font-bold text-white">{group.group_name}</h3>
+                <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
+              </div>
+              <RadioGroup
+                value={selectedGroupOptions[group.group_id] || ''}
+                onValueChange={(value) => handleGroupOptionChange(group.group_id, value)}
+                className="gap-0"
+              >
+                {group.options.map((option, idx) => (
+                  <div
+                    key={option.id}
+                    className={`flex items-center justify-between py-4 cursor-pointer ${
+                      idx < group.options.length - 1 ? 'border-b border-border/50' : ''
+                    }`}
+                    onClick={() => handleGroupOptionChange(group.group_id, option.id)}
+                  >
+                    <span className="font-medium text-white">{option.name}</span>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      selectedGroupOptions[group.group_id] === option.id
+                        ? 'border-primary'
+                        : 'border-muted-foreground/40'
+                    }`}>
+                      {selectedGroupOptions[group.group_id] === option.id && (
+                        <div className="w-3.5 h-3.5 rounded-full bg-primary" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          ))}
+
           {/* Variant Selection - New System (UberEats style) */}
           {useNewVariantSystem && availableVariants.length > 0 && (
             <div>
               <div className="mb-1">
-                <h3 className="text-lg font-bold text-white">Elige tu opción</h3>
+                <h3 className="text-lg font-bold text-white">
+                  {variantGroups.length > 0 ? 'Elige tu tamaño' : 'Elige tu opción'}
+                </h3>
                 <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
               </div>
               <RadioGroup
                 value={selectedVariantOption?.id || ''}
                 onValueChange={(value) => {
-                  const variant = availableVariants.find(v => v.id === value);
+                  const filteredVars = variantGroups.length > 0 
+                    ? filterVariantsByGroup(availableVariants, selectedGroupOptions) 
+                    : availableVariants;
+                  const variant = filteredVars.find(v => v.id === value);
                   if (variant) setSelectedVariantOption(variant);
                 }}
                 className="gap-0"
               >
-                {availableVariants.map((variant, idx) => (
+                {(variantGroups.length > 0 
+                  ? filterVariantsByGroup(availableVariants, selectedGroupOptions) 
+                  : availableVariants
+                ).map((variant, idx, arr) => (
                   <div
                     key={variant.id}
                     className={`flex items-center justify-between py-4 cursor-pointer ${
-                      idx < availableVariants.length - 1 ? 'border-b border-border/50' : ''
+                      idx < arr.length - 1 ? 'border-b border-border/50' : ''
                     }`}
                     onClick={() => setSelectedVariantOption(variant)}
                   >
