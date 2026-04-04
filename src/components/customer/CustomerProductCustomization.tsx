@@ -14,6 +14,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import CustomerComboSelector from '@/components/customer/CustomerComboSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+interface VariantGroupWithOptions {
+  group_id: string;
+  group_name: string;
+  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null }>;
+}
+
 interface ProductExtra {
   id: string;
   name: string;
@@ -62,6 +68,10 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   const [comboTotal, setComboTotal] = useState(0);
   const [useCombo, setUseCombo] = useState(false);
   
+  // Variant groups state (multi-dimensional)
+  const [variantGroups, setVariantGroups] = useState<VariantGroupWithOptions[]>([]);
+  const [selectedGroupOptions, setSelectedGroupOptions] = useState<Record<string, string>>({});
+  
   const { toast } = useToast();
 
   // Get available legacy variants
@@ -93,7 +103,6 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
 
   const fetchProductVariantsAndCustomizations = async () => {
     try {
-      // First, get the product's assigned categories
       const { data: productCategories, error: catError } = await configuredSupabase
         .from('product_categories')
         .select('category_id')
@@ -103,7 +112,6 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
 
       const categoryIds = (productCategories || []).map(pc => pc.category_id);
 
-      // Fetch product variants from new system, filtering by product's categories
       const { data: variantsData, error: variantsError } = await configuredSupabase
         .from('product_variant_options')
         .select(`
@@ -120,9 +128,35 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       const variants = (variantsData || []) as ProductVariantOption[];
       setAvailableVariants(variants);
 
+      // Fetch variant groups assigned to this product
+      const { data: pvgData } = await configuredSupabase
+        .from('product_variant_groups')
+        .select('group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active))')
+        .eq('product_id', product.id);
+
+      const fetchedGroups: VariantGroupWithOptions[] = (pvgData || [])
+        .filter((pvg: any) => pvg.group)
+        .map((pvg: any) => ({
+          group_id: pvg.group.id,
+          group_name: pvg.group.name,
+          options: (pvg.group.options || [])
+            .filter((o: any) => o.active)
+            .sort((a: any, b: any) => a.display_order - b.display_order),
+        }));
+      setVariantGroups(fetchedGroups);
+
+      // Set default group options
+      const defaults: Record<string, string> = {};
+      fetchedGroups.forEach(g => {
+        const def = g.options.find(o => o.is_default) || g.options[0];
+        if (def) defaults[g.group_id] = def.id;
+      });
+      setSelectedGroupOptions(defaults);
+
       if (variants.length > 0) {
         setUseNewVariantSystem(true);
-        const defaultVariant = variants.find(v => v.is_default) || variants[0];
+        const filteredVariants = filterVariantsByGroup(variants, defaults);
+        const defaultVariant = filteredVariants.find(v => v.is_default) || filteredVariants[0] || variants.find(v => v.is_default) || variants[0];
         setSelectedVariantOption(defaultVariant);
       } else {
         setUseNewVariantSystem(false);
@@ -133,6 +167,28 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       console.error('Error fetching product variants:', error);
       setUseNewVariantSystem(false);
       await fetchExtrasAndModifiers();
+    }
+  };
+
+  const filterVariantsByGroup = (variants: ProductVariantOption[], groupSelections: Record<string, string>) => {
+    if (Object.keys(groupSelections).length === 0) return variants;
+    const selectedOptionIds = Object.values(groupSelections);
+    const withGroupOption = variants.filter(v => v.variant_group_option_id);
+    if (withGroupOption.length === 0) return variants;
+    return variants.filter(v => {
+      if (!v.variant_group_option_id) return false;
+      return selectedOptionIds.includes(v.variant_group_option_id);
+    });
+  };
+
+  const handleGroupOptionChange = (groupId: string, optionId: string) => {
+    const newSelections = { ...selectedGroupOptions, [groupId]: optionId };
+    setSelectedGroupOptions(newSelections);
+    const filtered = filterVariantsByGroup(availableVariants, newSelections);
+    if (filtered.length > 0) {
+      const currentVariantName = selectedVariantOption?.variant?.name;
+      const sameNameVariant = filtered.find(v => v.variant?.name === currentVariantName);
+      setSelectedVariantOption(sameNameVariant || filtered.find(v => v.is_default) || filtered[0]);
     }
   };
 
@@ -323,6 +379,21 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         orderItem.category_variant_id = selectedVariantOption.category_variant_id;
         orderItem.variant_name = selectedVariantOption.variant?.name;
         orderItem.product_variant_option_id = selectedVariantOption.id;
+        
+        // Add variant group selections
+        if (variantGroups.length > 0) {
+          orderItem.variant_group_selections = variantGroups
+            .filter(g => selectedGroupOptions[g.group_id])
+            .map(g => {
+              const selectedOption = g.options.find(o => o.id === selectedGroupOptions[g.group_id]);
+              return {
+                group_id: g.group_id,
+                group_name: g.group_name,
+                option_id: selectedGroupOptions[g.group_id],
+                option_name: selectedOption?.name || '',
+              };
+            });
+        }
       } else {
         orderItem.size = selectedVariant;
         orderItem.priceKind = selectedPriceType;
@@ -358,26 +429,70 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         />
       ) : (
         <>
+          {/* Variant Group Selectors (multi-dimensional, UberEats style) */}
+          {variantGroups.length > 0 && variantGroups.map(group => (
+            <div key={group.group_id}>
+              <div className="mb-1">
+                <h3 className="text-lg font-bold text-white">{group.group_name}</h3>
+                <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
+              </div>
+              <RadioGroup
+                value={selectedGroupOptions[group.group_id] || ''}
+                onValueChange={(value) => handleGroupOptionChange(group.group_id, value)}
+                className="gap-0"
+              >
+                {group.options.map((option, idx) => (
+                  <div
+                    key={option.id}
+                    className={`flex items-center justify-between py-4 cursor-pointer ${
+                      idx < group.options.length - 1 ? 'border-b border-border/50' : ''
+                    }`}
+                    onClick={() => handleGroupOptionChange(group.group_id, option.id)}
+                  >
+                    <span className="font-medium text-white">{option.name}</span>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      selectedGroupOptions[group.group_id] === option.id
+                        ? 'border-primary'
+                        : 'border-muted-foreground/40'
+                    }`}>
+                      {selectedGroupOptions[group.group_id] === option.id && (
+                        <div className="w-3.5 h-3.5 rounded-full bg-primary" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          ))}
+
           {/* Variant Selection - New System (UberEats style) */}
           {useNewVariantSystem && availableVariants.length > 0 && (
             <div>
               <div className="mb-1">
-                <h3 className="text-lg font-bold text-white">Elige tu opción</h3>
+                <h3 className="text-lg font-bold text-white">
+                  {variantGroups.length > 0 ? 'Elige tu tamaño' : 'Elige tu opción'}
+                </h3>
                 <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
               </div>
               <RadioGroup
                 value={selectedVariantOption?.id || ''}
                 onValueChange={(value) => {
-                  const variant = availableVariants.find(v => v.id === value);
+                  const filteredVars = variantGroups.length > 0 
+                    ? filterVariantsByGroup(availableVariants, selectedGroupOptions) 
+                    : availableVariants;
+                  const variant = filteredVars.find(v => v.id === value);
                   if (variant) setSelectedVariantOption(variant);
                 }}
                 className="gap-0"
               >
-                {availableVariants.map((variant, idx) => (
+                {(variantGroups.length > 0 
+                  ? filterVariantsByGroup(availableVariants, selectedGroupOptions) 
+                  : availableVariants
+                ).map((variant, idx, arr) => (
                   <div
                     key={variant.id}
                     className={`flex items-center justify-between py-4 cursor-pointer ${
-                      idx < availableVariants.length - 1 ? 'border-b border-border/50' : ''
+                      idx < arr.length - 1 ? 'border-b border-border/50' : ''
                     }`}
                     onClick={() => setSelectedVariantOption(variant)}
                   >

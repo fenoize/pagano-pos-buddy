@@ -45,6 +45,9 @@ function CartItemCard({
         <div className="flex-1">
           <h5 className="font-medium text-sm">{item.productName}</h5>
           <p className="text-xs text-muted-foreground">
+            {item.variant_group_selections && item.variant_group_selections.length > 0
+              ? `${item.variant_group_selections.map((s: any) => s.option_name).join(' / ')} - `
+              : ''}
             {item.variant_name ? (
               item.variant_name
             ) : item.is_combo_item ? (

@@ -308,6 +308,45 @@ export interface OrderItem {
   combo_parent_id?: string;
   combo_slot_id?: string;
   combo_selections?: any[];
+  
+  // Variant group selections (multi-dimensional)
+  variant_group_selections?: Array<{
+    group_id: string;
+    group_name: string;
+    option_id: string;
+    option_name: string;
+  }>;
+}
+
+// Variant Groups (multi-dimensional variants)
+export interface VariantGroup {
+  id: string;
+  name: string;
+  display_order: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  options?: VariantGroupOption[];
+}
+
+export interface VariantGroupOption {
+  id: string;
+  group_id: string;
+  name: string;
+  display_order: number;
+  image_url?: string;
+  is_default: boolean;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductVariantGroup {
+  id: string;
+  product_id: string;
+  group_id: string;
+  created_at: string;
+  group?: VariantGroup;
 }
 
 export interface Order {
@@ -562,6 +601,7 @@ export interface ProductVariantOption {
   stock: number;
   is_default: boolean;
   active: boolean;
+  variant_group_option_id?: string;
   created_at: string;
   updated_at: string;
   // Populated from joins

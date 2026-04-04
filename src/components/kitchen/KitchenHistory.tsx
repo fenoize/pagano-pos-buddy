@@ -126,6 +126,8 @@ export function KitchenHistory({ open, onOpenChange }: KitchenHistoryProps) {
               <div key={idx} className="flex justify-between text-sm">
                 <span>
                   {item.quantity}x {item.productName}
+                  {item.variant_group_selections && item.variant_group_selections.length > 0 && 
+                    ` [${item.variant_group_selections.map((s: any) => s.option_name).join('/')}]`}
                   {item.variant_name && ` (${item.variant_name})`}
                 </span>
                 <span className="font-medium">{formatPrice(itemSubtotal)}</span>

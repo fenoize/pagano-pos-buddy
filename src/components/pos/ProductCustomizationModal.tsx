@@ -14,6 +14,12 @@ import VariantSelector from './VariantSelector';
 import ComboSelector from './ComboSelector';
 import { useToast } from '@/hooks/use-toast';
 
+interface VariantGroupWithOptions {
+  group_id: string;
+  group_name: string;
+  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null }>;
+}
+
 interface ProductExtra {
   id: string;
   name: string;
@@ -63,6 +69,10 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   const [comboSelections, setComboSelections] = useState<any[]>([]);
   const [comboTotal, setComboTotal] = useState(0);
   const [useCombo, setUseCombo] = useState(false);
+  
+  // Variant groups state (multi-dimensional)
+  const [variantGroups, setVariantGroups] = useState<VariantGroupWithOptions[]>([]);
+  const [selectedGroupOptions, setSelectedGroupOptions] = useState<Record<string, string>>({});
   
   const { toast } = useToast();
 
@@ -161,16 +171,50 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       const variants = (variantsData || []) as ProductVariantOption[];
       setAvailableVariants(variants);
 
+      // Fetch variant groups assigned to this product
+      const { data: pvgData } = await supabase
+        .from('product_variant_groups')
+        .select('group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active))')
+        .eq('product_id', product.id);
+
+      const fetchedGroups: VariantGroupWithOptions[] = (pvgData || [])
+        .filter((pvg: any) => pvg.group)
+        .map((pvg: any) => ({
+          group_id: pvg.group.id,
+          group_name: pvg.group.name,
+          options: (pvg.group.options || [])
+            .filter((o: any) => o.active)
+            .sort((a: any, b: any) => a.display_order - b.display_order),
+        }));
+      setVariantGroups(fetchedGroups);
+
+      // Set default group options
+      const defaults: Record<string, string> = {};
+      fetchedGroups.forEach(g => {
+        const def = g.options.find(o => o.is_default) || g.options[0];
+        if (def) defaults[g.group_id] = def.id;
+      });
+      
+      // If editing and has variant_group_selections, restore them
+      if (editingItem?.variant_group_selections) {
+        editingItem.variant_group_selections.forEach((sel: any) => {
+          defaults[sel.group_id] = sel.option_id;
+        });
+      }
+      setSelectedGroupOptions(defaults);
+
       // Determine which system to use
       if (variants.length > 0) {
         setUseNewVariantSystem(true);
-        // Set default variant
-        const defaultVariant = variants.find(v => v.is_default) || variants[0];
+        // Set default variant - filter by default group option if groups exist
+        const filteredVariants = filterVariantsByGroup(variants, defaults);
+        const defaultVariant = filteredVariants.find(v => v.is_default) || filteredVariants[0] || variants.find(v => v.is_default) || variants[0];
         setSelectedVariantOption(defaultVariant);
         
         // If editing and has variant_id, find and set it
         if (editingItem?.category_variant_id) {
-          const editingVariant = variants.find(v => v.category_variant_id === editingItem.category_variant_id);
+          const editingVariant = variants.find(v => v.category_variant_id === editingItem.category_variant_id && 
+            (!editingItem.variant_group_selections?.length || v.variant_group_option_id === defaults[Object.keys(defaults)[0]]));
           if (editingVariant) {
             setSelectedVariantOption(editingVariant);
           }
@@ -191,6 +235,36 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       // Fallback to legacy system
       setUseNewVariantSystem(false);
       await fetchExtrasAndModifiers();
+    }
+  };
+
+  const filterVariantsByGroup = (variants: ProductVariantOption[], groupSelections: Record<string, string>) => {
+    if (Object.keys(groupSelections).length === 0) return variants;
+    const selectedOptionIds = Object.values(groupSelections);
+    // If variants have variant_group_option_id, filter by it. Otherwise show all.
+    const withGroupOption = variants.filter(v => (v as any).variant_group_option_id);
+    if (withGroupOption.length === 0) return variants; // No group options configured yet
+    
+    // Show variants matching ANY of the selected group options
+    // (for single group, just filter; for multi, need all matches)
+    return variants.filter(v => {
+      const goid = (v as any).variant_group_option_id;
+      if (!goid) return false;
+      return selectedOptionIds.includes(goid);
+    });
+  };
+
+  const handleGroupOptionChange = (groupId: string, optionId: string) => {
+    const newSelections = { ...selectedGroupOptions, [groupId]: optionId };
+    setSelectedGroupOptions(newSelections);
+    
+    // Re-filter variants and select the best match
+    const filtered = filterVariantsByGroup(availableVariants, newSelections);
+    if (filtered.length > 0) {
+      // Try to keep the same variant name (e.g., "Simple") but with the new group option
+      const currentVariantName = selectedVariantOption?.variant?.name;
+      const sameNameVariant = filtered.find(v => v.variant?.name === currentVariantName);
+      setSelectedVariantOption(sameNameVariant || filtered.find(v => v.is_default) || filtered[0]);
     }
   };
 
@@ -372,6 +446,21 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
         orderItem.category_variant_id = selectedVariantOption.category_variant_id;
         orderItem.variant_name = selectedVariantOption.variant?.name;
         orderItem.product_variant_option_id = selectedVariantOption.id;
+        
+        // Add variant group selections
+        if (variantGroups.length > 0) {
+          orderItem.variant_group_selections = variantGroups
+            .filter(g => selectedGroupOptions[g.group_id])
+            .map(g => {
+              const selectedOption = g.options.find(o => o.id === selectedGroupOptions[g.group_id]);
+              return {
+                group_id: g.group_id,
+                group_name: g.group_name,
+                option_id: selectedGroupOptions[g.group_id],
+                option_name: selectedOption?.name || '',
+              };
+            });
+        }
       } else {
         // Legacy system
         orderItem.size = selectedVariant;
@@ -435,15 +524,44 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
             />
           ) : (
             <>
+              {/* Variant Group Selectors (multi-dimensional) */}
+              {variantGroups.length > 0 && (
+                <>
+                  {variantGroups.map(group => (
+                    <Card key={group.group_id}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{group.group_name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-3">
+                          {group.options.map(option => (
+                            <Button
+                              key={option.id}
+                              variant={selectedGroupOptions[group.group_id] === option.id ? 'default' : 'outline'}
+                              onClick={() => handleGroupOptionChange(group.group_id, option.id)}
+                              className="h-auto py-3"
+                            >
+                              {option.name}
+                            </Button>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </>
+              )}
+
               {/* Variant Selection - New or Legacy System */}
               {useNewVariantSystem && availableVariants.length > 0 ? (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Variantes Disponibles</CardTitle>
+                    <CardTitle className="text-lg">
+                      {variantGroups.length > 0 ? 'Tamaño' : 'Variantes Disponibles'}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <VariantSelector
-                      variants={availableVariants}
+                      variants={variantGroups.length > 0 ? filterVariantsByGroup(availableVariants, selectedGroupOptions) : availableVariants}
                       selectedVariantId={selectedVariantOption?.id || undefined}
                       onVariantSelect={(variant) => {
                         setSelectedVariantOption(variant);

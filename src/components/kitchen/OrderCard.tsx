@@ -175,6 +175,12 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
                 <div className="flex-1">
                   <div className={`font-medium ${compact ? 'text-sm' : 'text-base'}`}>
                     {item.quantity}x {item.productName}
+                    {/* Display variant group selections */}
+                    {item.variant_group_selections && item.variant_group_selections.length > 0 && (
+                      <span className="text-primary">
+                        {' '}({item.variant_group_selections.map(s => s.option_name).join(' / ')})
+                      </span>
+                    )}
                     {/* Display variant info based on system used */}
                     {item.variant_name ? (
                       ` - ${item.variant_name}`
