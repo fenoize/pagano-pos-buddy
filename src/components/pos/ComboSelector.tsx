@@ -53,6 +53,10 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const [selections, setSelections] = useState<ComboItemSelection[]>([]);
   const [loading, setLoading] = useState(true);
   const [extrasModalSlotIndex, setExtrasModalSlotIndex] = useState<number | null>(null);
+  // Variant groups per product: productId -> VariantGroupWithOptions[]
+  const [productVariantGroups, setProductVariantGroups] = useState<Record<string, VariantGroupWithOptions[]>>({});
+  // Selected group options per slot: slotIndex -> { groupId: optionId }
+  const [slotGroupSelections, setSlotGroupSelections] = useState<Record<number, Record<string, string>>>({});
   const { toast } = useToast();
 
   // Track initialization to prevent re-fetching
