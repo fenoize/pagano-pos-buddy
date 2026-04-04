@@ -35,9 +35,6 @@ interface ComboItemSelection {
   modifiers?: string[]; // modifier_ids
 }
 
-const normalizeProductName = (value?: string | null) =>
-  value?.trim().toLocaleLowerCase('es-CL') ?? '';
-
 const ComboSelector: React.FC<ComboSelectorProps> = ({
   product,
   onComboItemsChange,
@@ -178,12 +175,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           console.log('[ComboSelector] Creating default selections');
           computedSelections = (preloadedComboData.slots || []).map((slot: ComboItem) => {
             const categoryProducts = preloadedComboData.slotProducts[slot.category_id] || [];
-            const fallbackName = slot.default_product_id
-              ? preloadedComboData.allProductsById?.[slot.default_product_id]?.name
-              : undefined;
             const defaultProduct = slot.default_product_id ?
-            categoryProducts.find((p: Product) => p.id === slot.default_product_id) ||
-            categoryProducts.find((p: Product) => normalizeProductName(p.name) === normalizeProductName(fallbackName)) :
+            categoryProducts.find((p: Product) => p.id === slot.default_product_id) :
             categoryProducts[0];
 
             const allVariants = defaultProduct ? preloadedComboData.productVariants[defaultProduct.id!] || [] : [];
@@ -405,7 +398,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       setProductModifiers(groupedModifiers);
 
       // Initialize selections with defaults
-        const defaultSelections: ComboItemSelection[] = (slotsData || []).map((slot) => {
+          const defaultSelections: ComboItemSelection[] = (slotsData || []).map((slot) => {
         const categoryProducts = groupedProducts[slot.category_id] || [];
           const defaultProduct = slot.default_product_id ?
           categoryProducts.find((p) => p.id === slot.default_product_id) :
@@ -554,10 +547,11 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
     if (product) {
       // Fetch variant groups for this product if not already loaded
-      const freshGroups = !productVariantGroups[productId]
-        ? await fetchProductVariantGroups([productId])
-        : productVariantGroups;
-      const groups = freshGroups?.[productId] || productVariantGroups[productId] || [];
+      if (!productVariantGroups[productId]) {
+        await fetchProductVariantGroups([productId]);
+      }
+
+      const groups = productVariantGroups[productId] || [];
       const allVariants = productVariants[productId] || [];
       const variants = allVariants.filter((v) => v.variant?.category_id === selection.comboSlot.category_id);
       

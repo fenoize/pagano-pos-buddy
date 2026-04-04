@@ -49,37 +49,6 @@ interface ProductGridProps {
   }) => void;
 }
 
-const normalizeProductName = (value?: string | null) =>
-  value?.trim().toLocaleLowerCase('es-CL') ?? '';
-
-const resolveSlotDefaultProduct = ({
-  categoryProducts,
-  defaultProductId,
-  fallbackName,
-}: {
-  categoryProducts: Product[];
-  defaultProductId?: string | null;
-  fallbackName?: string;
-}) => {
-  if (categoryProducts.length === 0) return undefined;
-
-  const directMatch = defaultProductId
-    ? categoryProducts.find((candidate) => candidate.id === defaultProductId)
-    : undefined;
-
-  if (directMatch) return directMatch;
-
-  const normalizedFallbackName = normalizeProductName(fallbackName);
-  if (normalizedFallbackName) {
-    const sameNameMatch = categoryProducts.find(
-      (candidate) => normalizeProductName(candidate.name) === normalizedFallbackName,
-    );
-    if (sameNameMatch) return sameNameMatch;
-  }
-
-  return categoryProducts[0];
-};
-
 export default function ProductGrid({ products, onProductClick, onDataPreloaded }: ProductGridProps) {
   const [categories, setCategories] = useState<Array<{ id: string; name: string; is_default?: boolean }>>([]);
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -168,7 +137,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
 
       // Para combos, NO filtrar por show_in_pos - los productos dentro de combos
       // pueden existir solo como parte del combo sin estar visibles individualmente en POS
-      const [productsRes, variantsRes, extrasRes, modifiersRes, stockBalancesRes, comboParentsRes] = await Promise.all([
+      const [productsRes, variantsRes, extrasRes, modifiersRes, stockBalancesRes] = await Promise.all([
         supabase
           .from('products')
           .select(`
@@ -201,26 +170,8 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         // Fetch stock balances for raw materials
         supabase
           .from('stock_balances')
-          .select('raw_material_id, qty_on_hand'),
-        supabase
-          .from('combo_products')
-          .select('product_id')
-          .eq('active', true)
+          .select('raw_material_id, qty_on_hand')
       ]);
-
-      const activeComboProductIds = new Set(
-        (comboParentsRes.data || []).map((comboParent) => comboParent.product_id)
-      );
-
-      const allProductsById: Record<string, Product> = Object.fromEntries(
-        (productsRes.data || []).map((dbProduct: any) => [
-          dbProduct.id,
-          {
-            ...dbProduct,
-            prices: dbProduct.prices as any,
-          } as Product,
-        ])
-      );
 
       // Create a map of raw_material_id -> total stock
       const stockByMaterial: Record<string, number> = {};
@@ -236,10 +187,6 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         
         const slotProducts: Record<string, any[]> = {};
         productsRes.data?.forEach((dbProduct: any) => {
-          if (activeComboProductIds.has(dbProduct.id)) {
-            return;
-          }
-
           dbProduct.product_categories?.forEach((pc: any) => {
             if (!slotProducts[pc.category_id]) {
               slotProducts[pc.category_id] = [];
@@ -285,33 +232,14 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           productModifiers[modifier.product_id].push(modifier);
         });
 
-        const resolvedSlots = comboSlots.map((slot) => {
-          const categoryProducts = slotProducts[slot.category_id] || [];
-          const fallbackName = slot.default_product_id
-            ? allProductsById[slot.default_product_id]?.name || (slot.default_product_id === config.product_id ? allProductsById[config.product_id]?.name : undefined)
-            : undefined;
-
-          const resolvedDefaultProduct = resolveSlotDefaultProduct({
-            categoryProducts,
-            defaultProductId: slot.default_product_id,
-            fallbackName,
-          });
-
-          return {
-            ...slot,
-            default_product_id: resolvedDefaultProduct?.id || slot.default_product_id,
-          };
-        });
-
         comboDataByProduct[config.product_id] = {
           config,
-          slots: resolvedSlots,
+          slots: comboSlots,
           categories,
           slotProducts,
           productVariants,
           productExtras,
-          productModifiers,
-          allProductsById,
+          productModifiers
         };
       });
 
