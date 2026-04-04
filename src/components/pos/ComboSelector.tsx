@@ -810,6 +810,34 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                 </Select>
               }
 
+              {/* Variant Group Selectors (e.g., Proteína: Carne / Pollo) */}
+              {slotVariantGroups.length > 0 && slotVariantGroups.map(group => (
+                <div key={group.group_id} className="space-y-1.5">
+                  <h4 className="font-medium text-sm text-muted-foreground">
+                    {group.group_name} *
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {group.options.map(option => {
+                      const isSelected = slotGroupSels[group.group_id] === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => handleSlotGroupOptionChange(index, group.group_id, option.id)}
+                          className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                            isSelected
+                              ? 'ring-2 ring-primary bg-primary/10 border-primary text-primary'
+                              : 'bg-muted/50 border-border text-muted-foreground hover:bg-accent/50'
+                          }`}
+                        >
+                          {option.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
               {/* Variant Selection */}
               {availableVariants.length > 0 &&
               <>
