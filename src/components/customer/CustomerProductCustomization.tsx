@@ -103,7 +103,6 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
 
   const fetchProductVariantsAndCustomizations = async () => {
     try {
-      // First, get the product's assigned categories
       const { data: productCategories, error: catError } = await configuredSupabase
         .from('product_categories')
         .select('category_id')
@@ -113,7 +112,6 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
 
       const categoryIds = (productCategories || []).map(pc => pc.category_id);
 
-      // Fetch product variants from new system, filtering by product's categories
       const { data: variantsData, error: variantsError } = await configuredSupabase
         .from('product_variant_options')
         .select(`
@@ -130,9 +128,35 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       const variants = (variantsData || []) as ProductVariantOption[];
       setAvailableVariants(variants);
 
+      // Fetch variant groups assigned to this product
+      const { data: pvgData } = await configuredSupabase
+        .from('product_variant_groups')
+        .select('group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active))')
+        .eq('product_id', product.id);
+
+      const fetchedGroups: VariantGroupWithOptions[] = (pvgData || [])
+        .filter((pvg: any) => pvg.group)
+        .map((pvg: any) => ({
+          group_id: pvg.group.id,
+          group_name: pvg.group.name,
+          options: (pvg.group.options || [])
+            .filter((o: any) => o.active)
+            .sort((a: any, b: any) => a.display_order - b.display_order),
+        }));
+      setVariantGroups(fetchedGroups);
+
+      // Set default group options
+      const defaults: Record<string, string> = {};
+      fetchedGroups.forEach(g => {
+        const def = g.options.find(o => o.is_default) || g.options[0];
+        if (def) defaults[g.group_id] = def.id;
+      });
+      setSelectedGroupOptions(defaults);
+
       if (variants.length > 0) {
         setUseNewVariantSystem(true);
-        const defaultVariant = variants.find(v => v.is_default) || variants[0];
+        const filteredVariants = filterVariantsByGroup(variants, defaults);
+        const defaultVariant = filteredVariants.find(v => v.is_default) || filteredVariants[0] || variants.find(v => v.is_default) || variants[0];
         setSelectedVariantOption(defaultVariant);
       } else {
         setUseNewVariantSystem(false);
@@ -143,6 +167,28 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       console.error('Error fetching product variants:', error);
       setUseNewVariantSystem(false);
       await fetchExtrasAndModifiers();
+    }
+  };
+
+  const filterVariantsByGroup = (variants: ProductVariantOption[], groupSelections: Record<string, string>) => {
+    if (Object.keys(groupSelections).length === 0) return variants;
+    const selectedOptionIds = Object.values(groupSelections);
+    const withGroupOption = variants.filter(v => v.variant_group_option_id);
+    if (withGroupOption.length === 0) return variants;
+    return variants.filter(v => {
+      if (!v.variant_group_option_id) return false;
+      return selectedOptionIds.includes(v.variant_group_option_id);
+    });
+  };
+
+  const handleGroupOptionChange = (groupId: string, optionId: string) => {
+    const newSelections = { ...selectedGroupOptions, [groupId]: optionId };
+    setSelectedGroupOptions(newSelections);
+    const filtered = filterVariantsByGroup(availableVariants, newSelections);
+    if (filtered.length > 0) {
+      const currentVariantName = selectedVariantOption?.variant?.name;
+      const sameNameVariant = filtered.find(v => v.variant?.name === currentVariantName);
+      setSelectedVariantOption(sameNameVariant || filtered.find(v => v.is_default) || filtered[0]);
     }
   };
 
