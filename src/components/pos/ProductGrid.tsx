@@ -237,6 +237,19 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           productModifiers[modifier.product_id].push(modifier);
         });
 
+        // Build variant groups by product
+        const productVariantGroupsMap: Record<string, any[]> = {};
+        variantGroupsRes.data?.forEach((pvg: any) => {
+          if (!productVariantGroupsMap[pvg.product_id]) {
+            productVariantGroupsMap[pvg.product_id] = [];
+          }
+          productVariantGroupsMap[pvg.product_id].push({
+            group_id: pvg.group_id,
+            name: pvg.group?.name,
+            options: pvg.group?.options || []
+          });
+        });
+
         comboDataByProduct[config.product_id] = {
           config,
           slots: comboSlots,
@@ -244,7 +257,8 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           slotProducts,
           productVariants,
           productExtras,
-          productModifiers
+          productModifiers,
+          productVariantGroups: productVariantGroupsMap
         };
       });
 
