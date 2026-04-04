@@ -21,6 +21,7 @@ import { ExtrasManagement } from './ExtrasManagement';
 import { ModifiersManagement } from './ModifiersManagement';
 import ProductVariantsManagementEnhanced from './ProductVariantsManagementEnhanced';
 import ComboManagement from './ComboManagement';
+import ProductVariantGroupsAssignment from './ProductVariantGroupsAssignment';
 import { AlertTriangle, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRawMaterials } from '@/hooks/useRawMaterials';
@@ -364,6 +365,9 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
                 productId={product?.id}
                 categoryIds={selectedCategories}
               />
+              <div className="mt-6">
+                <ProductVariantGroupsAssignment productId={product?.id} />
+              </div>
             </TabsContent>
 
             <TabsContent value="combos">
