@@ -509,15 +509,44 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
             />
           ) : (
             <>
+              {/* Variant Group Selectors (multi-dimensional) */}
+              {variantGroups.length > 0 && (
+                <>
+                  {variantGroups.map(group => (
+                    <Card key={group.group_id}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{group.group_name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-3">
+                          {group.options.map(option => (
+                            <Button
+                              key={option.id}
+                              variant={selectedGroupOptions[group.group_id] === option.id ? 'default' : 'outline'}
+                              onClick={() => handleGroupOptionChange(group.group_id, option.id)}
+                              className="h-auto py-3"
+                            >
+                              {option.name}
+                            </Button>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </>
+              )}
+
               {/* Variant Selection - New or Legacy System */}
               {useNewVariantSystem && availableVariants.length > 0 ? (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Variantes Disponibles</CardTitle>
+                    <CardTitle className="text-lg">
+                      {variantGroups.length > 0 ? 'Tamaño' : 'Variantes Disponibles'}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <VariantSelector
-                      variants={availableVariants}
+                      variants={variantGroups.length > 0 ? filterVariantsByGroup(availableVariants, selectedGroupOptions) : availableVariants}
                       selectedVariantId={selectedVariantOption?.id || undefined}
                       onVariantSelect={(variant) => {
                         setSelectedVariantOption(variant);
