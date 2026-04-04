@@ -70,6 +70,10 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   const [comboTotal, setComboTotal] = useState(0);
   const [useCombo, setUseCombo] = useState(false);
   
+  // Variant groups state (multi-dimensional)
+  const [variantGroups, setVariantGroups] = useState<VariantGroupWithOptions[]>([]);
+  const [selectedGroupOptions, setSelectedGroupOptions] = useState<Record<string, string>>({});
+  
   const { toast } = useToast();
 
   // Memoizar variantes disponibles para evitar recalcular en cada render
