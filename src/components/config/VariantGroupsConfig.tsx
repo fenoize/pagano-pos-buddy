@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, Layers, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Layers, ChevronDown, ChevronRight, Pencil, Check, X } from 'lucide-react';
 import { useVariantGroups } from '@/hooks/useVariantGroups';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -16,6 +16,10 @@ export default function VariantGroupsConfig() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newOptionNames, setNewOptionNames] = useState<Record<string, string>>({});
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingGroupName, setEditingGroupName] = useState('');
+  const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
+  const [editingOptionName, setEditingOptionName] = useState('');
 
   const toggleExpand = (id: string) => {
     setExpandedGroups(prev => {
@@ -86,7 +90,44 @@ export default function VariantGroupsConfig() {
                 >
                   <div className="flex items-center gap-3">
                     {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                    <span className="font-medium">{group.name}</span>
+                    {editingGroupId === group.id ? (
+                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <Input
+                          value={editingGroupName}
+                          onChange={e => setEditingGroupName(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              if (editingGroupName.trim()) updateGroup(group.id, { name: editingGroupName.trim() });
+                              setEditingGroupId(null);
+                            }
+                            if (e.key === 'Escape') setEditingGroupId(null);
+                          }}
+                          className="h-7 w-40"
+                          autoFocus
+                        />
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                          if (editingGroupName.trim()) updateGroup(group.id, { name: editingGroupName.trim() });
+                          setEditingGroupId(null);
+                        }}>
+                          <Check className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingGroupId(null)}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-medium">{group.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={e => { e.stopPropagation(); setEditingGroupId(group.id); setEditingGroupName(group.name); }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </>
+                    )}
                     <Badge variant="secondary">{group.options.length} opciones</Badge>
                     {!group.active && <Badge variant="outline">Inactivo</Badge>}
                   </div>
@@ -123,7 +164,44 @@ export default function VariantGroupsConfig() {
                     {group.options.map(option => (
                       <div key={option.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-2">
-                          <span>{option.name}</span>
+                          {editingOptionId === option.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                value={editingOptionName}
+                                onChange={e => setEditingOptionName(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    if (editingOptionName.trim()) updateOption(option.id, { name: editingOptionName.trim() });
+                                    setEditingOptionId(null);
+                                  }
+                                  if (e.key === 'Escape') setEditingOptionId(null);
+                                }}
+                                className="h-7 w-32"
+                                autoFocus
+                              />
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                                if (editingOptionName.trim()) updateOption(option.id, { name: editingOptionName.trim() });
+                                setEditingOptionId(null);
+                              }}>
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingOptionId(null)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <span>{option.name}</span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => { setEditingOptionId(option.id); setEditingOptionName(option.name); }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
                           {option.is_default && <Badge variant="secondary" className="text-xs">Predeterminado</Badge>}
                         </div>
                         <div className="flex items-center gap-2">
