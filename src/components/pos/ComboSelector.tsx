@@ -761,7 +761,14 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           const allProductVariants = selection.selectedProduct ?
           productVariants[selection.selectedProduct.id!] || [] :
           [];
-          const availableVariants = allProductVariants.filter((v) => v.variant?.category_id === slot.category_id);
+          const categoryVariants = allProductVariants.filter((v) => v.variant?.category_id === slot.category_id);
+          // Get variant groups for this product
+          const slotVariantGroups = selection.selectedProduct?.id ? productVariantGroups[selection.selectedProduct.id] || [] : [];
+          const slotGroupSels = slotGroupSelections[index] || {};
+          // Filter variants by group selection if groups exist
+          const availableVariants = slotVariantGroups.length > 0 && Object.keys(slotGroupSels).length > 0
+            ? filterVariantsByGroup(categoryVariants, slotGroupSels)
+            : categoryVariants;
           const availableExtras = productExtras[slot.category_id] || [];
           const availableModifiers = selection.selectedProduct ?
           productModifiers[selection.selectedProduct.id!] || [] :
