@@ -11,6 +11,12 @@ import { useToast } from '@/hooks/use-toast';
 import VariantSelector from './VariantSelector';
 import { ExtrasModal } from './ExtrasModal';
 
+interface VariantGroupWithOptions {
+  group_id: string;
+  group_name: string;
+  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null }>;
+}
+
 interface ComboSelectorProps {
   product: Product;
   onComboItemsChange: (items: ComboItemSelection[]) => void;
