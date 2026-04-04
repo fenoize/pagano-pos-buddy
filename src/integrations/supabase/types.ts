@@ -4455,6 +4455,42 @@ export type Database = {
           },
         ]
       }
+      product_variant_groups: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variant_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "variant_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variant_options: {
         Row: {
           active: boolean
@@ -4469,6 +4505,7 @@ export type Database = {
           sku: string | null
           stock: number
           updated_at: string
+          variant_group_option_id: string | null
         }
         Insert: {
           active?: boolean
@@ -4483,6 +4520,7 @@ export type Database = {
           sku?: string | null
           stock?: number
           updated_at?: string
+          variant_group_option_id?: string | null
         }
         Update: {
           active?: boolean
@@ -4497,6 +4535,7 @@ export type Database = {
           sku?: string | null
           stock?: number
           updated_at?: string
+          variant_group_option_id?: string | null
         }
         Relationships: [
           {
@@ -4518,6 +4557,13 @@ export type Database = {
             columns: ["raw_material_id"]
             isOneToOne: false
             referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_options_variant_group_option_id_fkey"
+            columns: ["variant_group_option_id"]
+            isOneToOne: false
+            referencedRelation: "variant_group_options"
             referencedColumns: ["id"]
           },
         ]
@@ -6334,6 +6380,77 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
           username?: string
+        }
+        Relationships: []
+      }
+      variant_group_options: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_order: number
+          group_id: string
+          id: string
+          image_url: string | null
+          is_default: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          group_id: string
+          id?: string
+          image_url?: string | null
+          is_default?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          group_id?: string
+          id?: string
+          image_url?: string | null
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "variant_group_options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "variant_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      variant_groups: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
