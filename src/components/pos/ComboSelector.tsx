@@ -205,6 +205,28 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
         setSelections(computedSelections);
 
+        // Fetch variant groups for all selected products
+        const selectedProductIds = computedSelections
+          .map(s => s.selectedProduct?.id)
+          .filter(Boolean) as string[];
+        const groupsMap = await fetchProductVariantGroups(selectedProductIds);
+        
+        // Initialize default group selections per slot
+        if (groupsMap) {
+          const defaultSlotGroups: Record<number, Record<string, string>> = {};
+          computedSelections.forEach((sel, idx) => {
+            if (sel.selectedProduct?.id && groupsMap[sel.selectedProduct.id]) {
+              const defaults: Record<string, string> = {};
+              groupsMap[sel.selectedProduct.id].forEach(g => {
+                const def = g.options.find(o => o.is_default) || g.options[0];
+                if (def) defaults[g.group_id] = def.id;
+              });
+              if (Object.keys(defaults).length > 0) defaultSlotGroups[idx] = defaults;
+            }
+          });
+          setSlotGroupSelections(defaultSlotGroups);
+        }
+
         // Notify parent immediately with computed selections
         const total = calculateComboTotalFromSelections(computedSelections, preloadedComboData.config, preloadedComboData.productExtras, preloadedComboData.productVariants);
         onComboTotalChange(total);
