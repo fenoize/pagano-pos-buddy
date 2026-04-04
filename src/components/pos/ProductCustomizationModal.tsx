@@ -446,6 +446,21 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
         orderItem.category_variant_id = selectedVariantOption.category_variant_id;
         orderItem.variant_name = selectedVariantOption.variant?.name;
         orderItem.product_variant_option_id = selectedVariantOption.id;
+        
+        // Add variant group selections
+        if (variantGroups.length > 0) {
+          orderItem.variant_group_selections = variantGroups
+            .filter(g => selectedGroupOptions[g.group_id])
+            .map(g => {
+              const selectedOption = g.options.find(o => o.id === selectedGroupOptions[g.group_id]);
+              return {
+                group_id: g.group_id,
+                group_name: g.group_name,
+                option_id: selectedGroupOptions[g.group_id],
+                option_name: selectedOption?.name || '',
+              };
+            });
+        }
       } else {
         // Legacy system
         orderItem.size = selectedVariant;
