@@ -152,8 +152,12 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
                         <p className="font-medium text-foreground">
                           {item.quantity}x {itemName}
                         </p>
-                        {itemVariant && (
-                          <p className="text-xs text-muted-foreground">{itemVariant}</p>
+                        {(groupLabel || itemVariant) && (
+                          <p className="text-xs text-muted-foreground">
+                            {groupLabel && <span>{groupLabel}</span>}
+                            {groupLabel && itemVariant && ' · '}
+                            {itemVariant && <span>{itemVariant}</span>}
+                          </p>
                         )}
                         {item.extras && item.extras.length > 0 && (
                           <p className="text-xs text-muted-foreground">
