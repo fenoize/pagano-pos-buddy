@@ -345,29 +345,29 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             </TabsContent>
 
             <TabsContent value="variants">
-              {isComboProduct && (
-                <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                    <div>
-                      <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
-                        Producto configurado como Combo
-                      </h4>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                        Este producto está configurado como combo. Los precios se gestionan desde la configuración de combo, 
-                        no desde las variantes individuales. Ve a la pestaña "Combos" para modificar la configuración de precios.
-                      </p>
-                    </div>
+              {isComboProduct ? (
+                <div className="p-6 text-center space-y-3">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    <AlertTriangle className="h-6 w-6 text-muted-foreground" />
                   </div>
+                  <h4 className="font-medium text-foreground">
+                    Producto configurado como Combo
+                  </h4>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    Los combos no tienen variables propias. Las variables (como Proteína o Tamaño) se heredan de los productos que componen el combo. Configura las variables directamente en cada producto hijo.
+                  </p>
                 </div>
+              ) : (
+                <>
+                  <ProductVariantsManagementEnhanced
+                    productId={product?.id}
+                    categoryIds={selectedCategories}
+                  />
+                  <div className="mt-6">
+                    <ProductVariantGroupsAssignment productId={product?.id} />
+                  </div>
+                </>
               )}
-              <ProductVariantsManagementEnhanced
-                productId={product?.id}
-                categoryIds={selectedCategories}
-              />
-              <div className="mt-6">
-                <ProductVariantGroupsAssignment productId={product?.id} />
-              </div>
             </TabsContent>
 
             <TabsContent value="combos">
