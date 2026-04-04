@@ -377,11 +377,30 @@ export function ProductCustomizationModalEnhanced({
         category: preloadedComboData?.categories?.find((c: any) => c.id === selection.comboSlot.category_id)
       };
 
+      // Build variant_group_selections from selectedVariant's variant_group_option_id
+      let variantGroupSelections: any[] = [];
+      const vgoId = selection.selectedVariant?.variant_group_option_id;
+      if (vgoId && selection.selectedProduct?.id) {
+        const groups = preloadedComboData?.productVariantGroups?.[selection.selectedProduct.id] || [];
+        for (const g of groups) {
+          const opt = g.options?.find((o: any) => o.id === vgoId);
+          if (opt) {
+            variantGroupSelections.push({
+              group_id: g.group_id,
+              group_name: g.name,
+              option_id: opt.id,
+              option_name: opt.name,
+            });
+          }
+        }
+      }
+
       return {
         ...selection,
         comboSlot: enrichedComboSlot,
         extras: enrichedExtras,
-        modifiers: enrichedModifiers
+        modifiers: enrichedModifiers,
+        variant_group_selections: variantGroupSelections.length > 0 ? variantGroupSelections : undefined,
       };
     }) : undefined;
 

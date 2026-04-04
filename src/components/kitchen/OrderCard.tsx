@@ -203,9 +203,9 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
                             {comboItem.selectedVariant?.variant?.name ? ` - ${comboItem.selectedVariant.variant.name}` : ''}
                           </span>
                           {/* Variant group option (e.g. Proteína: Pollo) */}
-                          {comboItem.selectedVariant?.variant_group_option_id && comboItem.variant_group_selections && comboItem.variant_group_selections.length > 0 && (
+                          {comboItem.variant_group_selections && comboItem.variant_group_selections.length > 0 && (
                             <div className="ml-2 text-primary font-medium">
-                              {comboItem.variant_group_selections.map((s: any) => `${s.group_name}: ${s.option_name}`).join(' / ')}
+                              {comboItem.variant_group_selections.map((s: any) => s.option_name).join(' / ')}
                             </div>
                           )}
                           {/* Combo item extras - handle both object and array */}
