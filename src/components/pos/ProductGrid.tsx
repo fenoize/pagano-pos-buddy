@@ -137,7 +137,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
 
       // Para combos, NO filtrar por show_in_pos - los productos dentro de combos
       // pueden existir solo como parte del combo sin estar visibles individualmente en POS
-      const [productsRes, variantsRes, extrasRes, modifiersRes, stockBalancesRes] = await Promise.all([
+      const [productsRes, variantsRes, extrasRes, modifiersRes, stockBalancesRes, variantGroupsRes] = await Promise.all([
         supabase
           .from('products')
           .select(`
@@ -170,7 +170,12 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         // Fetch stock balances for raw materials
         supabase
           .from('stock_balances')
-          .select('raw_material_id, qty_on_hand')
+          .select('raw_material_id, qty_on_hand'),
+        
+        // Fetch variant groups for combo products
+        supabase
+          .from('product_variant_groups')
+          .select('product_id, group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active))')
       ]);
 
       // Create a map of raw_material_id -> total stock
