@@ -423,6 +423,26 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
       setSelections(defaultSelections);
 
+      // Fetch variant groups for fallback path too
+      const fallbackProductIds = defaultSelections
+        .map(s => s.selectedProduct?.id)
+        .filter(Boolean) as string[];
+      const groupsMap = await fetchProductVariantGroups(fallbackProductIds);
+      if (groupsMap) {
+        const defaultSlotGroups: Record<number, Record<string, string>> = {};
+        defaultSelections.forEach((sel, idx) => {
+          if (sel.selectedProduct?.id && groupsMap[sel.selectedProduct.id]) {
+            const defaults: Record<string, string> = {};
+            groupsMap[sel.selectedProduct.id].forEach(g => {
+              const def = g.options.find(o => o.is_default) || g.options[0];
+              if (def) defaults[g.group_id] = def.id;
+            });
+            if (Object.keys(defaults).length > 0) defaultSlotGroups[idx] = defaults;
+          }
+        });
+        setSlotGroupSelections(defaultSlotGroups);
+      }
+
     } catch (error) {
       console.error('Error fetching combo data:', error);
       toast({
