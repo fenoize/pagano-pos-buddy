@@ -520,16 +520,38 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     onComboItemsChange(newSelections);
   };
 
-  const selectProduct = (slotIndex: number, productId: string) => {
+  const selectProduct = async (slotIndex: number, productId: string) => {
     const selection = selections[slotIndex];
     const categoryProducts = slotProducts[selection.comboSlot.category_id] || [];
     const product = categoryProducts.find((p) => p.id === productId);
 
     if (product) {
+      // Fetch variant groups for this product if not already loaded
+      if (!productVariantGroups[productId]) {
+        await fetchProductVariantGroups([productId]);
+      }
+
+      const groups = productVariantGroups[productId] || [];
       const allVariants = productVariants[productId] || [];
-      // Filter variants to only those belonging to the slot's category
       const variants = allVariants.filter((v) => v.variant?.category_id === selection.comboSlot.category_id);
-      const defaultVariant = variants.find((v) => v.is_default) || variants[0];
+      
+      // Set default group selections for this slot
+      const defaults: Record<string, string> = {};
+      groups.forEach(g => {
+        const def = g.options.find(o => o.is_default) || g.options[0];
+        if (def) defaults[g.group_id] = def.id;
+      });
+      if (Object.keys(defaults).length > 0) {
+        setSlotGroupSelections(prev => ({ ...prev, [slotIndex]: defaults }));
+      } else {
+        setSlotGroupSelections(prev => { const next = { ...prev }; delete next[slotIndex]; return next; });
+      }
+
+      // Filter by group if applicable
+      const filteredVariants = Object.keys(defaults).length > 0
+        ? filterVariantsByGroup(variants, defaults)
+        : variants;
+      const defaultVariant = filteredVariants.find((v) => v.is_default) || filteredVariants[0] || variants[0];
 
       updateSelection(slotIndex, {
         selectedProduct: product,
