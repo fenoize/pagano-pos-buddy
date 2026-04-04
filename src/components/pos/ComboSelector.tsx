@@ -466,6 +466,37 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     }
   };
 
+  const filterVariantsByGroup = (variants: ProductVariantOption[], groupSelections: Record<string, string>) => {
+    if (Object.keys(groupSelections).length === 0) return variants;
+    const selectedOptionIds = Object.values(groupSelections);
+    const withGroupOption = variants.filter(v => (v as any).variant_group_option_id);
+    if (withGroupOption.length === 0) return variants;
+    return variants.filter(v => {
+      const goid = (v as any).variant_group_option_id;
+      if (!goid) return false;
+      return selectedOptionIds.includes(goid);
+    });
+  };
+
+  const handleSlotGroupOptionChange = (slotIndex: number, groupId: string, optionId: string) => {
+    const newSelections = { ...slotGroupSelections };
+    newSelections[slotIndex] = { ...(newSelections[slotIndex] || {}), [groupId]: optionId };
+    setSlotGroupSelections(newSelections);
+
+    // Re-filter variants for this slot and update selected variant
+    const selection = selections[slotIndex];
+    if (!selection?.selectedProduct) return;
+    const allVariants = productVariants[selection.selectedProduct.id!] || [];
+    const categoryFiltered = allVariants.filter(v => v.variant?.category_id === selection.comboSlot.category_id);
+    const filtered = filterVariantsByGroup(categoryFiltered, newSelections[slotIndex]);
+    
+    if (filtered.length > 0) {
+      const currentName = selection.selectedVariant?.variant?.name;
+      const sameNameVariant = filtered.find(v => v.variant?.name === currentName);
+      updateSelection(slotIndex, { selectedVariant: sameNameVariant || filtered.find(v => v.is_default) || filtered[0] });
+    }
+  };
+
   // Recalcular total automáticamente cuando cambian las selecciones o extras
   useEffect(() => {
     if (selections.length > 0 && comboConfig) {
