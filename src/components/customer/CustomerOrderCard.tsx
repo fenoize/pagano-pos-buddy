@@ -139,7 +139,7 @@ export function CustomerOrderCard({ order, onReorder }: CustomerOrderCardProps) 
                 {order.items.map((item, index) => {
                   // Manejar diferentes estructuras de datos
                   const itemName = item.name || item.productName || 'Producto';
-                  const groupSelections = item.variant_group_selections;
+                  const groupSelections = (item as any).variant_group_selections;
                   const groupLabel = groupSelections && groupSelections.length > 0
                     ? groupSelections.map((s: any) => s.option_name).join(' / ')
                     : '';
