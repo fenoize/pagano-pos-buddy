@@ -68,6 +68,10 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   const [comboTotal, setComboTotal] = useState(0);
   const [useCombo, setUseCombo] = useState(false);
   
+  // Variant groups state (multi-dimensional)
+  const [variantGroups, setVariantGroups] = useState<VariantGroupWithOptions[]>([]);
+  const [selectedGroupOptions, setSelectedGroupOptions] = useState<Record<string, string>>({});
+  
   const { toast } = useToast();
 
   // Get available legacy variants
