@@ -478,6 +478,10 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                           <Select
                             value={item.default_product_id || undefined}
                             onValueChange={(value) => {
+                              if (value === productId) {
+                                toast({ title: 'Error', description: 'Un combo no puede apuntar a sí mismo como producto por defecto', variant: 'destructive' });
+                                return;
+                              }
                               updateComboItem(item.id, 'default_product_id', value || null);
                               // Reset variant when product changes
                               updateComboItem(item.id, 'default_variant_id', null);
@@ -491,6 +495,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                             <SelectContent>
                               {products
                                 .filter(p => p.categories?.some(c => c.id === item.category_id))
+                                .filter(p => p.id !== productId) // Prevent self-referencing
                                 .map((product) => (
                                   <SelectItem key={product.id} value={product.id}>
                                     {product.name}
