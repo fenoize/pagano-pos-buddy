@@ -375,7 +375,38 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
       if (comboData.config.pricing_mode === 'fixed' && comboData.config.base_price > 0) {
         return comboData.config.base_price;
       }
-      // For dynamic mode or base_price=0, fall through to variant prices
+      // For dynamic combos, sum default slot prices
+      if (comboData.config.pricing_mode === 'dynamic') {
+        let total = comboData.config.base_price || 0;
+        const slots = comboData.slots || [];
+        for (const slot of slots) {
+          // Skip self-referencing slots
+          if (slot.default_product_id === product.id) {
+            console.warn(`Combo ${product.name}: slot auto-referenciado detectado, ignorando`);
+            continue;
+          }
+          const slotProductId = slot.default_product_id;
+          if (!slotProductId) continue;
+          
+          const slotVariants = comboData.productVariants?.[slotProductId] || [];
+          if (slotVariants.length > 0) {
+            // Use the default variant price if specified, otherwise use minimum
+            if (slot.default_variant_id) {
+              const defaultVar = slotVariants.find((v: any) => v.category_variant_id === slot.default_variant_id);
+              if (defaultVar) {
+                total += defaultVar.price || 0;
+                continue;
+              }
+            }
+            const minSlotPrice = Math.min(...slotVariants.map((v: any) => v.price).filter((p: number) => p > 0));
+            if (minSlotPrice > 0 && minSlotPrice < Infinity) {
+              total += minSlotPrice;
+            }
+          }
+        }
+        const discount = comboData.config.combo_discount || 0;
+        return Math.max(0, total - discount);
+      }
     }
 
     const variants = productVariants[product.id!] || [];
