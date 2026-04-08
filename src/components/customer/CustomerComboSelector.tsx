@@ -409,11 +409,18 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                       ? (selection.selectedProduct?.name || getCategoryName(slot.category_id))
                       : 'Elige tu opción'}
                   </h3>
-                  <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(slot as any).allow_multiple_variants
+                      ? 'Opcional • Elegir una o más'
+                      : 'Obligatorio • Elegir 1'}
+                  </p>
                 </div>
                 <div className="gap-0">
                   {availableVariants.map((variant, idx) => {
-                    const isSelected = selection.selectedVariant?.id === variant.id;
+                    const isMulti = (slot as any).allow_multiple_variants;
+                    const isSelected = isMulti
+                      ? (selection.selectedVariants || []).some(v => v.id === variant.id)
+                      : selection.selectedVariant?.id === variant.id;
                     return (
                       <div
                         key={variant.id}
@@ -430,11 +437,19 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                             </span>
                           )}
                         </div>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                          isSelected ? 'border-primary' : 'border-muted-foreground/40'
-                        }`}>
-                          {isSelected && <div className="w-3.5 h-3.5 rounded-full bg-primary" />}
-                        </div>
+                        {isMulti ? (
+                          <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                            isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                          }`}>
+                            {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
+                          </div>
+                        ) : (
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            isSelected ? 'border-primary' : 'border-muted-foreground/40'
+                          }`}>
+                            {isSelected && <div className="w-3.5 h-3.5 rounded-full bg-primary" />}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
