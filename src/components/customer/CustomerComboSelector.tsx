@@ -9,6 +9,7 @@ interface ComboItemSelection {
   comboSlot: ComboItem;
   selectedProduct?: Product;
   selectedVariant?: ProductVariantOption;
+  selectedVariants?: ProductVariantOption[];
   quantity: number;
   extras?: Record<string, number>;
   modifiers?: string[];
@@ -221,7 +222,20 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
   };
 
   const selectVariant = (slotIndex: number, variant: ProductVariantOption) => {
-    updateSelection(slotIndex, { selectedVariant: variant });
+    const slot = selections[slotIndex]?.comboSlot;
+    if ((slot as any)?.allow_multiple_variants) {
+      const current = selections[slotIndex]?.selectedVariants || [];
+      const exists = current.find(v => v.id === variant.id);
+      const newVariants = exists
+        ? current.filter(v => v.id !== variant.id)
+        : [...current, variant];
+      updateSelection(slotIndex, {
+        selectedVariants: newVariants,
+        selectedVariant: newVariants[0]
+      });
+    } else {
+      updateSelection(slotIndex, { selectedVariant: variant });
+    }
   };
 
   const handleExtraToggle = (slotIndex: number, extraId: string) => {
