@@ -914,21 +914,62 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               {availableVariants.length > 0 &&
               <>
                   
-                  {slot.allow_variant_change !== false ?
-                <VariantSelector
-                  variants={availableVariants}
-                  selectedVariantId={selection.selectedVariant?.id}
-                  onVariantSelect={(variant) => selectVariant(index, variant)}
-                  disabled={false}
-                  defaultVariantId={slot.default_variant_id}
-                  showExtraCost={comboConfig?.pricing_mode === 'fixed'}
-                  showStockCount={showVariantStock} /> :
-
-
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded px-2 py-1.5">
+                  {slot.allow_variant_change !== false ? (
+                    (slot as any).allow_multiple_variants ? (
+                      /* Multi-select mode: checkboxes */
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm text-muted-foreground">
+                          Selecciona variantes (múltiple)
+                        </h4>
+                        <div className={`grid gap-3 ${availableVariants.length <= 2 ? 'grid-cols-2' : availableVariants.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-3'}`}>
+                          {availableVariants.map((variant) => {
+                            const isChecked = (selection.selectedVariants || []).some(v => v.id === variant.id);
+                            return (
+                              <Card
+                                key={variant.id}
+                                className={`cursor-pointer transition-all ${
+                                  isChecked
+                                    ? 'ring-2 ring-primary bg-primary/5'
+                                    : 'hover:bg-accent/50'
+                                }`}
+                                onClick={() => selectVariant(index, variant)}
+                              >
+                                <CardContent className="p-3">
+                                  <div className="text-center space-y-1">
+                                    <div className="flex items-center justify-center gap-2">
+                                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                                        isChecked ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                                      }`}>
+                                        {isChecked && <span className="text-primary-foreground text-xs">✓</span>}
+                                      </div>
+                                      <span className="font-medium text-sm">{variant.variant?.name}</span>
+                                    </div>
+                                    <div className="text-primary font-semibold">
+                                      {formatPrice(variant.price)}
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Single-select mode: existing VariantSelector */
+                      <VariantSelector
+                        variants={availableVariants}
+                        selectedVariantId={selection.selectedVariant?.id}
+                        onVariantSelect={(variant) => selectVariant(index, variant)}
+                        disabled={false}
+                        defaultVariantId={slot.default_variant_id}
+                        showExtraCost={comboConfig?.pricing_mode === 'fixed'}
+                        showStockCount={showVariantStock} />
+                    )
+                  ) : (
+                    <div className="text-sm text-muted-foreground bg-muted/50 rounded px-2 py-1.5">
                       {selection.selectedVariant?.variant?.name || 'Variante fija'}
                     </div>
-                }
+                  )}
                 </>
               }
 
