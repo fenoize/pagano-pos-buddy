@@ -557,6 +557,13 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                           />
                           <Label>Permitir personalización</Label>
                         </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={(item as any).allow_multiple_variants === true}
+                            onCheckedChange={(checked) => updateComboItem(item.id, 'allow_multiple_variants', checked)}
+                          />
+                          <Label>Permitir múltiples variantes</Label>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

@@ -630,6 +630,7 @@ export interface ComboItem {
   allow_customization: boolean;
   allow_variant_change?: boolean;
   lock_product?: boolean;
+  allow_multiple_variants?: boolean;
   display_order: number;
   created_at: string;
   updated_at: string;
