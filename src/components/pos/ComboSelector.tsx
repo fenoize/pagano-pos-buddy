@@ -633,7 +633,13 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       total = config.base_price;
 
       selections.forEach((selection) => {
-        if (selection.selectedVariant) {
+        // Multi-select: sum all selected variants
+        if ((selection.comboSlot as any).allow_multiple_variants && selection.selectedVariants && selection.selectedVariants.length > 0) {
+          selection.selectedVariants.forEach(v => {
+            const discountedPrice = v.price * (1 - (config.combo_discount || 0) / 100);
+            total += discountedPrice * selection.quantity;
+          });
+        } else if (selection.selectedVariant) {
           const discountedPrice = selection.selectedVariant.price * (1 - (config.combo_discount || 0) / 100);
           total += discountedPrice * selection.quantity;
         } else if (selection.selectedProduct) {
@@ -689,7 +695,13 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       total = comboConfig.base_price;
 
       selections.forEach((selection) => {
-        if (selection.selectedVariant) {
+        // Multi-select: sum all selected variants
+        if ((selection.comboSlot as any).allow_multiple_variants && selection.selectedVariants && selection.selectedVariants.length > 0) {
+          selection.selectedVariants.forEach(v => {
+            const discountedPrice = v.price * (1 - (comboConfig.combo_discount || 0) / 100);
+            total += discountedPrice * selection.quantity;
+          });
+        } else if (selection.selectedVariant) {
           const discountedPrice = selection.selectedVariant.price * (1 - (comboConfig.combo_discount || 0) / 100);
           total += discountedPrice * selection.quantity;
         } else if (selection.selectedProduct) {
