@@ -200,7 +200,9 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
                         <div key={comboIndex} className="mb-1">
                           <span className="font-medium">
                             {comboItem.quantity}x {comboItem.selectedProduct?.name || 'Producto'}
-                            {comboItem.selectedVariant?.variant?.name ? ` - ${comboItem.selectedVariant.variant.name}` : ''}
+                            {comboItem.selectedVariants && comboItem.selectedVariants.length > 0
+                              ? ` - ${comboItem.selectedVariants.map((v: any) => v.variant?.name || v.name).join(' + ')}`
+                              : comboItem.selectedVariant?.variant?.name ? ` - ${comboItem.selectedVariant.variant.name}` : ''}
                           </span>
                           {/* Variant group option (e.g. Proteína: Pollo) */}
                           {comboItem.variant_group_selections && comboItem.variant_group_selections.length > 0 && (

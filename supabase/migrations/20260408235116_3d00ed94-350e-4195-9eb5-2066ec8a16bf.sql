@@ -1,0 +1,1 @@
+ALTER TABLE public.combo_items ADD COLUMN allow_multiple_variants boolean NOT NULL DEFAULT false;

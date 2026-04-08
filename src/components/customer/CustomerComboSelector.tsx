@@ -9,6 +9,7 @@ interface ComboItemSelection {
   comboSlot: ComboItem;
   selectedProduct?: Product;
   selectedVariant?: ProductVariantOption;
+  selectedVariants?: ProductVariantOption[];
   quantity: number;
   extras?: Record<string, number>;
   modifiers?: string[];
@@ -221,7 +222,20 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
   };
 
   const selectVariant = (slotIndex: number, variant: ProductVariantOption) => {
-    updateSelection(slotIndex, { selectedVariant: variant });
+    const slot = selections[slotIndex]?.comboSlot;
+    if ((slot as any)?.allow_multiple_variants) {
+      const current = selections[slotIndex]?.selectedVariants || [];
+      const exists = current.find(v => v.id === variant.id);
+      const newVariants = exists
+        ? current.filter(v => v.id !== variant.id)
+        : [...current, variant];
+      updateSelection(slotIndex, {
+        selectedVariants: newVariants,
+        selectedVariant: newVariants[0]
+      });
+    } else {
+      updateSelection(slotIndex, { selectedVariant: variant });
+    }
   };
 
   const handleExtraToggle = (slotIndex: number, extraId: string) => {
@@ -289,7 +303,11 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     } else {
       total = config.base_price;
       sels.forEach(sel => {
-        if (sel.selectedVariant) {
+        if ((sel.comboSlot as any).allow_multiple_variants && sel.selectedVariants && sel.selectedVariants.length > 0) {
+          sel.selectedVariants.forEach(v => {
+            total += v.price * (1 - (config.combo_discount || 0) / 100) * sel.quantity;
+          });
+        } else if (sel.selectedVariant) {
           total += sel.selectedVariant.price * (1 - (config.combo_discount || 0) / 100) * sel.quantity;
         } else if (sel.selectedProduct) {
           total += getProductBasePrice(sel.selectedProduct) * (1 - (config.combo_discount || 0) / 100) * sel.quantity;
@@ -391,11 +409,18 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                       ? (selection.selectedProduct?.name || getCategoryName(slot.category_id))
                       : 'Elige tu opción'}
                   </h3>
-                  <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(slot as any).allow_multiple_variants
+                      ? 'Opcional • Elegir una o más'
+                      : 'Obligatorio • Elegir 1'}
+                  </p>
                 </div>
                 <div className="gap-0">
                   {availableVariants.map((variant, idx) => {
-                    const isSelected = selection.selectedVariant?.id === variant.id;
+                    const isMulti = (slot as any).allow_multiple_variants;
+                    const isSelected = isMulti
+                      ? (selection.selectedVariants || []).some(v => v.id === variant.id)
+                      : selection.selectedVariant?.id === variant.id;
                     return (
                       <div
                         key={variant.id}
@@ -412,11 +437,19 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                             </span>
                           )}
                         </div>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                          isSelected ? 'border-primary' : 'border-muted-foreground/40'
-                        }`}>
-                          {isSelected && <div className="w-3.5 h-3.5 rounded-full bg-primary" />}
-                        </div>
+                        {isMulti ? (
+                          <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                            isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                          }`}>
+                            {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
+                          </div>
+                        ) : (
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            isSelected ? 'border-primary' : 'border-muted-foreground/40'
+                          }`}>
+                            {isSelected && <div className="w-3.5 h-3.5 rounded-full bg-primary" />}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
