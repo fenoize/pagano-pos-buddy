@@ -401,6 +401,8 @@ export function ProductCustomizationModalEnhanced({
         extras: enrichedExtras,
         modifiers: enrichedModifiers,
         variant_group_selections: variantGroupSelections.length > 0 ? variantGroupSelections : undefined,
+        // Preserve selectedVariants for multi-select slots
+        selectedVariants: selection.selectedVariants,
       };
     }) : undefined;
 
