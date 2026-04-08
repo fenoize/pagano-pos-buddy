@@ -30,6 +30,7 @@ interface ComboItemSelection {
   comboSlot: ComboItem;
   selectedProduct?: Product;
   selectedVariant?: ProductVariantOption;
+  selectedVariants?: ProductVariantOption[]; // For multi-select slots
   quantity: number;
   extras?: Record<string, number>; // extra_id -> quantity
   modifiers?: string[]; // modifier_ids
