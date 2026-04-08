@@ -303,7 +303,11 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     } else {
       total = config.base_price;
       sels.forEach(sel => {
-        if (sel.selectedVariant) {
+        if ((sel.comboSlot as any).allow_multiple_variants && sel.selectedVariants && sel.selectedVariants.length > 0) {
+          sel.selectedVariants.forEach(v => {
+            total += v.price * (1 - (config.combo_discount || 0) / 100) * sel.quantity;
+          });
+        } else if (sel.selectedVariant) {
           total += sel.selectedVariant.price * (1 - (config.combo_discount || 0) / 100) * sel.quantity;
         } else if (sel.selectedProduct) {
           total += getProductBasePrice(sel.selectedProduct) * (1 - (config.combo_discount || 0) / 100) * sel.quantity;
