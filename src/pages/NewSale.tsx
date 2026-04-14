@@ -30,7 +30,7 @@ import { evaluateCampaignsForOrder } from '@/lib/campaignEvaluator';
 import { accruePointsForOrder } from '@/lib/pointsAccruer';
 import { RecentOrdersModal } from '@/components/sales/RecentOrdersModal';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
-import CashSessionModal from '@/components/cash/CashSessionModal';
+import { CashSessionModal } from '@/components/cash/CashSessionModal';
 
 export default function NewSale() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -912,13 +912,8 @@ export default function NewSale() {
                         });
                         return;
                       }
-                      // Check session before proceeding
-                      if (user?.role === 'Cajero' && !hasActiveSession()) {
-                        toast({
-                          title: "Turno cerrado",
-                          description: "Debes abrir un turno antes de realizar ventas.",
-                          variant: "destructive"
-                        });
+                      if (!hasActiveSession()) {
+                        setShowNoSessionAlert(true);
                         return;
                       }
                       setCurrentStep(2);
