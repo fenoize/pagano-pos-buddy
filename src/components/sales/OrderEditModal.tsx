@@ -50,6 +50,10 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const [valorRunaCanje, setValorRunaCanje] = useState(600);
   const [belongsToClosedSession, setBelongsToClosedSession] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<any>(null);
+  const [orderCashSessionId, setOrderCashSessionId] = useState<string | null>(null);
+  const [recentSessions, setRecentSessions] = useState<any[]>([]);
+  const [showSessionSelector, setShowSessionSelector] = useState(false);
+  const [assigningSession, setAssigningSession] = useState(false);
   
   // Product selection states
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
