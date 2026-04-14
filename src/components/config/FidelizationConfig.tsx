@@ -44,6 +44,7 @@ export function FidelizationConfig() {
   const [pendingCount, setPendingCount] = useState(0);
   const [lastProcessed, setLastProcessed] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuthContext();
 
   useEffect(() => {
     loadSettings();
