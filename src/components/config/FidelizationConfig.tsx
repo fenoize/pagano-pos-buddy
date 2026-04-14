@@ -8,10 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { Star, Save, Loader2, Award, Play, RefreshCw, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { getStaffSupabaseClient } from '@/lib/supabaseClient';
 
 interface FidelizationSettings {
   runa_value: number;
@@ -44,7 +44,6 @@ export function FidelizationConfig() {
   const [pendingCount, setPendingCount] = useState(0);
   const [lastProcessed, setLastProcessed] = useState<string | null>(null);
   const { toast } = useToast();
-  const { user } = useAuthContext();
 
   useEffect(() => {
     loadSettings();
@@ -172,36 +171,29 @@ export function FidelizationConfig() {
   const saveSettings = async () => {
     setSaving(true);
     try {
-      // Establecer contexto de staff para pasar RLS
-      if (user?.id) {
-        await supabase.rpc('set_staff_context', { p_user_id: user.id });
-      }
+      const staffClient = getStaffSupabaseClient();
 
-      // Prepare config updates
       const configUpdates = Object.entries(settings).map(([key, value]) => ({
         key,
         value: value as any,
         updated_at: new Date().toISOString()
       }));
 
-      // Use upsert to insert or update each config
-      for (const config of configUpdates) {
-        const { error } = await supabase
-          .from('config')
-          .upsert(config, { onConflict: 'key' });
-        
-        if (error) throw error;
-      }
+      const { error } = await staffClient
+        .from('config')
+        .upsert(configUpdates, { onConflict: 'key' });
+
+      if (error) throw error;
 
       toast({
         title: "¡Éxito!",
         description: "Configuración de fidelización guardada correctamente",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving fidelization settings:', error);
       toast({
         title: "Error",
-        description: "No se pudo guardar la configuración",
+        description: error?.message || "No se pudo guardar la configuración",
         variant: "destructive"
       });
     } finally {
@@ -500,7 +492,7 @@ export function FidelizationConfig() {
           <div className="flex justify-end">
             <Button 
               onClick={saveSettings} 
-              disabled={saving || !settings.fidelization_active}
+              disabled={saving}
               size="lg"
             >
               {saving ? (
