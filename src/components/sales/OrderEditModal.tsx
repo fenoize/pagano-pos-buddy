@@ -683,6 +683,110 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
               </CardContent>
             </Card>
 
+            {/* Asignación de Turno */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Turno de Caja
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {orderCashSessionId && sessionInfo ? (
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Turno: </span>
+                      <span className="font-medium">
+                        {format(new Date(sessionInfo.opened_at), "dd/MM/yyyy HH:mm", { locale: es })}
+                      </span>
+                      {sessionInfo.closed_at && (
+                        <Badge variant="secondary" className="ml-2 text-xs">Cerrado</Badge>
+                      )}
+                      {!sessionInfo.closed_at && (
+                        <Badge className="ml-2 text-xs">Activo</Badge>
+                      )}
+                    </div>
+                    {canManageCashSessions && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          loadRecentSessions();
+                          setShowSessionSelector(true);
+                        }}
+                      >
+                        <ArrowRightLeft className="w-4 h-4 mr-1" />
+                        Cambiar turno
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Sin turno asignado</AlertTitle>
+                      <AlertDescription>
+                        Este pedido no está asociado a ningún turno de caja.
+                      </AlertDescription>
+                    </Alert>
+                    {canManageCashSessions && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          loadRecentSessions();
+                          setShowSessionSelector(true);
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Asignar a turno
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {showSessionSelector && (
+                  <div className="border rounded-md p-3 space-y-2 bg-muted/30">
+                    <Label className="text-sm font-medium">Seleccionar turno:</Label>
+                    {recentSessions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No hay turnos recientes.</p>
+                    ) : (
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                        {recentSessions.map(session => (
+                          <button
+                            key={session.id}
+                            disabled={assigningSession || session.id === orderCashSessionId}
+                            className="w-full text-left p-2 rounded hover:bg-accent text-sm flex items-center justify-between disabled:opacity-50"
+                            onClick={() => handleAssignSession(session.id)}
+                          >
+                            <div>
+                              <span className="font-medium">
+                                {format(new Date(session.opened_at), "dd/MM HH:mm", { locale: es })}
+                              </span>
+                              <span className="text-muted-foreground ml-2">· {session.username}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {!session.closed_at ? (
+                                <Badge className="text-xs">Activo</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-xs">Cerrado</Badge>
+                              )}
+                              {session.id === orderCashSessionId && (
+                                <Badge variant="outline" className="text-xs">Actual</Badge>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => setShowSessionSelector(false)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Delivery Information - Show for delivery orders, when editing to delivery, or when delivery data exists */}
             {((isEditMode && editData?.fulfillment === 'delivery') || 
               (!isEditMode && order.fulfillment === 'delivery') ||
