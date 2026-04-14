@@ -172,21 +172,79 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
           cash_sessions:cash_sessions (
             id,
             closed_at,
-            opened_at
+            opened_at,
+            user_id
           )
         `)
         .eq('id', order.id)
         .single();
+      
+      setOrderCashSessionId(data?.cash_session_id || null);
       
       if (data && data.cash_session_id && (data.cash_sessions as any)?.closed_at) {
         setBelongsToClosedSession(true);
         setSessionInfo((data.cash_sessions as any));
       } else {
         setBelongsToClosedSession(false);
-        setSessionInfo(null);
+        setSessionInfo(data?.cash_session_id ? (data.cash_sessions as any) : null);
       }
     } catch (error) {
       console.error('Error checking session status:', error);
+    }
+  };
+
+  const loadRecentSessions = async () => {
+    try {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const { data } = await supabase
+        .from('cash_sessions')
+        .select('id, opened_at, closed_at, user_id, opening_cash')
+        .gte('opened_at', sevenDaysAgo.toISOString())
+        .order('opened_at', { ascending: false })
+        .limit(20);
+      
+      // Fetch user names for sessions
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(s => s.user_id))];
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, username')
+          .in('id', userIds);
+        
+        const userMap = Object.fromEntries((usersData || []).map(u => [u.id, u.username]));
+        setRecentSessions(data.map(s => ({ ...s, username: userMap[s.user_id] || 'Desconocido' })));
+      } else {
+        setRecentSessions([]);
+      }
+    } catch (error) {
+      console.error('Error loading recent sessions:', error);
+    }
+  };
+
+  const handleAssignSession = async (sessionId: string) => {
+    if (!order?.id) return;
+    setAssigningSession(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ cash_session_id: sessionId })
+        .eq('id', order.id);
+      
+      if (error) throw error;
+      
+      toast({ title: "Turno asignado", description: "El pedido fue asignado al turno correctamente." });
+      setOrderCashSessionId(sessionId);
+      setShowSessionSelector(false);
+      await checkIfClosedSession();
+      // Refresh parent
+      onOrderUpdated({ ...order });
+    } catch (error) {
+      console.error('Error assigning session:', error);
+      toast({ title: "Error", description: "No se pudo asignar el turno", variant: "destructive" });
+    } finally {
+      setAssigningSession(false);
     }
   };
 
