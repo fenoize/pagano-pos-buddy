@@ -20,7 +20,7 @@ import PaymentModal from '@/components/pos/PaymentModal';
 import RunasCalculator from '@/components/pos/RunasCalculator';
 import { CouponManager } from '@/components/pos/CouponManager';
 import { CouponModal } from '@/components/pos/CouponModal';
-import { ArrowLeft, ArrowRight, User, Ticket, History } from 'lucide-react';
+import { ArrowLeft, ArrowRight, User, Ticket, History, AlertTriangle } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
 import { usePOSConfig } from '@/hooks/usePOSConfig';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
@@ -29,6 +29,8 @@ import { checkAndAwardBadges } from '@/lib/badgeAwarder';
 import { evaluateCampaignsForOrder } from '@/lib/campaignEvaluator';
 import { accruePointsForOrder } from '@/lib/pointsAccruer';
 import { RecentOrdersModal } from '@/components/sales/RecentOrdersModal';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { CashSessionModal } from '@/components/cash/CashSessionModal';
 
 export default function NewSale() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -56,6 +58,8 @@ export default function NewSale() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [showRecentOrders, setShowRecentOrders] = useState(false);
+  const [showNoSessionAlert, setShowNoSessionAlert] = useState(false);
+  const [showCashSessionModal, setShowCashSessionModal] = useState(false);
   
   // Preloaded customization data
   const [preloadedData, setPreloadedData] = useState<{
@@ -340,16 +344,10 @@ export default function NewSale() {
   };
 
   const handleCheckout = () => {
-    // Check if session is active for Cajero role
-    if (user?.role === 'Cajero' && !hasActiveSession()) {
-      toast({
-        title: "Turno cerrado",
-        description: "Debes abrir un turno antes de realizar ventas.",
-        variant: "destructive"
-      });
+    if (!hasActiveSession()) {
+      setShowNoSessionAlert(true);
       return;
     }
-    
     setShowPaymentModal(true);
   };
 
@@ -914,13 +912,8 @@ export default function NewSale() {
                         });
                         return;
                       }
-                      // Check session before proceeding
-                      if (user?.role === 'Cajero' && !hasActiveSession()) {
-                        toast({
-                          title: "Turno cerrado",
-                          description: "Debes abrir un turno antes de realizar ventas.",
-                          variant: "destructive"
-                        });
+                      if (!hasActiveSession()) {
+                        setShowNoSessionAlert(true);
                         return;
                       }
                       setCurrentStep(2);
@@ -1162,6 +1155,52 @@ export default function NewSale() {
       <RecentOrdersModal
         isOpen={showRecentOrders}
         onClose={() => setShowRecentOrders(false)}
+      />
+
+      {/* No Session Alert */}
+      <AlertDialog open={showNoSessionAlert} onOpenChange={setShowNoSessionAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              Sin turno abierto
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Si continúas, el pedido no se guardará en ningún turno.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+              onClick={() => {
+                setShowNoSessionAlert(false);
+                setShowCashSessionModal(true);
+              }}
+            >
+              Iniciar turno
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                setShowNoSessionAlert(false);
+                if (currentStep === 1) {
+                  setCurrentStep(2);
+                } else {
+                  setShowPaymentModal(true);
+                }
+              }}
+            >
+              Continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cash Session Modal */}
+      <CashSessionModal
+        isOpen={showCashSessionModal}
+        onClose={() => setShowCashSessionModal(false)}
+        type="open"
       />
     </div>
   );
