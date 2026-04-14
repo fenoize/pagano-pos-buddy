@@ -172,10 +172,15 @@ export function FidelizationConfig() {
   const saveSettings = async () => {
     setSaving(true);
     try {
+      // Establecer contexto de staff para pasar RLS
+      if (user?.id) {
+        await supabase.rpc('set_staff_context', { p_user_id: user.id });
+      }
+
       // Prepare config updates
       const configUpdates = Object.entries(settings).map(([key, value]) => ({
         key,
-        value,
+        value: value as any,
         updated_at: new Date().toISOString()
       }));
 
