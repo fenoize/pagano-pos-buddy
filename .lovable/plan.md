@@ -1,25 +1,30 @@
 
 
-## Plan: Alerta de turno no abierto al cobrar
+## Plan: Asignar/cambiar turno de un pedido
 
-### Situacion actual
-En `NewSale.tsx` linea 342-354, solo se bloquea al rol "Cajero" si no hay turno abierto. Para otros roles simplemente abre el modal de pago sin aviso.
+### Problema
+Cuando un pedido se crea sin turno abierto (tras elegir "Continuar" en la alerta), queda con `cash_session_id = null` y no aparece en ningún resumen de turno. No hay forma de asignarlo después.
 
 ### Cambios
 
-**Archivo: `src/pages/NewSale.tsx`**
+#### 1. OrderEditModal.tsx — Sección de asignación de turno
+- En la vista de detalle del pedido (no solo en modo edición), mostrar una sección que indique:
+  - Si el pedido tiene turno asignado: mostrar fecha/hora del turno y un botón "Cambiar turno".
+  - Si no tiene turno: mostrar alerta "Sin turno asignado" con botón "Asignar a turno".
+- Al hacer clic, abrir un selector con:
+  - **Turno activo actual** (si existe) como opción principal.
+  - Lista de turnos recientes (últimos 7 días, abiertos o cerrados) para reasignar.
+- Al seleccionar, hacer `UPDATE orders SET cash_session_id = X WHERE id = Y` directamente vía Supabase client.
+- Refrescar la orden después del cambio.
 
-1. Agregar estado `showNoSessionAlert` (boolean).
-2. Modificar `handleCheckout()`:
-   - Si `!hasActiveSession()` (para cualquier rol), mostrar el alert dialog en vez de abrir PaymentModal directamente.
-   - Si hay sesion activa, abrir PaymentModal normalmente.
-3. Agregar un `AlertDialog` con:
-   - Titulo: "Sin turno abierto"
-   - Descripcion: "Si continuas, el pedido no se guardara en ningun turno."
-   - Boton "Continuar": cierra el alert y abre PaymentModal.
-   - Boton "Iniciar turno": cierra el alert y abre el modal de apertura de caja (`CashSessionModal`).
-4. Importar `CashSessionModal` y agregar estado para controlarlo si no existe ya en la pagina.
+#### 2. Permisos
+- Solo usuarios con permiso `cash_sessions.manage_all` o Administrador podrán cambiar/asignar turno. Los demás solo verán la info pero no podrán modificar.
+
+### Archivos involucrados
+- `src/components/sales/OrderEditModal.tsx` — agregar sección de turno con selector y lógica de update.
 
 ### Resultado
-Cualquier usuario sin turno abierto vera la advertencia antes de cobrar, con la opcion de continuar sin turno o iniciar uno en ese momento.
+- Pedidos sin turno podrán asignarse al turno activo o a un turno reciente.
+- Pedidos con turno podrán reasignarse a otro turno.
+- Los totales del turno se actualizarán automáticamente al recargarse.
 
