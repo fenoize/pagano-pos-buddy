@@ -207,7 +207,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       
       // Fetch user names for sessions
       if (data && data.length > 0) {
-        const userIds = [...new Set(data.map(s => s.user_id))];
+        const userIds = Array.from(new Set(data.map(s => s.user_id)));
         const { data: usersData } = await supabase
           .from('users')
           .select('id, username')
