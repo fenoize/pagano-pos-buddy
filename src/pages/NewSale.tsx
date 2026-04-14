@@ -1172,7 +1172,7 @@ export default function NewSale() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              variant="outline"
+              className="border border-input bg-background hover:bg-accent hover:text-accent-foreground"
               onClick={() => {
                 setShowNoSessionAlert(false);
                 setShowCashSessionModal(true);
@@ -1200,6 +1200,7 @@ export default function NewSale() {
       <CashSessionModal
         isOpen={showCashSessionModal}
         onClose={() => setShowCashSessionModal(false)}
+        type="open"
       />
     </div>
   );
