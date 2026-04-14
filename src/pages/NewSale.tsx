@@ -1156,6 +1156,51 @@ export default function NewSale() {
         isOpen={showRecentOrders}
         onClose={() => setShowRecentOrders(false)}
       />
+
+      {/* No Session Alert */}
+      <AlertDialog open={showNoSessionAlert} onOpenChange={setShowNoSessionAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              Sin turno abierto
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Si continúas, el pedido no se guardará en ningún turno.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              variant="outline"
+              onClick={() => {
+                setShowNoSessionAlert(false);
+                setShowCashSessionModal(true);
+              }}
+            >
+              Iniciar turno
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                setShowNoSessionAlert(false);
+                if (currentStep === 1) {
+                  setCurrentStep(2);
+                } else {
+                  setShowPaymentModal(true);
+                }
+              }}
+            >
+              Continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cash Session Modal */}
+      <CashSessionModal
+        isOpen={showCashSessionModal}
+        onClose={() => setShowCashSessionModal(false)}
+      />
     </div>
   );
 }
