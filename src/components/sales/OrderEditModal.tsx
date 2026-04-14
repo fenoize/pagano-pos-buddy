@@ -28,7 +28,8 @@ import { OrderHistoryModal } from './OrderHistoryModal';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet, AlertTriangle, Search, UtensilsCrossed, ShoppingBag } from 'lucide-react';
+import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet, AlertTriangle, Search, UtensilsCrossed, ShoppingBag, Clock, ArrowRightLeft } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface OrderEditModalProps {
   order: Order | null;
@@ -49,6 +50,10 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const [valorRunaCanje, setValorRunaCanje] = useState(600);
   const [belongsToClosedSession, setBelongsToClosedSession] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<any>(null);
+  const [orderCashSessionId, setOrderCashSessionId] = useState<string | null>(null);
+  const [recentSessions, setRecentSessions] = useState<any[]>([]);
+  const [showSessionSelector, setShowSessionSelector] = useState(false);
+  const [assigningSession, setAssigningSession] = useState(false);
   
   // Product selection states
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -71,7 +76,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const { getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
   const { checkActiveSession } = useCashSession();
   const { toast } = useToast();
-  
+  const { canManageCashSessions } = usePermissions();
   const repartidores = users.filter(u => u.can_do_delivery && u.active);
 
   const getIconComponent = (iconName: string) => {
@@ -167,21 +172,79 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
           cash_sessions:cash_sessions (
             id,
             closed_at,
-            opened_at
+            opened_at,
+            user_id
           )
         `)
         .eq('id', order.id)
         .single();
+      
+      setOrderCashSessionId(data?.cash_session_id || null);
       
       if (data && data.cash_session_id && (data.cash_sessions as any)?.closed_at) {
         setBelongsToClosedSession(true);
         setSessionInfo((data.cash_sessions as any));
       } else {
         setBelongsToClosedSession(false);
-        setSessionInfo(null);
+        setSessionInfo(data?.cash_session_id ? (data.cash_sessions as any) : null);
       }
     } catch (error) {
       console.error('Error checking session status:', error);
+    }
+  };
+
+  const loadRecentSessions = async () => {
+    try {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const { data } = await supabase
+        .from('cash_sessions')
+        .select('id, opened_at, closed_at, user_id, opening_cash')
+        .gte('opened_at', sevenDaysAgo.toISOString())
+        .order('opened_at', { ascending: false })
+        .limit(20);
+      
+      // Fetch user names for sessions
+      if (data && data.length > 0) {
+        const userIds = Array.from(new Set(data.map(s => s.user_id)));
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, username')
+          .in('id', userIds);
+        
+        const userMap = Object.fromEntries((usersData || []).map(u => [u.id, u.username]));
+        setRecentSessions(data.map(s => ({ ...s, username: userMap[s.user_id] || 'Desconocido' })));
+      } else {
+        setRecentSessions([]);
+      }
+    } catch (error) {
+      console.error('Error loading recent sessions:', error);
+    }
+  };
+
+  const handleAssignSession = async (sessionId: string) => {
+    if (!order?.id) return;
+    setAssigningSession(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ cash_session_id: sessionId })
+        .eq('id', order.id);
+      
+      if (error) throw error;
+      
+      toast({ title: "Turno asignado", description: "El pedido fue asignado al turno correctamente." });
+      setOrderCashSessionId(sessionId);
+      setShowSessionSelector(false);
+      await checkIfClosedSession();
+      // Refresh parent
+      onOrderUpdated({ ...order });
+    } catch (error) {
+      console.error('Error assigning session:', error);
+      toast({ title: "Error", description: "No se pudo asignar el turno", variant: "destructive" });
+    } finally {
+      setAssigningSession(false);
     }
   };
 
@@ -617,6 +680,110 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                     </div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Asignación de Turno */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Turno de Caja
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {orderCashSessionId && sessionInfo ? (
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Turno: </span>
+                      <span className="font-medium">
+                        {format(new Date(sessionInfo.opened_at), "dd/MM/yyyy HH:mm", { locale: es })}
+                      </span>
+                      {sessionInfo.closed_at && (
+                        <Badge variant="secondary" className="ml-2 text-xs">Cerrado</Badge>
+                      )}
+                      {!sessionInfo.closed_at && (
+                        <Badge className="ml-2 text-xs">Activo</Badge>
+                      )}
+                    </div>
+                    {canManageCashSessions && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          loadRecentSessions();
+                          setShowSessionSelector(true);
+                        }}
+                      >
+                        <ArrowRightLeft className="w-4 h-4 mr-1" />
+                        Cambiar turno
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Sin turno asignado</AlertTitle>
+                      <AlertDescription>
+                        Este pedido no está asociado a ningún turno de caja.
+                      </AlertDescription>
+                    </Alert>
+                    {canManageCashSessions && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          loadRecentSessions();
+                          setShowSessionSelector(true);
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Asignar a turno
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {showSessionSelector && (
+                  <div className="border rounded-md p-3 space-y-2 bg-muted/30">
+                    <Label className="text-sm font-medium">Seleccionar turno:</Label>
+                    {recentSessions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No hay turnos recientes.</p>
+                    ) : (
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                        {recentSessions.map(session => (
+                          <button
+                            key={session.id}
+                            disabled={assigningSession || session.id === orderCashSessionId}
+                            className="w-full text-left p-2 rounded hover:bg-accent text-sm flex items-center justify-between disabled:opacity-50"
+                            onClick={() => handleAssignSession(session.id)}
+                          >
+                            <div>
+                              <span className="font-medium">
+                                {format(new Date(session.opened_at), "dd/MM HH:mm", { locale: es })}
+                              </span>
+                              <span className="text-muted-foreground ml-2">· {session.username}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {!session.closed_at ? (
+                                <Badge className="text-xs">Activo</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-xs">Cerrado</Badge>
+                              )}
+                              {session.id === orderCashSessionId && (
+                                <Badge variant="outline" className="text-xs">Actual</Badge>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => setShowSessionSelector(false)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
