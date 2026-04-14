@@ -28,7 +28,8 @@ import { OrderHistoryModal } from './OrderHistoryModal';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet, AlertTriangle, Search, UtensilsCrossed, ShoppingBag } from 'lucide-react';
+import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet, AlertTriangle, Search, UtensilsCrossed, ShoppingBag, Clock, ArrowRightLeft } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface OrderEditModalProps {
   order: Order | null;
