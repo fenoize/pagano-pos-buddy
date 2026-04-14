@@ -76,7 +76,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const { getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
   const { checkActiveSession } = useCashSession();
   const { toast } = useToast();
-  
+  const { canManageCashSessions } = usePermissions();
   const repartidores = users.filter(u => u.can_do_delivery && u.active);
 
   const getIconComponent = (iconName: string) => {
