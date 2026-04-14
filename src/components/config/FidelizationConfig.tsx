@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Star, Save, Loader2, Award, Play, RefreshCw, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -43,6 +44,7 @@ export function FidelizationConfig() {
   const [pendingCount, setPendingCount] = useState(0);
   const [lastProcessed, setLastProcessed] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuthContext();
 
   useEffect(() => {
     loadSettings();
@@ -170,10 +172,15 @@ export function FidelizationConfig() {
   const saveSettings = async () => {
     setSaving(true);
     try {
+      // Establecer contexto de staff para pasar RLS
+      if (user?.id) {
+        await supabase.rpc('set_staff_context', { p_user_id: user.id });
+      }
+
       // Prepare config updates
       const configUpdates = Object.entries(settings).map(([key, value]) => ({
         key,
-        value,
+        value: value as any,
         updated_at: new Date().toISOString()
       }));
 
