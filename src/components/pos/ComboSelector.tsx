@@ -197,6 +197,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               comboSlot: slot,
               selectedProduct: defaultProduct,
               selectedVariant: defaultVariant,
+              selectedVariants: (slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined,
               quantity: slot.quantity,
               extras: {},
               modifiers: []
@@ -416,6 +417,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           comboSlot: slot,
           selectedProduct: defaultProduct,
           selectedVariant: defaultVariant,
+          selectedVariants: (slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined,
           quantity: slot.quantity,
           extras: {},
           modifiers: []
