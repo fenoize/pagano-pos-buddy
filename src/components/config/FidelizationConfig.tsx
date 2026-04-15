@@ -192,7 +192,7 @@ export function FidelizationConfig() {
 
       // 2. Llamar RPC seguro
       const { data, error } = await supabase.rpc('update_fidelization_settings', {
-        p_settings: settings as unknown as Record<string, unknown>,
+        p_settings: JSON.parse(JSON.stringify(settings)),
         p_user_id: userId
       });
 
