@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Star, Save, Loader2, Award, Play, RefreshCw, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getStaffSupabaseClient } from '@/lib/supabaseClient';
+
 
 interface FidelizationSettings {
   runa_value: number;
