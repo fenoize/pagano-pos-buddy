@@ -72,17 +72,34 @@ export function useActiveShiftStats() {
       // Get non-real payment methods
       const nonRealMethods = await getNonRealSaleMethods();
 
-      // Get orders for this session
-      const { data: orders, error: ordersError } = await supabase
+      // Query 1: orders explicitly linked to this cash session (no time filter)
+      const { data: linkedOrders, error: linkedError } = await supabase
         .from('orders')
         .select('id, total, fulfillment, status, payment_runas, payment_method')
-        .or(`cash_session_id.eq.${activeSession.id},and(cash_session_id.is.null,created_by_user_id.eq.${user.id})`)
+        .eq('cash_session_id', activeSession.id)
+        .in('status', COMPLETED_STATUSES);
+
+      if (linkedError) throw linkedError;
+
+      // Query 2: orders without cash_session_id, created by same user during session
+      const { data: fallbackOrders, error: fallbackError } = await supabase
+        .from('orders')
+        .select('id, total, fulfillment, status, payment_runas, payment_method')
+        .is('cash_session_id', null)
+        .eq('created_by_user_id', user.id)
         .gte('created_at', activeSession.opened_at)
         .in('status', COMPLETED_STATUSES);
 
-      if (ordersError) {
-        throw ordersError;
-      }
+      if (fallbackError) throw fallbackError;
+
+      // Merge and deduplicate
+      const allOrders = [...(linkedOrders || []), ...(fallbackOrders || [])];
+      const seen = new Set<string>();
+      const orders = allOrders.filter(o => {
+        if (seen.has(o.id)) return false;
+        seen.add(o.id);
+        return true;
+      });
 
       // Filtrar órdenes: excluir las pagadas 100% con métodos no reales
       const realSalesOrders = (orders || []).filter(order => {
