@@ -68,15 +68,32 @@ export function useAllActiveShifts() {
       // Get orders for each session - prioritize by cash_session_id, fallback to created_by_user_id
       const shiftsWithStats = await Promise.all(
         sessions.map(async (session) => {
-          const { data: orders } = await supabase
+          // Query 1: orders explicitly linked to this cash session (no time filter needed)
+          const { data: linkedOrders } = await supabase
             .from('orders')
-            .select('total, status, payment_method, payment_runas')
-            .or(`cash_session_id.eq.${session.id},and(cash_session_id.is.null,created_by_user_id.eq.${session.user_id})`)
+            .select('id, total, status, payment_method, payment_runas')
+            .eq('cash_session_id', session.id)
+            .eq('status', 'Entregado');
+
+          // Query 2: orders without cash_session_id, created by the same user during the session
+          const { data: fallbackOrders } = await supabase
+            .from('orders')
+            .select('id, total, status, payment_method, payment_runas')
+            .is('cash_session_id', null)
+            .eq('created_by_user_id', session.user_id)
             .gte('created_at', session.opened_at)
             .eq('status', 'Entregado');
 
+          // Merge and deduplicate
+          const allOrders = [...(linkedOrders || []), ...(fallbackOrders || [])];
+          const seen = new Set<string>();
+          const completedOrders = allOrders.filter(o => {
+            if (seen.has(o.id)) return false;
+            seen.add(o.id);
+            return true;
+          });
+
           const user = userMap.get(session.user_id);
-          const completedOrders = orders || [];
           
           // Only count real revenue (exclude non-real payment methods)
           const realOrders = completedOrders.filter(o => getOrderRealRevenue(o, nonRealMethods) > 0);
