@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Star, Save, Loader2, Award, Play, RefreshCw, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getStaffSupabaseClient } from '@/lib/supabaseClient';
+
 
 interface FidelizationSettings {
   runa_value: number;
@@ -171,17 +171,30 @@ export function FidelizationConfig() {
   const saveSettings = async () => {
     setSaving(true);
     try {
-      const staffClient = getStaffSupabaseClient();
+      // 1. Obtener y validar token de staff
+      const { STORAGE_KEYS } = await import('@/lib/storageKeys');
+      const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
+      if (!token) throw new Error('No hay sesión activa');
 
-      const configUpdates = Object.entries(settings).map(([key, value]) => ({
-        key,
-        value: value as any,
-        updated_at: new Date().toISOString()
-      }));
+      const { data: validationData, error: validationError } = await supabase
+        .rpc('validate_staff_token_v2', { _token: token });
 
-      const { error } = await staffClient
-        .from('config')
-        .upsert(configUpdates, { onConflict: 'key' });
+      if (validationError || !validationData || validationData.length === 0) {
+        throw new Error('Sesión inválida o expirada');
+      }
+
+      const userId = validationData[0].user_id;
+      const isAdmin = validationData[0].is_admin;
+
+      if (!isAdmin) {
+        throw new Error('Solo administradores pueden modificar esta configuración');
+      }
+
+      // 2. Llamar RPC seguro
+      const { data, error } = await supabase.rpc('update_fidelization_settings', {
+        p_settings: JSON.parse(JSON.stringify(settings)),
+        p_user_id: userId
+      });
 
       if (error) throw error;
 

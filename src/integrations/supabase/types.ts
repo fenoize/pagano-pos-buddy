@@ -7445,6 +7445,10 @@ export type Database = {
         Args: { p_id: string; p_updates: Json }
         Returns: boolean
       }
+      update_fidelization_settings: {
+        Args: { p_settings: Json; p_user_id: string }
+        Returns: Json
+      }
       update_online_order_settings:
         | { Args: { p_settings: Json }; Returns: Json }
         | { Args: { p_settings: Json; p_user_id?: string }; Returns: Json }
