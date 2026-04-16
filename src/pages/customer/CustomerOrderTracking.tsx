@@ -398,7 +398,7 @@ export default function CustomerOrderTracking() {
           <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/40 border border-border/50">
             <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{order.delivery_address}</p>
+              <p className="text-sm font-medium truncate text-foreground">{order.delivery_address}</p>
               {order.delivery_comuna && (
                 <p className="text-xs text-muted-foreground">{order.delivery_comuna}</p>
               )}
