@@ -398,7 +398,7 @@ export default function CustomerOrderTracking() {
           <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/40 border border-border/50">
             <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{order.delivery_address}</p>
+              <p className="text-sm font-medium truncate text-foreground">{order.delivery_address}</p>
               {order.delivery_comuna && (
                 <p className="text-xs text-muted-foreground">{order.delivery_comuna}</p>
               )}
@@ -413,7 +413,7 @@ export default function CustomerOrderTracking() {
             className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-muted/30 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm">Detalle del pedido</span>
+              <span className="font-semibold text-sm text-foreground">Detalle del pedido</span>
               <Badge variant="outline" className="text-xs font-normal">
                 {order.items?.length || 0} {order.items?.length === 1 ? 'ítem' : 'ítems'}
               </Badge>
@@ -429,7 +429,7 @@ export default function CustomerOrderTracking() {
                     <span className="bg-muted text-muted-foreground text-xs font-bold rounded-md w-6 h-6 flex items-center justify-center flex-shrink-0">
                       {item.quantity}
                     </span>
-                    <span className="truncate">{item.productName}</span>
+                    <span className="truncate text-foreground">{item.productName}</span>
                   </div>
                   <span className="font-medium text-muted-foreground flex-shrink-0">{formatCurrency(item.basePrice * item.quantity)}</span>
                 </div>
@@ -445,9 +445,9 @@ export default function CustomerOrderTracking() {
               )}
 
               <Separator className="my-2" />
-              <div className="flex justify-between items-center font-bold text-base">
+              <div className="flex justify-between items-center font-bold text-base text-foreground">
                 <span>Total</span>
-                <span>
+                <span className="text-foreground">
                   {order.payment_method === 'runas'
                     ? `${Math.ceil((order.payment_runas || 0) / runaRedemptionValue)} Runas ✨`
                     : formatCurrency(order.total)}
