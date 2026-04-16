@@ -207,11 +207,27 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
         setSelections(computedSelections);
 
-        // Fetch variant groups for all selected products
-        const selectedProductIds = computedSelections
-          .map(s => s.selectedProduct?.id)
-          .filter(Boolean) as string[];
-        const groupsMap = await fetchProductVariantGroups(selectedProductIds);
+        // Use preloaded variant groups if available, otherwise fetch
+        const groupsMap = preloadedComboData.productVariantGroups 
+          ? (() => {
+              // Transform preloaded format to match fetchProductVariantGroups output
+              const map: Record<string, VariantGroupWithOptions[]> = {};
+              Object.entries(preloadedComboData.productVariantGroups).forEach(([productId, groups]: [string, any]) => {
+                map[productId] = (groups || []).map((g: any) => ({
+                  group_id: g.group_id,
+                  group_name: g.name || g.group_name,
+                  options: (g.options || []).filter((o: any) => o.active !== false).sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0))
+                }));
+              });
+              setProductVariantGroups(map);
+              return map;
+            })()
+          : await (async () => {
+              const selectedProductIds = computedSelections
+                .map(s => s.selectedProduct?.id)
+                .filter(Boolean) as string[];
+              return await fetchProductVariantGroups(selectedProductIds);
+            })();
         
         // Initialize default group selections per slot and re-resolve variants
         if (groupsMap) {
