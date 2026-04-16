@@ -479,6 +479,38 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           }
         });
         setSlotGroupSelections(defaultSlotGroups);
+
+        // Re-resolve selectedVariant for slots with variant groups
+        let selectionsUpdated = false;
+        defaultSelections.forEach((sel, idx) => {
+          const groupSels = defaultSlotGroups[idx];
+          if (!groupSels || Object.keys(groupSels).length === 0) return;
+          if (!sel.selectedProduct?.id) return;
+
+          const allVars = groupedVariants[sel.selectedProduct.id] || [];
+          const categoryFiltered = allVars.filter((v: any) => v.variant?.category_id === sel.comboSlot.category_id);
+          const selectedOptionIds = Object.values(groupSels);
+          const filtered = categoryFiltered.filter((v: any) => {
+            const goid = v.variant_group_option_id;
+            return goid && selectedOptionIds.includes(goid);
+          });
+
+          if (filtered.length > 0) {
+            const currentCvId = sel.selectedVariant?.category_variant_id;
+            const matchingVariant = currentCvId
+              ? filtered.find((v: any) => v.category_variant_id === currentCvId)
+              : null;
+            const newVariant = matchingVariant || filtered.find((v: any) => v.is_default) || filtered[0];
+            if (newVariant && newVariant.id !== sel.selectedVariant?.id) {
+              sel.selectedVariant = newVariant;
+              selectionsUpdated = true;
+            }
+          }
+        });
+
+        if (selectionsUpdated) {
+          setSelections([...defaultSelections]);
+        }
       }
 
     } catch (error) {
