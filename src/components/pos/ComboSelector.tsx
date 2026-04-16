@@ -207,13 +207,29 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
         setSelections(computedSelections);
 
-        // Fetch variant groups for all selected products
-        const selectedProductIds = computedSelections
-          .map(s => s.selectedProduct?.id)
-          .filter(Boolean) as string[];
-        const groupsMap = await fetchProductVariantGroups(selectedProductIds);
+        // Use preloaded variant groups if available, otherwise fetch
+        const groupsMap = preloadedComboData.productVariantGroups 
+          ? (() => {
+              // Transform preloaded format to match fetchProductVariantGroups output
+              const map: Record<string, VariantGroupWithOptions[]> = {};
+              Object.entries(preloadedComboData.productVariantGroups).forEach(([productId, groups]: [string, any]) => {
+                map[productId] = (groups || []).map((g: any) => ({
+                  group_id: g.group_id,
+                  group_name: g.name || g.group_name,
+                  options: (g.options || []).filter((o: any) => o.active !== false).sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0))
+                }));
+              });
+              setProductVariantGroups(map);
+              return map;
+            })()
+          : await (async () => {
+              const selectedProductIds = computedSelections
+                .map(s => s.selectedProduct?.id)
+                .filter(Boolean) as string[];
+              return await fetchProductVariantGroups(selectedProductIds);
+            })();
         
-        // Initialize default group selections per slot
+        // Initialize default group selections per slot and re-resolve variants
         if (groupsMap) {
           const defaultSlotGroups: Record<number, Record<string, string>> = {};
           computedSelections.forEach((sel, idx) => {
@@ -227,6 +243,41 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
             }
           });
           setSlotGroupSelections(defaultSlotGroups);
+
+          // Re-resolve selectedVariant for slots with variant groups
+          // The initial selection may point to a variant without variant_group_option_id
+          // which won't appear in the filtered list
+          let selectionsUpdated = false;
+          computedSelections.forEach((sel, idx) => {
+            const groupSels = defaultSlotGroups[idx];
+            if (!groupSels || Object.keys(groupSels).length === 0) return;
+            if (!sel.selectedProduct?.id) return;
+
+            const allVariants = preloadedComboData.productVariants[sel.selectedProduct.id] || [];
+            const categoryFiltered = allVariants.filter((v: ProductVariantOption) => v.variant?.category_id === sel.comboSlot.category_id);
+            const selectedOptionIds = Object.values(groupSels);
+            const filtered = categoryFiltered.filter((v: ProductVariantOption) => {
+              const goid = (v as any).variant_group_option_id;
+              return goid && selectedOptionIds.includes(goid);
+            });
+
+            if (filtered.length > 0) {
+              // Find matching variant by same category_variant_id (same size) in filtered set
+              const currentCvId = sel.selectedVariant?.category_variant_id;
+              const matchingVariant = currentCvId
+                ? filtered.find((v: ProductVariantOption) => v.category_variant_id === currentCvId)
+                : null;
+              const newVariant = matchingVariant || filtered.find((v: ProductVariantOption) => v.is_default) || filtered[0];
+              if (newVariant && newVariant.id !== sel.selectedVariant?.id) {
+                sel.selectedVariant = newVariant;
+                selectionsUpdated = true;
+              }
+            }
+          });
+
+          if (selectionsUpdated) {
+            setSelections([...computedSelections]);
+          }
         }
 
         // Notify parent immediately with computed selections
@@ -444,6 +495,38 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           }
         });
         setSlotGroupSelections(defaultSlotGroups);
+
+        // Re-resolve selectedVariant for slots with variant groups
+        let selectionsUpdated = false;
+        defaultSelections.forEach((sel, idx) => {
+          const groupSels = defaultSlotGroups[idx];
+          if (!groupSels || Object.keys(groupSels).length === 0) return;
+          if (!sel.selectedProduct?.id) return;
+
+          const allVars = groupedVariants[sel.selectedProduct.id] || [];
+          const categoryFiltered = allVars.filter((v: any) => v.variant?.category_id === sel.comboSlot.category_id);
+          const selectedOptionIds = Object.values(groupSels);
+          const filtered = categoryFiltered.filter((v: any) => {
+            const goid = v.variant_group_option_id;
+            return goid && selectedOptionIds.includes(goid);
+          });
+
+          if (filtered.length > 0) {
+            const currentCvId = sel.selectedVariant?.category_variant_id;
+            const matchingVariant = currentCvId
+              ? filtered.find((v: any) => v.category_variant_id === currentCvId)
+              : null;
+            const newVariant = matchingVariant || filtered.find((v: any) => v.is_default) || filtered[0];
+            if (newVariant && newVariant.id !== sel.selectedVariant?.id) {
+              sel.selectedVariant = newVariant;
+              selectionsUpdated = true;
+            }
+          }
+        });
+
+        if (selectionsUpdated) {
+          setSelections([...defaultSelections]);
+        }
       }
 
     } catch (error) {
