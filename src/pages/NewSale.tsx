@@ -618,6 +618,57 @@ export default function NewSale() {
       
       const fullOrderData = orderResult as any;
 
+      // Persistir aplicaciones de cupones para reportes/estadísticas
+      if (orderSnapshot.appliedCoupons && orderSnapshot.appliedCoupons.length > 0) {
+        try {
+          const couponRows = orderSnapshot.appliedCoupons.map((c: any) => ({
+            order_id: fullOrderData.id,
+            coupon_id: c.coupon_id,
+            applied_by: validUserId,
+            discount_products: Number(c.discount_products) || 0,
+            discount_delivery: Number(c.discount_delivery) || 0,
+            payload: c.payload || null,
+          }));
+          const { error: couponInsertError } = await supabase
+            .from('coupon_applications')
+            .insert(couponRows);
+          if (couponInsertError) {
+            console.error('Error registrando coupon_applications:', couponInsertError);
+          } else {
+            console.log(`✅ ${couponRows.length} aplicación(es) de cupón registrada(s)`);
+          }
+
+          // Incrementar contador de redenciones por cliente
+          if (customerId) {
+            for (const c of orderSnapshot.appliedCoupons) {
+              try {
+                const { data: existing } = await supabase
+                  .from('coupon_redemptions')
+                  .select('used_count')
+                  .eq('coupon_id', c.coupon_id)
+                  .eq('customer_id', customerId)
+                  .maybeSingle();
+                if (existing) {
+                  await supabase
+                    .from('coupon_redemptions')
+                    .update({ used_count: (existing.used_count || 0) + 1 })
+                    .eq('coupon_id', c.coupon_id)
+                    .eq('customer_id', customerId);
+                } else {
+                  await supabase
+                    .from('coupon_redemptions')
+                    .insert({ coupon_id: c.coupon_id, customer_id: customerId, used_count: 1 });
+                }
+              } catch (redErr) {
+                console.error('Error actualizando coupon_redemptions:', redErr);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error al persistir cupones:', err);
+        }
+      }
+
       // Save address if requested
       if (orderSnapshot.fulfillment === 'delivery' && orderSnapshot.deliveryData?.saveAddress && customerId) {
         try {
