@@ -208,7 +208,16 @@ export default function FinanceKPIs() {
           </div>
 
           {/* Dashboard Charts */}
-          <DashboardCharts kpis={kpis} dailyData={dailyData} loading={loadingDaily} />
+          <DashboardCharts
+            kpis={kpis}
+            dailyData={dailyData}
+            previousDailyData={previousDailyData}
+            loading={loadingDaily || (compareEnabled && loadingPrevious)}
+            comparisonEnabled={compareEnabled}
+            onToggleComparison={setCompareEnabled}
+            currentLabel={`${format(startDate, 'dd MMM', { locale: es })} – ${format(endDate, 'dd MMM yyyy', { locale: es })}`}
+            comparisonLabel={`${format(previousStart, 'dd MMM', { locale: es })} – ${format(previousEnd, 'dd MMM yyyy', { locale: es })}`}
+          />
         </>
       ) : (
         <div className="text-center py-12 text-muted-foreground">
