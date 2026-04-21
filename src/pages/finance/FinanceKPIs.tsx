@@ -1,11 +1,19 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarIcon, TrendingUp, DollarSign, ShoppingCart, Truck, Percent, Receipt } from 'lucide-react';
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import {
+  format,
+  subDays,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  differenceInCalendarDays,
+} from 'date-fns';
 import { es } from 'date-fns/locale';
 import { KPICard } from '@/components/finance/KPICard';
 import { DashboardCharts } from '@/components/finance/DashboardCharts';
@@ -23,6 +31,19 @@ export default function FinanceKPIs() {
 
   const { kpis, loading } = useFinanceKPIs(startDate, endDate);
   const { dailyData, loading: loadingDaily } = useFinanceDailyData(startDate, endDate);
+
+  // Comparación con período anterior (misma duración)
+  const [compareEnabled, setCompareEnabled] = useState(false);
+  const { previousStart, previousEnd } = useMemo(() => {
+    const days = differenceInCalendarDays(endDate, startDate) + 1;
+    const prevEnd = subDays(startDate, 1);
+    const prevStart = subDays(prevEnd, days - 1);
+    return { previousStart: prevStart, previousEnd: prevEnd };
+  }, [startDate, endDate]);
+  const { dailyData: previousDailyData, loading: loadingPrevious } = useFinanceDailyData(
+    compareEnabled ? previousStart : startDate,
+    compareEnabled ? previousEnd : endDate
+  );
 
   const handlePresetChange = (value: DateRangePreset) => {
     setPreset(value);
@@ -187,7 +208,16 @@ export default function FinanceKPIs() {
           </div>
 
           {/* Dashboard Charts */}
-          <DashboardCharts kpis={kpis} dailyData={dailyData} loading={loadingDaily} />
+          <DashboardCharts
+            kpis={kpis}
+            dailyData={dailyData}
+            previousDailyData={previousDailyData}
+            loading={loadingDaily || (compareEnabled && loadingPrevious)}
+            comparisonEnabled={compareEnabled}
+            onToggleComparison={setCompareEnabled}
+            currentLabel={`${format(startDate, 'dd MMM', { locale: es })} – ${format(endDate, 'dd MMM yyyy', { locale: es })}`}
+            comparisonLabel={`${format(previousStart, 'dd MMM', { locale: es })} – ${format(previousEnd, 'dd MMM yyyy', { locale: es })}`}
+          />
         </>
       ) : (
         <div className="text-center py-12 text-muted-foreground">
