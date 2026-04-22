@@ -324,6 +324,10 @@ export interface VariantGroup {
   name: string;
   display_order: number;
   active: boolean;
+  // Metadatos de selección (migración 2026-04-22)
+  min_select?: number;
+  max_select?: number;
+  is_required?: boolean;
   created_at: string;
   updated_at: string;
   options?: VariantGroupOption[];
@@ -337,6 +341,8 @@ export interface VariantGroupOption {
   image_url?: string;
   is_default: boolean;
   active: boolean;
+  // Recargo en CLP sobre el precio base del tamaño (migración 2026-04-22)
+  price_delta?: number;
   created_at: string;
   updated_at: string;
 }

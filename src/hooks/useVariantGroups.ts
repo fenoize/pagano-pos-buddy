@@ -7,6 +7,9 @@ export interface VariantGroupRow {
   name: string;
   display_order: number;
   active: boolean;
+  min_select?: number;
+  max_select?: number;
+  is_required?: boolean;
   created_at: string;
   updated_at: string;
   options: VariantGroupOptionRow[];
@@ -20,6 +23,7 @@ export interface VariantGroupOptionRow {
   image_url: string | null;
   is_default: boolean;
   active: boolean;
+  price_delta?: number;
 }
 
 export function useVariantGroups() {
