@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, TrendingUp, DollarSign, ShoppingCart, Truck, Percent, Receipt } from 'lucide-react';
+import { CalendarIcon, TrendingUp, DollarSign, ShoppingCart, Truck, Percent, Receipt, Wallet, Building2, Banknote } from 'lucide-react';
 import {
   format,
   subDays,
@@ -20,6 +20,7 @@ import { KPICard } from '@/components/finance/KPICard';
 import { DashboardCharts } from '@/components/finance/DashboardCharts';
 import { useFinanceKPIs } from '@/hooks/useFinanceKPIs';
 import { useFinanceDailyData } from '@/hooks/useFinanceDailyData';
+import { useFinanceOpex } from '@/hooks/useFinanceOpex';
 import { DateRangePreset } from '@/types/finance';
 import { cn } from '@/lib/utils';
 
