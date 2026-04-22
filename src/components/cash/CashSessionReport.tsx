@@ -603,7 +603,6 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
     const closed = sessions.filter(s => s.summary);
     const acc = {
       sessions: closed.length,
-      gross: 0,
       discounts: 0,
       net: 0,
       cash: 0,
@@ -614,7 +613,6 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
     };
     for (const s of closed) {
       const sm = s.summary!;
-      acc.gross += sm.grossSales || 0;
       acc.discounts += sm.totalDiscounts || 0;
       acc.net += sm.totalSales || 0;
       acc.cash += sm.totalCash || 0;
@@ -623,8 +621,11 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
       acc.aplicacion += sm.totalAplicacion || 0;
       acc.runas += sm.totalRunas || 0;
     }
-    const totalMethods = acc.cash + acc.mp + acc.pos + acc.aplicacion + acc.runas;
-    return { ...acc, totalMethods };
+    // Solo dinero real (excluye Runas y otros métodos no monetarios)
+    const totalMethods = acc.cash + acc.mp + acc.pos + acc.aplicacion;
+    // Brutas reales = netas reales + descuentos (sin contar parte cubierta por Runas)
+    const gross = acc.net + acc.discounts;
+    return { ...acc, totalMethods, gross };
   }, [sessions]);
 
   const pct = (n: number) => totals.totalMethods > 0 ? ((n / totals.totalMethods) * 100).toFixed(1) : '0.0';
@@ -666,7 +667,7 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
               <div className="p-4 rounded-lg border bg-muted/30">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Ventas Brutas</p>
                 <p className="text-2xl font-bold mt-1">{formatCurrency(totals.gross)}</p>
-                <p className="text-xs text-muted-foreground mt-1">Subtotal antes de descuentos</p>
+                <p className="text-xs text-muted-foreground mt-1">Dinero real antes de descuentos</p>
               </div>
               <div className="p-4 rounded-lg border bg-destructive/5">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Descuentos Totales</p>
@@ -676,9 +677,15 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
               <div className="p-4 rounded-lg border bg-primary/5">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Ventas Netas</p>
                 <p className="text-2xl font-bold mt-1 text-primary">{formatCurrency(totals.net)}</p>
-                <p className="text-xs text-muted-foreground mt-1">Solo ingresos reales (excluye Runas/Canje)</p>
+                <p className="text-xs text-muted-foreground mt-1">Solo dinero real (excluye Runas/Canje)</p>
               </div>
             </div>
+
+            {totals.runas > 0 && (
+              <p className="text-xs text-muted-foreground italic">
+                ℹ️ Adicionalmente se canjearon {formatCurrency(totals.runas)} en Runas (no contabilizado como dinero real).
+              </p>
+            )}
 
             <div>
               <h4 className="text-sm font-semibold mb-3">Ventas por Método de Pago</h4>
@@ -711,13 +718,6 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
                       <TableCell>Aplicación</TableCell>
                       <TableCell className="text-right font-medium">{formatCurrency(totals.aplicacion)}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{pct(totals.aplicacion)}%</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        Runas <Badge variant="outline" className="ml-1 text-[10px]">No es dinero real</Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">{formatCurrency(totals.runas)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{pct(totals.runas)}%</TableCell>
                     </TableRow>
                     <TableRow className="bg-muted/40 font-semibold">
                       <TableCell>Total</TableCell>
