@@ -55,14 +55,23 @@ export default function Clientes() {
   const totalRunas = customers.reduce((sum, c) => sum + (c.cantidad_runas || 0), 0);
   const totalRunasValue = totalRunas * runaRedemptionValue;
 
-  // Auto-fetch when filters change
+  const getActiveFilters = (): CustomerFilters => ({
+    ...filters,
+    search: searchTerm.trim().length >= 3 ? searchTerm.trim() : undefined
+  });
+
+  // Auto-fetch when filters change, debounced while typing search terms
   useEffect(() => {
-    const searchFilters: CustomerFilters = {
-      ...filters,
-      search: searchTerm.length >= 3 ? searchTerm : undefined
-    };
-    fetchCustomers(searchFilters, currentPage, pageSize);
+    const timeoutId = window.setTimeout(() => {
+      fetchCustomers(getActiveFilters(), currentPage, pageSize);
+    }, searchTerm.trim().length > 0 ? 400 : 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [searchTerm, filters, currentPage, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchTerm, filters]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -105,14 +114,14 @@ export default function Clientes() {
   const handleConfirmDeactivate = async (customer: Customer) => {
     const success = await deleteCustomer(customer.id);
     if (success) {
-      fetchCustomers(filters, currentPage);
+      fetchCustomers(getActiveFilters(), currentPage, pageSize);
     }
   };
 
   const handleConfirmDeletePermanently = async (customer: Customer) => {
     const success = await deleteCustomerPermanently(customer.id);
     if (success) {
-      fetchCustomers(filters, currentPage);
+      fetchCustomers(getActiveFilters(), currentPage, pageSize);
     }
   };
 
@@ -124,12 +133,12 @@ export default function Clientes() {
 
   const handleCustomerCreated = () => {
     setIsNewCustomerModalOpen(false);
-    fetchCustomers(filters, currentPage);
+    fetchCustomers(getActiveFilters(), currentPage, pageSize);
   };
 
   const handleCustomerUpdated = () => {
     setIsCustomerModalOpen(false);
-    fetchCustomers(filters, currentPage);
+    fetchCustomers(getActiveFilters(), currentPage, pageSize);
   };
 
   const handleManageAuth = (customer: Customer) => {
