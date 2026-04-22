@@ -3673,6 +3673,30 @@ export type Database = {
           },
         ]
       }
+      migration_warnings_variantes: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          payload: Json | null
+          warning_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          payload?: Json | null
+          warning_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          payload?: Json | null
+          warning_type?: string
+        }
+        Relationships: []
+      }
       notification_events: {
         Row: {
           body: string
@@ -6396,6 +6420,7 @@ export type Database = {
           image_url: string | null
           is_default: boolean
           name: string
+          price_delta: number
           updated_at: string
         }
         Insert: {
@@ -6407,6 +6432,7 @@ export type Database = {
           image_url?: string | null
           is_default?: boolean
           name: string
+          price_delta?: number
           updated_at?: string
         }
         Update: {
@@ -6418,6 +6444,7 @@ export type Database = {
           image_url?: string | null
           is_default?: boolean
           name?: string
+          price_delta?: number
           updated_at?: string
         }
         Relationships: [
@@ -6436,6 +6463,9 @@ export type Database = {
           created_at: string
           display_order: number
           id: string
+          is_required: boolean
+          max_select: number
+          min_select: number
           name: string
           updated_at: string
         }
@@ -6444,6 +6474,9 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          is_required?: boolean
+          max_select?: number
+          min_select?: number
           name: string
           updated_at?: string
         }
@@ -6452,6 +6485,9 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          is_required?: boolean
+          max_select?: number
+          min_select?: number
           name?: string
           updated_at?: string
         }
