@@ -33,6 +33,7 @@ export default function FinanceKPIs() {
 
   const { kpis, loading } = useFinanceKPIs(startDate, endDate);
   const { dailyData, loading: loadingDaily } = useFinanceDailyData(startDate, endDate);
+  const { opex, loading: loadingOpex } = useFinanceOpex(startDate, endDate);
 
   // Comparación con período anterior (misma duración)
   const [compareEnabled, setCompareEnabled] = useState(false);
