@@ -186,7 +186,23 @@ export default function FinanceKPIs() {
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <KPICard
+              title="Venta Promedio Mensual"
+              value={formatCurrency(
+                kpis.sales.net /
+                  Math.max(
+                    1,
+                    (differenceInCalendarDays(endDate, startDate) + 1) / 30.4375
+                  )
+              )}
+              icon={TrendingUp}
+              subtitle={(() => {
+                const days = differenceInCalendarDays(endDate, startDate) + 1;
+                const months = days / 30.4375;
+                return `Promedio sobre ${months.toFixed(months >= 1 ? 1 : 2)} mes${months >= 1.5 ? 'es' : ''} (${days} días)`;
+              })()}
+            />
             <KPICard
               title="Delivery Cobrado"
               value={formatCurrency(kpis.sales.delivery_fee)}
