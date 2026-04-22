@@ -131,7 +131,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       // Fetch variant groups assigned to this product
       const { data: pvgData } = await configuredSupabase
         .from('product_variant_groups')
-        .select('group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active))')
+        .select('group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active, price_delta))')
         .eq('product_id', product.id);
 
       const fetchedGroups: VariantGroupWithOptions[] = (pvgData || [])
@@ -155,8 +155,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
 
       if (variants.length > 0) {
         setUseNewVariantSystem(true);
-        const filteredVariants = filterVariantsByGroup(variants, defaults);
-        const defaultVariant = filteredVariants.find(v => v.is_default) || filteredVariants[0] || variants.find(v => v.is_default) || variants[0];
+        const defaultVariant = variants.find(v => v.is_default) || variants[0];
         setSelectedVariantOption(defaultVariant);
       } else {
         setUseNewVariantSystem(false);
@@ -170,26 +169,8 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     }
   };
 
-  const filterVariantsByGroup = (variants: ProductVariantOption[], groupSelections: Record<string, string>) => {
-    if (Object.keys(groupSelections).length === 0) return variants;
-    const selectedOptionIds = Object.values(groupSelections);
-    const withGroupOption = variants.filter(v => v.variant_group_option_id);
-    if (withGroupOption.length === 0) return variants;
-    return variants.filter(v => {
-      if (!v.variant_group_option_id) return false;
-      return selectedOptionIds.includes(v.variant_group_option_id);
-    });
-  };
-
   const handleGroupOptionChange = (groupId: string, optionId: string) => {
-    const newSelections = { ...selectedGroupOptions, [groupId]: optionId };
-    setSelectedGroupOptions(newSelections);
-    const filtered = filterVariantsByGroup(availableVariants, newSelections);
-    if (filtered.length > 0) {
-      const currentVariantName = selectedVariantOption?.variant?.name;
-      const sameNameVariant = filtered.find(v => v.variant?.name === currentVariantName);
-      setSelectedVariantOption(sameNameVariant || filtered.find(v => v.is_default) || filtered[0]);
-    }
+    setSelectedGroupOptions({ ...selectedGroupOptions, [groupId]: optionId });
   };
 
   const fetchComboConfiguration = async () => {
