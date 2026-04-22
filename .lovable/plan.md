@@ -1,282 +1,349 @@
 
-# Plan actualizado: configuración simple y flujo Proteína → Tamaño → Extras
+# Plan: nuevo módulo Marketing → Alianzas
 
 ## Objetivo
 
-Simplificar completamente la configuración de hamburguesas con variante de proteína, manteniendo dimensiones independientes:
+Crear un módulo nuevo llamado **Alianzas** dentro de **Marketing**, pensado para campañas con embajadores, empresas y aliados.
+
+El flujo será:
 
 ```text
-Producto
-├─ Proteína
-│  ├─ Carne: +$0
-│  └─ Pollo: +$200
-├─ Tamaño
-│  ├─ Simple: precio base
-│  ├─ Doble: precio base
-│  └─ Triple: precio base
-└─ Extras
-   ├─ Extra tocino
-   ├─ Extra queso
-   └─ etc.
+Poster / QR en oficina aliada
+→ Cliente escanea URL exclusiva
+→ Se registra en la app cliente
+→ Recibe beneficios configurados
+→ Compra
+→ El módulo mide lecturas, registros, compras e ingresos
 ```
-
-El precio final será:
-
-```text
-precio final = precio base del tamaño + adicional de proteína + extras
-```
-
-No habrá combinaciones cruzadas ni duplicación de precios por Carne/Pollo.
 
 ---
 
-## Flujo correcto en la aplicación de cliente
+## 1. Nuevo módulo en Marketing
 
-El orden de selección debe ser:
+Agregaré una nueva opción en el menú lateral:
 
 ```text
-1. Proteína
-   Carne / Pollo +$200
-
-2. Tamaño
-   Simple / Doble / Triple
-
-3. Extras
-   Extras pagados y modificadores sin costo
+Marketing
+├─ Promos App
+├─ Alianzas
+├─ Notificaciones
+└─ Contenido TV
 ```
 
-Esto reemplaza cualquier flujo anterior donde el tamaño aparecía primero.
+Ruta interna:
+
+```text
+/pos/marketing/alianzas
+```
+
+Solo visible para **Administrador**.
+
+---
+
+## 2. Gestión de campañas de alianza
+
+En el módulo **Alianzas** se podrá crear y administrar campañas como:
+
+```text
+Empresa: WeWork Providencia
+Tipo: Empresa aliada
+URL: https://app.paganosburger.cl/a/wework-providencia
+Estado: Activa
+Vigencia: abril 2026
+Beneficios:
+- 20 runas al registrarse
+- Cupón 15% primera compra
+- Delivery gratis primera compra
+```
+
+Campos principales:
+
+- Nombre de la alianza.
+- Tipo:
+  - Empresa aliada
+  - Embajador
+  - Convenio
+  - Otro
+- Slug público para la URL.
+- Vigencia.
+- Estado activo/inactivo.
+- Notas internas.
+- Beneficios configurables:
+  - Runas de bienvenida.
+  - Cupón asociado.
+  - Delivery gratis primera compra.
+  - Límite de usos.
+  - Una vez por cliente.
+
+---
+
+## 3. URL pública y QR
+
+Cada alianza tendrá una URL exclusiva:
+
+```text
+https://app.paganosburger.cl/a/{slug}
+```
 
 Ejemplo:
 
 ```text
-Producto: Amerikana Smash&Fries
-
-Paso 1: Proteína
-- Carne +$0
-- Pollo +$200
-
-Paso 2: Tamaño
-- Simple $9.490
-- Doble $13.190
-- Triple $15.490
-
-Paso 3: Extras
-- Extra tocino
-- Extra queso
-- etc.
+https://app.paganosburger.cl/a/wework-providencia
 ```
 
-Cálculo:
+Al entrar a esa URL:
+
+1. Se registra una **lectura del QR / visita**.
+2. Se guarda la alianza temporalmente en el navegador.
+3. Se lleva al cliente a crear cuenta.
+4. Si ya tiene cuenta, se conserva la atribución para su próxima compra.
+
+También agregaré en el módulo:
+
+- Botón **Copiar URL**.
+- Botón/área para mostrar el **QR** de la campaña.
+- Texto sugerido para imprimir en poster.
+
+---
+
+## 4. Registro de eventos y atribución
+
+Crearé estructura de datos para medir el embudo completo:
 
 ```text
-Amerikana + Carne + Simple = $9.490
-Amerikana + Pollo + Simple = $9.690
-Amerikana + Carne + Doble = $13.190
-Amerikana + Pollo + Doble = $13.390
+Lectura QR
+→ Registro
+→ Compra
+```
+
+Se guardarán eventos como:
+
+- `view`: alguien abrió la URL.
+- `signup`: alguien creó cuenta desde esa URL.
+- `reward_granted`: se entregaron beneficios.
+- `purchase`: el cliente realizó una compra atribuida.
+- `reward_redeemed`: se usó cupón, delivery gratis o beneficio.
+
+Además, quedará una atribución por cliente:
+
+```text
+Cliente Diego → vino desde WeWork Providencia
+```
+
+Esto permitirá saber:
+
+- Cuántos clientes trajo cada aliado.
+- Quiénes se registraron.
+- Quiénes compraron.
+- Qué compra fue la primera.
+- Cuánto ingreso generó la alianza.
+
+---
+
+## 5. Beneficios configurables
+
+### Runas al registrarse
+
+Si la campaña tiene runas configuradas, al completar el registro se insertará una transacción de runas:
+
+```text
+Tipo: promo
+Origen: Web
+Motivo: Alianza: WeWork Providencia
+```
+
+### Cupón primera compra
+
+La alianza podrá asociarse a un cupón existente o crear uno desde el flujo.
+
+El cupón se mostrará/cargará automáticamente en checkout cuando el cliente venga desde esa alianza.
+
+### Delivery gratis primera compra
+
+Implementaré delivery gratis como beneficio de alianza de un solo uso.
+
+En checkout, si el cliente tiene ese beneficio pendiente:
+
+```text
+Delivery: $2.500
+Beneficio alianza: -$2.500
+Delivery final: $0
+```
+
+Después de usarlo, quedará marcado como aplicado para evitar reutilización.
+
+---
+
+## 6. Integración con registro de cliente
+
+Actualizaré el flujo de `/login` para soportar campañas:
+
+```text
+/a/wework-providencia
+→ /login?mode=signup&ally=wework-providencia
+```
+
+Cambios:
+
+- Abrir automáticamente la pestaña **Registrarse**.
+- Mostrar una tarjeta contextual, por ejemplo:
+  ```text
+  Beneficio exclusivo WeWork Providencia
+  Crea tu cuenta y recibe tus beneficios para tu primera compra.
+  ```
+- Al crear la cuenta, registrar el evento `signup`.
+- Entregar los beneficios configurados.
+
+También consideraré registro con Google si está habilitado, conservando el mismo código de alianza.
+
+---
+
+## 7. Integración con compra
+
+Actualizaré los flujos de compra de la app cliente para registrar conversión.
+
+Se considerará compra atribuida cuando el cliente tenga una alianza asociada y cree/pague un pedido.
+
+Puntos de integración:
+
+- Checkout normal con MercadoPago.
+- Compra pagada con runas.
+- Confirmación de pago MercadoPago.
+- Pedidos asociados al cliente desde POS, si corresponde.
+
+Se registrará:
+
+```text
+Cliente
+Pedido
+Alianza
+Fecha
+Total
+Descuento usado
+Delivery gratis usado
+Cupón usado
 ```
 
 ---
 
-## Cambios en configuración administrativa
+## 8. Dashboard de KPIs
 
-### 1. Precios base por tamaño
+El módulo **Alianzas** tendrá una vista de indicadores por campaña.
 
-En el editor de producto, el administrador configurará solo una fila por tamaño:
-
-```text
-Simple   $____
-Doble    $____
-Triple   $____
-```
-
-Estos precios base incluyen Carne por defecto.
-
-### 2. Proteínas como adicionales
-
-El grupo global Proteína quedará configurado así:
-
-| Proteína | Adicional |
-|---|---:|
-| Carne | $0 |
-| Pollo | +$200 |
-
-Si en el futuro agregan otra proteína:
-
-| Proteína | Adicional |
-|---|---:|
-| Veggie | +$500 |
-
-no será necesario duplicar tamaños ni crear combinaciones.
-
-### 3. Vista previa simple para el administrador
-
-Agregaré una vista previa calculada, sin editar combinaciones:
+KPIs principales:
 
 ```text
-Simple + Carne = precio Simple
-Simple + Pollo = precio Simple + 200
-Doble + Carne = precio Doble
-Doble + Pollo = precio Doble + 200
-Triple + Carne = precio Triple
-Triple + Pollo = precio Triple + 200
+Lecturas QR
+Registros
+Compras
+Tasa registro / lectura
+Tasa compra / registro
+Ingresos generados
+Ticket promedio
+Runas entregadas
+Descuentos entregados
+Delivery gratis usados
 ```
 
-La vista previa es solo informativa; no creará filas adicionales.
+También tendrá filtro mensual:
+
+```text
+Este mes
+Mes anterior
+Rango personalizado
+```
+
+Y tabla por aliado:
+
+| Alianza | Lecturas | Registros | Compras | Conversión | Ingresos |
+|---|---:|---:|---:|---:|---:|
+| WeWork Providencia | 120 | 34 | 11 | 32.4% | $185.900 |
+| Embajador Diego | 90 | 22 | 8 | 36.3% | $121.500 |
 
 ---
 
-## Cambios de datos
+## 9. Vista de detalle por alianza
 
-### 4. Normalizar grupo Proteína
+Al abrir una alianza se verá:
 
-Actualizaré el grupo Proteína para que:
+- Datos generales.
+- URL y QR.
+- Beneficios configurados.
+- KPIs del periodo.
+- Clientes registrados.
+- Clientes que compraron.
+- Pedidos atribuidos.
+- Historial de eventos.
 
-```text
-Carne = +$0
-Pollo = +$200
-```
-
-### 5. Asignar Proteína a productos correspondientes
-
-Asignaré el grupo Proteína a los productos hamburguesa que lo necesiten, incluyendo la Amerikana de la categoría **Smash&Fries**, que actualmente no muestra proteína porque no tiene el grupo asignado.
-
-### 6. Revisar tamaños base en Smash&Fries
-
-Validaré que los productos de Smash&Fries tengan tamaños base:
+Ejemplo:
 
 ```text
-Simple
-Doble
-Triple
+Cliente              Evento       Fecha          Pedido      Total
+Diego Pérez          Registro     22/04 10:31   —           —
+Diego Pérez          Compra       22/04 13:04   #1542       $18.900
+Camila Soto          Lectura      22/04 15:20   —           —
 ```
-
-Solo debe existir una fila por tamaño, no una fila por cada proteína.
-
-Si falta un precio base real para algún producto/tamaño, lo dejaré marcado para revisión manual en vez de inventarlo.
 
 ---
 
-## Cambios en app cliente
+## 10. Cambios técnicos
 
-### 7. Reordenar personalización
+### Base de datos
 
-Actualizaré el modal/flujo de personalización del cliente para que muestre:
+Crearé tablas nuevas para:
 
-```text
-Proteína → Tamaño → Extras
-```
+- Campañas de alianza.
+- Eventos de alianza.
+- Atribución cliente ↔ alianza.
+- Beneficios pendientes/aplicados.
 
-Reglas:
+También agregaré índices para consultas mensuales y por campaña.
 
-- No permitir agregar al carrito hasta elegir proteína requerida.
-- No permitir agregar al carrito hasta elegir tamaño requerido.
-- Mostrar el recargo de Pollo claramente como `+$200`.
-- Actualizar el total en vivo cuando cambie proteína, tamaño o extras.
-- Mantener el estándar visual actual de listas verticales tipo app de delivery.
+### Seguridad
 
----
+- La gestión de alianzas será solo para administradores.
+- La URL pública solo podrá registrar eventos seguros como lectura.
+- La entrega de beneficios se hará mediante RPC `SECURITY DEFINER`, no confiando en datos manipulables del navegador.
+- La compra se atribuirá usando el `customer_id` real del pedido.
 
-## Cambios en POS
+### Frontend
 
-### 8. Alinear POS con el mismo modelo de cálculo
+Agregaré:
 
-El POS usará el mismo cálculo:
-
-```text
-precio base tamaño + delta proteína + extras
-```
-
-El POS puede mantener su layout operativo actual, pero internamente no debe resolver precios mediante combinaciones cruzadas.
-
-Si corresponde al flujo de atención, también se ordenará como:
-
-```text
-Proteína → Tamaño → Extras
-```
-
-para mantener consistencia con la app cliente.
+- Página `MarketingAlianzas`.
+- Hook `useMarketingAlliances`.
+- Modal/formulario de alianza.
+- Página pública `/a/:slug`.
+- Integración con `CustomerLogin`.
+- Integración con checkout para beneficios automáticos.
+- Integración con confirmación de pedido/pago para conversión.
 
 ---
 
-## Validación final
+## 11. Validación final
 
-Validaré que:
-
-1. En la app cliente, la selección aparezca en este orden:
-   ```text
-   Proteína → Tamaño → Extras
-   ```
-
-2. La Amerikana de Smash&Fries muestre:
-   ```text
-   Carne +$0
-   Pollo +$200
-   ```
-
-3. El precio cambie solo por el delta de proteína:
-   ```text
-   Carne = precio base
-   Pollo = precio base + 200
-   ```
-
-4. Los tamaños sigan siendo independientes:
-   ```text
-   Simple
-   Doble
-   Triple
-   ```
-
-5. No existan combinaciones cruzadas:
-   ```text
-   Simple + Carne
-   Simple + Pollo
-   Doble + Carne
-   Doble + Pollo
-   ```
-   como filas de precio editables.
-
-6. El sistema escale a 3+ proteínas sin duplicar precios:
-   ```text
-   Carne +$0
-   Pollo +$200
-   Veggie +$500
-   ```
-
-7. El administrador solo edite:
-   - precio base por tamaño;
-   - adicional por proteína;
-   - extras/modificadores.
-
----
-
-## Resultado esperado
-
-La configuración quedará así:
+Validaré el flujo completo:
 
 ```text
-Producto: Hamburguesa
-
-Proteínas:
-- Carne: +$0
-- Pollo: +$200
-
-Tamaños:
-- Simple: precio base
-- Doble: precio base
-- Triple: precio base
-
-Extras:
-- Se suman después
+1. Crear alianza desde Marketing → Alianzas
+2. Copiar URL o abrir QR
+3. Entrar a /a/{slug}
+4. Ver que se registra lectura
+5. Crear cuenta nueva
+6. Ver que se registra signup
+7. Ver que se entregan beneficios
+8. Hacer primera compra
+9. Ver que se registra purchase
+10. Confirmar KPIs mensuales en dashboard
 ```
 
-Y el cliente verá el flujo en este orden:
+Resultado esperado:
 
 ```text
-1. Elige proteína
-2. Elige tamaño
-3. Elige extras
-4. Agrega al carrito
+Alianza activa
+→ QR medible
+→ Registro atribuido
+→ Beneficios automáticos
+→ Compra atribuida
+→ KPIs mensuales por aliado/embajador
 ```
-
-Sin generador de combinaciones, sin tabla de combinaciones de precio y sin duplicación de filas por tamaño/proteína.
