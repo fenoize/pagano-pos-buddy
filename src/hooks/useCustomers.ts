@@ -25,7 +25,11 @@ export interface CustomerFormData {
   motivo_estado?: string;
 }
 
-export function useCustomers() {
+interface UseCustomersOptions {
+  autoFetch?: boolean;
+}
+
+export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -492,8 +496,10 @@ export function useCustomers() {
 
   // Auto-fetch al cargar
   useEffect(() => {
-    fetchCustomers();
-  }, [canViewCustomers]);
+    if (autoFetch) {
+      fetchCustomers();
+    }
+  }, [canViewCustomers, autoFetch]);
 
   const exportCustomersCSV = async () => {
     if (!canViewCustomers) {
