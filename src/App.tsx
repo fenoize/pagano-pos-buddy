@@ -34,6 +34,7 @@ import { Footer } from "@/components/ui/footer";
 
 // Customer Pages
 const CustomerLogin = lazy(() => import('@/pages/customer/CustomerLogin'));
+const AllianceLanding = lazy(() => import('@/pages/customer/AllianceLanding'));
 const CustomerResetPassword = lazy(() => import('@/pages/customer/CustomerResetPassword'));
 const VerifyEmail = lazy(() => import('@/pages/customer/VerifyEmail'));
 const CustomerPortal = lazy(() => import('@/pages/customer/CustomerPortal'));
@@ -72,6 +73,7 @@ const MiConfiguracion = lazy(() => import("@/pages/MiConfiguracion"));
 const PermisosManagement = lazy(() => import("@/pages/PermisosManagement"));
 const CierresDiarios = lazy(() => import("@/pages/CierresDiarios"));
 const MarketingPromosApp = lazy(() => import("@/pages/MarketingPromosApp"));
+const MarketingAlianzas = lazy(() => import("@/pages/MarketingAlianzas"));
 const MarketingNotifications = lazy(() => import("@/pages/MarketingNotifications"));
 const MarketingTVContent = lazy(() => import("@/pages/MarketingTVContent"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
@@ -239,6 +241,7 @@ const App = () => (
               {/* ==================== CUSTOMER ROUTES (ROOT) ==================== */}
               <Route path="/" element={<SmartRootRedirect />} />
               <Route path="/login" element={<CustomerLogin />} />
+              <Route path="/a/:slug" element={<AllianceLanding />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<CustomerResetPassword />} />
               
@@ -720,6 +723,14 @@ const App = () => (
                 <StaffProtectedRoute>
                   <StaffLayout>
                     <MarketingPromosApp />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              
+              <Route path="/pos/marketing/alianzas" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <MarketingAlianzas />
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />

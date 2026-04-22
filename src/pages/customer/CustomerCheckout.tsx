@@ -23,6 +23,7 @@ import { useDeliveryGeo, DeliveryZoneWithGeo } from '@/hooks/useDeliveryGeo';
 import { createRunasOrder } from '@/lib/integrations/runasPayment';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { trackAlliancePurchase } from '@/lib/allianceAttribution';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 import { Coupon, CouponApplication } from '@/types';
@@ -302,6 +303,7 @@ export default function CustomerCheckout() {
               console.error('Error incrementando usage_count:', err);
             }
           }
+          await trackAlliancePurchase(customer.id, result.order_id, total, { payment_method: 'runas' });
           clearCart();
           toast.success('¡Pedido confirmado exitosamente!');
           navigate(`/order-success?order=${result.order_number}`);

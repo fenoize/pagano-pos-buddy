@@ -3357,6 +3357,369 @@ export type Database = {
           },
         ]
       }
+      marketing_alliance_attributions: {
+        Row: {
+          alliance_id: string
+          created_at: string
+          customer_id: string
+          first_order_id: string | null
+          first_purchase_at: string | null
+          first_seen_at: string
+          id: string
+          session_id: string | null
+          signed_up_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          alliance_id: string
+          created_at?: string
+          customer_id: string
+          first_order_id?: string | null
+          first_purchase_at?: string | null
+          first_seen_at?: string
+          id?: string
+          session_id?: string | null
+          signed_up_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alliance_id?: string
+          created_at?: string
+          customer_id?: string
+          first_order_id?: string | null
+          first_purchase_at?: string | null
+          first_seen_at?: string
+          id?: string
+          session_id?: string | null
+          signed_up_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_alliance_attributions_alliance_id_fkey"
+            columns: ["alliance_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_alliances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_attributions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_attributions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_attributions_first_order_id_fkey"
+            columns: ["first_order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_attributions_first_order_id_fkey"
+            columns: ["first_order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_attributions_first_order_id_fkey"
+            columns: ["first_order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_attributions_first_order_id_fkey"
+            columns: ["first_order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_attributions_first_order_id_fkey"
+            columns: ["first_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_alliance_benefits: {
+        Row: {
+          alliance_id: string
+          amount: number
+          applied_at: string | null
+          benefit_type: string
+          coupon_id: string | null
+          customer_id: string
+          granted_at: string
+          id: string
+          metadata: Json
+          order_id: string | null
+          status: string
+        }
+        Insert: {
+          alliance_id: string
+          amount?: number
+          applied_at?: string | null
+          benefit_type: string
+          coupon_id?: string | null
+          customer_id: string
+          granted_at?: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          status?: string
+        }
+        Update: {
+          alliance_id?: string
+          amount?: number
+          applied_at?: string | null
+          benefit_type?: string
+          coupon_id?: string | null
+          customer_id?: string
+          granted_at?: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_alliance_benefits_alliance_id_fkey"
+            columns: ["alliance_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_alliances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_benefits_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_benefits_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_benefits_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_benefits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_benefits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_benefits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_benefits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_benefits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_alliance_events: {
+        Row: {
+          alliance_id: string
+          amount: number
+          created_at: string
+          customer_id: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          order_id: string | null
+          session_id: string | null
+        }
+        Insert: {
+          alliance_id: string
+          amount?: number
+          created_at?: string
+          customer_id?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          session_id?: string | null
+        }
+        Update: {
+          alliance_id?: string
+          amount?: number
+          created_at?: string
+          customer_id?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_alliance_events_alliance_id_fkey"
+            columns: ["alliance_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_alliances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "app_orders_kitchen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_export_v"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_alliance_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_alliances: {
+        Row: {
+          coupon_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_at: string | null
+          free_delivery_first_order: boolean
+          id: string
+          internal_notes: string | null
+          is_active: boolean
+          name: string
+          once_per_customer: boolean
+          slug: string
+          starts_at: string | null
+          type: string
+          updated_at: string
+          usage_limit: number | null
+          welcome_runas: number
+        }
+        Insert: {
+          coupon_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          free_delivery_first_order?: boolean
+          id?: string
+          internal_notes?: string | null
+          is_active?: boolean
+          name: string
+          once_per_customer?: boolean
+          slug: string
+          starts_at?: string | null
+          type?: string
+          updated_at?: string
+          usage_limit?: number | null
+          welcome_runas?: number
+        }
+        Update: {
+          coupon_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          free_delivery_first_order?: boolean
+          id?: string
+          internal_notes?: string | null
+          is_active?: boolean
+          name?: string
+          once_per_customer?: boolean
+          slug?: string
+          starts_at?: string | null
+          type?: string
+          updated_at?: string
+          usage_limit?: number | null
+          welcome_runas?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_alliances_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_app_promotions: {
         Row: {
           created_at: string
@@ -6842,6 +7205,10 @@ export type Database = {
         Args: { p_customer_id: string; p_type: string }
         Returns: boolean
       }
+      claim_marketing_alliance_signup: {
+        Args: { _customer_id: string; _session_id: string; _slug: string }
+        Returns: boolean
+      }
       cleanup_expired_reset_codes: { Args: never; Returns: undefined }
       convert_uom_to_base: {
         Args: {
@@ -7160,6 +7527,35 @@ export type Database = {
         }[]
       }
       get_mapbox_token: { Args: never; Returns: string }
+      get_marketing_alliance_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          coupon_id: string
+          description: string
+          free_delivery_first_order: boolean
+          id: string
+          name: string
+          slug: string
+          type: string
+          welcome_runas: number
+        }[]
+      }
+      get_marketing_alliance_kpis: {
+        Args: { _end_date?: string; _start_date?: string }
+        Returns: {
+          alliance_id: string
+          is_active: boolean
+          name: string
+          purchases: number
+          revenue: number
+          rewards_redeemed: number
+          runas_granted: number
+          signups: number
+          slug: string
+          type: string
+          views: number
+        }[]
+      }
       get_material_base_uom: {
         Args: { p_raw_material_id: string }
         Returns: string
@@ -7459,6 +7855,19 @@ export type Database = {
           p_target_user_id: string
         }
         Returns: undefined
+      }
+      track_marketing_alliance_purchase: {
+        Args: {
+          _amount?: number
+          _customer_id: string
+          _metadata?: Json
+          _order_id: string
+        }
+        Returns: boolean
+      }
+      track_marketing_alliance_view: {
+        Args: { _metadata?: Json; _session_id: string; _slug: string }
+        Returns: string
       }
       update_customer_runas: {
         Args: { p_cantidad_runas: number; p_customer_id: string }

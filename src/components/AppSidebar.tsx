@@ -128,6 +128,7 @@ const financeItems = [
 // Marketing menu items
 const marketingItems = [
   { title: "Promos App", url: "/pos/marketing/promos-app", icon: Megaphone, roles: ['Administrador'] },
+  { title: "Alianzas", url: "/pos/marketing/alianzas", icon: Building2, roles: ['Administrador'] },
   { title: "Notificaciones", url: "/pos/marketing/notificaciones", icon: Bell, roles: ['Administrador'] },
   { title: "Contenido TV", url: "/pos/marketing/contenido-tv", icon: Tv, roles: ['Administrador'] },
 ];
