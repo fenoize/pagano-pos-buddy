@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, TrendingUp, DollarSign, ShoppingCart, Truck, Percent, Receipt } from 'lucide-react';
+import { CalendarIcon, TrendingUp, DollarSign, ShoppingCart, Truck, Percent, Receipt, Wallet, Building2, Banknote } from 'lucide-react';
 import {
   format,
   subDays,
@@ -20,6 +20,7 @@ import { KPICard } from '@/components/finance/KPICard';
 import { DashboardCharts } from '@/components/finance/DashboardCharts';
 import { useFinanceKPIs } from '@/hooks/useFinanceKPIs';
 import { useFinanceDailyData } from '@/hooks/useFinanceDailyData';
+import { useFinanceOpex } from '@/hooks/useFinanceOpex';
 import { DateRangePreset } from '@/types/finance';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +33,7 @@ export default function FinanceKPIs() {
 
   const { kpis, loading } = useFinanceKPIs(startDate, endDate);
   const { dailyData, loading: loadingDaily } = useFinanceDailyData(startDate, endDate);
+  const { opex, loading: loadingOpex } = useFinanceOpex(startDate, endDate);
 
   // Comparación con período anterior (misma duración)
   const [compareEnabled, setCompareEnabled] = useState(false);
@@ -222,6 +224,48 @@ export default function FinanceKPIs() {
               subtitle={`${formatCurrency(kpis.costs.gross_margin)} en ganancias`}
               trend={kpis.costs.gross_margin_pct > 60 ? 'up' : 'neutral'}
             />
+          </div>
+
+          {/* Gastos Operativos & Rentabilidad Real */}
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold text-foreground/90 mt-4">
+              Gastos Operativos y Rentabilidad
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <KPICard
+                title="Egresos Variables"
+                value={loadingOpex ? '...' : formatCurrency(opex.variableExpenses)}
+                icon={Wallet}
+                subtitle="Facturas y gastos del período"
+              />
+              <KPICard
+                title="Gastos Fijos (prorrateados)"
+                value={loadingOpex ? '...' : formatCurrency(opex.fixedExpensesProrated)}
+                icon={Building2}
+                subtitle="Arriendo, sueldos, servicios"
+              />
+              <KPICard
+                title="Pagos a Repartidores"
+                value={loadingOpex ? '...' : formatCurrency(opex.deliveryPayments)}
+                icon={Banknote}
+                subtitle="Comisiones de delivery"
+              />
+              {(() => {
+                const netProfit = kpis.costs.gross_margin - opex.total;
+                const netPct = kpis.sales.net > 0
+                  ? Math.round((netProfit / kpis.sales.net) * 100)
+                  : 0;
+                return (
+                  <KPICard
+                    title="Utilidad Neta"
+                    value={loadingOpex ? '...' : formatCurrency(netProfit)}
+                    icon={TrendingUp}
+                    subtitle={`${netPct}% margen neto`}
+                    trend={netProfit > 0 ? 'up' : netProfit < 0 ? 'down' : 'neutral'}
+                  />
+                );
+              })()}
+            </div>
           </div>
 
           {/* Dashboard Charts */}
