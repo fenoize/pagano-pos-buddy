@@ -295,7 +295,11 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
               ? catVars.find(v => v.category_variant_id === sel.comboSlot.default_variant_id)
               : catVars.find(v => v.is_default);
             if (defVar && sel.selectedVariant.id !== defVar.id) {
-              total += sel.selectedVariant.price * sel.quantity;
+              // Cobra solo el DIFERENCIAL respecto a la variante por defecto
+              const diff = (sel.selectedVariant.price || 0) - (defVar.price || 0);
+              if (diff > 0) {
+                total += diff * sel.quantity;
+              }
             }
           }
         });

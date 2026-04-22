@@ -698,6 +698,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       total = config.base_price;
 
       // Only charge for variant changes if included_variants is false
+      // Cobra solo el DIFERENCIAL respecto a la variante por defecto (no el precio absoluto)
       if (!config.included_variants) {
         selections.forEach((selection) => {
           if (selection.selectedVariant) {
@@ -709,7 +710,10 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
             availableVariants.find((v) => v.is_default);
 
             if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
-              total += selection.selectedVariant.price * selection.quantity;
+              const diff = (selection.selectedVariant.price || 0) - (defaultVariant.price || 0);
+              if (diff > 0) {
+                total += diff * selection.quantity;
+              }
             }
           }
         });
@@ -759,6 +763,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       total = comboConfig.base_price;
 
       // Only charge for variant changes if included_variants is false
+      // Cobra solo el DIFERENCIAL respecto a la variante por defecto (no el precio absoluto)
       if (!comboConfig.included_variants) {
         selections.forEach((selection) => {
           if (selection.selectedVariant) {
@@ -770,7 +775,10 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
             availableVariants.find((v) => v.is_default);
 
             if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
-              total += selection.selectedVariant.price * selection.quantity;
+              const diff = (selection.selectedVariant.price || 0) - (defaultVariant.price || 0);
+              if (diff > 0) {
+                total += diff * selection.quantity;
+              }
             }
           }
         });
