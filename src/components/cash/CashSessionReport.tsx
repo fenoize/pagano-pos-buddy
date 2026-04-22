@@ -603,7 +603,6 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
     const closed = sessions.filter(s => s.summary);
     const acc = {
       sessions: closed.length,
-      gross: 0,
       discounts: 0,
       net: 0,
       cash: 0,
@@ -614,7 +613,6 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
     };
     for (const s of closed) {
       const sm = s.summary!;
-      acc.gross += sm.grossSales || 0;
       acc.discounts += sm.totalDiscounts || 0;
       acc.net += sm.totalSales || 0;
       acc.cash += sm.totalCash || 0;
@@ -623,8 +621,11 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
       acc.aplicacion += sm.totalAplicacion || 0;
       acc.runas += sm.totalRunas || 0;
     }
-    const totalMethods = acc.cash + acc.mp + acc.pos + acc.aplicacion + acc.runas;
-    return { ...acc, totalMethods };
+    // Solo dinero real (excluye Runas y otros métodos no monetarios)
+    const totalMethods = acc.cash + acc.mp + acc.pos + acc.aplicacion;
+    // Brutas reales = netas reales + descuentos (sin contar parte cubierta por Runas)
+    const gross = acc.net + acc.discounts;
+    return { ...acc, totalMethods, gross };
   }, [sessions]);
 
   const pct = (n: number) => totals.totalMethods > 0 ? ((n / totals.totalMethods) * 100).toFixed(1) : '0.0';
