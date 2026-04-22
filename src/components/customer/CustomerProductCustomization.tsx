@@ -17,7 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface VariantGroupWithOptions {
   group_id: string;
   group_name: string;
-  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null }>;
+  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null; price_delta?: number }>;
 }
 
 interface ProductExtra {
