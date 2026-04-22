@@ -528,12 +528,12 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">
-                      {variantGroups.length > 0 ? 'Tamaño' : 'Variantes Disponibles'}
+                      {availableVariants.length > 1 ? 'Elige tu tamaño' : 'Tamaño'}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <VariantSelector
-                      variants={variantGroups.length > 0 ? filterVariantsByGroup(availableVariants, selectedGroupOptions) : availableVariants}
+                      variants={availableVariants}
                       selectedVariantId={selectedVariantOption?.id || undefined}
                       onVariantSelect={(variant) => {
                         setSelectedVariantOption(variant);
