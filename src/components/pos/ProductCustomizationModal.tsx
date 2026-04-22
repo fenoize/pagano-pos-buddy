@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 interface VariantGroupWithOptions {
   group_id: string;
   group_name: string;
-  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null }>;
+  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null; price_delta?: number }>;
 }
 
 interface ProductExtra {
@@ -174,7 +174,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       // Fetch variant groups assigned to this product
       const { data: pvgData } = await supabase
         .from('product_variant_groups')
-        .select('group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active))')
+        .select('group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active, price_delta))')
         .eq('product_id', product.id);
 
       const fetchedGroups: VariantGroupWithOptions[] = (pvgData || [])
@@ -325,7 +325,11 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   const getBasePrice = () => {
     // Use new variant system if available
     if (useNewVariantSystem && selectedVariantOption) {
-      return selectedVariantOption.price;
+      const groupDelta = variantGroups.reduce((total, group) => {
+        const selectedOption = group.options.find(option => option.id === selectedGroupOptions[group.group_id]);
+        return total + (selectedOption?.price_delta || 0);
+      }, 0);
+      return selectedVariantOption.price + groupDelta;
     }
     
     // Legacy system
@@ -513,7 +517,10 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
                               onClick={() => handleGroupOptionChange(group.group_id, option.id)}
                               className="h-auto py-3"
                             >
-                              {option.name}
+                              <span>{option.name}</span>
+                              {!!option.price_delta && option.price_delta > 0 && (
+                                <span className="ml-1 text-xs opacity-80">+{formatPrice(option.price_delta)}</span>
+                              )}
                             </Button>
                           ))}
                         </div>

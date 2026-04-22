@@ -230,6 +230,13 @@ export default function ProductVariantsManagementEnhanced({
 
   const hasGroups = productGroups.length > 0 && productGroups.some(pg => pg.group && pg.group.options.length > 0);
 
+  const enabledBaseVariants = productVariants.filter(
+    (variant) => variant.is_enabled && variant.active && variant.price !== null && variant.price >= 500
+  );
+  const pricedGroupOptions = productGroups
+    .filter(pg => pg.group)
+    .flatMap(pg => pg.group!.options.map(option => ({ ...option, groupName: pg.group!.name })));
+
   const formatPrice = (amount: number) =>
     new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(amount);
 
@@ -306,6 +313,29 @@ export default function ProductVariantsManagementEnhanced({
                   ))}
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {hasGroups && enabledBaseVariants.length > 0 && pricedGroupOptions.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Vista previa de precios finales</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Referencia automática: precio base del tamaño + adicional de proteína. No crea combinaciones nuevas.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {enabledBaseVariants.flatMap(variant =>
+                pricedGroupOptions.map(option => (
+                  <div key={`${variant.id}-${option.id}`} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
+                    <span>{variant.category_variant?.name} + {option.name}</span>
+                    <strong>{formatPrice((variant.price || 0) + (option.price_delta || 0))}</strong>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
