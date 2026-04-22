@@ -1,103 +1,282 @@
 
+# Plan actualizado: configuración simple y flujo Proteína → Tamaño → Extras
 
-# Reporte Comercial — Impacto de Normalización de Delta de Proteína
+## Objetivo
 
-## Hallazgo crítico previo
+Simplificar completamente la configuración de hamburguesas con variante de proteína, manteniendo dimensiones independientes:
 
-Al inspeccionar la BD descubrí algo que **cambia la naturaleza de la decisión**:
+```text
+Producto
+├─ Proteína
+│  ├─ Carne: +$0
+│  └─ Pollo: +$200
+├─ Tamaño
+│  ├─ Simple: precio base
+│  ├─ Doble: precio base
+│  └─ Triple: precio base
+└─ Extras
+   ├─ Extra tocino
+   ├─ Extra queso
+   └─ etc.
+```
 
-> **Hoy Carne y Pollo cuestan exactamente lo mismo en los 8 productos.** El "delta" que ves en BD no separa Carne de Pollo, separa "sin proteína (fila legacy)" de "con proteína elegida". En la práctica al cliente nunca se le cobra distinto por elegir Pollo vs Carne.
+El precio final será:
 
-Esto significa que la decisión real son **dos** acopladas:
-- **A) Precio base del tamaño**: ¿precio legacy (más barato) o precio Carne actual?
-- **B) Delta de Pollo**: 0 (igual a Carne, como hoy) o +200 (Pollo cuesta más)
+```text
+precio final = precio base del tamaño + adicional de proteína + extras
+```
 
-A continuación entrego el impacto bajo el escenario que pediste (**base = legacy + Pollo = +200**) y luego comparo con dos alternativas.
-
----
-
-## Tabla completa — 24 filas (8 productos × 3 tamaños)
-
-| # | Producto | Tamaño | Carne hoy | Pollo hoy | Δ histórico | Δ nuevo | Pollo nuevo | Δ Pollo | Δ Carne |
-|---|---|---|---:|---:|---:|---:|---:|---:|---:|
-| 1 | Amerikana | Simple | 9.490 | 9.490 | +200 | +200 | 9.490 | 0 | −200 |
-| 2 | Amerikana | Doble | 13.190 | 13.190 | +1.000 | +200 | 12.390 | −800 | −1.000 |
-| 3 | Amerikana | Triple | 15.490 | 15.490 | +400 | +200 | 15.290 | −200 | −400 |
-| 4 | Big Pagana | Simple | 7.790 | 7.790 | +100 | +200 | 7.890 | +100 | −100 |
-| 5 | Big Pagana | Doble | 10.790 | 10.790 | +200 | +200 | 10.790 | 0 | −200 |
-| 6 | Big Pagana | Triple | 15.790 | 15.790 | +2.300 | +200 | 13.690 | −2.100 | −2.300 |
-| 7 | Cheese Burger | Simple | 7.190 | 7.190 | +200 | +200 | 7.190 | 0 | −200 |
-| 8 | Cheese Burger | Doble | 10.190 | 10.190 | +300 | +200 | 10.090 | −100 | −300 |
-| 9 | Cheese Burger | Triple | 13.190 | 13.190 | +400 | +200 | 12.990 | −200 | −400 |
-| 10 | Loki | Simple | 8.790 | 8.790 | +500 | +200 | 8.490 | −300 | −500 |
-| 11 | Loki | Doble | 11.790 | 11.790 | +710 | +200 | 11.280 | −510 | −710 |
-| 12 | Loki | Triple | 14.790 | 14.790 | +920 | +200 | 14.070 | −720 | −920 |
-| 13 | Melt | Simple | 9.190 | 9.190 | +200 | +200 | 9.190 | 0 | −200 |
-| 14 | Melt | Doble | 12.190 | 12.190 | +300 | +200 | 12.090 | −100 | −300 |
-| 15 | Melt | Triple | 15.190 | 15.190 | +400 | +200 | 14.990 | −200 | −400 |
-| 16 | Old School | Simple | 7.790 | 7.790 | +100 | +200 | 7.890 | +100 | −100 |
-| 17 | Old School | Doble | 10.790 | 10.790 | +200 | +200 | 10.790 | 0 | −200 |
-| 18 | Old School | Triple | 13.790 | 13.790 | +300 | +200 | 13.690 | −100 | −300 |
-| 19 | Paltona | Simple | 9.190 | 9.190 | 0 | +200 | 9.390 | +200 | 0 |
-| 20 | Paltona | Doble | 12.190 | 12.190 | +100 | +200 | 12.290 | +100 | −100 |
-| 21 | Paltona | Triple | 15.190 | 15.190 | +200 | +200 | 15.190 | 0 | −200 |
-| 22 | Smoke House | Simple | 9.290 | 9.290 | +100 | +200 | 9.390 | +100 | −100 |
-| 23 | Smoke House | Doble | 12.290 | 12.290 | +200 | +200 | 12.290 | 0 | −200 |
-| 24 | Smoke House | Triple | 15.290 | 15.290 | +300 | +200 | 15.190 | −100 | −300 |
-
-> CLP. Negativo = cliente paga **menos**. Positivo = cliente paga **más**.
+No habrá combinaciones cruzadas ni duplicación de precios por Carne/Pollo.
 
 ---
 
-## Clasificación por impacto sobre POLLO
+## Flujo correcto en la aplicación de cliente
 
-### Sin cambio (0 CLP) — 8 filas
-Amerikana Simple · Big Pagana Doble · Cheese Burger Simple · Melt Simple · Old School Doble · Paltona Triple · Smoke House Doble · *(donde el delta histórico ya era +200)*
+El orden de selección debe ser:
 
-### Cambio menor (≤ 200 CLP) — 11 filas
-- Sube +100: Big Pagana Simple · Old School Simple · Paltona Doble · Smoke House Simple
-- Sube +200: Paltona Simple
-- Baja −100: Cheese Burger Doble · Melt Doble · Old School Triple · Smoke House Triple
-- Baja −200: Amerikana Triple · Cheese Burger Triple · Melt Triple
+```text
+1. Proteína
+   Carne / Pollo +$200
 
-### Cambio importante (> 200 CLP) — 5 filas
-- Loki Simple: **−300**
-- Loki Doble: **−510**
-- Loki Triple: **−720**
-- Amerikana Doble: **−800**
-- Big Pagana Triple: **−2.100** (la mayor rebaja)
+2. Tamaño
+   Simple / Doble / Triple
+
+3. Extras
+   Extras pagados y modificadores sin costo
+```
+
+Esto reemplaza cualquier flujo anterior donde el tamaño aparecía primero.
+
+Ejemplo:
+
+```text
+Producto: Amerikana Smash&Fries
+
+Paso 1: Proteína
+- Carne +$0
+- Pollo +$200
+
+Paso 2: Tamaño
+- Simple $9.490
+- Doble $13.190
+- Triple $15.490
+
+Paso 3: Extras
+- Extra tocino
+- Extra queso
+- etc.
+```
+
+Cálculo:
+
+```text
+Amerikana + Carne + Simple = $9.490
+Amerikana + Pollo + Simple = $9.690
+Amerikana + Carne + Doble = $13.190
+Amerikana + Pollo + Doble = $13.390
+```
 
 ---
 
-## Impacto agregado
+## Cambios en configuración administrativa
 
-| Métrica | Valor |
-|---|---|
-| Productos afectados (≥1 tamaño cambia) | **8 de 8** |
-| Filas Pollo sin cambio | 8 / 24 |
-| Filas Pollo modificadas | **16 / 24** |
-| Filas que SUBEN | 5 (entre +100 y +200) |
-| Filas que BAJAN | 11 (entre −100 y −2.100) |
-| Mayor rebaja | Big Pagana Triple: −2.100 |
-| Mayor alza | Paltona Simple: +200 |
+### 1. Precios base por tamaño
 
-### ⚠️ Impacto colateral sobre CARNE
-Si la base se fija en el **precio legacy**, Carne queda en delta 0 → **24/24 filas de Carne bajan** (entre −100 y −2.300, promedio ≈ −400). Loki Triple Carne baja −920. Big Pagana Triple Carne baja −2.300.
+En el editor de producto, el administrador configurará solo una fila por tamaño:
+
+```text
+Simple   $____
+Doble    $____
+Triple   $____
+```
+
+Estos precios base incluyen Carne por defecto.
+
+### 2. Proteínas como adicionales
+
+El grupo global Proteína quedará configurado así:
+
+| Proteína | Adicional |
+|---|---:|
+| Carne | $0 |
+| Pollo | +$200 |
+
+Si en el futuro agregan otra proteína:
+
+| Proteína | Adicional |
+|---|---:|
+| Veggie | +$500 |
+
+no será necesario duplicar tamaños ni crear combinaciones.
+
+### 3. Vista previa simple para el administrador
+
+Agregaré una vista previa calculada, sin editar combinaciones:
+
+```text
+Simple + Carne = precio Simple
+Simple + Pollo = precio Simple + 200
+Doble + Carne = precio Doble
+Doble + Pollo = precio Doble + 200
+Triple + Carne = precio Triple
+Triple + Pollo = precio Triple + 200
+```
+
+La vista previa es solo informativa; no creará filas adicionales.
 
 ---
 
-## Tres opciones de migración para tu aprobación
+## Cambios de datos
 
-| Opción | Base de tamaño | Δ Carne | Δ Pollo | Resultado comercial |
-|---|---|---:|---:|---|
-| **A** (la que pediste) | Precio legacy | 0 | +200 | Carne baja en 24/24, Pollo cambia en 16/24 |
-| **B** (recomendada) | Precio Carne actual | 0 | 0 | **Cero impacto comercial.** Hoy Pollo = Carne, queda igual. |
-| **C** | Precio Carne actual | 0 | +200 | Carne sin cambios. Pollo sube +200 en 24/24. |
+### 4. Normalizar grupo Proteína
 
-**Recomendación**: Opción **B**. Es la única que limpia la arquitectura sin tocar precios al cliente. Si más adelante quieres cobrar Pollo más caro, basta un UPDATE de 1 fila en `variant_group_options`.
+Actualizaré el grupo Proteína para que:
+
+```text
+Carne = +$0
+Pollo = +$200
+```
+
+### 5. Asignar Proteína a productos correspondientes
+
+Asignaré el grupo Proteína a los productos hamburguesa que lo necesiten, incluyendo la Amerikana de la categoría **Smash&Fries**, que actualmente no muestra proteína porque no tiene el grupo asignado.
+
+### 6. Revisar tamaños base en Smash&Fries
+
+Validaré que los productos de Smash&Fries tengan tamaños base:
+
+```text
+Simple
+Doble
+Triple
+```
+
+Solo debe existir una fila por tamaño, no una fila por cada proteína.
+
+Si falta un precio base real para algún producto/tamaño, lo dejaré marcado para revisión manual en vez de inventarlo.
 
 ---
 
-## Sin ejecutar nada
-No corro la migración. Indícame **A**, **B** o **C** (o un escenario propio) y procedo en una sola transacción con backup previo, reporte de cambios y validación visual del flujo "Tamaño → Proteína" en el portal cliente y POS.
+## Cambios en app cliente
 
+### 7. Reordenar personalización
+
+Actualizaré el modal/flujo de personalización del cliente para que muestre:
+
+```text
+Proteína → Tamaño → Extras
+```
+
+Reglas:
+
+- No permitir agregar al carrito hasta elegir proteína requerida.
+- No permitir agregar al carrito hasta elegir tamaño requerido.
+- Mostrar el recargo de Pollo claramente como `+$200`.
+- Actualizar el total en vivo cuando cambie proteína, tamaño o extras.
+- Mantener el estándar visual actual de listas verticales tipo app de delivery.
+
+---
+
+## Cambios en POS
+
+### 8. Alinear POS con el mismo modelo de cálculo
+
+El POS usará el mismo cálculo:
+
+```text
+precio base tamaño + delta proteína + extras
+```
+
+El POS puede mantener su layout operativo actual, pero internamente no debe resolver precios mediante combinaciones cruzadas.
+
+Si corresponde al flujo de atención, también se ordenará como:
+
+```text
+Proteína → Tamaño → Extras
+```
+
+para mantener consistencia con la app cliente.
+
+---
+
+## Validación final
+
+Validaré que:
+
+1. En la app cliente, la selección aparezca en este orden:
+   ```text
+   Proteína → Tamaño → Extras
+   ```
+
+2. La Amerikana de Smash&Fries muestre:
+   ```text
+   Carne +$0
+   Pollo +$200
+   ```
+
+3. El precio cambie solo por el delta de proteína:
+   ```text
+   Carne = precio base
+   Pollo = precio base + 200
+   ```
+
+4. Los tamaños sigan siendo independientes:
+   ```text
+   Simple
+   Doble
+   Triple
+   ```
+
+5. No existan combinaciones cruzadas:
+   ```text
+   Simple + Carne
+   Simple + Pollo
+   Doble + Carne
+   Doble + Pollo
+   ```
+   como filas de precio editables.
+
+6. El sistema escale a 3+ proteínas sin duplicar precios:
+   ```text
+   Carne +$0
+   Pollo +$200
+   Veggie +$500
+   ```
+
+7. El administrador solo edite:
+   - precio base por tamaño;
+   - adicional por proteína;
+   - extras/modificadores.
+
+---
+
+## Resultado esperado
+
+La configuración quedará así:
+
+```text
+Producto: Hamburguesa
+
+Proteínas:
+- Carne: +$0
+- Pollo: +$200
+
+Tamaños:
+- Simple: precio base
+- Doble: precio base
+- Triple: precio base
+
+Extras:
+- Se suman después
+```
+
+Y el cliente verá el flujo en este orden:
+
+```text
+1. Elige proteína
+2. Elige tamaño
+3. Elige extras
+4. Agrega al carrito
+```
+
+Sin generador de combinaciones, sin tabla de combinaciones de precio y sin duplicación de filas por tamaño/proteína.
