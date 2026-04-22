@@ -667,7 +667,7 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
               <div className="p-4 rounded-lg border bg-muted/30">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Ventas Brutas</p>
                 <p className="text-2xl font-bold mt-1">{formatCurrency(totals.gross)}</p>
-                <p className="text-xs text-muted-foreground mt-1">Subtotal antes de descuentos</p>
+                <p className="text-xs text-muted-foreground mt-1">Dinero real antes de descuentos</p>
               </div>
               <div className="p-4 rounded-lg border bg-destructive/5">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Descuentos Totales</p>
@@ -677,9 +677,15 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
               <div className="p-4 rounded-lg border bg-primary/5">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Ventas Netas</p>
                 <p className="text-2xl font-bold mt-1 text-primary">{formatCurrency(totals.net)}</p>
-                <p className="text-xs text-muted-foreground mt-1">Solo ingresos reales (excluye Runas/Canje)</p>
+                <p className="text-xs text-muted-foreground mt-1">Solo dinero real (excluye Runas/Canje)</p>
               </div>
             </div>
+
+            {totals.runas > 0 && (
+              <p className="text-xs text-muted-foreground italic">
+                ℹ️ Adicionalmente se canjearon {formatCurrency(totals.runas)} en Runas (no contabilizado como dinero real).
+              </p>
+            )}
 
             <div>
               <h4 className="text-sm font-semibold mb-3">Ventas por Método de Pago</h4>
