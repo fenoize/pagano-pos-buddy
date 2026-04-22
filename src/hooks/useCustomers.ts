@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Customer, EstadoCliente } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,7 @@ export function useCustomers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const fetchRequestIdRef = useRef(0);
 
   // Actualiza solo un cliente específico en la lista (útil para refrescar runas sin recargar todo)
   const updateCustomerInList = (customerId: string, updates: Partial<Customer>) => {
@@ -47,9 +48,14 @@ export function useCustomers() {
     page = 0,
     limit = 50
   ) => {
+    const requestId = ++fetchRequestIdRef.current;
+
     if (!canViewCustomers) {
-      setCustomers([]);
-      setLoading(false);
+      if (requestId === fetchRequestIdRef.current) {
+        setCustomers([]);
+        setTotalCount(0);
+        setLoading(false);
+      }
       return;
     }
 
@@ -102,10 +108,14 @@ export function useCustomers() {
       const result = await response.json();
 
       // 4. Los clientes ya vienen con cantidad_runas desde el backend
-      setCustomers(result.data || []);
-      setTotalCount(result.count || 0);
+      if (requestId === fetchRequestIdRef.current) {
+        setCustomers(result.data || []);
+        setTotalCount(result.count || 0);
+      }
       
     } catch (error) {
+      if (requestId !== fetchRequestIdRef.current) return;
+
       console.error('Error fetching customers:', error);
       toast({
         title: "Error",
@@ -113,7 +123,9 @@ export function useCustomers() {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      if (requestId === fetchRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
