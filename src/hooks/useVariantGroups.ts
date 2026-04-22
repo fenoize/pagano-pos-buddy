@@ -87,7 +87,7 @@ export function useVariantGroups() {
     await fetchGroups();
   };
 
-  const updateOption = async (id: string, updates: { name?: string; is_default?: boolean; active?: boolean }) => {
+  const updateOption = async (id: string, updates: { name?: string; is_default?: boolean; active?: boolean; price_delta?: number }) => {
     const { error } = await supabase.from('variant_group_options').update(updates).eq('id', id);
     if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
     await fetchGroups();
