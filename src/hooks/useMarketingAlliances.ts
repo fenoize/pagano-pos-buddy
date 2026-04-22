@@ -54,12 +54,12 @@ export const useMarketingAlliances = (range?: { start?: string | null; end?: str
     queryKey: ['marketing-alliances'],
     queryFn: async () => {
       await withContext();
-      const { data, error } = await configuredSupabase
-        .from('marketing_alliances' as any)
+      const { data, error } = await (configuredSupabase as any)
+        .from('marketing_alliances')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return ((data || []) as unknown) as MarketingAlliance[];
+      return (data || []) as MarketingAlliance[];
     },
   });
 
