@@ -237,17 +237,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   };
 
   const handleGroupOptionChange = (groupId: string, optionId: string) => {
-    const newSelections = { ...selectedGroupOptions, [groupId]: optionId };
-    setSelectedGroupOptions(newSelections);
-    
-    // Re-filter variants and select the best match
-    const filtered = filterVariantsByGroup(availableVariants, newSelections);
-    if (filtered.length > 0) {
-      // Try to keep the same variant name (e.g., "Simple") but with the new group option
-      const currentVariantName = selectedVariantOption?.variant?.name;
-      const sameNameVariant = filtered.find(v => v.variant?.name === currentVariantName);
-      setSelectedVariantOption(sameNameVariant || filtered.find(v => v.is_default) || filtered[0]);
-    }
+    setSelectedGroupOptions({ ...selectedGroupOptions, [groupId]: optionId });
   };
 
   const fetchComboConfiguration = async () => {
