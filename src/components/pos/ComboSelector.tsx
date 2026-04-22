@@ -244,40 +244,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           });
           setSlotGroupSelections(defaultSlotGroups);
 
-          // Re-resolve selectedVariant for slots with variant groups
-          // The initial selection may point to a variant without variant_group_option_id
-          // which won't appear in the filtered list
-          let selectionsUpdated = false;
-          computedSelections.forEach((sel, idx) => {
-            const groupSels = defaultSlotGroups[idx];
-            if (!groupSels || Object.keys(groupSels).length === 0) return;
-            if (!sel.selectedProduct?.id) return;
-
-            const allVariants = preloadedComboData.productVariants[sel.selectedProduct.id] || [];
-            const categoryFiltered = allVariants.filter((v: ProductVariantOption) => v.variant?.category_id === sel.comboSlot.category_id);
-            const selectedOptionIds = Object.values(groupSels);
-            const filtered = categoryFiltered.filter((v: ProductVariantOption) => {
-              const goid = (v as any).variant_group_option_id;
-              return goid && selectedOptionIds.includes(goid);
-            });
-
-            if (filtered.length > 0) {
-              // Find matching variant by same category_variant_id (same size) in filtered set
-              const currentCvId = sel.selectedVariant?.category_variant_id;
-              const matchingVariant = currentCvId
-                ? filtered.find((v: ProductVariantOption) => v.category_variant_id === currentCvId)
-                : null;
-              const newVariant = matchingVariant || filtered.find((v: ProductVariantOption) => v.is_default) || filtered[0];
-              if (newVariant && newVariant.id !== sel.selectedVariant?.id) {
-                sel.selectedVariant = newVariant;
-                selectionsUpdated = true;
-              }
-            }
-          });
-
-          if (selectionsUpdated) {
-            setSelections([...computedSelections]);
-          }
+          // Modelo ortogonal: las variantes (tamaños) son independientes de los grupos (proteína).
+          // No se requiere re-resolver selectedVariant por grupo; los defaults de tamaño bastan.
         }
 
         // Notify parent immediately with computed selections
@@ -496,37 +464,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         });
         setSlotGroupSelections(defaultSlotGroups);
 
-        // Re-resolve selectedVariant for slots with variant groups
-        let selectionsUpdated = false;
-        defaultSelections.forEach((sel, idx) => {
-          const groupSels = defaultSlotGroups[idx];
-          if (!groupSels || Object.keys(groupSels).length === 0) return;
-          if (!sel.selectedProduct?.id) return;
-
-          const allVars = groupedVariants[sel.selectedProduct.id] || [];
-          const categoryFiltered = allVars.filter((v: any) => v.variant?.category_id === sel.comboSlot.category_id);
-          const selectedOptionIds = Object.values(groupSels);
-          const filtered = categoryFiltered.filter((v: any) => {
-            const goid = v.variant_group_option_id;
-            return goid && selectedOptionIds.includes(goid);
-          });
-
-          if (filtered.length > 0) {
-            const currentCvId = sel.selectedVariant?.category_variant_id;
-            const matchingVariant = currentCvId
-              ? filtered.find((v: any) => v.category_variant_id === currentCvId)
-              : null;
-            const newVariant = matchingVariant || filtered.find((v: any) => v.is_default) || filtered[0];
-            if (newVariant && newVariant.id !== sel.selectedVariant?.id) {
-              sel.selectedVariant = newVariant;
-              selectionsUpdated = true;
-            }
-          }
-        });
-
-        if (selectionsUpdated) {
-          setSelections([...defaultSelections]);
-        }
+        // Modelo ortogonal: tamaño y grupos son independientes; no se filtra variante por grupo.
       }
 
     } catch (error) {
@@ -572,17 +510,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     }
   };
 
-  const filterVariantsByGroup = (variants: ProductVariantOption[], groupSelections: Record<string, string>) => {
-    if (Object.keys(groupSelections).length === 0) return variants;
-    const selectedOptionIds = Object.values(groupSelections);
-    const withGroupOption = variants.filter(v => (v as any).variant_group_option_id);
-    if (withGroupOption.length === 0) return variants;
-    return variants.filter(v => {
-      const goid = (v as any).variant_group_option_id;
-      if (!goid) return false;
-      return selectedOptionIds.includes(goid);
-    });
-  };
+  // Modelo ortogonal: las variantes (tamaño) ya no se filtran por grupo (proteína).
+  const filterVariantsByGroup = (variants: ProductVariantOption[], _groupSelections: Record<string, string>) => variants;
 
   const handleSlotGroupOptionChange = (slotIndex: number, groupId: string, optionId: string) => {
     const newSelections = { ...slotGroupSelections };
