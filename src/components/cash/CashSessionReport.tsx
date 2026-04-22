@@ -153,6 +153,8 @@ export function CashSessionReport() {
                 user: userMap.get(session.user_id),
                 summary: {
                   totalSales,
+                  grossSales,
+                  totalDiscounts,
                   totalCash,
                   totalMP,
                   totalPOS,
