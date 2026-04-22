@@ -44,9 +44,13 @@ interface CashSessionWithUser extends CashSession {
   user?: User;
   summary?: {
     totalSales: number;
+    grossSales: number;
+    totalDiscounts: number;
     totalCash: number;
     totalMP: number;
     totalPOS: number;
+    totalAplicacion: number;
+    totalRunas: number;
     ingresos: number;
     egresos: number;
     expectedCash: number;
