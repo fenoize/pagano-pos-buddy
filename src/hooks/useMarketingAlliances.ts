@@ -59,7 +59,7 @@ export const useMarketingAlliances = (range?: { start?: string | null; end?: str
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []) as MarketingAlliance[];
+      return ((data || []) as unknown) as MarketingAlliance[];
     },
   });
 
@@ -72,7 +72,7 @@ export const useMarketingAlliances = (range?: { start?: string | null; end?: str
         _end_date: range?.end || null,
       });
       if (error) throw error;
-      return (data || []) as AllianceKpi[];
+      return ((data || []) as unknown) as AllianceKpi[];
     },
   });
 
