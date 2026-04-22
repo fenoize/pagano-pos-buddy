@@ -6,6 +6,7 @@ import { STORAGE_KEYS, clearCustomerStorage } from '@/lib/storageKeys';
 import { setCustomerContext, clearDBContext } from '@/lib/dbContext';
 import { logoutOneSignal } from '@/lib/onesignal';
 import { evaluateRegistrationCampaigns } from '@/lib/campaignEvaluator';
+import { claimAllianceSignup } from '@/lib/allianceAttribution';
 
 type Customer = Database['public']['Tables']['customers']['Row'];
 
@@ -159,15 +160,21 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
             if (insertError) {
               console.error('Failed to create customer manually:', insertError);
             } else if (newCustomer) {
-              // Evaluate registration campaigns for new customer
+              // Evaluate registration campaigns and alliance attribution for new customer
               evaluateRegistrationCampaigns(newCustomer.id).catch(err =>
                 console.error('Error evaluating registration campaigns:', err)
               );
+              claimAllianceSignup(newCustomer.id).catch(err =>
+                console.error('Error claiming alliance signup:', err)
+              );
             }
           } else if (existingCustomer) {
-            // Customer created by trigger, evaluate registration campaigns
+            // Customer created by trigger, evaluate registration campaigns and alliance attribution
             evaluateRegistrationCampaigns(existingCustomer.id).catch(err =>
               console.error('Error evaluating registration campaigns:', err)
+            );
+            claimAllianceSignup(existingCustomer.id).catch(err =>
+              console.error('Error claiming alliance signup:', err)
             );
           }
         } catch (fallbackError) {

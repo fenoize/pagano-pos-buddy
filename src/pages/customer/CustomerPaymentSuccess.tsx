@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Order } from '@/types';
 import { trackPromoConversion } from '@/hooks/usePromoAnalytics';
+import { trackAlliancePurchase } from '@/lib/allianceAttribution';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 
 export default function CustomerPaymentSuccess() {
@@ -39,6 +40,9 @@ export default function CustomerPaymentSuccess() {
       // Track conversion if order was completed
       if (data && orderId) {
         await trackPromoConversion(orderId, customer?.id);
+        if (customer?.id) {
+          await trackAlliancePurchase(customer.id, data.id, data.total || 0, { payment_method: data.payment_method || 'mp' });
+        }
       }
     } catch (error) {
       console.error('Error fetching order:', error);

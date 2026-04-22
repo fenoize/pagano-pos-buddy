@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,10 +10,11 @@ import { Separator } from '@/components/ui/separator';
 import { CustomerForgotPasswordModal } from '@/components/customer/CustomerForgotPasswordModal';
 import { GoogleProfileCompletionModal } from '@/components/customer/GoogleProfileCompletionModal';
 import { toast } from 'sonner';
-import { Loader2, Flame, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Flame, Eye, EyeOff, Gift } from 'lucide-react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useCustomerPortalConfig } from '@/hooks/useCustomerPortalConfig';
 import { useGoogleSignInEnabled } from '@/hooks/useGoogleSignInEnabled';
+import { saveAllianceAttribution } from '@/lib/allianceAttribution';
 
 // Google icon component
 const GoogleIcon = () => (
@@ -39,12 +40,14 @@ const GoogleIcon = () => (
 
 export default function CustomerLogin() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signIn, signUp, signInWithGoogle, needsProfileCompletion, customer, user, completeProfile } = useCustomerAuth();
   const { config: portalConfig } = useCustomerPortalConfig();
   const { enabled: googleSignInEnabled } = useGoogleSignInEnabled();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState(searchParams.get('mode') === 'signup' ? 'signup' : 'login');
 
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -68,6 +71,15 @@ export default function CustomerLogin() {
   // ReCAPTCHA refs
   const loginCaptchaRef = useRef<ReCAPTCHA>(null);
   const signupCaptchaRef = useRef<ReCAPTCHA>(null);
+
+  const allySlug = searchParams.get('ally');
+
+  useEffect(() => {
+    if (allySlug) {
+      saveAllianceAttribution(allySlug);
+      if (searchParams.get('mode') === 'signup') setActiveTab('signup');
+    }
+  }, [allySlug, searchParams]);
 
   // ReCAPTCHA callbacks
   const onLoginCaptchaChange = (token: string | null) => {
@@ -233,10 +245,20 @@ export default function CustomerLogin() {
         </CardHeader>
 
         <CardContent>
+          {allySlug && (
+            <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+              <div className="flex items-center gap-2 font-medium text-primary">
+                <Gift className="h-4 w-4" /> Beneficio exclusivo
+              </div>
+              <p className="mt-1 text-muted-foreground">Crea tu cuenta desde esta alianza y recibe tus beneficios para la primera compra.</p>
+            </div>
+          )}
+
           <Tabs 
-            defaultValue="login" 
+            value={activeTab} 
             className="w-full"
-            onValueChange={() => {
+            onValueChange={(value) => {
+              setActiveTab(value);
               // Resetear ambos CAPTCHAs al cambiar de tab
               loginCaptchaRef.current?.reset();
               signupCaptchaRef.current?.reset();
