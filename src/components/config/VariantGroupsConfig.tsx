@@ -219,6 +219,7 @@ export default function VariantGroupsConfig() {
                               title="Recargo en pesos al elegir esta opción (ej: +200 para Pollo)"
                             />
                           </div>
+                        </div>
                         <div className="flex items-center gap-2">
                           {!option.is_default && (
                             <Button
