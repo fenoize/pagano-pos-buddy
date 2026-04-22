@@ -129,6 +129,8 @@ export function CashSessionReport() {
 
               // Calculate totals - only count real revenue
               const totalSales = (orders || []).reduce((sum, order) => sum + getOrderRealRevenue(order, nonRealMethods), 0);
+              const grossSales = (orders || []).reduce((sum, order) => sum + (order.subtotal || 0), 0);
+              const totalDiscounts = (orders || []).reduce((sum, order) => sum + (order.discount || 0), 0);
               const totalCash = orders?.reduce((sum, order) => sum + (order.payment_efectivo || 0), 0) || 0;
               const totalMP = orders?.reduce((sum, order) => sum + (order.payment_mp || 0), 0) || 0;
               const totalPOS = orders?.reduce((sum, order) => sum + (order.payment_pos || 0), 0) || 0;
