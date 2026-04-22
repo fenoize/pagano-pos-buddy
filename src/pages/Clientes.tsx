@@ -48,7 +48,7 @@ export default function Clientes() {
     deleteCustomerPermanently,
     updateCustomerInList,
     exportCustomersCSV
-  } = useCustomers();
+  } = useCustomers({ autoFetch: false });
 
   const { runaRedemptionValue } = useRunasConfig();
 
@@ -557,7 +557,7 @@ export default function Clientes() {
           setShowPasswordModal(false);
           setSelectedCustomerForPassword(null);
         }}
-        onAuthUpdated={() => fetchCustomers(filters, currentPage)}
+        onAuthUpdated={() => fetchCustomers(getActiveFilters(), currentPage, pageSize)}
       />
     </div>
   );
