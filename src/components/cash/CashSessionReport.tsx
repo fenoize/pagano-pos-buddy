@@ -596,3 +596,117 @@ export function CashSessionReport() {
     </div>
   );
 }
+
+function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
+  const totals = useMemo(() => {
+    const closed = sessions.filter(s => s.summary);
+    const acc = {
+      sessions: closed.length,
+      gross: 0,
+      discounts: 0,
+      net: 0,
+      cash: 0,
+      mp: 0,
+      pos: 0,
+      aplicacion: 0,
+      runas: 0,
+    };
+    for (const s of closed) {
+      const sm = s.summary!;
+      acc.gross += sm.grossSales || 0;
+      acc.discounts += sm.totalDiscounts || 0;
+      acc.net += sm.totalSales || 0;
+      acc.cash += sm.totalCash || 0;
+      acc.mp += sm.totalMP || 0;
+      acc.pos += sm.totalPOS || 0;
+      acc.aplicacion += sm.totalAplicacion || 0;
+      acc.runas += sm.totalRunas || 0;
+    }
+    const totalMethods = acc.cash + acc.mp + acc.pos + acc.aplicacion + acc.runas;
+    return { ...acc, totalMethods };
+  }, [sessions]);
+
+  const pct = (n: number) => totals.totalMethods > 0 ? ((n / totals.totalMethods) * 100).toFixed(1) : '0.0';
+
+  return (
+    <Card className="border-primary/30">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Filter className="w-5 h-5 text-primary" />
+          Resumen Ejecutivo de Ventas
+        </CardTitle>
+        <CardDescription>
+          Agregado de {totals.sessions} cierre{totals.sessions === 1 ? '' : 's'} según filtros aplicados (solo turnos cerrados)
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="p-4 rounded-lg border bg-muted/30">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Ventas Brutas</p>
+            <p className="text-2xl font-bold mt-1">{formatCurrency(totals.gross)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Subtotal antes de descuentos</p>
+          </div>
+          <div className="p-4 rounded-lg border bg-destructive/5">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Descuentos Totales</p>
+            <p className="text-2xl font-bold mt-1 text-destructive">- {formatCurrency(totals.discounts)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Cupones, promociones y ajustes</p>
+          </div>
+          <div className="p-4 rounded-lg border bg-primary/5">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Ventas Netas</p>
+            <p className="text-2xl font-bold mt-1 text-primary">{formatCurrency(totals.net)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Solo ingresos reales (excluye Runas/Canje)</p>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="text-sm font-semibold mb-3">Ventas por Método de Pago</h4>
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Método</TableHead>
+                  <TableHead className="text-right">Monto</TableHead>
+                  <TableHead className="text-right">% del total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Efectivo</TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(totals.cash)}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{pct(totals.cash)}%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Mercado Pago / Transferencia</TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(totals.mp)}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{pct(totals.mp)}%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>POS (Tarjeta)</TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(totals.pos)}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{pct(totals.pos)}%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Aplicación</TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(totals.aplicacion)}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{pct(totals.aplicacion)}%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>
+                    Runas <Badge variant="outline" className="ml-1 text-[10px]">No es dinero real</Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(totals.runas)}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{pct(totals.runas)}%</TableCell>
+                </TableRow>
+                <TableRow className="bg-muted/40 font-semibold">
+                  <TableCell>Total</TableCell>
+                  <TableCell className="text-right">{formatCurrency(totals.totalMethods)}</TableCell>
+                  <TableCell className="text-right">100%</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
