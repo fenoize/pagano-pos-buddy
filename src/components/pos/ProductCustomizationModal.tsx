@@ -206,15 +206,13 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       // Determine which system to use
       if (variants.length > 0) {
         setUseNewVariantSystem(true);
-        // Set default variant - filter by default group option if groups exist
-        const filteredVariants = filterVariantsByGroup(variants, defaults);
-        const defaultVariant = filteredVariants.find(v => v.is_default) || filteredVariants[0] || variants.find(v => v.is_default) || variants[0];
+        // Set default variant (no longer filtered by group — orthogonal model)
+        const defaultVariant = variants.find(v => v.is_default) || variants[0];
         setSelectedVariantOption(defaultVariant);
         
         // If editing and has variant_id, find and set it
         if (editingItem?.category_variant_id) {
-          const editingVariant = variants.find(v => v.category_variant_id === editingItem.category_variant_id && 
-            (!editingItem.variant_group_selections?.length || v.variant_group_option_id === defaults[Object.keys(defaults)[0]]));
+          const editingVariant = variants.find(v => v.category_variant_id === editingItem.category_variant_id);
           if (editingVariant) {
             setSelectedVariantOption(editingVariant);
           }
@@ -236,22 +234,6 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       setUseNewVariantSystem(false);
       await fetchExtrasAndModifiers();
     }
-  };
-
-  const filterVariantsByGroup = (variants: ProductVariantOption[], groupSelections: Record<string, string>) => {
-    if (Object.keys(groupSelections).length === 0) return variants;
-    const selectedOptionIds = Object.values(groupSelections);
-    // If variants have variant_group_option_id, filter by it. Otherwise show all.
-    const withGroupOption = variants.filter(v => (v as any).variant_group_option_id);
-    if (withGroupOption.length === 0) return variants; // No group options configured yet
-    
-    // Show variants matching ANY of the selected group options
-    // (for single group, just filter; for multi, need all matches)
-    return variants.filter(v => {
-      const goid = (v as any).variant_group_option_id;
-      if (!goid) return false;
-      return selectedOptionIds.includes(goid);
-    });
   };
 
   const handleGroupOptionChange = (groupId: string, optionId: string) => {
