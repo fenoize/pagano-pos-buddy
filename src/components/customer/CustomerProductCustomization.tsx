@@ -17,7 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface VariantGroupWithOptions {
   group_id: string;
   group_name: string;
-  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null }>;
+  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null; price_delta?: number }>;
 }
 
 interface ProductExtra {
@@ -131,7 +131,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       // Fetch variant groups assigned to this product
       const { data: pvgData } = await configuredSupabase
         .from('product_variant_groups')
-        .select('group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active))')
+        .select('group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active, price_delta))')
         .eq('product_id', product.id);
 
       const fetchedGroups: VariantGroupWithOptions[] = (pvgData || [])
@@ -155,8 +155,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
 
       if (variants.length > 0) {
         setUseNewVariantSystem(true);
-        const filteredVariants = filterVariantsByGroup(variants, defaults);
-        const defaultVariant = filteredVariants.find(v => v.is_default) || filteredVariants[0] || variants.find(v => v.is_default) || variants[0];
+        const defaultVariant = variants.find(v => v.is_default) || variants[0];
         setSelectedVariantOption(defaultVariant);
       } else {
         setUseNewVariantSystem(false);
@@ -170,26 +169,8 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     }
   };
 
-  const filterVariantsByGroup = (variants: ProductVariantOption[], groupSelections: Record<string, string>) => {
-    if (Object.keys(groupSelections).length === 0) return variants;
-    const selectedOptionIds = Object.values(groupSelections);
-    const withGroupOption = variants.filter(v => v.variant_group_option_id);
-    if (withGroupOption.length === 0) return variants;
-    return variants.filter(v => {
-      if (!v.variant_group_option_id) return false;
-      return selectedOptionIds.includes(v.variant_group_option_id);
-    });
-  };
-
   const handleGroupOptionChange = (groupId: string, optionId: string) => {
-    const newSelections = { ...selectedGroupOptions, [groupId]: optionId };
-    setSelectedGroupOptions(newSelections);
-    const filtered = filterVariantsByGroup(availableVariants, newSelections);
-    if (filtered.length > 0) {
-      const currentVariantName = selectedVariantOption?.variant?.name;
-      const sameNameVariant = filtered.find(v => v.variant?.name === currentVariantName);
-      setSelectedVariantOption(sameNameVariant || filtered.find(v => v.is_default) || filtered[0]);
-    }
+    setSelectedGroupOptions({ ...selectedGroupOptions, [groupId]: optionId });
   };
 
   const fetchComboConfiguration = async () => {
@@ -268,9 +249,20 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     }).format(price);
   };
 
+  const getGroupDeltaTotal = () => {
+    let total = 0;
+    variantGroups.forEach(g => {
+      const selectedId = selectedGroupOptions[g.group_id];
+      if (!selectedId) return;
+      const opt = g.options.find(o => o.id === selectedId);
+      if (opt?.price_delta) total += opt.price_delta;
+    });
+    return total;
+  };
+
   const getBasePrice = () => {
     if (useNewVariantSystem && selectedVariantOption) {
-      return selectedVariantOption.price;
+      return selectedVariantOption.price + getGroupDeltaTotal();
     }
     
     const prices = product.prices as any;
@@ -429,66 +421,24 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         />
       ) : (
         <>
-          {/* Variant Group Selectors (multi-dimensional, UberEats style) */}
-          {variantGroups.length > 0 && variantGroups.map(group => (
-            <div key={group.group_id}>
-              <div className="mb-1">
-                <h3 className="text-lg font-bold text-white">{group.group_name}</h3>
-                <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
-              </div>
-              <RadioGroup
-                value={selectedGroupOptions[group.group_id] || ''}
-                onValueChange={(value) => handleGroupOptionChange(group.group_id, value)}
-                className="gap-0"
-              >
-                {group.options.map((option, idx) => (
-                  <div
-                    key={option.id}
-                    className={`flex items-center justify-between py-4 cursor-pointer ${
-                      idx < group.options.length - 1 ? 'border-b border-border/50' : ''
-                    }`}
-                    onClick={() => handleGroupOptionChange(group.group_id, option.id)}
-                  >
-                    <span className="font-medium text-white">{option.name}</span>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      selectedGroupOptions[group.group_id] === option.id
-                        ? 'border-primary'
-                        : 'border-muted-foreground/40'
-                    }`}>
-                      {selectedGroupOptions[group.group_id] === option.id && (
-                        <div className="w-3.5 h-3.5 rounded-full bg-primary" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-          ))}
-
-          {/* Variant Selection - New System (UberEats style) */}
+          {/* PASO 1: Tamaño (precio base) */}
           {useNewVariantSystem && availableVariants.length > 0 && (
             <div>
               <div className="mb-1">
                 <h3 className="text-lg font-bold text-white">
-                  {variantGroups.length > 0 ? 'Elige tu tamaño' : 'Elige tu opción'}
+                  {availableVariants.length > 1 ? 'Elige tu tamaño' : 'Tamaño'}
                 </h3>
                 <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
               </div>
               <RadioGroup
                 value={selectedVariantOption?.id || ''}
                 onValueChange={(value) => {
-                  const filteredVars = variantGroups.length > 0 
-                    ? filterVariantsByGroup(availableVariants, selectedGroupOptions) 
-                    : availableVariants;
-                  const variant = filteredVars.find(v => v.id === value);
+                  const variant = availableVariants.find(v => v.id === value);
                   if (variant) setSelectedVariantOption(variant);
                 }}
                 className="gap-0"
               >
-                {(variantGroups.length > 0 
-                  ? filterVariantsByGroup(availableVariants, selectedGroupOptions) 
-                  : availableVariants
-                ).map((variant, idx, arr) => (
+                {availableVariants.map((variant, idx, arr) => (
                   <div
                     key={variant.id}
                     className={`flex items-center justify-between py-4 cursor-pointer ${
@@ -518,6 +468,49 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
               </RadioGroup>
             </div>
           )}
+
+          {/* PASO 2: Grupos de variantes (ej. Proteína) — ortogonales al tamaño */}
+          {variantGroups.length > 0 && variantGroups.map(group => (
+            <div key={group.group_id}>
+              <div className="mb-1">
+                <h3 className="text-lg font-bold text-white">Elige tu {group.group_name.toLowerCase()}</h3>
+                <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
+              </div>
+              <RadioGroup
+                value={selectedGroupOptions[group.group_id] || ''}
+                onValueChange={(value) => handleGroupOptionChange(group.group_id, value)}
+                className="gap-0"
+              >
+                {group.options.map((option, idx) => (
+                  <div
+                    key={option.id}
+                    className={`flex items-center justify-between py-4 cursor-pointer ${
+                      idx < group.options.length - 1 ? 'border-b border-border/50' : ''
+                    }`}
+                    onClick={() => handleGroupOptionChange(group.group_id, option.id)}
+                  >
+                    <div className="flex-1">
+                      <span className="font-medium text-white">{option.name}</span>
+                      {!!option.price_delta && option.price_delta > 0 && (
+                        <span className="text-sm text-primary font-semibold ml-2">
+                          +{formatPrice(option.price_delta)}
+                        </span>
+                      )}
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      selectedGroupOptions[group.group_id] === option.id
+                        ? 'border-primary'
+                        : 'border-muted-foreground/40'
+                    }`}>
+                      {selectedGroupOptions[group.group_id] === option.id && (
+                        <div className="w-3.5 h-3.5 rounded-full bg-primary" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          ))}
 
           {/* Legacy System - Price Type */}
           {!useNewVariantSystem && (

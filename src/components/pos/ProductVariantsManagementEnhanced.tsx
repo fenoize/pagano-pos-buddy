@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Save, Edit2, Wand2, Trash2 } from "lucide-react";
+import { AlertTriangle, Save, Edit2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRawMaterials } from "@/hooks/useRawMaterials";
@@ -33,7 +33,6 @@ interface ProductVariantOption {
   active: boolean;
   is_enabled: boolean;
   raw_material_id: string | null;
-  variant_group_option_id: string | null;
   category_variant?: CategoryVariant;
 }
 
@@ -63,8 +62,6 @@ export default function ProductVariantsManagementEnhanced({
   const [loading, setLoading] = useState(false);
   const [bulkEditMode, setBulkEditMode] = useState(false);
   const [bulkPrices, setBulkPrices] = useState<Record<string, string>>({});
-  const [generatingCombos, setGeneratingCombos] = useState(false);
-  const [basePrice, setBasePrice] = useState("");
   const { toast } = useToast();
   const { materials } = useRawMaterials();
   const { getProductGroups } = useVariantGroups();
@@ -93,7 +90,7 @@ export default function ProductVariantsManagementEnhanced({
       if (optionsRes.error) throw optionsRes.error;
 
       setAvailableVariants(variantsRes.data || []);
-      setProductVariants(optionsRes.data || []);
+      setProductVariants((optionsRes.data || []) as ProductVariantOption[]);
       setProductGroups(groups || []);
 
       const initialBulkPrices: Record<string, string> = {};
@@ -233,92 +230,6 @@ export default function ProductVariantsManagementEnhanced({
 
   const hasGroups = productGroups.length > 0 && productGroups.some(pg => pg.group && pg.group.options.length > 0);
 
-  const generateCombinations = async () => {
-    if (!productId || !hasGroups) return;
-    const base = parseInt(basePrice.replace(/\D/g, ''));
-    if (isNaN(base) || base < 500) {
-      toast({ title: "Precio base inválido", description: "Ingresa un precio base ≥ $500", variant: "destructive" });
-      return;
-    }
-
-    setGeneratingCombos(true);
-    try {
-      // Get all group options
-      const allGroupOptions = productGroups
-        .filter(pg => pg.group)
-        .flatMap(pg => pg.group!.options);
-
-      // Get active category variants (non-Default)
-      const activeVariants = availableVariants.filter(v => v.name !== "Default");
-
-      if (activeVariants.length === 0) {
-        toast({ title: "Sin variantes", description: "No hay variantes de categoría activas", variant: "destructive" });
-        setGeneratingCombos(false);
-        return;
-      }
-
-      // Build combinations: each categoryVariant × each groupOption
-      const combos: Array<{
-        product_id: string;
-        category_variant_id: string;
-        variant_group_option_id: string;
-        price: number;
-        is_default: boolean;
-        active: boolean;
-        is_enabled: boolean;
-      }> = [];
-
-      for (const cv of activeVariants) {
-        for (const go of allGroupOptions) {
-          // Check if combination already exists
-          const exists = productVariants.some(
-            pv => pv.category_variant_id === cv.id && pv.variant_group_option_id === go.id
-          );
-          if (!exists) {
-            combos.push({
-              product_id: productId,
-              category_variant_id: cv.id,
-              variant_group_option_id: go.id,
-              price: base,
-              is_default: false,
-              active: true,
-              is_enabled: true,
-            });
-          }
-        }
-      }
-
-      if (combos.length === 0) {
-        toast({ title: "Sin combinaciones nuevas", description: "Todas las combinaciones ya existen" });
-        setGeneratingCombos(false);
-        return;
-      }
-
-      const { error } = await supabase.from("product_variant_options").insert(combos);
-      if (error) throw error;
-
-      toast({ title: `${combos.length} combinaciones creadas`, description: "Ahora puedes ajustar los precios individuales" });
-      await fetchData();
-    } catch (error) {
-      console.error(error);
-      toast({ title: "Error", description: "Error al generar combinaciones", variant: "destructive" });
-    } finally {
-      setGeneratingCombos(false);
-    }
-  };
-
-  const deleteCombination = async (id: string) => {
-    try {
-      const { error } = await supabase.from("product_variant_options").delete().eq("id", id);
-      if (error) throw error;
-      toast({ title: "Combinación eliminada" });
-      fetchData();
-    } catch (error) {
-      console.error(error);
-      toast({ title: "Error", variant: "destructive" });
-    }
-  };
-
   const formatPrice = (amount: number) =>
     new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(amount);
 
@@ -327,16 +238,6 @@ export default function ProductVariantsManagementEnhanced({
     if (!option.is_enabled) return { color: "destructive", text: "Sin precio" };
     if (option.price === null || option.price === 0 || option.price < 500) return { color: "destructive", text: "Precio inválido" };
     return { color: "default", text: "Activa" };
-  };
-
-  const getGroupOptionName = (optionId: string | null) => {
-    if (!optionId) return null;
-    for (const pg of productGroups) {
-      if (!pg.group) continue;
-      const opt = pg.group.options.find(o => o.id === optionId);
-      if (opt) return { groupName: pg.group.name, optionName: opt.name };
-    }
-    return null;
   };
 
   if (!productId) {
@@ -366,10 +267,6 @@ export default function ProductVariantsManagementEnhanced({
     );
   }
 
-  // Separate variants: those with group option (combos) vs those without (simple)
-  const simpleVariants = productVariants.filter(pv => !pv.variant_group_option_id);
-  const comboVariants = productVariants.filter(pv => !!pv.variant_group_option_id);
-
   return (
     <div className="space-y-6">
       {/* Alerts */}
@@ -386,258 +283,147 @@ export default function ProductVariantsManagementEnhanced({
         </Card>
       )}
 
-      {/* ── Combination generator (only if product has variant groups) ── */}
+      {/* ── Read-only assigned groups (Proteína, etc.) — deltas se editan en Configuración → Grupos ── */}
       {hasGroups && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Wand2 className="h-4 w-4" />
-              Generador de Combinaciones
-            </CardTitle>
+            <CardTitle className="text-base">Grupos asignados</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Este producto tiene grupos de variantes asignados. Genera automáticamente una fila de precio
-              por cada combinación de <strong>variante de categoría</strong> (ej: Simple, Doble) ×{" "}
-              <strong>opción de grupo</strong> (ej: Carne, Pollo).
+              Cada grupo se elige por separado del tamaño. El precio final del producto es{" "}
+              <strong>precio del tamaño + suma de deltas de las opciones elegidas</strong>.
+              Los deltas se editan en <strong>Configuración → Grupos de variantes</strong>.
             </p>
-
-            {/* Show assigned groups */}
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-2">
               {productGroups.filter(pg => pg.group).map(pg => (
-                <div key={pg.id} className="text-sm">
-                  <Badge variant="outline" className="mr-1">{pg.group!.name}</Badge>
+                <div key={pg.id} className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{pg.group!.name}</Badge>
                   {pg.group!.options.map(o => (
-                    <Badge key={o.id} variant="secondary" className="mr-1 text-xs">{o.name}</Badge>
+                    <Badge key={o.id} variant="secondary" className="text-xs">
+                      {o.name}{o.price_delta && o.price_delta > 0 ? ` (+${formatPrice(o.price_delta)})` : ""}
+                    </Badge>
                   ))}
                 </div>
               ))}
             </div>
-
-            <div className="flex items-end gap-3">
-              <div className="flex-1 max-w-[200px]">
-                <label className="text-sm font-medium mb-1 block">Precio base</label>
-                <Input
-                  placeholder="$5.990"
-                  value={basePrice}
-                  onChange={e => setBasePrice(e.target.value.replace(/\D/g, ''))}
-                />
-              </div>
-              <Button onClick={generateCombinations} disabled={generatingCombos || !basePrice}>
-                <Wand2 className="h-4 w-4 mr-2" />
-                {generatingCombos ? "Generando..." : "Generar Combinaciones"}
-              </Button>
-            </div>
-
-            {comboVariants.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Ya existen {comboVariants.length} combinaciones. Solo se crearán las faltantes.
-              </p>
-            )}
           </CardContent>
         </Card>
       )}
 
-      {/* ── Combination table (variant group combos) ── */}
-      {comboVariants.length > 0 && (
-        <>
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium">Combinaciones de Precio</h3>
-          </div>
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Variante</TableHead>
-                  <TableHead>Grupo</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Precio</TableHead>
-                  <TableHead>Por Defecto</TableHead>
-                  <TableHead>Acciones</TableHead>
+      {/* ── Tamaños y precio base (1 fila por tamaño) ── */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">Tamaños y precio base</h3>
+        <div className="space-x-2">
+          {bulkEditMode ? (
+            <>
+              <Button variant="outline" onClick={() => toggleBulkEditMode(false)}>Cancelar</Button>
+              <Button onClick={saveBulkPrices}>
+                <Save className="h-4 w-4 mr-2" /> Guardar Precios
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleBulkEditMode(true); }}>
+              <Edit2 className="h-4 w-4 mr-2" /> Editar Precios en Lote
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tamaño</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Precio base</TableHead>
+              <TableHead>Materia Prima</TableHead>
+              <TableHead>Por Defecto</TableHead>
+              <TableHead>Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {availableVariants.map((variant) => {
+              const existingOption = productVariants.find(pv => pv.category_variant_id === variant.id);
+              const status = existingOption ? getVariantStatus(existingOption) : null;
+
+              return (
+                <TableRow key={variant.id}>
+                  <TableCell className="font-medium">
+                    {variant.name}
+                    {variant.name === "Default" && <Badge variant="secondary" className="ml-2">Oculta</Badge>}
+                  </TableCell>
+                  <TableCell>
+                    {existingOption ? (
+                      <Badge variant={status?.color as any}>{status?.text}</Badge>
+                    ) : (
+                      <Badge variant="outline">No configurada</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {existingOption ? (
+                      bulkEditMode ? (
+                        <Input type="text" placeholder="$500" className="w-32"
+                          value={bulkPrices[existingOption.id] || ""}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, "");
+                            setBulkPrices(prev => ({ ...prev, [existingOption.id]: value }));
+                          }}
+                        />
+                      ) : (
+                        <Input
+                          type="text"
+                          className="w-32"
+                          defaultValue={existingOption.price && existingOption.price > 0 ? existingOption.price.toString() : ""}
+                          placeholder="$500"
+                          onBlur={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            if (val && parseInt(val) >= 500) updateVariantPrice(existingOption.id, val);
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        />
+                      )
+                    ) : (
+                      bulkEditMode ? (
+                        <Button variant="outline" size="sm" onClick={() => toggleVariant(variant.id, true)}>
+                          Agregar Variante
+                        </Button>
+                      ) : "-"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {existingOption && (
+                      <Select value={existingOption.raw_material_id || "none"}
+                        onValueChange={(value) => updateVariantRawMaterial(existingOption.id, value)}>
+                        <SelectTrigger className="w-40"><SelectValue placeholder="Sin vincular" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sin vincular</SelectItem>
+                          {materials.map((mat) => (
+                            <SelectItem key={mat.id} value={mat.id}>{mat.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {existingOption && (
+                      <Switch checked={existingOption.is_default}
+                        onCheckedChange={() => setDefaultVariant(existingOption.id)}
+                        disabled={!existingOption.is_enabled || variant.name === "Default"} />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {variant.name !== "Default" && (
+                      <Switch checked={!!existingOption}
+                        onCheckedChange={(checked) => toggleVariant(variant.id, checked)} />
+                    )}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {comboVariants
-                  .sort((a, b) => {
-                    const cvA = availableVariants.find(v => v.id === a.category_variant_id);
-                    const cvB = availableVariants.find(v => v.id === b.category_variant_id);
-                    const orderA = cvA?.display_order ?? 0;
-                    const orderB = cvB?.display_order ?? 0;
-                    if (orderA !== orderB) return orderA - orderB;
-                    return (a.variant_group_option_id || '').localeCompare(b.variant_group_option_id || '');
-                  })
-                  .map((option) => {
-                    const cv = availableVariants.find(v => v.id === option.category_variant_id);
-                    const groupInfo = getGroupOptionName(option.variant_group_option_id);
-                    const status = getVariantStatus(option);
-
-                    return (
-                      <TableRow key={option.id}>
-                        <TableCell className="font-medium">{cv?.name || "—"}</TableCell>
-                        <TableCell>
-                          {groupInfo ? (
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-muted-foreground">{groupInfo.groupName}:</span>
-                              <Badge variant="secondary" className="text-xs">{groupInfo.optionName}</Badge>
-                            </div>
-                          ) : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={status.color as any}>{status.text}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="text"
-                            className="w-28"
-                            defaultValue={option.price && option.price > 0 ? option.price.toString() : ""}
-                            placeholder="$500"
-                            onBlur={(e) => {
-                              const val = e.target.value.replace(/\D/g, '');
-                              if (val && parseInt(val) >= 500) {
-                                updateVariantPrice(option.id, val);
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                (e.target as HTMLInputElement).blur();
-                              }
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={option.is_default}
-                            onCheckedChange={() => setDefaultVariant(option.id)}
-                            disabled={!option.is_enabled}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
-                            onClick={() => deleteCombination(option.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-              </TableBody>
-            </Table>
-          </Card>
-        </>
-      )}
-
-      {/* ── Simple variants table (no group, original behavior) ── */}
-      {!hasGroups && (
-        <>
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium">Variantes del Producto</h3>
-            <div className="space-x-2">
-              {bulkEditMode ? (
-                <>
-                  <Button variant="outline" onClick={() => toggleBulkEditMode(false)}>Cancelar</Button>
-                  <Button onClick={saveBulkPrices}>
-                    <Save className="h-4 w-4 mr-2" /> Guardar Precios
-                  </Button>
-                </>
-              ) : (
-                <Button variant="outline" onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleBulkEditMode(true); }}>
-                  <Edit2 className="h-4 w-4 mr-2" /> Editar Precios en Lote
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Variante</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Precio</TableHead>
-                  <TableHead>Materia Prima</TableHead>
-                  <TableHead>Por Defecto</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {availableVariants.map((variant) => {
-                  const existingOption = simpleVariants.find(pv => pv.category_variant_id === variant.id);
-                  const status = existingOption ? getVariantStatus(existingOption) : null;
-
-                  return (
-                    <TableRow key={variant.id}>
-                      <TableCell className="font-medium">
-                        {variant.name}
-                        {variant.name === "Default" && <Badge variant="secondary" className="ml-2">Oculta</Badge>}
-                      </TableCell>
-                      <TableCell>
-                        {existingOption ? (
-                          <Badge variant={status?.color as any}>{status?.text}</Badge>
-                        ) : (
-                          <Badge variant="outline">No configurada</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {existingOption ? (
-                          bulkEditMode ? (
-                            <Input type="text" placeholder="$500" className="w-32"
-                              value={bulkPrices[existingOption.id] || ""}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(/\D/g, "");
-                                setBulkPrices(prev => ({ ...prev, [existingOption.id]: value }));
-                              }}
-                            />
-                          ) : (
-                            <div className="flex items-center space-x-2">
-                              <span>{existingOption.price && existingOption.price > 0 ? formatPrice(existingOption.price) : "Sin precio"}</span>
-                              {(!existingOption.price || existingOption.price === 0 || existingOption.price < 500) && (
-                                <AlertTriangle className="h-4 w-4 text-destructive" />
-                              )}
-                            </div>
-                          )
-                        ) : (
-                          bulkEditMode ? (
-                            <Button variant="outline" size="sm" onClick={() => toggleVariant(variant.id, true)}>
-                              Agregar Variante
-                            </Button>
-                          ) : "-"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {existingOption && (
-                          <Select value={existingOption.raw_material_id || "none"}
-                            onValueChange={(value) => updateVariantRawMaterial(existingOption.id, value)}>
-                            <SelectTrigger className="w-40"><SelectValue placeholder="Sin vincular" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Sin vincular</SelectItem>
-                              {materials.map((mat) => (
-                                <SelectItem key={mat.id} value={mat.id}>{mat.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {existingOption && (
-                          <Switch checked={existingOption.is_default}
-                            onCheckedChange={() => setDefaultVariant(existingOption.id)}
-                            disabled={!existingOption.is_enabled || variant.name === "Default"} />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {variant.name !== "Default" && (
-                          <Switch checked={!!existingOption}
-                            onCheckedChange={(checked) => toggleVariant(variant.id, checked)} />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Card>
-        </>
-      )}
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }

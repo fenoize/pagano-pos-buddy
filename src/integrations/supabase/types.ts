@@ -3676,23 +3676,20 @@ export type Database = {
       migration_warnings_variantes: {
         Row: {
           created_at: string
+          detail: Json | null
           id: string
-          message: string
-          payload: Json | null
           warning_type: string
         }
         Insert: {
           created_at?: string
+          detail?: Json | null
           id?: string
-          message: string
-          payload?: Json | null
           warning_type: string
         }
         Update: {
           created_at?: string
+          detail?: Json | null
           id?: string
-          message?: string
-          payload?: Json | null
           warning_type?: string
         }
         Relationships: []
@@ -4532,7 +4529,6 @@ export type Database = {
           sku: string | null
           stock: number
           updated_at: string
-          variant_group_option_id: string | null
         }
         Insert: {
           active?: boolean
@@ -4547,7 +4543,6 @@ export type Database = {
           sku?: string | null
           stock?: number
           updated_at?: string
-          variant_group_option_id?: string | null
         }
         Update: {
           active?: boolean
@@ -4562,7 +4557,6 @@ export type Database = {
           sku?: string | null
           stock?: number
           updated_at?: string
-          variant_group_option_id?: string | null
         }
         Relationships: [
           {
@@ -4584,13 +4578,6 @@ export type Database = {
             columns: ["raw_material_id"]
             isOneToOne: false
             referencedRelation: "raw_materials"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_variant_options_variant_group_option_id_fkey"
-            columns: ["variant_group_option_id"]
-            isOneToOne: false
-            referencedRelation: "variant_group_options"
             referencedColumns: ["id"]
           },
         ]

@@ -607,7 +607,6 @@ export interface ProductVariantOption {
   stock: number;
   is_default: boolean;
   active: boolean;
-  variant_group_option_id?: string;
   created_at: string;
   updated_at: string;
   // Populated from joins
