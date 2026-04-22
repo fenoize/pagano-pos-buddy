@@ -13,6 +13,7 @@ import {
   startOfMonth,
   endOfMonth,
   differenceInCalendarDays,
+  differenceInCalendarMonths,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { KPICard } from '@/components/finance/KPICard';
