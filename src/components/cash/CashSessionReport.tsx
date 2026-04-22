@@ -713,13 +713,6 @@ function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
                       <TableCell className="text-right font-medium">{formatCurrency(totals.aplicacion)}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{pct(totals.aplicacion)}%</TableCell>
                     </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        Runas <Badge variant="outline" className="ml-1 text-[10px]">No es dinero real</Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">{formatCurrency(totals.runas)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{pct(totals.runas)}%</TableCell>
-                    </TableRow>
                     <TableRow className="bg-muted/40 font-semibold">
                       <TableCell>Total</TableCell>
                       <TableCell className="text-right">{formatCurrency(totals.totalMethods)}</TableCell>
