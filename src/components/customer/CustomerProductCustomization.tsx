@@ -249,9 +249,20 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     }).format(price);
   };
 
+  const getGroupDeltaTotal = () => {
+    let total = 0;
+    variantGroups.forEach(g => {
+      const selectedId = selectedGroupOptions[g.group_id];
+      if (!selectedId) return;
+      const opt = g.options.find(o => o.id === selectedId);
+      if (opt?.price_delta) total += opt.price_delta;
+    });
+    return total;
+  };
+
   const getBasePrice = () => {
     if (useNewVariantSystem && selectedVariantOption) {
-      return selectedVariantOption.price;
+      return selectedVariantOption.price + getGroupDeltaTotal();
     }
     
     const prices = product.prices as any;
