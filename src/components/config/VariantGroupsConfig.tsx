@@ -203,7 +203,22 @@ export default function VariantGroupsConfig() {
                             </>
                           )}
                           {option.is_default && <Badge variant="secondary" className="text-xs">Predeterminado</Badge>}
-                        </div>
+                          <div className="flex items-center gap-1 ml-2">
+                            <span className="text-xs text-muted-foreground">Δ $</span>
+                            <Input
+                              type="number"
+                              step={50}
+                              defaultValue={option.price_delta ?? 0}
+                              onBlur={e => {
+                                const val = Number(e.target.value) || 0;
+                                if (val !== (option.price_delta ?? 0)) {
+                                  updateOption(option.id, { price_delta: val });
+                                }
+                              }}
+                              className="h-7 w-24 text-xs"
+                              title="Recargo en pesos al elegir esta opción (ej: +200 para Pollo)"
+                            />
+                          </div>
                         <div className="flex items-center gap-2">
                           {!option.is_default && (
                             <Button
