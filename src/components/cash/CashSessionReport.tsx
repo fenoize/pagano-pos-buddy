@@ -451,6 +451,9 @@ export function CashSessionReport() {
         </CardContent>
       </Card>
 
+      {/* Admin-only: Aggregated sales summary */}
+      {isAdmin && <AdminSalesSummary sessions={filteredSessions} />}
+
       {/* Results */}
       <Card>
         <CardHeader>
