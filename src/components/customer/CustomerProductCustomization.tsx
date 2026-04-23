@@ -142,7 +142,13 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           options: (pvg.group.options || [])
             .filter((o: any) => o.active)
             .sort((a: any, b: any) => a.display_order - b.display_order),
-        }));
+        }))
+        .sort((a, b) => {
+          const aIsProtein = a.group_name.toLowerCase().includes('prote');
+          const bIsProtein = b.group_name.toLowerCase().includes('prote');
+          if (aIsProtein !== bIsProtein) return aIsProtein ? -1 : 1;
+          return a.group_name.localeCompare(b.group_name, 'es');
+        });
       setVariantGroups(fetchedGroups);
 
       // Set default group options
@@ -814,18 +820,18 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   // Desktop: Dialog with side-by-side layout (image 1:1 aspect ratio)
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="customer-app max-w-4xl p-0 overflow-hidden flex flex-row h-[80vh] max-h-[700px] bg-background text-white border-border">
+      <DialogContent className="customer-app w-fit max-w-[min(96vw,1120px)] p-0 overflow-hidden flex flex-row h-auto max-h-[calc(100vh-3rem)] bg-background text-white border-border">
         {/* Left side - Product image with 1:1 aspect ratio */}
-        <div className="w-[350px] flex-shrink-0 bg-muted relative overflow-hidden">
+        <div className="w-[min(54vw,620px)] max-w-[calc(100vh-3rem)] aspect-square flex-shrink-0 bg-muted relative overflow-hidden">
           <div className="w-full h-full flex items-center justify-center">
             {product.image_url ? (
               <img
                 src={product.image_url}
                 alt={product.name}
-                className="w-full aspect-square object-cover"
+                className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full aspect-square flex items-center justify-center bg-muted">
+              <div className="w-full h-full flex items-center justify-center bg-muted">
                 <Flame className="h-16 w-16 text-muted-foreground" />
               </div>
             )}
@@ -842,7 +848,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         </div>
 
         {/* Right side - Customization */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="w-[420px] max-w-[40vw] min-w-[360px] flex flex-col overflow-hidden">
           {/* Header - fixed */}
           <div className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
             <h2 className="text-2xl font-bold text-white">{product.name}</h2>
