@@ -441,6 +441,7 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
         const availableProducts = slotProducts[slot.category_id] || [];
         const allVars = selection.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
         const availableVariants = allVars.filter(v => v.variant?.category_id === slot.category_id);
+        const availableVariantGroups = selection.selectedProduct ? productVariantGroups[selection.selectedProduct.id!] || [] : [];
         const availableExtras = productExtras[slot.category_id] || [];
         const availableModifiers = selection.selectedProduct ? productModifiers[selection.selectedProduct.id!] || [] : [];
 
@@ -546,6 +547,47 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                 </span>
               </div>
             )}
+
+            {/* Product variant groups, e.g. Proteína */}
+            {availableVariantGroups.map((group) => (
+              <div key={group.group_id} className="mt-4">
+                <div className="mb-1">
+                  <h3 className="text-lg font-bold text-white">Elige tu {group.group_name.toLowerCase()}</h3>
+                  <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
+                </div>
+                <div className="gap-0">
+                  {group.options.map((option, idx) => {
+                    const isSelected = selection.variant_group_selections?.some(
+                      (selected) => selected.group_id === group.group_id && selected.option_id === option.id
+                    );
+
+                    return (
+                      <div
+                        key={option.id}
+                        className={`flex items-center justify-between py-4 cursor-pointer ${
+                          idx < group.options.length - 1 ? 'border-b border-border/50' : ''
+                        }`}
+                        onClick={() => selectGroupOption(slotIndex, group, option.id)}
+                      >
+                        <div className="flex-1">
+                          <span className="font-medium text-white">{option.name}</span>
+                          {!!option.price_delta && option.price_delta > 0 && (
+                            <span className="text-sm text-primary font-semibold ml-2">
+                              +{formatPrice(option.price_delta)}
+                            </span>
+                          )}
+                        </div>
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          isSelected ? 'border-primary' : 'border-muted-foreground/40'
+                        }`}>
+                          {isSelected && <div className="w-3.5 h-3.5 rounded-full bg-primary" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
 
             {/* Extras */}
             {availableExtras.length > 0 && (
