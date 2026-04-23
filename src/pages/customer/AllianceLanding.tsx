@@ -16,6 +16,7 @@ interface PublicAlliance {
   welcome_runas: number;
   coupon_id: string | null;
   free_delivery_first_order: boolean;
+  free_delivery_addresses?: string[];
 }
 
 export default function AllianceLanding() {
@@ -63,6 +64,7 @@ export default function AllianceLanding() {
             {alliance.welcome_runas > 0 && <p className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> {alliance.welcome_runas} runas al registrarte</p>}
             {alliance.coupon_id && <p className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Cupón para tu primera compra</p>}
             {alliance.free_delivery_first_order && <p className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Delivery gratis en tu primera compra</p>}
+            {(alliance.free_delivery_addresses?.length || 0) > 0 && <p className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Delivery gratis a dirección de convenio</p>}
           </div>
           <Button size="lg" className="w-full" onClick={() => navigate(`/login?mode=signup&ally=${alliance.slug}`)}>Crear cuenta</Button>
           <Button variant="ghost" className="w-full" onClick={() => navigate(`/login?ally=${alliance.slug}`)}>Ya tengo cuenta</Button>
