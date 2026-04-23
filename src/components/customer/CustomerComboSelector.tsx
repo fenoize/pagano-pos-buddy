@@ -261,7 +261,32 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     const vars = allVars.filter(v => v.variant?.category_id === selection.comboSlot.category_id);
     const defaultVar = vars.find(v => v.is_default) || vars[0];
 
-    updateSelection(slotIndex, { selectedProduct: prod, selectedVariant: defaultVar, extras: {}, modifiers: [] });
+    updateSelection(slotIndex, {
+      selectedProduct: prod,
+      selectedVariant: defaultVar,
+      variant_group_selections: buildDefaultGroupSelections(productVariantGroups[productId] || []),
+      extras: {},
+      modifiers: []
+    });
+  };
+
+  const selectGroupOption = (slotIndex: number, group: VariantGroupWithOptions, optionId: string) => {
+    const option = group.options.find((o) => o.id === optionId);
+    if (!option) return;
+
+    const currentSelections = selections[slotIndex]?.variant_group_selections || [];
+    const nextSelections = [
+      ...currentSelections.filter((selection) => selection.group_id !== group.group_id),
+      {
+        group_id: group.group_id,
+        group_name: group.group_name,
+        option_id: option.id,
+        option_name: option.name,
+        price_delta: option.price_delta || 0,
+      },
+    ];
+
+    updateSelection(slotIndex, { variant_group_selections: nextSelections });
   };
 
   const selectVariant = (slotIndex: number, variant: ProductVariantOption) => {
@@ -322,7 +347,8 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     sels: ComboItemSelection[],
     config: ComboProduct,
     extrasMap: Record<string, ExtraItem[]>,
-    variantsMap: Record<string, ProductVariantOption[]>
+    variantsMap: Record<string, ProductVariantOption[]>,
+    variantGroupsMap: Record<string, VariantGroupWithOptions[]>
   ): number => {
     if (!config) return 0;
     let total = 0;
@@ -363,6 +389,14 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     }
 
     sels.forEach(sel => {
+      const assignedGroups = sel.selectedProduct ? variantGroupsMap[sel.selectedProduct.id!] || [] : [];
+      const validGroupIds = new Set(assignedGroups.map((group) => group.group_id));
+      sel.variant_group_selections?.forEach((selection) => {
+        if (validGroupIds.has(selection.group_id)) {
+          total += (selection.price_delta || 0) * sel.quantity;
+        }
+      });
+
       if (sel.extras) {
         Object.entries(sel.extras).forEach(([extraId, qty]) => {
           const extra = (extrasMap[sel.comboSlot.category_id] || []).find(e => e.id === extraId);
@@ -375,7 +409,7 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
   };
 
   const calculateComboTotal = (): number => {
-    return calcTotalFromSelections(selections, comboConfig!, productExtras, productVariants);
+    return calcTotalFromSelections(selections, comboConfig!, productExtras, productVariants, productVariantGroups);
   };
 
   const formatPrice = (price: number) =>
