@@ -18,6 +18,7 @@ export interface MarketingAlliance {
   welcome_runas: number;
   coupon_id: string | null;
   free_delivery_first_order: boolean;
+  free_delivery_addresses: string[];
   usage_limit: number | null;
   once_per_customer: boolean;
   internal_notes: string | null;
@@ -70,7 +71,12 @@ export const useMarketingAlliances = (range?: { start?: string | null; end?: str
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []) as MarketingAlliance[];
+      return ((data || []) as Array<Omit<MarketingAlliance, 'free_delivery_addresses'> & { free_delivery_addresses?: unknown }>).map((alliance) => ({
+        ...alliance,
+        free_delivery_addresses: Array.isArray(alliance.free_delivery_addresses)
+          ? alliance.free_delivery_addresses.filter((address): address is string => typeof address === 'string')
+          : [],
+      }));
     },
   });
 

@@ -188,6 +188,7 @@ export default function MarketingAlianzas() {
                     <Badge variant="secondary">{selected.welcome_runas} runas registro</Badge>
                     {selected.coupon_id && <Badge variant="secondary">Cupón primera compra</Badge>}
                     {selected.free_delivery_first_order && <Badge variant="secondary">Delivery gratis primera compra</Badge>}
+                    {selected.free_delivery_addresses.length > 0 && <Badge variant="secondary">Delivery gratis en {selected.free_delivery_addresses.length} dirección(es)</Badge>}
                     {selected.usage_limit && <Badge variant="outline">Límite {selected.usage_limit}</Badge>}
                   </CardContent>
                 </Card>

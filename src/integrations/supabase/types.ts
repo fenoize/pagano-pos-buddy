@@ -3659,6 +3659,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           ends_at: string | null
+          free_delivery_addresses: Json
           free_delivery_first_order: boolean
           id: string
           internal_notes: string | null
@@ -3678,6 +3679,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           ends_at?: string | null
+          free_delivery_addresses?: Json
           free_delivery_first_order?: boolean
           id?: string
           internal_notes?: string | null
@@ -3697,6 +3699,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           ends_at?: string | null
+          free_delivery_addresses?: Json
           free_delivery_first_order?: boolean
           id?: string
           internal_notes?: string | null
@@ -7532,6 +7535,7 @@ export type Database = {
         Returns: {
           coupon_id: string
           description: string
+          free_delivery_addresses: Json
           free_delivery_first_order: boolean
           id: string
           name: string

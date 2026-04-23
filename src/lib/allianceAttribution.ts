@@ -61,3 +61,41 @@ export const trackAlliancePurchase = async (customerId: string, orderId: string,
 
   return Boolean(data);
 };
+
+export interface AllianceFreeDeliveryBenefit {
+  benefitId: string;
+  freeFirstOrder: boolean;
+  addresses: string[];
+}
+
+export const normalizeAllianceAddress = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*,\s*/g, ', ')
+    .trim();
+
+export const getPendingAllianceFreeDeliveryBenefit = async (customerId: string): Promise<AllianceFreeDeliveryBenefit | null> => {
+  if (!customerId) return null;
+
+  const { data, error } = await (supabase as any)
+    .from('marketing_alliance_benefits')
+    .select('id, metadata')
+    .eq('customer_id', customerId)
+    .eq('benefit_type', 'free_delivery')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const metadata = (data.metadata || {}) as { free_delivery_first_order?: boolean; addresses?: unknown };
+  return {
+    benefitId: data.id,
+    freeFirstOrder: Boolean(metadata.free_delivery_first_order),
+    addresses: Array.isArray(metadata.addresses) ? metadata.addresses.filter((address): address is string => typeof address === 'string') : [],
+  };
+};
