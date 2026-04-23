@@ -71,7 +71,12 @@ export const useMarketingAlliances = (range?: { start?: string | null; end?: str
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []) as MarketingAlliance[];
+      return ((data || []) as Array<Omit<MarketingAlliance, 'free_delivery_addresses'> & { free_delivery_addresses?: unknown }>).map((alliance) => ({
+        ...alliance,
+        free_delivery_addresses: Array.isArray(alliance.free_delivery_addresses)
+          ? alliance.free_delivery_addresses.filter((address): address is string => typeof address === 'string')
+          : [],
+      }));
     },
   });
 
