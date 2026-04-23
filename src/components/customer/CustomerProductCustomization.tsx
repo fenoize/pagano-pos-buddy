@@ -830,9 +830,9 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   // Desktop: Dialog with side-by-side layout (image 1:1 aspect ratio)
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="customer-app w-fit max-w-[min(96vw,1120px)] p-0 overflow-hidden flex flex-row h-auto max-h-[calc(100vh-3rem)] bg-background text-white border-border">
+      <DialogContent className="customer-app w-fit max-w-[min(96vw,980px)] p-0 overflow-hidden flex flex-row h-auto max-h-[calc(100vh-3rem)] bg-background text-white border-border">
         {/* Left side - Product image with 1:1 aspect ratio */}
-        <div className="w-[min(54vw,620px)] max-w-[calc(100vh-3rem)] aspect-square flex-shrink-0 bg-muted relative overflow-hidden">
+        <div className="w-[min(52vw,calc(100vh-10rem),520px)] aspect-square flex-shrink-0 bg-muted relative overflow-hidden">
           <div className="w-full h-full flex items-center justify-center">
             {product.image_url ? (
               <img
@@ -858,7 +858,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         </div>
 
         {/* Right side - Customization */}
-        <div className="w-[420px] max-w-[40vw] min-w-[360px] flex flex-col overflow-hidden">
+        <div className="w-[400px] max-w-[40vw] min-w-[340px] flex flex-col overflow-hidden">
           {/* Header - fixed */}
           <div className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
             <h2 className="text-2xl font-bold text-white">{product.name}</h2>
