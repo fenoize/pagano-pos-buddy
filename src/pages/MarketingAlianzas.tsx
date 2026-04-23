@@ -46,7 +46,7 @@ const getRange = (value: string) => {
 export default function MarketingAlianzas() {
   const [period, setPeriod] = useState('month');
   const range = useMemo(() => getRange(period), [period]);
-  const { alliances, kpis, events, isLoading, createAlliance, updateAlliance, deleteAlliance } = useMarketingAlliances(range);
+  const { alliances, availableCoupons, kpis, events, isLoading, isLoadingCoupons, createAlliance, updateAlliance, deleteAlliance } = useMarketingAlliances(range);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<MarketingAlliance | null>(null);
   const [selected, setSelected] = useState<MarketingAlliance | null>(null);
@@ -207,7 +207,7 @@ export default function MarketingAlianzas() {
         </TabsContent>
       </Tabs>
 
-      <AllianceFormModal open={modalOpen} onOpenChange={setModalOpen} alliance={editing} onSave={handleSave} />
+      <AllianceFormModal open={modalOpen} onOpenChange={setModalOpen} alliance={editing} coupons={availableCoupons} isLoadingCoupons={isLoadingCoupons} onSave={handleSave} />
       <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Eliminar alianza</AlertDialogTitle><AlertDialogDescription>Esto eliminará la campaña y sus eventos asociados.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={confirmDelete}>Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </div>
   );
