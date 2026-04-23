@@ -830,9 +830,16 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   // Desktop: Dialog with side-by-side layout (image 1:1 aspect ratio)
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="customer-app w-fit max-w-[min(96vw,980px)] p-0 overflow-hidden flex flex-row h-auto max-h-[calc(100vh-3rem)] bg-background text-white border-border">
-        {/* Left side - Product image with 1:1 aspect ratio */}
-        <div className="w-[min(52vw,calc(100vh-10rem),520px)] aspect-square flex-shrink-0 bg-muted relative overflow-hidden">
+      <DialogContent
+        className="customer-app p-0 overflow-hidden flex flex-row bg-background text-white border-border"
+        style={{
+          width: 'min(92vw, 880px)',
+          height: 'min(calc(92vw - 400px), calc(100vh - 4rem), 480px)',
+          maxWidth: 'none',
+        }}
+      >
+        {/* Left side - Product image with 1:1 aspect ratio (square = full height) */}
+        <div className="h-full aspect-square flex-shrink-0 bg-muted relative overflow-hidden">
           <div className="w-full h-full flex items-center justify-center">
             {product.image_url ? (
               <img
