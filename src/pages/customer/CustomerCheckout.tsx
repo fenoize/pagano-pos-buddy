@@ -239,9 +239,7 @@ export default function CustomerCheckout() {
     }
 
     try {
-      const deliveryAddress = selectedAddress 
-        ? `${selectedAddress.calle} ${selectedAddress.numero}${selectedAddress.depto ? `, ${selectedAddress.depto}` : ''}, ${selectedAddress.comuna}`
-        : undefined;
+      const deliveryAddress = selectedDeliveryAddressText || undefined;
 
       if (selectedPaymentMethod === 'mercadopago') {
         // Flujo de MercadoPago (redirección)
@@ -274,7 +272,7 @@ export default function CustomerCheckout() {
           notes: notes || 'Pedido desde app cliente',
           fulfillment: fulfillmentType,
           delivery_address: deliveryAddress,
-          delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0,
+          delivery_fee: fulfillmentType === 'delivery' ? effectiveDeliveryFee : 0,
           delivery_zone_id: fulfillmentType === 'delivery' ? matchedZoneInfo?.id : undefined,
           delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined,
           delivery_lat: fulfillmentType === 'delivery' ? selectedAddress?.latitude : undefined,
@@ -292,7 +290,7 @@ export default function CustomerCheckout() {
           discount_amount: discountAmount,
           fulfillment: fulfillmentType,
           delivery_address: deliveryAddress,
-          delivery_fee: fulfillmentType === 'delivery' ? deliveryFee : 0,
+          delivery_fee: fulfillmentType === 'delivery' ? effectiveDeliveryFee : 0,
           delivery_zone_id: fulfillmentType === 'delivery' ? matchedZoneInfo?.id : undefined,
           delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined,
           delivery_lat: fulfillmentType === 'delivery' ? selectedAddress?.latitude : undefined,
@@ -319,7 +317,7 @@ export default function CustomerCheckout() {
               console.error('Error incrementando usage_count:', err);
             }
           }
-          await trackAlliancePurchase(customer.id, result.order_id, total, { payment_method: 'runas' });
+          await trackAlliancePurchase(customer.id, result.order_id, total, { payment_method: 'runas', alliance_free_delivery_applied: allianceFreeDeliveryApplies, delivery_address: deliveryAddress || null });
           clearCart();
           toast.success('¡Pedido confirmado exitosamente!');
           navigate(`/order-success?order=${result.order_number}`);
