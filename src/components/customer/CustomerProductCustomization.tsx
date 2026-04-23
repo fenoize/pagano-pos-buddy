@@ -406,6 +406,53 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   };
 
   const legacyVariants = getAvailableVariantsLegacy();
+  const proteinGroups = variantGroups.filter(group =>
+    group.group_name.toLowerCase().includes('prote')
+  );
+  const otherVariantGroups = variantGroups.filter(group =>
+    !group.group_name.toLowerCase().includes('prote')
+  );
+
+  const renderVariantGroup = (group: VariantGroupWithOptions) => (
+    <div key={group.group_id}>
+      <div className="mb-1">
+        <h3 className="text-lg font-bold text-white">Elige tu {group.group_name.toLowerCase()}</h3>
+        <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
+      </div>
+      <RadioGroup
+        value={selectedGroupOptions[group.group_id] || ''}
+        onValueChange={(value) => handleGroupOptionChange(group.group_id, value)}
+        className="gap-0"
+      >
+        {group.options.map((option, idx) => (
+          <div
+            key={option.id}
+            className={`flex items-center justify-between py-4 cursor-pointer ${
+              idx < group.options.length - 1 ? 'border-b border-border/50' : ''
+            }`}
+            onClick={() => handleGroupOptionChange(group.group_id, option.id)}
+          >
+            <div className="flex-1">
+              <span className="font-medium text-white">{option.name}</span>
+              <span className={`text-sm font-semibold ml-2 ${(option.price_delta || 0) > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                {(option.price_delta || 0) > 0 ? '+' : ''}{formatPrice(option.price_delta || 0)}
+              </span>
+            </div>
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+              selectedGroupOptions[group.group_id] === option.id
+                ? 'border-primary'
+                : 'border-muted-foreground/40'
+            }`}>
+              {selectedGroupOptions[group.group_id] === option.id && (
+                <div className="w-3.5 h-3.5 rounded-full bg-primary" />
+              )}
+            </div>
+          </div>
+        ))}
+      </RadioGroup>
+    </div>
+  );
+
   const getLegacyPrice = (variant: string) => {
     const prices = product.prices as any;
     const priceType = prices[selectedPriceType] || {};
@@ -427,48 +474,8 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         />
       ) : (
         <>
-          {/* PASO 1: Grupos de variantes (ej. Proteína) — ortogonales al tamaño */}
-          {variantGroups.length > 0 && variantGroups.map(group => (
-            <div key={group.group_id}>
-              <div className="mb-1">
-                <h3 className="text-lg font-bold text-white">Elige tu {group.group_name.toLowerCase()}</h3>
-                <p className="text-sm text-muted-foreground">Obligatorio • Elegir 1</p>
-              </div>
-              <RadioGroup
-                value={selectedGroupOptions[group.group_id] || ''}
-                onValueChange={(value) => handleGroupOptionChange(group.group_id, value)}
-                className="gap-0"
-              >
-                {group.options.map((option, idx) => (
-                  <div
-                    key={option.id}
-                    className={`flex items-center justify-between py-4 cursor-pointer ${
-                      idx < group.options.length - 1 ? 'border-b border-border/50' : ''
-                    }`}
-                    onClick={() => handleGroupOptionChange(group.group_id, option.id)}
-                  >
-                    <div className="flex-1">
-                      <span className="font-medium text-white">{option.name}</span>
-                      {!!option.price_delta && option.price_delta > 0 && (
-                        <span className="text-sm text-primary font-semibold ml-2">
-                          +{formatPrice(option.price_delta)}
-                        </span>
-                      )}
-                    </div>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      selectedGroupOptions[group.group_id] === option.id
-                        ? 'border-primary'
-                        : 'border-muted-foreground/40'
-                    }`}>
-                      {selectedGroupOptions[group.group_id] === option.id && (
-                        <div className="w-3.5 h-3.5 rounded-full bg-primary" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-          ))}
+          {/* PASO 1: Proteína */}
+          {proteinGroups.map(renderVariantGroup)}
 
           {/* PASO 2: Tamaño (precio base) */}
           {useNewVariantSystem && availableVariants.length > 0 && (
@@ -517,6 +524,9 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
               </RadioGroup>
             </div>
           )}
+
+          {/* PASO 3: Otros grupos de variantes */}
+          {otherVariantGroups.map(renderVariantGroup)}
 
           {/* Legacy System - Price Type */}
           {!useNewVariantSystem && (
@@ -820,9 +830,9 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   // Desktop: Dialog with side-by-side layout (image 1:1 aspect ratio)
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="customer-app w-fit max-w-[min(96vw,1120px)] p-0 overflow-hidden flex flex-row h-auto max-h-[calc(100vh-3rem)] bg-background text-white border-border">
+      <DialogContent className="customer-app w-fit max-w-[min(96vw,980px)] p-0 overflow-hidden flex flex-row h-auto max-h-[calc(100vh-3rem)] bg-background text-white border-border">
         {/* Left side - Product image with 1:1 aspect ratio */}
-        <div className="w-[min(54vw,620px)] max-w-[calc(100vh-3rem)] aspect-square flex-shrink-0 bg-muted relative overflow-hidden">
+        <div className="w-[min(52vw,calc(100vh-10rem),520px)] aspect-square flex-shrink-0 bg-muted relative overflow-hidden">
           <div className="w-full h-full flex items-center justify-center">
             {product.image_url ? (
               <img
@@ -848,7 +858,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         </div>
 
         {/* Right side - Customization */}
-        <div className="w-[420px] max-w-[40vw] min-w-[360px] flex flex-col overflow-hidden">
+        <div className="w-[400px] max-w-[40vw] min-w-[340px] flex flex-col overflow-hidden">
           {/* Header - fixed */}
           <div className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
             <h2 className="text-2xl font-bold text-white">{product.name}</h2>
