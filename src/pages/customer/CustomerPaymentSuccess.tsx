@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Order } from '@/types';
 import { trackPromoConversion } from '@/hooks/usePromoAnalytics';
-import { trackAlliancePurchase } from '@/lib/allianceAttribution';
+import { getPendingAllianceFreeDeliveryBenefit, normalizeAllianceAddress, trackAlliancePurchase } from '@/lib/allianceAttribution';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 
 export default function CustomerPaymentSuccess() {
@@ -41,7 +41,20 @@ export default function CustomerPaymentSuccess() {
       if (data && orderId) {
         await trackPromoConversion(orderId, customer?.id);
         if (customer?.id) {
-          await trackAlliancePurchase(customer.id, data.id, data.total || 0, { payment_method: data.payment_method || 'mp' });
+          const freeDeliveryBenefit = await getPendingAllianceFreeDeliveryBenefit(customer.id);
+          const orderAddress = data.delivery_address || '';
+          const allianceFreeDeliveryApplied = Boolean(
+            data.fulfillment === 'delivery' &&
+            Number(data.delivery_fee || 0) === 0 &&
+            freeDeliveryBenefit &&
+            (freeDeliveryBenefit.freeFirstOrder || freeDeliveryBenefit.addresses.some(address => normalizeAllianceAddress(address) === normalizeAllianceAddress(orderAddress)))
+          );
+
+          await trackAlliancePurchase(customer.id, data.id, data.total || 0, {
+            payment_method: data.payment_method || 'mp',
+            alliance_free_delivery_applied: allianceFreeDeliveryApplied,
+            delivery_address: orderAddress || null,
+          });
         }
       }
     } catch (error) {
