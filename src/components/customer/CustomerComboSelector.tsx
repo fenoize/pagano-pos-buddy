@@ -10,9 +10,16 @@ interface ComboItemSelection {
   selectedProduct?: Product;
   selectedVariant?: ProductVariantOption;
   selectedVariants?: ProductVariantOption[];
+  variant_group_selections?: Array<{ group_id: string; group_name: string; option_id: string; option_name: string; price_delta?: number }>;
   quantity: number;
   extras?: Record<string, number>;
   modifiers?: string[];
+}
+
+interface VariantGroupWithOptions {
+  group_id: string;
+  group_name: string;
+  options: Array<{ id: string; name: string; is_default: boolean; image_url?: string | null; price_delta?: number; active: boolean; display_order: number }>;
 }
 
 interface CustomerComboSelectorProps {
@@ -45,6 +52,7 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
   const [categories, setCategories] = useState<Category[]>([]);
   const [slotProducts, setSlotProducts] = useState<Record<string, Product[]>>({});
   const [productVariants, setProductVariants] = useState<Record<string, ProductVariantOption[]>>({});
+  const [productVariantGroups, setProductVariantGroups] = useState<Record<string, VariantGroupWithOptions[]>>({});
   const [productExtras, setProductExtras] = useState<Record<string, ExtraItem[]>>({});
   const [productModifiers, setProductModifiers] = useState<Record<string, ModifierItem[]>>({});
   const [selections, setSelections] = useState<ComboItemSelection[]>([]);
@@ -69,7 +77,22 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
       const total = calculateComboTotal();
       onComboTotalChange(total);
     }
-  }, [selections, productExtras, comboConfig]);
+  }, [selections, productExtras, comboConfig, productVariantGroups]);
+
+  const buildDefaultGroupSelections = (groups: VariantGroupWithOptions[] = []) =>
+    groups
+      .map((group) => {
+        const option = group.options.find((o) => o.is_default) || group.options[0];
+        if (!option) return null;
+        return {
+          group_id: group.group_id,
+          group_name: group.group_name,
+          option_id: option.id,
+          option_name: option.name,
+          price_delta: option.price_delta || 0,
+        };
+      })
+      .filter(Boolean) as ComboItemSelection['variant_group_selections'];
 
   const fetchComboData = async () => {
     try {
@@ -140,6 +163,25 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
       });
       setProductVariants(groupedVariants);
 
+      const { data: variantGroupsData } = await configuredSupabase
+        .from('product_variant_groups')
+        .select('product_id, group_id, group:variant_groups(id, name, options:variant_group_options(id, name, display_order, is_default, image_url, active, price_delta))')
+        .in('product_id', productIds.length > 0 ? productIds : ['00000000-0000-0000-0000-000000000000']);
+
+      const groupedVariantGroups: Record<string, VariantGroupWithOptions[]> = {};
+      (variantGroupsData || []).forEach((pvg: any) => {
+        if (!pvg.group) return;
+        if (!groupedVariantGroups[pvg.product_id]) groupedVariantGroups[pvg.product_id] = [];
+        groupedVariantGroups[pvg.product_id].push({
+          group_id: pvg.group.id,
+          group_name: pvg.group.name,
+          options: (pvg.group.options || [])
+            .filter((option: any) => option.active)
+            .sort((a: any, b: any) => a.display_order - b.display_order),
+        });
+      });
+      setProductVariantGroups(groupedVariantGroups);
+
       const [extrasRes, modifiersRes] = await Promise.all([
         configuredSupabase
           .from('product_extras')
@@ -184,6 +226,7 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
           comboSlot: slot,
           selectedProduct: defaultProduct,
           selectedVariant: defaultVariant,
+          variant_group_selections: defaultProduct ? buildDefaultGroupSelections(groupedVariantGroups[defaultProduct.id!] || []) : [],
           quantity: slot.quantity,
           extras: {},
           modifiers: [],
@@ -192,7 +235,7 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
 
       setSelections(defaultSelections);
 
-      const total = calcTotalFromSelections(defaultSelections, comboData as ComboProduct, groupedExtras, groupedVariants);
+      const total = calcTotalFromSelections(defaultSelections, comboData as ComboProduct, groupedExtras, groupedVariants, groupedVariantGroups);
       onComboTotalChange(total);
       onComboItemsChange(defaultSelections);
     } catch (error) {
