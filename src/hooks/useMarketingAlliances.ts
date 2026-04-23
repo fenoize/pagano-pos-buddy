@@ -18,6 +18,7 @@ export interface MarketingAlliance {
   welcome_runas: number;
   coupon_id: string | null;
   free_delivery_first_order: boolean;
+  free_delivery_addresses: string[];
   usage_limit: number | null;
   once_per_customer: boolean;
   internal_notes: string | null;
