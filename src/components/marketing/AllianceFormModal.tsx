@@ -134,7 +134,21 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
             <h3 className="font-semibold">Beneficios</h3>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2"><Label>Runas registro</Label><Input type="number" min="0" value={form.welcome_runas} onChange={(e) => setForm(prev => ({ ...prev, welcome_runas: Number(e.target.value) }))} /></div>
-              <div className="space-y-2 md:col-span-2"><Label>ID cupón primera compra</Label><Input value={form.coupon_id} onChange={(e) => setForm(prev => ({ ...prev, coupon_id: e.target.value }))} placeholder="UUID de cupón existente" /></div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Cupón primera compra</Label>
+                <Select value={form.coupon_id} onValueChange={(value) => setForm(prev => ({ ...prev, coupon_id: value }))} disabled={isLoadingCoupons}>
+                  <SelectTrigger><SelectValue placeholder={isLoadingCoupons ? 'Cargando cupones...' : 'Seleccionar cupón'} /></SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="__none__">Sin cupón</SelectItem>
+                    {coupons.map((coupon) => (
+                      <SelectItem key={coupon.id} value={coupon.id}>
+                        {coupon.code} · {coupon.affects_delivery ? 'Delivery' : coupon.type} {formatCurrency(Number(coupon.delivery_amount || coupon.amount || 0))}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Solo se muestran cupones activos sin embajador/comisión asociada.</p>
+              </div>
             </div>
             <div className="flex items-center justify-between rounded-md bg-muted/50 p-3">
               <Label>Delivery gratis primera compra</Label>
