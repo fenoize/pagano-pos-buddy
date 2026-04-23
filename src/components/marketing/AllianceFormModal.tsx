@@ -20,6 +20,17 @@ interface AllianceFormModalProps {
 
 const slugify = (value: string) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
+const formatCouponBenefit = (coupon: AllianceCouponOption) => {
+  if (coupon.affects_delivery) {
+    if (coupon.delivery_mode === 'free') return 'Delivery gratis';
+    return `Delivery ${formatCurrency(Number(coupon.delivery_amount || coupon.amount || 0))}`;
+  }
+
+  if (coupon.type === 'percent' || coupon.type === 'percentage') return `${Number(coupon.amount)}%`;
+  if (coupon.type === 'fixed') return formatCurrency(Number(coupon.amount || 0));
+  return coupon.type;
+};
+
 export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], isLoadingCoupons = false, onSave }: AllianceFormModalProps) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -142,7 +153,7 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
                     <SelectItem value="__none__">Sin cupón</SelectItem>
                     {coupons.map((coupon) => (
                       <SelectItem key={coupon.id} value={coupon.id}>
-                        {coupon.code} · {coupon.affects_delivery ? 'Delivery' : coupon.type} {formatCurrency(Number(coupon.delivery_amount || coupon.amount || 0))}
+                        {coupon.code} · {formatCouponBenefit(coupon)}
                       </SelectItem>
                     ))}
                   </SelectContent>
