@@ -168,6 +168,16 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
               <Label>Delivery gratis primera compra</Label>
               <Switch checked={form.free_delivery_first_order} onCheckedChange={(checked) => setForm(prev => ({ ...prev, free_delivery_first_order: checked }))} />
             </div>
+            <div className="space-y-2">
+              <Label>Direcciones exactas con delivery gratis</Label>
+              <Textarea
+                value={form.free_delivery_addresses_text}
+                onChange={(e) => setForm(prev => ({ ...prev, free_delivery_addresses_text: e.target.value }))}
+                rows={3}
+                placeholder="Av. Providencia 1234, Providencia&#10;Nueva Costanera 4567, Vitacura"
+              />
+              <p className="text-xs text-muted-foreground">Una dirección por línea. Debe coincidir con la dirección guardada por el cliente.</p>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
