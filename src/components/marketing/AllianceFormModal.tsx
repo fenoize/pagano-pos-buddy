@@ -6,18 +6,21 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MarketingAlliance, MarketingAllianceInput } from '@/hooks/useMarketingAlliances';
+import { AllianceCouponOption, MarketingAlliance, MarketingAllianceInput } from '@/hooks/useMarketingAlliances';
+import { formatCurrency } from '@/lib/utils';
 
 interface AllianceFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   alliance?: MarketingAlliance | null;
+  coupons?: AllianceCouponOption[];
+  isLoadingCoupons?: boolean;
   onSave: (data: MarketingAllianceInput | (Partial<MarketingAlliance> & { id: string })) => Promise<void>;
 }
 
 const slugify = (value: string) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
-export function AllianceFormModal({ open, onOpenChange, alliance, onSave }: AllianceFormModalProps) {
+export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], isLoadingCoupons = false, onSave }: AllianceFormModalProps) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -46,14 +49,14 @@ export function AllianceFormModal({ open, onOpenChange, alliance, onSave }: Alli
         starts_at: alliance.starts_at?.slice(0, 10) || '',
         ends_at: alliance.ends_at?.slice(0, 10) || '',
         welcome_runas: alliance.welcome_runas || 0,
-        coupon_id: alliance.coupon_id || '',
+        coupon_id: alliance.coupon_id || '__none__',
         free_delivery_first_order: alliance.free_delivery_first_order,
         usage_limit: alliance.usage_limit ? String(alliance.usage_limit) : '',
         once_per_customer: alliance.once_per_customer,
         internal_notes: alliance.internal_notes || '',
       });
     } else {
-      setForm({ name: '', type: 'empresa_aliada', slug: '', description: '', is_active: true, starts_at: '', ends_at: '', welcome_runas: 0, coupon_id: '', free_delivery_first_order: false, usage_limit: '', once_per_customer: true, internal_notes: '' });
+      setForm({ name: '', type: 'empresa_aliada', slug: '', description: '', is_active: true, starts_at: '', ends_at: '', welcome_runas: 0, coupon_id: '__none__', free_delivery_first_order: false, usage_limit: '', once_per_customer: true, internal_notes: '' });
     }
   }, [alliance, open]);
 
@@ -72,7 +75,7 @@ export function AllianceFormModal({ open, onOpenChange, alliance, onSave }: Alli
         starts_at: form.starts_at || null,
         ends_at: form.ends_at || null,
         welcome_runas: Number(form.welcome_runas) || 0,
-        coupon_id: form.coupon_id.trim() || null,
+        coupon_id: form.coupon_id === '__none__' ? null : form.coupon_id,
         free_delivery_first_order: form.free_delivery_first_order,
         usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
         once_per_customer: form.once_per_customer,
