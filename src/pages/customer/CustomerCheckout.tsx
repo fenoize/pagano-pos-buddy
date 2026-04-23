@@ -23,7 +23,7 @@ import { useDeliveryGeo, DeliveryZoneWithGeo } from '@/hooks/useDeliveryGeo';
 import { createRunasOrder } from '@/lib/integrations/runasPayment';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
-import { trackAlliancePurchase } from '@/lib/allianceAttribution';
+import { getPendingAllianceFreeDeliveryBenefit, normalizeAllianceAddress, trackAlliancePurchase, type AllianceFreeDeliveryBenefit } from '@/lib/allianceAttribution';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 import { Coupon, CouponApplication } from '@/types';
@@ -66,6 +66,7 @@ export default function CustomerCheckout() {
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [matchedZoneInfo, setMatchedZoneInfo] = useState<{ id: string; name: string } | null>(null);
+  const [allianceFreeDeliveryBenefit, setAllianceFreeDeliveryBenefit] = useState<AllianceFreeDeliveryBenefit | null>(null);
 
   const mpEnabled = paymentSettings?.mp_payment_enabled ?? true;
   const runasEnabled = paymentSettings?.runas_payment_enabled ?? true;
@@ -178,7 +179,21 @@ export default function CustomerCheckout() {
     }
   }, [items.length, mpEnabled, runasEnabled, deliveryEnabled, pickupEnabled, navigate]);
 
+  useEffect(() => {
+    if (!customer?.id) return;
+    getPendingAllianceFreeDeliveryBenefit(customer.id).then(setAllianceFreeDeliveryBenefit);
+  }, [customer?.id]);
+
   const selectedAddress = customerAddresses.find(a => a.id === selectedAddressId);
+  const selectedDeliveryAddressText = selectedAddress
+    ? `${selectedAddress.calle} ${selectedAddress.numero}${selectedAddress.depto ? `, ${selectedAddress.depto}` : ''}, ${selectedAddress.comuna}`
+    : '';
+  const allianceFreeDeliveryApplies = (() => {
+    if (fulfillmentType !== 'delivery' || deliveryFee <= 0 || !allianceFreeDeliveryBenefit) return false;
+    if (allianceFreeDeliveryBenefit.freeFirstOrder) return true;
+    const selectedNormalized = normalizeAllianceAddress(selectedDeliveryAddressText);
+    return allianceFreeDeliveryBenefit.addresses.some(address => normalizeAllianceAddress(address) === selectedNormalized);
+  })();
   // Apply subscription discount with rules
   const subscriptionDiscountAmount = (() => {
     if (subscriptionDiscount <= 0 || !subscriptionRules) return 0;
@@ -196,8 +211,9 @@ export default function CustomerCheckout() {
   })();
   const couponDiscountProducts = couponApplication?.discount_products || 0;
   const couponDiscountDelivery = couponApplication?.discount_delivery || 0;
+  const allianceDeliveryDiscount = allianceFreeDeliveryApplies ? deliveryFee : 0;
   const subtotalAfterDiscount = Math.max(0, subtotal - subscriptionDiscountAmount - couponDiscountProducts);
-  const effectiveDeliveryFee = Math.max(0, deliveryFee - subscriptionDeliveryDiscount - couponDiscountDelivery);
+  const effectiveDeliveryFee = Math.max(0, deliveryFee - subscriptionDeliveryDiscount - couponDiscountDelivery - allianceDeliveryDiscount);
   const total = subtotalAfterDiscount + (fulfillmentType === 'delivery' ? effectiveDeliveryFee : 0);
 
   const handleCouponApplied = (application: CouponApplication | null, coupon: Coupon | null) => {
