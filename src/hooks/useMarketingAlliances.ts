@@ -41,6 +41,17 @@ export interface AllianceKpi {
   rewards_redeemed: number;
 }
 
+export interface AllianceCouponOption {
+  id: string;
+  code: string;
+  description: string | null;
+  type: string;
+  amount: number;
+  affects_delivery: boolean;
+  delivery_mode: string | null;
+  delivery_amount: number | null;
+}
+
 export const useMarketingAlliances = (range?: { start?: string | null; end?: string | null }) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -60,6 +71,24 @@ export const useMarketingAlliances = (range?: { start?: string | null; end?: str
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || []) as MarketingAlliance[];
+    },
+  });
+
+  const availableCouponsQuery = useQuery({
+    queryKey: ['marketing-alliance-available-coupons'],
+    queryFn: async () => {
+      await withContext();
+      const { data, error } = await (configuredSupabase as any)
+        .from('coupons')
+        .select('id, code, description, type, amount, affects_delivery, delivery_mode, delivery_amount, commission_enabled, commission_contact')
+        .eq('is_active', true)
+        .order('code', { ascending: true });
+
+      if (error) throw error;
+
+      return ((data || []) as Array<AllianceCouponOption & { commission_enabled?: boolean | null; commission_contact?: string | null }>)
+        .filter((coupon) => !coupon.commission_enabled && !coupon.commission_contact?.trim())
+        .map(({ commission_enabled, commission_contact, ...coupon }) => coupon);
     },
   });
 
@@ -145,9 +174,11 @@ export const useMarketingAlliances = (range?: { start?: string | null; end?: str
 
   return {
     alliances: alliancesQuery.data || [],
+    availableCoupons: availableCouponsQuery.data || [],
     kpis: kpisQuery.data || [],
     events: eventsQuery.data || [],
     isLoading: alliancesQuery.isLoading || kpisQuery.isLoading,
+    isLoadingCoupons: availableCouponsQuery.isLoading,
     createAlliance: createAlliance.mutateAsync,
     updateAlliance: updateAlliance.mutateAsync,
     deleteAlliance: deleteAlliance.mutateAsync,
