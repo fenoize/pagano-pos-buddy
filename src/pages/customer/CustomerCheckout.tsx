@@ -463,7 +463,7 @@ export default function CustomerCheckout() {
                       {deliveryFee > 0 && (
                         <div className="p-3 bg-muted rounded-lg flex items-center justify-between">
                           <span className="text-sm">Costo de delivery</span>
-                          <span className="font-semibold">{formatCurrency(deliveryFee)}</span>
+                          <span className="font-semibold">{allianceFreeDeliveryApplies ? 'Gratis por alianza' : formatCurrency(deliveryFee)}</span>
                         </div>
                       )}
                     </>
@@ -541,7 +541,7 @@ export default function CustomerCheckout() {
                     {deliveryFee > 0 && (
                       <div className="p-3 bg-muted rounded-lg flex items-center justify-between">
                         <span className="text-sm">Costo de delivery</span>
-                        <span className="font-semibold">{formatCurrency(deliveryFee)}</span>
+                        <span className="font-semibold">{allianceFreeDeliveryApplies ? 'Gratis por alianza' : formatCurrency(deliveryFee)}</span>
                       </div>
                     )}
                   </>
@@ -740,6 +740,12 @@ export default function CustomerCheckout() {
                     ) : formatCurrency(deliveryFee)}
                   </span>
                 </div>
+                {allianceDeliveryDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-400 font-medium">
+                    <span>Beneficio alianza</span>
+                    <span>-{formatCurrency(allianceDeliveryDiscount)}</span>
+                  </div>
+                )}
               </>
             )}
             
