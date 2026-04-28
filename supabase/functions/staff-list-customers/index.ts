@@ -92,8 +92,33 @@ serve(async (req) => {
     const q = (url.searchParams.get("q") || "").trim();
     const estado = url.searchParams.get("estado") || undefined;
     const hasRunas = url.searchParams.get("hasRunas") || undefined;
-    const limit = Math.min(Number(url.searchParams.get("limit") || 50), 100);
+    const tagId = url.searchParams.get("tagId") || undefined;
+    const includeTags = url.searchParams.get("includeTags") === "true";
+    const limit = Math.min(Number(url.searchParams.get("limit") || 50), 5000);
     const offset = Math.max(Number(url.searchParams.get("offset") || 0), 0);
+
+    // Pre-filter by tag: get customer IDs assigned to that tag
+    let tagFilteredIds: string[] | null = null;
+    if (tagId) {
+      const { data: assigns, error: aErr } = await supabaseAdmin
+        .from("customer_tag_assignments")
+        .select("customer_id")
+        .eq("tag_id", tagId);
+      if (aErr) {
+        console.error('[DB] Tag filter error:', aErr);
+        return new Response(JSON.stringify({ error: "Database error" }), {
+          status: 500,
+          headers: { ...corsHeaders, "content-type": "application/json" }
+        });
+      }
+      tagFilteredIds = (assigns || []).map((a: any) => a.customer_id);
+      if (tagFilteredIds.length === 0) {
+        return new Response(JSON.stringify({ data: [], count: 0, limit, offset }), {
+          status: 200,
+          headers: { ...corsHeaders, "content-type": "application/json" },
+        });
+      }
+    }
 
     // 5. Si se proporciona ID, buscar directamente por ID (para escaneo QR)
     if (id) {
