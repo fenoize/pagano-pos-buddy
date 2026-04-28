@@ -324,6 +324,7 @@ export default function CustomerCheckout() {
           }
           await trackAlliancePurchase(customer.id, result.order_id, total, { payment_method: 'runas', alliance_free_delivery_applied: allianceFreeDeliveryApplies, delivery_address: deliveryAddress || null });
           clearCart();
+          clearCartCoupon();
           toast.success('¡Pedido confirmado exitosamente!');
           navigate(`/order-success?order=${result.order_number}`);
         }
