@@ -12,6 +12,7 @@ export interface CustomerFilters {
   estado?: EstadoCliente;
   comuna?: string;
   hasRunas?: boolean;
+  tagId?: string;
 }
 
 export interface CustomerFormData {
