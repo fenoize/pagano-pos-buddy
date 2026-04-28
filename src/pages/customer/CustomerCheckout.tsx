@@ -619,6 +619,8 @@ export default function CustomerCheckout() {
               customerId={customer?.id}
               deliveryFee={fulfillmentType === 'delivery' ? deliveryFee : 0}
               onCouponApplied={handleCouponApplied}
+              initialCoupon={appliedCoupon}
+              initialApplication={couponApplication}
             />
           </CardContent>
         </Card>
