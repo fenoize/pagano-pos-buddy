@@ -223,6 +223,7 @@ export default function CustomerCheckout() {
   const handleCouponApplied = (application: CouponApplication | null, coupon: Coupon | null) => {
     setCouponApplication(application);
     setAppliedCoupon(coupon);
+    saveCartCoupon(coupon, application);
   };
 
   const handlePayment = async () => {
