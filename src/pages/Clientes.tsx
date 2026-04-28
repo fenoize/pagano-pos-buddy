@@ -330,7 +330,7 @@ export default function Clientes() {
               <TableBody>
                 {customers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {searchTerm.length >= 3 || Object.keys(filters).some(key => filters[key as keyof CustomerFilters]) 
                         ? 'No se encontraron clientes con los filtros aplicados'
                         : 'No hay clientes registrados'}
