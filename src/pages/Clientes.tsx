@@ -163,14 +163,24 @@ export default function Clientes() {
             <TabsTrigger value="etiquetas">Etiquetas</TabsTrigger>
           </TabsList>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={exportCustomersCSV}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Exportar CSV
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportCustomersCSV(getActiveFilters())}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportCustomersPDF(getActiveFilters())}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {canManageCustomers && (
               <Button onClick={() => setIsNewCustomerModalOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
