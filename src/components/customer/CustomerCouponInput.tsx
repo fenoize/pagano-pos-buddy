@@ -16,6 +16,8 @@ interface CustomerCouponInputProps {
   customerId?: string;
   deliveryFee: number;
   onCouponApplied: (application: CouponApplication | null, coupon: Coupon | null) => void;
+  initialCoupon?: Coupon | null;
+  initialApplication?: CouponApplication | null;
 }
 
 export function CustomerCouponInput({
@@ -24,12 +26,35 @@ export function CustomerCouponInput({
   customerId,
   deliveryFee,
   onCouponApplied,
+  initialCoupon = null,
+  initialApplication = null,
 }: CustomerCouponInputProps) {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
-  const [preview, setPreview] = useState<CouponEligibilityResult['preview'] | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(initialCoupon);
+  const [preview, setPreview] = useState<CouponEligibilityResult['preview'] | null>(
+    initialApplication
+      ? {
+          discount_products: initialApplication.discount_products,
+          discount_delivery: initialApplication.discount_delivery,
+        } as CouponEligibilityResult['preview']
+      : null
+  );
   const [error, setError] = useState<string | null>(null);
+  const hydratedRef = useRef(false);
+
+  // Hydrate when initial props arrive asynchronously (parent loads from sessionStorage)
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    if (initialCoupon && initialApplication) {
+      setAppliedCoupon(initialCoupon);
+      setPreview({
+        discount_products: initialApplication.discount_products,
+        discount_delivery: initialApplication.discount_delivery,
+      } as CouponEligibilityResult['preview']);
+      hydratedRef.current = true;
+    }
+  }, [initialCoupon, initialApplication]);
 
   const handleApply = async () => {
     const trimmed = code.trim().toUpperCase();
