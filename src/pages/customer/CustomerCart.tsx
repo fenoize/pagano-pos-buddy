@@ -180,6 +180,8 @@ export default function CustomerCart() {
               customerId={customer?.id}
               deliveryFee={0}
               onCouponApplied={handleCouponApplied}
+              initialCoupon={appliedCoupon}
+              initialApplication={couponApplication}
             />
           </CardContent>
         </Card>
