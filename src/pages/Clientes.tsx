@@ -320,7 +320,6 @@ export default function Clientes() {
                 <TableRow>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Contacto</TableHead>
-                  <TableHead>Etiquetas</TableHead>
                   <TableHead>Runas</TableHead>
                   <TableHead>Valor Cliente</TableHead>
                   <TableHead>Estado</TableHead>
@@ -331,7 +330,7 @@ export default function Clientes() {
               <TableBody>
                 {customers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {searchTerm.length >= 3 || Object.keys(filters).some(key => filters[key as keyof CustomerFilters]) 
                         ? 'No se encontraron clientes con los filtros aplicados'
                         : 'No hay clientes registrados'}
@@ -341,13 +340,16 @@ export default function Clientes() {
                   customers.map((customer) => (
                     <TableRow key={customer.id}>
                       <TableCell>
-                        <div>
+                        <div className="space-y-1">
                           <p className="font-medium">
                             {customer.nombres || customer.name} {customer.apellidos || customer.apellido}
                           </p>
                           {customer.rut && (
                             <p className="text-sm text-muted-foreground">{customer.rut}</p>
                           )}
+                          <div className="max-w-[260px]">
+                            <CustomerTagChips customerId={customer.id} size="sm" editable={false} />
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -358,11 +360,6 @@ export default function Clientes() {
                           {customer.phone && (
                             <p className="text-sm text-muted-foreground">{customer.phone}</p>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[220px]">
-                          <CustomerTagChips customerId={customer.id} size="sm" />
                         </div>
                       </TableCell>
                       <TableCell>
