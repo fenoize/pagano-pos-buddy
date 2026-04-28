@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AllianceCouponOption, MarketingAlliance, MarketingAllianceInput } from '@/hooks/useMarketingAlliances';
+import { useCustomerTags } from '@/hooks/useCustomerTags';
 import { formatCurrency } from '@/lib/utils';
 
 interface AllianceFormModalProps {
@@ -33,6 +34,7 @@ const formatCouponBenefit = (coupon: AllianceCouponOption) => {
 
 export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], isLoadingCoupons = false, onSave }: AllianceFormModalProps) {
   const [saving, setSaving] = useState(false);
+  const { tags, createTag } = useCustomerTags();
   const [form, setForm] = useState({
     name: '',
     type: 'empresa_aliada',
@@ -48,6 +50,7 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
     usage_limit: '',
     once_per_customer: true,
     internal_notes: '',
+    auto_tag_id: '__none__',
   });
 
   useEffect(() => {
@@ -67,9 +70,10 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
         usage_limit: alliance.usage_limit ? String(alliance.usage_limit) : '',
         once_per_customer: alliance.once_per_customer,
         internal_notes: alliance.internal_notes || '',
+        auto_tag_id: alliance.auto_tag_id || '__none__',
       });
     } else {
-      setForm({ name: '', type: 'empresa_aliada', slug: '', description: '', is_active: true, starts_at: '', ends_at: '', welcome_runas: 0, coupon_id: '__none__', free_delivery_first_order: false, free_delivery_addresses_text: '', usage_limit: '', once_per_customer: true, internal_notes: '' });
+      setForm({ name: '', type: 'empresa_aliada', slug: '', description: '', is_active: true, starts_at: '', ends_at: '', welcome_runas: 0, coupon_id: '__none__', free_delivery_first_order: false, free_delivery_addresses_text: '', usage_limit: '', once_per_customer: true, internal_notes: '', auto_tag_id: '__none__' });
     }
   }, [alliance, open]);
 
@@ -94,6 +98,7 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
         usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
         once_per_customer: form.once_per_customer,
         internal_notes: form.internal_notes.trim() || null,
+        auto_tag_id: form.auto_tag_id === '__none__' ? null : form.auto_tag_id,
       };
       await onSave(alliance ? { ...payload, id: alliance.id } : payload);
       onOpenChange(false);
@@ -177,6 +182,38 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
                 placeholder="Av. Providencia 1234, Providencia&#10;Nueva Costanera 4567, Vitacura"
               />
               <p className="text-xs text-muted-foreground">Una dirección por línea. Debe coincidir con la dirección guardada por el cliente.</p>
+            </div>
+            <div className="space-y-2 pt-2 border-t">
+              <Label>Etiqueta automática del cliente</Label>
+              <div className="flex gap-2">
+                <Select value={form.auto_tag_id} onValueChange={(value) => setForm(prev => ({ ...prev, auto_tag_id: value }))}>
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Sin etiqueta" /></SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="__none__">Sin etiqueta</SelectItem>
+                    {tags.map((tag) => (
+                      <SelectItem key={tag.id} value={tag.id}>
+                        <span className="inline-flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: tag.color }} />
+                          {tag.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    const name = window.prompt('Nombre de la nueva etiqueta:');
+                    if (!name?.trim()) return;
+                    const newTag = await createTag({ name: name.trim(), color: '#6366f1', description: null });
+                    if (newTag) setForm(prev => ({ ...prev, auto_tag_id: (newTag as any).id }));
+                  }}
+                >
+                  Nueva
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Los clientes que se registren por esta alianza recibirán esta etiqueta automáticamente.</p>
             </div>
           </div>
 

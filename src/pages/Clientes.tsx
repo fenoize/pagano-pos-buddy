@@ -23,6 +23,8 @@ import CustomerOrders from '@/components/clientes/CustomerOrders';
 import CustomerLevelsBadges from '@/components/clientes/CustomerLevelsBadges';
 import DeleteCustomerModal from '@/components/clientes/DeleteCustomerModal';
 import { CustomerAuthManagementModal } from '@/components/clientes/CustomerAuthManagementModal';
+import CustomerTagChips from '@/components/clientes/CustomerTagChips';
+import CustomerTagsManager from '@/components/clientes/CustomerTagsManager';
 
 export default function Clientes() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -148,25 +150,35 @@ export default function Clientes() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-end">
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={exportCustomersCSV}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </Button>
-          {canManageCustomers && (
-            <Button onClick={() => setIsNewCustomerModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Cliente
+      <Tabs defaultValue="lista" className="w-full">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <TabsList>
+            <TabsTrigger value="lista">Clientes</TabsTrigger>
+            <TabsTrigger value="etiquetas">Etiquetas</TabsTrigger>
+          </TabsList>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={exportCustomersCSV}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Exportar CSV
             </Button>
-          )}
+            {canManageCustomers && (
+              <Button onClick={() => setIsNewCustomerModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo Cliente
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+
+        <TabsContent value="etiquetas" className="mt-4">
+          <CustomerTagsManager />
+        </TabsContent>
+
+        <TabsContent value="lista" className="mt-4 space-y-6">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -306,6 +318,7 @@ export default function Clientes() {
                 <TableRow>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Contacto</TableHead>
+                  <TableHead>Etiquetas</TableHead>
                   <TableHead>Runas</TableHead>
                   <TableHead>Valor Cliente</TableHead>
                   <TableHead>Estado</TableHead>
@@ -316,7 +329,7 @@ export default function Clientes() {
               <TableBody>
                 {customers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {searchTerm.length >= 3 || Object.keys(filters).some(key => filters[key as keyof CustomerFilters]) 
                         ? 'No se encontraron clientes con los filtros aplicados'
                         : 'No hay clientes registrados'}
@@ -343,6 +356,11 @@ export default function Clientes() {
                           {customer.phone && (
                             <p className="text-sm text-muted-foreground">{customer.phone}</p>
                           )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[220px]">
+                          <CustomerTagChips customerId={customer.id} size="sm" />
                         </div>
                       </TableCell>
                       <TableCell>
@@ -467,6 +485,8 @@ export default function Clientes() {
           </Button>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
 
       {/* New Customer Modal */}
       <Dialog open={isNewCustomerModalOpen} onOpenChange={setIsNewCustomerModalOpen}>
@@ -499,9 +519,13 @@ export default function Clientes() {
               </TabsList>
               
               <TabsContent value="datos" className="space-y-4">
-                <CustomerForm 
-                  customer={selectedCustomer} 
-                  onSuccess={handleCustomerUpdated} 
+                <div className="rounded-lg border p-4 space-y-2">
+                  <p className="text-sm font-medium">Etiquetas</p>
+                  <CustomerTagChips customerId={selectedCustomer.id} />
+                </div>
+                <CustomerForm
+                  customer={selectedCustomer}
+                  onSuccess={handleCustomerUpdated}
                 />
               </TabsContent>
               
