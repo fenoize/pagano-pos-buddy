@@ -705,6 +705,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
     deleteCustomerPermanently,
     searchCustomers,
     exportCustomersCSV,
+    exportCustomersPDF,
     updateCustomerPassword
   };
 }
