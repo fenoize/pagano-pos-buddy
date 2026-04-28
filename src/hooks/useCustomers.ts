@@ -505,79 +505,134 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
     }
   }, [canViewCustomers, autoFetch]);
 
-  const exportCustomersCSV = async () => {
+  const fetchAllForExport = async (filters: CustomerFilters = {}): Promise<any[]> => {
+    const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
+    if (!token) throw new Error('No hay sesión activa');
+
+    const params = new URLSearchParams({
+      limit: '5000',
+      offset: '0',
+      includeTags: 'true',
+    });
+    if (filters.search) params.append('q', filters.search);
+    if (filters.estado) params.append('estado', filters.estado);
+    if (filters.hasRunas !== undefined) params.append('hasRunas', filters.hasRunas.toString());
+    if (filters.tagId) params.append('tagId', filters.tagId);
+
+    const response = await fetch(
+      `https://lxxfhayifyiioglfbsyj.supabase.co/functions/v1/staff-list-customers?${params}`,
+      { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
+    );
+    if (!response.ok) throw new Error(`Error ${response.status}: ${await response.text()}`);
+    const result = await response.json();
+    return result.data || [];
+  };
+
+  const escapeCSV = (val: any): string => {
+    const s = (val === null || val === undefined) ? '' : String(val);
+    if (/[",\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+
+  const exportCustomersCSV = async (filters: CustomerFilters = {}) => {
     if (!canViewCustomers) {
-      toast({
-        title: "Error",
-        description: "No tienes permisos para exportar clientes",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "No tienes permisos para exportar clientes", variant: "destructive" });
       return;
     }
-
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select(`
-          nombres,
-          apellidos,
-          email,
-          phone,
-          rut,
-          fecha_nacimiento,
-          estado_cliente,
-          valor_cliente,
-          cantidad_runas,
-          ultima_compra,
-          created_at
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Crear CSV content
-      const headers = ['Nombres', 'Apellidos', 'Email', 'Teléfono', 'RUT', 'Fecha Nacimiento', 'Estado', 'Valor Cliente', 'Runas', 'Última Compra', 'Fecha Registro'];
+      const data = await fetchAllForExport(filters);
+      const headers = ['Nombres', 'Apellidos', 'Email', 'Teléfono', 'RUT', 'Fecha Nacimiento', 'Estado', 'Valor Cliente', 'Runas', 'Etiquetas', 'Última Compra', 'Fecha Registro'];
       const csvContent = [
         headers.join(','),
-        ...data.map(customer => [
-          customer.nombres || '',
-          customer.apellidos || '',
-          customer.email || '',
-          customer.phone || '',
-          customer.rut || '',
-          customer.fecha_nacimiento || '',
-          customer.estado_cliente || '',
-          customer.valor_cliente || '0',
-          customer.cantidad_runas || '0',
-          customer.ultima_compra ? new Date(customer.ultima_compra).toLocaleDateString() : '',
-          customer.created_at ? new Date(customer.created_at).toLocaleDateString() : ''
-        ].join(','))
+        ...data.map((c: any) => [
+          c.nombres || c.name || '',
+          c.apellidos || c.apellido || '',
+          c.email || '',
+          c.phone || '',
+          c.rut || '',
+          c.fecha_nacimiento || '',
+          c.estado_cliente || '',
+          c.valor_cliente || '0',
+          c.cantidad_runas || '0',
+          (c.tags || []).map((t: any) => t.name).join(' | '),
+          c.ultima_compra ? new Date(c.ultima_compra).toLocaleDateString() : '',
+          c.created_at ? new Date(c.created_at).toLocaleDateString() : ''
+        ].map(escapeCSV).join(','))
       ].join('\n');
 
-      // Descargar archivo
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
-      if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `clientes_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `clientes_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-      toast({
-        title: "Éxito",
-        description: "Clientes exportados correctamente",
-      });
+      toast({ title: "Éxito", description: `${data.length} clientes exportados a CSV` });
     } catch (error) {
       console.error('Error exporting customers:', error);
-      toast({
-        title: "Error",
-        description: "Error al exportar clientes",
-        variant: "destructive"
+      toast({ title: "Error", description: "Error al exportar clientes", variant: "destructive" });
+    }
+  };
+
+  const exportCustomersPDF = async (filters: CustomerFilters = {}) => {
+    if (!canViewCustomers) {
+      toast({ title: "Error", description: "No tienes permisos para exportar clientes", variant: "destructive" });
+      return;
+    }
+    try {
+      const data = await fetchAllForExport(filters);
+      const { default: jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      const fechaStr = new Date().toLocaleDateString('es-CL');
+
+      doc.setFontSize(16);
+      doc.text('Detalle de Clientes', 40, 40);
+      doc.setFontSize(10);
+      doc.text(`Generado: ${fechaStr}`, 40, 58);
+      doc.text(`Total: ${data.length} clientes`, 40, 72);
+
+      const filterLabels: string[] = [];
+      if (filters.search) filterLabels.push(`Búsqueda: "${filters.search}"`);
+      if (filters.estado) filterLabels.push(`Estado: ${filters.estado}`);
+      if (filters.hasRunas !== undefined) filterLabels.push(`Runas: ${filters.hasRunas ? 'con' : 'sin'}`);
+      if (filters.tagId) filterLabels.push(`Etiqueta filtrada`);
+      if (filterLabels.length > 0) {
+        doc.text(`Filtros: ${filterLabels.join(' · ')}`, 40, 86);
+      }
+
+      autoTable(doc, {
+        startY: 100,
+        head: [['Nombre', 'Email', 'Teléfono', 'RUT', 'Estado', 'Runas', 'Valor', 'Etiquetas', 'Últ. Compra']],
+        body: data.map((c: any) => [
+          `${c.nombres || c.name || ''} ${c.apellidos || c.apellido || ''}`.trim(),
+          c.email || '-',
+          c.phone || '-',
+          c.rut || '-',
+          c.estado_cliente || '-',
+          new Intl.NumberFormat('es-CL').format(c.cantidad_runas || 0),
+          new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(c.valor_cliente || 0),
+          (c.tags || []).map((t: any) => t.name).join(', ') || '-',
+          c.ultima_compra ? new Date(c.ultima_compra).toLocaleDateString('es-CL') : '-',
+        ]),
+        styles: { fontSize: 8, cellPadding: 4 },
+        headStyles: { fillColor: [40, 40, 40] },
+        columnStyles: {
+          0: { cellWidth: 110 },
+          1: { cellWidth: 130 },
+          7: { cellWidth: 110 },
+        },
       });
+
+      doc.save(`clientes_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast({ title: "Éxito", description: `${data.length} clientes exportados a PDF` });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast({ title: "Error", description: "Error al exportar PDF", variant: "destructive" });
     }
   };
 
