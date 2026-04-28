@@ -70,9 +70,10 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
         usage_limit: alliance.usage_limit ? String(alliance.usage_limit) : '',
         once_per_customer: alliance.once_per_customer,
         internal_notes: alliance.internal_notes || '',
+        auto_tag_id: alliance.auto_tag_id || '__none__',
       });
     } else {
-      setForm({ name: '', type: 'empresa_aliada', slug: '', description: '', is_active: true, starts_at: '', ends_at: '', welcome_runas: 0, coupon_id: '__none__', free_delivery_first_order: false, free_delivery_addresses_text: '', usage_limit: '', once_per_customer: true, internal_notes: '' });
+      setForm({ name: '', type: 'empresa_aliada', slug: '', description: '', is_active: true, starts_at: '', ends_at: '', welcome_runas: 0, coupon_id: '__none__', free_delivery_first_order: false, free_delivery_addresses_text: '', usage_limit: '', once_per_customer: true, internal_notes: '', auto_tag_id: '__none__' });
     }
   }, [alliance, open]);
 
@@ -97,6 +98,7 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
         usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
         once_per_customer: form.once_per_customer,
         internal_notes: form.internal_notes.trim() || null,
+        auto_tag_id: form.auto_tag_id === '__none__' ? null : form.auto_tag_id,
       };
       await onSave(alliance ? { ...payload, id: alliance.id } : payload);
       onOpenChange(false);
