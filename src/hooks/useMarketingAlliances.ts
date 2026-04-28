@@ -22,6 +22,7 @@ export interface MarketingAlliance {
   usage_limit: number | null;
   once_per_customer: boolean;
   internal_notes: string | null;
+  auto_tag_id: string | null;
   created_at: string;
   updated_at: string;
 }
