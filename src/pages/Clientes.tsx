@@ -340,13 +340,16 @@ export default function Clientes() {
                   customers.map((customer) => (
                     <TableRow key={customer.id}>
                       <TableCell>
-                        <div>
+                        <div className="space-y-1">
                           <p className="font-medium">
                             {customer.nombres || customer.name} {customer.apellidos || customer.apellido}
                           </p>
                           {customer.rut && (
                             <p className="text-sm text-muted-foreground">{customer.rut}</p>
                           )}
+                          <div className="max-w-[260px]">
+                            <CustomerTagChips customerId={customer.id} size="sm" editable={false} />
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -357,11 +360,6 @@ export default function Clientes() {
                           {customer.phone && (
                             <p className="text-sm text-muted-foreground">{customer.phone}</p>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[220px]">
-                          <CustomerTagChips customerId={customer.id} size="sm" />
                         </div>
                       </TableCell>
                       <TableCell>
