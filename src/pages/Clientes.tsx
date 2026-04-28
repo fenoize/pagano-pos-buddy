@@ -150,25 +150,35 @@ export default function Clientes() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-end">
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={exportCustomersCSV}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </Button>
-          {canManageCustomers && (
-            <Button onClick={() => setIsNewCustomerModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Cliente
+      <Tabs defaultValue="lista" className="w-full">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <TabsList>
+            <TabsTrigger value="lista">Clientes</TabsTrigger>
+            <TabsTrigger value="etiquetas">Etiquetas</TabsTrigger>
+          </TabsList>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={exportCustomersCSV}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Exportar CSV
             </Button>
-          )}
+            {canManageCustomers && (
+              <Button onClick={() => setIsNewCustomerModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo Cliente
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+
+        <TabsContent value="etiquetas" className="mt-4">
+          <CustomerTagsManager />
+        </TabsContent>
+
+        <TabsContent value="lista" className="mt-4 space-y-6">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
