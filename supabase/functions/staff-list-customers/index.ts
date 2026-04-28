@@ -92,8 +92,33 @@ serve(async (req) => {
     const q = (url.searchParams.get("q") || "").trim();
     const estado = url.searchParams.get("estado") || undefined;
     const hasRunas = url.searchParams.get("hasRunas") || undefined;
-    const limit = Math.min(Number(url.searchParams.get("limit") || 50), 100);
+    const tagId = url.searchParams.get("tagId") || undefined;
+    const includeTags = url.searchParams.get("includeTags") === "true";
+    const limit = Math.min(Number(url.searchParams.get("limit") || 50), 5000);
     const offset = Math.max(Number(url.searchParams.get("offset") || 0), 0);
+
+    // Pre-filter by tag: get customer IDs assigned to that tag
+    let tagFilteredIds: string[] | null = null;
+    if (tagId) {
+      const { data: assigns, error: aErr } = await supabaseAdmin
+        .from("customer_tag_assignments")
+        .select("customer_id")
+        .eq("tag_id", tagId);
+      if (aErr) {
+        console.error('[DB] Tag filter error:', aErr);
+        return new Response(JSON.stringify({ error: "Database error" }), {
+          status: 500,
+          headers: { ...corsHeaders, "content-type": "application/json" }
+        });
+      }
+      tagFilteredIds = (assigns || []).map((a: any) => a.customer_id);
+      if (tagFilteredIds.length === 0) {
+        return new Response(JSON.stringify({ data: [], count: 0, limit, offset }), {
+          status: 200,
+          headers: { ...corsHeaders, "content-type": "application/json" },
+        });
+      }
+    }
 
     // 5. Si se proporciona ID, buscar directamente por ID (para escaneo QR)
     if (id) {
@@ -205,7 +230,27 @@ serve(async (req) => {
       query = query.eq("cantidad_runas", 0);
     }
 
+    if (tagFilteredIds) {
+      query = query.in("id", tagFilteredIds);
+    }
+
     const { data, count, error } = await query;
+
+    // Optionally hydrate tags for each customer
+    let dataWithTags: any = data;
+    if (includeTags && data && data.length > 0) {
+      const ids = data.map((c: any) => c.id);
+      const { data: tagAssigns } = await supabaseAdmin
+        .from("customer_tag_assignments")
+        .select("customer_id, tag:customer_tags(id, name, color)")
+        .in("customer_id", ids);
+      const byCustomer: Record<string, any[]> = {};
+      (tagAssigns || []).forEach((a: any) => {
+        if (!byCustomer[a.customer_id]) byCustomer[a.customer_id] = [];
+        if (a.tag) byCustomer[a.customer_id].push(a.tag);
+      });
+      dataWithTags = data.map((c: any) => ({ ...c, tags: byCustomer[c.id] || [] }));
+    }
 
     if (error) {
       console.error('[DB] Query error:', error);
@@ -218,7 +263,7 @@ serve(async (req) => {
     // 6. Log de auditoría
     console.log(`[AUDIT] User ${userId} accessed customers list (count: ${count}, filters: ${JSON.stringify({ q, estado, hasRunas })})`);
 
-    return new Response(JSON.stringify({ data, count, limit, offset }), {
+    return new Response(JSON.stringify({ data: dataWithTags, count, limit, offset }), {
       status: 200,
       headers: { ...corsHeaders, "content-type": "application/json" },
     });
