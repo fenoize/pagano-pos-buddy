@@ -12,14 +12,16 @@ import { useCart } from '@/contexts/CartContext';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { CouponApplication, Coupon } from '@/types';
+import { loadCartCoupon, saveCartCoupon } from '@/lib/cartCouponStorage';
 
 export default function CustomerCart() {
   const navigate = useNavigate();
   const { items, itemCount, subtotal, removeItem, updateQuantity, getItemTotal } = useCart();
   const { customer } = useCustomerAuth();
   const [canOrder, setCanOrder] = useState(true);
-  const [couponApplication, setCouponApplication] = useState<CouponApplication | null>(null);
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const stored = loadCartCoupon();
+  const [couponApplication, setCouponApplication] = useState<CouponApplication | null>(stored?.application ?? null);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(stored?.coupon ?? null);
 
   const couponDiscountProducts = couponApplication?.discount_products || 0;
   const totalAfterCoupon = Math.max(0, subtotal - couponDiscountProducts);
@@ -27,6 +29,7 @@ export default function CustomerCart() {
   const handleCouponApplied = (application: CouponApplication | null, coupon: Coupon | null) => {
     setCouponApplication(application);
     setAppliedCoupon(coupon);
+    saveCartCoupon(coupon, application);
   };
 
   if (items.length === 0) {
