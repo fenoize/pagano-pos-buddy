@@ -479,6 +479,8 @@ export default function Clientes() {
           </Button>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
 
       {/* New Customer Modal */}
       <Dialog open={isNewCustomerModalOpen} onOpenChange={setIsNewCustomerModalOpen}>
