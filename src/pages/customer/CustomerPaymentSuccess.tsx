@@ -8,6 +8,7 @@ import { Order } from '@/types';
 import { trackPromoConversion } from '@/hooks/usePromoAnalytics';
 import { getPendingAllianceFreeDeliveryBenefit, normalizeAllianceAddress, trackAlliancePurchase } from '@/lib/allianceAttribution';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
+import { clearCartCoupon } from '@/lib/cartCouponStorage';
 
 export default function CustomerPaymentSuccess() {
   const [searchParams] = useSearchParams();
