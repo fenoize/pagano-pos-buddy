@@ -1539,6 +1539,91 @@ export type Database = {
           },
         ]
       }
+      customer_tag_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          customer_id: string
+          id: string
+          source: string
+          source_ref_id: string | null
+          tag_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          customer_id: string
+          id?: string
+          source?: string
+          source_ref_id?: string | null
+          tag_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          customer_id?: string
+          id?: string
+          source?: string
+          source_ref_id?: string | null
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_tag_assignments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_levels"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_tag_assignments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "customer_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_tags: {
+        Row: {
+          auto_source: string
+          color: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          auto_source?: string
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          auto_source?: string
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           account_id: string | null
@@ -3654,6 +3739,7 @@ export type Database = {
       }
       marketing_alliances: {
         Row: {
+          auto_tag_id: string | null
           coupon_id: string | null
           created_at: string
           created_by: string | null
@@ -3674,6 +3760,7 @@ export type Database = {
           welcome_runas: number
         }
         Insert: {
+          auto_tag_id?: string | null
           coupon_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -3694,6 +3781,7 @@ export type Database = {
           welcome_runas?: number
         }
         Update: {
+          auto_tag_id?: string | null
           coupon_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -3714,6 +3802,13 @@ export type Database = {
           welcome_runas?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "marketing_alliances_auto_tag_id_fkey"
+            columns: ["auto_tag_id"]
+            isOneToOne: false
+            referencedRelation: "customer_tags"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "marketing_alliances_coupon_id_fkey"
             columns: ["coupon_id"]
@@ -7175,6 +7270,15 @@ export type Database = {
         }
         Returns: Json
       }
+      assign_customer_tag: {
+        Args: {
+          _customer_id: string
+          _source?: string
+          _source_ref_id?: string
+          _tag_id: string
+        }
+        Returns: string
+      }
       assign_orders_to_sessions: { Args: never; Returns: undefined }
       auth_jwt: { Args: never; Returns: Json }
       authenticate_customer: {
@@ -7705,7 +7809,20 @@ export type Database = {
       is_customer_owner: { Args: { p_customer_id: string }; Returns: boolean }
       is_delivery_courier: { Args: never; Returns: boolean }
       is_staff_admin: { Args: never; Returns: boolean }
+      is_staff_user: { Args: { _user_id: string }; Returns: boolean }
       is_user_admin: { Args: { p_user_id: string }; Returns: boolean }
+      list_customer_tags_with_counts: {
+        Args: never
+        Returns: {
+          auto_source: string
+          color: string
+          created_at: string
+          customer_count: number
+          description: string
+          id: string
+          name: string
+        }[]
+      }
       manage_loyalty_campaign:
         | {
             Args: {
@@ -7817,6 +7934,10 @@ export type Database = {
           p_phone?: string
         }
         Returns: Json
+      }
+      remove_customer_tag: {
+        Args: { _customer_id: string; _tag_id: string }
+        Returns: boolean
       }
       request_customer_password_reset: {
         Args: { p_email: string; p_ip_address?: unknown }
