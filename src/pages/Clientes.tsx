@@ -318,6 +318,7 @@ export default function Clientes() {
                 <TableRow>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Contacto</TableHead>
+                  <TableHead>Etiquetas</TableHead>
                   <TableHead>Runas</TableHead>
                   <TableHead>Valor Cliente</TableHead>
                   <TableHead>Estado</TableHead>
@@ -328,7 +329,7 @@ export default function Clientes() {
               <TableBody>
                 {customers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {searchTerm.length >= 3 || Object.keys(filters).some(key => filters[key as keyof CustomerFilters]) 
                         ? 'No se encontraron clientes con los filtros aplicados'
                         : 'No hay clientes registrados'}
