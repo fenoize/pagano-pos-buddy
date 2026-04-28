@@ -314,6 +314,36 @@ export default function Clientes() {
                 <SelectItem value="false">Sin Runas</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Tag Filter */}
+            <Select
+              value={filters.tagId || 'all'}
+              onValueChange={(value) => setFilters({...filters, tagId: value === 'all' ? undefined : value})}
+            >
+              <SelectTrigger className="w-[200px]">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4" />
+                  <SelectValue placeholder="Etiqueta" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las etiquetas</SelectItem>
+                {tags.map((tag) => (
+                  <SelectItem key={tag.id} value={tag.id}>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: tag.color }}
+                      />
+                      {tag.name}
+                      {typeof tag.customer_count === 'number' && (
+                        <span className="text-xs text-muted-foreground">({tag.customer_count})</span>
+                      )}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
