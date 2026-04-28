@@ -45,6 +45,7 @@ export default function Clientes() {
     loading,
     totalCount,
     canManageCustomers,
+    canViewCustomers,
     fetchCustomers,
     deleteCustomer,
     deleteCustomerPermanently,
