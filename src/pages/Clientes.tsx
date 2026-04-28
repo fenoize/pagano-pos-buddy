@@ -359,6 +359,11 @@ export default function Clientes() {
                         </div>
                       </TableCell>
                       <TableCell>
+                        <div className="max-w-[220px]">
+                          <CustomerTagChips customerId={customer.id} size="sm" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <div className="text-center">
                           <p className="font-medium">{formatRunas(customer.cantidad_runas || 0)}</p>
                           <p className="text-xs text-muted-foreground">runas</p>
