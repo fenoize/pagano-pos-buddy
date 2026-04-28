@@ -51,8 +51,11 @@ export default function Clientes() {
     deleteCustomer,
     deleteCustomerPermanently,
     updateCustomerInList,
-    exportCustomersCSV
+    exportCustomersCSV,
+    exportCustomersPDF
   } = useCustomers({ autoFetch: false });
+
+  const { tags } = useCustomerTags();
 
   const { runaRedemptionValue } = useRunasConfig();
 
