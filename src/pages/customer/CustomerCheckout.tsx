@@ -27,6 +27,7 @@ import { getPendingAllianceFreeDeliveryBenefit, normalizeAllianceAddress, trackA
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 import { Coupon, CouponApplication } from '@/types';
+import { loadCartCoupon, saveCartCoupon, clearCartCoupon } from '@/lib/cartCouponStorage';
 
 interface CustomerAddress {
   id: string;
@@ -58,8 +59,11 @@ export default function CustomerCheckout() {
   const [runasToUse, setRunasToUse] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [processingRunas, setProcessingRunas] = useState(false);
-  const [couponApplication, setCouponApplication] = useState<CouponApplication | null>(null);
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const initialStoredCoupon = (() => {
+    try { return loadCartCoupon(); } catch { return null; }
+  })();
+  const [couponApplication, setCouponApplication] = useState<CouponApplication | null>(initialStoredCoupon?.application ?? null);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(initialStoredCoupon?.coupon ?? null);
   const [fulfillmentType, setFulfillmentType] = useState<'retiro' | 'delivery'>('retiro');
   const [customerAddresses, setCustomerAddresses] = useState<CustomerAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -219,6 +223,7 @@ export default function CustomerCheckout() {
   const handleCouponApplied = (application: CouponApplication | null, coupon: Coupon | null) => {
     setCouponApplication(application);
     setAppliedCoupon(coupon);
+    saveCartCoupon(coupon, application);
   };
 
   const handlePayment = async () => {
@@ -319,6 +324,7 @@ export default function CustomerCheckout() {
           }
           await trackAlliancePurchase(customer.id, result.order_id, total, { payment_method: 'runas', alliance_free_delivery_applied: allianceFreeDeliveryApplies, delivery_address: deliveryAddress || null });
           clearCart();
+          clearCartCoupon();
           toast.success('¡Pedido confirmado exitosamente!');
           navigate(`/order-success?order=${result.order_number}`);
         }
