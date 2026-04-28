@@ -519,9 +519,13 @@ export default function Clientes() {
               </TabsList>
               
               <TabsContent value="datos" className="space-y-4">
-                <CustomerForm 
-                  customer={selectedCustomer} 
-                  onSuccess={handleCustomerUpdated} 
+                <div className="rounded-lg border p-4 space-y-2">
+                  <p className="text-sm font-medium">Etiquetas</p>
+                  <CustomerTagChips customerId={selectedCustomer.id} />
+                </div>
+                <CustomerForm
+                  customer={selectedCustomer}
+                  onSuccess={handleCustomerUpdated}
                 />
               </TabsContent>
               
