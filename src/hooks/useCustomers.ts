@@ -88,6 +88,9 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       if (filters.hasRunas !== undefined) {
         params.append('hasRunas', filters.hasRunas.toString());
       }
+      if (filters.tagId) {
+        params.append('tagId', filters.tagId);
+      }
 
       // 3. Llamar Edge Function
       const response = await fetch(
