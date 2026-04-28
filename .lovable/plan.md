@@ -1,349 +1,100 @@
-
-# Plan: nuevo módulo Marketing → Alianzas
-
-## Objetivo
-
-Crear un módulo nuevo llamado **Alianzas** dentro de **Marketing**, pensado para campañas con embajadores, empresas y aliados.
-
-El flujo será:
-
-```text
-Poster / QR en oficina aliada
-→ Cliente escanea URL exclusiva
-→ Se registra en la app cliente
-→ Recibe beneficios configurados
-→ Compra
-→ El módulo mide lecturas, registros, compras e ingresos
-```
-
----
-
-## 1. Nuevo módulo en Marketing
-
-Agregaré una nueva opción en el menú lateral:
-
-```text
-Marketing
-├─ Promos App
-├─ Alianzas
-├─ Notificaciones
-└─ Contenido TV
-```
-
-Ruta interna:
-
-```text
-/pos/marketing/alianzas
-```
-
-Solo visible para **Administrador**.
-
----
-
-## 2. Gestión de campañas de alianza
-
-En el módulo **Alianzas** se podrá crear y administrar campañas como:
-
-```text
-Empresa: WeWork Providencia
-Tipo: Empresa aliada
-URL: https://app.paganosburger.cl/a/wework-providencia
-Estado: Activa
-Vigencia: abril 2026
-Beneficios:
-- 20 runas al registrarse
-- Cupón 15% primera compra
-- Delivery gratis primera compra
-```
-
-Campos principales:
-
-- Nombre de la alianza.
-- Tipo:
-  - Empresa aliada
-  - Embajador
-  - Convenio
-  - Otro
-- Slug público para la URL.
-- Vigencia.
-- Estado activo/inactivo.
-- Notas internas.
-- Beneficios configurables:
-  - Runas de bienvenida.
-  - Cupón asociado.
-  - Delivery gratis primera compra.
-  - Límite de usos.
-  - Una vez por cliente.
-
----
-
-## 3. URL pública y QR
-
-Cada alianza tendrá una URL exclusiva:
-
-```text
-https://app.paganosburger.cl/a/{slug}
-```
-
-Ejemplo:
-
-```text
-https://app.paganosburger.cl/a/wework-providencia
-```
-
-Al entrar a esa URL:
-
-1. Se registra una **lectura del QR / visita**.
-2. Se guarda la alianza temporalmente en el navegador.
-3. Se lleva al cliente a crear cuenta.
-4. Si ya tiene cuenta, se conserva la atribución para su próxima compra.
-
-También agregaré en el módulo:
-
-- Botón **Copiar URL**.
-- Botón/área para mostrar el **QR** de la campaña.
-- Texto sugerido para imprimir en poster.
-
----
-
-## 4. Registro de eventos y atribución
-
-Crearé estructura de datos para medir el embudo completo:
-
-```text
-Lectura QR
-→ Registro
-→ Compra
-```
-
-Se guardarán eventos como:
-
-- `view`: alguien abrió la URL.
-- `signup`: alguien creó cuenta desde esa URL.
-- `reward_granted`: se entregaron beneficios.
-- `purchase`: el cliente realizó una compra atribuida.
-- `reward_redeemed`: se usó cupón, delivery gratis o beneficio.
-
-Además, quedará una atribución por cliente:
-
-```text
-Cliente Diego → vino desde WeWork Providencia
-```
-
-Esto permitirá saber:
-
-- Cuántos clientes trajo cada aliado.
-- Quiénes se registraron.
-- Quiénes compraron.
-- Qué compra fue la primera.
-- Cuánto ingreso generó la alianza.
-
----
-
-## 5. Beneficios configurables
-
-### Runas al registrarse
-
-Si la campaña tiene runas configuradas, al completar el registro se insertará una transacción de runas:
-
-```text
-Tipo: promo
-Origen: Web
-Motivo: Alianza: WeWork Providencia
-```
-
-### Cupón primera compra
-
-La alianza podrá asociarse a un cupón existente o crear uno desde el flujo.
-
-El cupón se mostrará/cargará automáticamente en checkout cuando el cliente venga desde esa alianza.
-
-### Delivery gratis primera compra
-
-Implementaré delivery gratis como beneficio de alianza de un solo uso.
-
-En checkout, si el cliente tiene ese beneficio pendiente:
-
-```text
-Delivery: $2.500
-Beneficio alianza: -$2.500
-Delivery final: $0
-```
-
-Después de usarlo, quedará marcado como aplicado para evitar reutilización.
-
----
-
-## 6. Integración con registro de cliente
-
-Actualizaré el flujo de `/login` para soportar campañas:
-
-```text
-/a/wework-providencia
-→ /login?mode=signup&ally=wework-providencia
-```
-
-Cambios:
-
-- Abrir automáticamente la pestaña **Registrarse**.
-- Mostrar una tarjeta contextual, por ejemplo:
-  ```text
-  Beneficio exclusivo WeWork Providencia
-  Crea tu cuenta y recibe tus beneficios para tu primera compra.
-  ```
-- Al crear la cuenta, registrar el evento `signup`.
-- Entregar los beneficios configurados.
-
-También consideraré registro con Google si está habilitado, conservando el mismo código de alianza.
-
----
-
-## 7. Integración con compra
-
-Actualizaré los flujos de compra de la app cliente para registrar conversión.
-
-Se considerará compra atribuida cuando el cliente tenga una alianza asociada y cree/pague un pedido.
-
-Puntos de integración:
-
-- Checkout normal con MercadoPago.
-- Compra pagada con runas.
-- Confirmación de pago MercadoPago.
-- Pedidos asociados al cliente desde POS, si corresponde.
-
-Se registrará:
-
-```text
-Cliente
-Pedido
-Alianza
-Fecha
-Total
-Descuento usado
-Delivery gratis usado
-Cupón usado
-```
-
----
-
-## 8. Dashboard de KPIs
-
-El módulo **Alianzas** tendrá una vista de indicadores por campaña.
-
-KPIs principales:
-
-```text
-Lecturas QR
-Registros
-Compras
-Tasa registro / lectura
-Tasa compra / registro
-Ingresos generados
-Ticket promedio
-Runas entregadas
-Descuentos entregados
-Delivery gratis usados
-```
-
-También tendrá filtro mensual:
-
-```text
-Este mes
-Mes anterior
-Rango personalizado
-```
-
-Y tabla por aliado:
-
-| Alianza | Lecturas | Registros | Compras | Conversión | Ingresos |
-|---|---:|---:|---:|---:|---:|
-| WeWork Providencia | 120 | 34 | 11 | 32.4% | $185.900 |
-| Embajador Diego | 90 | 22 | 8 | 36.3% | $121.500 |
-
----
-
-## 9. Vista de detalle por alianza
-
-Al abrir una alianza se verá:
-
-- Datos generales.
-- URL y QR.
-- Beneficios configurados.
-- KPIs del periodo.
-- Clientes registrados.
-- Clientes que compraron.
-- Pedidos atribuidos.
-- Historial de eventos.
-
-Ejemplo:
-
-```text
-Cliente              Evento       Fecha          Pedido      Total
-Diego Pérez          Registro     22/04 10:31   —           —
-Diego Pérez          Compra       22/04 13:04   #1542       $18.900
-Camila Soto          Lectura      22/04 15:20   —           —
-```
-
----
-
-## 10. Cambios técnicos
-
-### Base de datos
-
-Crearé tablas nuevas para:
-
-- Campañas de alianza.
-- Eventos de alianza.
-- Atribución cliente ↔ alianza.
-- Beneficios pendientes/aplicados.
-
-También agregaré índices para consultas mensuales y por campaña.
-
-### Seguridad
-
-- La gestión de alianzas será solo para administradores.
-- La URL pública solo podrá registrar eventos seguros como lectura.
-- La entrega de beneficios se hará mediante RPC `SECURITY DEFINER`, no confiando en datos manipulables del navegador.
-- La compra se atribuirá usando el `customer_id` real del pedido.
-
-### Frontend
-
-Agregaré:
-
-- Página `MarketingAlianzas`.
-- Hook `useMarketingAlliances`.
-- Modal/formulario de alianza.
-- Página pública `/a/:slug`.
-- Integración con `CustomerLogin`.
-- Integración con checkout para beneficios automáticos.
-- Integración con confirmación de pedido/pago para conversión.
-
----
-
-## 11. Validación final
-
-Validaré el flujo completo:
-
-```text
-1. Crear alianza desde Marketing → Alianzas
-2. Copiar URL o abrir QR
-3. Entrar a /a/{slug}
-4. Ver que se registra lectura
-5. Crear cuenta nueva
-6. Ver que se registra signup
-7. Ver que se entregan beneficios
-8. Hacer primera compra
-9. Ver que se registra purchase
-10. Confirmar KPIs mensuales en dashboard
-```
-
-Resultado esperado:
-
-```text
-Alianza activa
-→ QR medible
-→ Registro atribuido
-→ Beneficios automáticos
-→ Compra atribuida
-→ KPIs mensuales por aliado/embajador
-```
+# Sistema de Etiquetas (Tags) para Clientes
+
+Permite categorizar clientes con etiquetas reutilizables (ej. "Crossfit La Reina", "Influencer", "VIP") con auto-asignación desde Alianzas y gestión manual desde el panel admin.
+
+## Arquitectura de datos
+
+Dos nuevas tablas en `public`:
+
+**`customer_tags`** — catálogo maestro de etiquetas
+- `id` uuid PK
+- `name` text unique (case-insensitive)
+- `color` text (hex, para chips)
+- `description` text
+- `auto_source` text (`'manual' | 'alliance' | 'campaign'`)
+- `created_at`, `created_by`
+
+**`customer_tag_assignments`** — relación N:N cliente↔etiqueta
+- `id` uuid PK
+- `customer_id` uuid → customers
+- `tag_id` uuid → customer_tags
+- `source` text (`'manual' | 'alliance' | 'campaign' | 'import'`)
+- `source_ref_id` uuid (alliance_id u otro origen)
+- `assigned_by` uuid (staff)
+- `assigned_at` timestamptz
+- UNIQUE(customer_id, tag_id)
+
+**Vínculo en alianzas**: agregar a `marketing_alliances` la columna `auto_tag_id uuid` (nullable, FK a `customer_tags`). Cuando un cliente se atribuye a la alianza (al firmar/comprar), se le asigna automáticamente esa etiqueta.
+
+RLS: lectura/escritura para staff autenticado vía `withStaffContext` / función `has_role`. Customers no acceden directamente.
+
+## Backend (Supabase)
+
+1. Migración con las 2 tablas + columna `auto_tag_id` + índices.
+2. RPC `assign_customer_tag(_customer_id, _tag_id, _source, _source_ref_id)` (SECURITY DEFINER) — idempotente.
+3. RPC `remove_customer_tag(_customer_id, _tag_id)`.
+4. Modificar las RPC existentes `claim_marketing_alliance_signup` y `track_marketing_alliance_purchase` para que, si la alianza tiene `auto_tag_id`, llamen a `assign_customer_tag` con `source='alliance'` y `source_ref_id=alliance_id`.
+5. RPC `list_customer_tags_with_counts()` para listado admin con conteo de clientes.
+
+## Frontend
+
+### Gestión de catálogo de etiquetas
+Nueva página **`/pos/clientes/etiquetas`** (o tab dentro de Clientes):
+- Tabla con: nombre, color, descripción, # clientes asignados, origen.
+- Botones acción `h-9 w-9` (estándar admin): editar, eliminar.
+- Modal "Nueva etiqueta" con nombre, color (color picker), descripción.
+
+### Gestión por cliente
+En el modal/detalle de cliente (componente existente en `src/components/clientes/`):
+- Nueva sección **"Etiquetas"** con chips coloreados.
+- Botón `+` abre popover con buscador/selector multi-select de etiquetas existentes + opción "Crear nueva".
+- Cada chip tiene `x` para quitar (con confirmación si `source != 'manual'`).
+- Mostrar tooltip con origen ("Asignada por alianza Crossfit La Reina").
+
+### Listado de clientes
+- Agregar columna/filtro **"Etiquetas"** en `Clientes.tsx`.
+- Filtro multi-select por etiquetas (AND/OR).
+- Mostrar chips coloreados en cada fila.
+
+### Formulario de Alianza
+En `AllianceFormModal.tsx`:
+- Nuevo campo **"Etiqueta automática"** (Select de tags + botón "Crear"). 
+- Al guardar, persiste `auto_tag_id`.
+- Al landing page (`AllianceLanding.tsx`) mostrar opcionalmente "Serás identificado como [tag]".
+
+### Hooks
+- `useCustomerTags()` — CRUD del catálogo (React Query).
+- `useCustomerTagAssignments(customerId)` — etiquetas del cliente + mutaciones assign/remove.
+- Extender `useCustomers` para incluir tags (join) y permitir filtro.
+
+## Integración con campañas/mailings (preparación)
+
+El sistema de campañas (`useLoyaltyCampaigns`, `campaignEvaluator.ts`) y push (`MarketingNotifications`) podrá filtrar audiencia por `tag_id` en una iteración futura. Esta entrega deja la base lista (estructura + asignación), sin modificar aún los selectores de audiencia.
+
+## Archivos a crear / modificar
+
+**Nuevos**
+- `supabase/migrations/<timestamp>_customer_tags.sql`
+- `src/hooks/useCustomerTags.ts`
+- `src/hooks/useCustomerTagAssignments.ts`
+- `src/components/clientes/CustomerTagsManager.tsx` (catálogo)
+- `src/components/clientes/CustomerTagChips.tsx` (chips + selector reutilizable)
+- `src/pages/CustomerTags.tsx` (página de gestión, o tab en Clientes)
+
+**Modificados**
+- `src/pages/Clientes.tsx` — columna + filtro por tags
+- `src/components/clientes/` (modal de detalle de cliente) — sección etiquetas
+- `src/components/marketing/AllianceFormModal.tsx` — campo auto_tag_id
+- `src/hooks/useMarketingAlliances.ts` — incluir auto_tag_id
+- `src/lib/allianceAttribution.ts` — RPC ya disparará el tag desde backend, no requiere cambios
+- `src/pages/customer/AllianceLanding.tsx` — opcional, mostrar tag
+- `src/integrations/supabase/types.ts` — autogenerado
+
+## Aceptación
+
+1. Puedo crear la etiqueta "Crossfit La Reina" desde gestión de etiquetas.
+2. En la alianza "Crossfit La Reina", la asocio como etiqueta automática.
+3. Un cliente que se registra desde el landing de esa alianza recibe automáticamente la etiqueta.
+4. Desde el detalle de cualquier cliente puedo agregar/quitar/editar etiquetas manualmente.
+5. En el listado de clientes puedo filtrar por una o más etiquetas.
+6. Las etiquetas se ven como chips coloreados consistentes en todo el sistema.
