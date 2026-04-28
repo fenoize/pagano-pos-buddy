@@ -65,12 +65,13 @@ export default function Clientes() {
 
   // Auto-fetch when filters change, debounced while typing search terms
   useEffect(() => {
+    if (!canViewCustomers) return;
     const timeoutId = window.setTimeout(() => {
       fetchCustomers(getActiveFilters(), currentPage, pageSize);
     }, searchTerm.trim().length > 0 ? 400 : 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [searchTerm, filters, currentPage, pageSize]);
+  }, [searchTerm, filters, currentPage, pageSize, canViewCustomers]);
 
   useEffect(() => {
     setCurrentPage(0);
