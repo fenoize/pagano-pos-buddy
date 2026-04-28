@@ -320,7 +320,6 @@ export default function Clientes() {
                 <TableRow>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Contacto</TableHead>
-                  <TableHead>Etiquetas</TableHead>
                   <TableHead>Runas</TableHead>
                   <TableHead>Valor Cliente</TableHead>
                   <TableHead>Estado</TableHead>
