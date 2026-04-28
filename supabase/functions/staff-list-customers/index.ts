@@ -230,7 +230,27 @@ serve(async (req) => {
       query = query.eq("cantidad_runas", 0);
     }
 
+    if (tagFilteredIds) {
+      query = query.in("id", tagFilteredIds);
+    }
+
     const { data, count, error } = await query;
+
+    // Optionally hydrate tags for each customer
+    let dataWithTags: any = data;
+    if (includeTags && data && data.length > 0) {
+      const ids = data.map((c: any) => c.id);
+      const { data: tagAssigns } = await supabaseAdmin
+        .from("customer_tag_assignments")
+        .select("customer_id, tag:customer_tags(id, name, color)")
+        .in("customer_id", ids);
+      const byCustomer: Record<string, any[]> = {};
+      (tagAssigns || []).forEach((a: any) => {
+        if (!byCustomer[a.customer_id]) byCustomer[a.customer_id] = [];
+        if (a.tag) byCustomer[a.customer_id].push(a.tag);
+      });
+      dataWithTags = data.map((c: any) => ({ ...c, tags: byCustomer[c.id] || [] }));
+    }
 
     if (error) {
       console.error('[DB] Query error:', error);
