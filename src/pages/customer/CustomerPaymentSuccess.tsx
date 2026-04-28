@@ -19,6 +19,7 @@ export default function CustomerPaymentSuccess() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    clearCartCoupon();
     if (orderId) {
       fetchOrder();
     }
