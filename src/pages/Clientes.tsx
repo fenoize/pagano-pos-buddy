@@ -23,6 +23,8 @@ import CustomerOrders from '@/components/clientes/CustomerOrders';
 import CustomerLevelsBadges from '@/components/clientes/CustomerLevelsBadges';
 import DeleteCustomerModal from '@/components/clientes/DeleteCustomerModal';
 import { CustomerAuthManagementModal } from '@/components/clientes/CustomerAuthManagementModal';
+import CustomerTagChips from '@/components/clientes/CustomerTagChips';
+import CustomerTagsManager from '@/components/clientes/CustomerTagsManager';
 
 export default function Clientes() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
