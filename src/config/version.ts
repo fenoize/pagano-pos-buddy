@@ -3,12 +3,29 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.4.0";
- export const APP_BUILD_DATE = "2026-03-28";
+ export const APP_VERSION = "1.5.0";
+ export const APP_BUILD_DATE = "2026-04-28";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.5.0",
+     date: "2026-04-28",
+     changes: [
+       "Nuevo sistema de Etiquetas de Clientes: permite categorizar usuarios manualmente o automáticamente",
+       "Asignación automática de etiquetas a clientes registrados desde Alianzas de Marketing",
+       "Nueva pestaña 'Etiquetas' en el módulo de Clientes para gestión del catálogo (crear, editar, eliminar, color)",
+       "Chips de etiquetas visibles en la tabla y detalle de cada cliente, con búsqueda y creación al vuelo",
+       "Selector de 'Etiqueta automática' en la configuración de Alianzas de Marketing",
+       "Tooltip con el origen de cada etiqueta (manual o por alianza) en el detalle del cliente",
+       "Personalización de productos en la app del cliente: imagen 1:1, selección de proteína primero",
+       "Visualización del precio de cada proteína en la personalización (incluyendo $0)",
+       "Corrección: la lista de clientes ahora carga correctamente al ingresar al módulo (sin requerir filtro)",
+       "Corrección: creación de etiquetas funcionando con políticas RLS de staff",
+       "Mejoras de estabilidad y correcciones menores"
+     ]
+   },
    {
      version: "1.4.0",
      date: "2026-03-28",
