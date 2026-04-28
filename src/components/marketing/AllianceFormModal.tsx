@@ -34,6 +34,7 @@ const formatCouponBenefit = (coupon: AllianceCouponOption) => {
 
 export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], isLoadingCoupons = false, onSave }: AllianceFormModalProps) {
   const [saving, setSaving] = useState(false);
+  const { tags, createTag } = useCustomerTags();
   const [form, setForm] = useState({
     name: '',
     type: 'empresa_aliada',
@@ -49,6 +50,7 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
     usage_limit: '',
     once_per_customer: true,
     internal_notes: '',
+    auto_tag_id: '__none__',
   });
 
   useEffect(() => {
