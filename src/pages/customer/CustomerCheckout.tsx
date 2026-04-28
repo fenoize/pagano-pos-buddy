@@ -27,6 +27,7 @@ import { getPendingAllianceFreeDeliveryBenefit, normalizeAllianceAddress, trackA
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 import { Coupon, CouponApplication } from '@/types';
+import { loadCartCoupon, saveCartCoupon, clearCartCoupon } from '@/lib/cartCouponStorage';
 
 interface CustomerAddress {
   id: string;
