@@ -263,7 +263,7 @@ serve(async (req) => {
     // 6. Log de auditoría
     console.log(`[AUDIT] User ${userId} accessed customers list (count: ${count}, filters: ${JSON.stringify({ q, estado, hasRunas })})`);
 
-    return new Response(JSON.stringify({ data, count, limit, offset }), {
+    return new Response(JSON.stringify({ data: dataWithTags, count, limit, offset }), {
       status: 200,
       headers: { ...corsHeaders, "content-type": "application/json" },
     });
