@@ -183,6 +183,38 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
               />
               <p className="text-xs text-muted-foreground">Una dirección por línea. Debe coincidir con la dirección guardada por el cliente.</p>
             </div>
+            <div className="space-y-2 pt-2 border-t">
+              <Label>Etiqueta automática del cliente</Label>
+              <div className="flex gap-2">
+                <Select value={form.auto_tag_id} onValueChange={(value) => setForm(prev => ({ ...prev, auto_tag_id: value }))}>
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Sin etiqueta" /></SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="__none__">Sin etiqueta</SelectItem>
+                    {tags.map((tag) => (
+                      <SelectItem key={tag.id} value={tag.id}>
+                        <span className="inline-flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: tag.color }} />
+                          {tag.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    const name = window.prompt('Nombre de la nueva etiqueta:');
+                    if (!name?.trim()) return;
+                    const newTag = await createTag({ name: name.trim(), color: '#6366f1', description: null });
+                    if (newTag) setForm(prev => ({ ...prev, auto_tag_id: (newTag as any).id }));
+                  }}
+                >
+                  Nueva
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Los clientes que se registren por esta alianza recibirán esta etiqueta automáticamente.</p>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
