@@ -172,8 +172,45 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
             }
           }
 
+          // Validaciones específicas para transferencias
+          if (movementType === 'transferencia') {
+            if (!transferFromId || !transferToId) {
+              toast({
+                title: "Error",
+                description: "Selecciona la cuenta origen y la cuenta destino.",
+                variant: "destructive"
+              });
+              setLoading(false);
+              return;
+            }
+            if (transferFromId === transferToId) {
+              toast({
+                title: "Error",
+                description: "La cuenta origen y la cuenta destino deben ser distintas.",
+                variant: "destructive"
+              });
+              setLoading(false);
+              return;
+            }
+
+            await registerAccountTransfer(
+              transferFromId,
+              transferToId,
+              amountValue,
+              note.trim()
+            );
+
+            const fromName = transferAccounts.find(a => a.id === transferFromId)?.name || 'origen';
+            const toName = transferAccounts.find(a => a.id === transferToId)?.name || 'destino';
+            toast({
+              title: "Transferencia registrada",
+              description: `${formatCurrency(amountValue)} de ${fromName} → ${toName}.`
+            });
+            break;
+          }
+
           await addCashMovement(
-            movementType,
+            movementType as 'ingreso' | 'egreso',
             amountValue,
             note.trim(),
             movementType === 'egreso' ? selectedCategory : undefined,
