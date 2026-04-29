@@ -19,7 +19,12 @@ serve(async (req) => {
     );
     
     const body = await req.json();
-    const { items, customer_id, notes, fulfillment, delivery_address, delivery_fee, delivery_zone_id, delivery_zone_name, delivery_lat, delivery_lng } = body;
+    const { 
+      items, customer_id, notes, fulfillment, 
+      delivery_address, delivery_fee, delivery_zone_id, delivery_zone_name, delivery_lat, delivery_lng,
+      coupon_id, coupon_code,
+      subscription_discount_amount, subscription_delivery_discount, alliance_delivery_discount
+    } = body;
     
     if (!items || !Array.isArray(items) || items.length === 0) {
       throw new Error('Items are required');
