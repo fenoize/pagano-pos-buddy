@@ -485,6 +485,50 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
             </>
           )}
 
+          {/* Campos para transferencia entre cuentas */}
+          {type === 'movement' && movementType === 'transferencia' && (
+            <>
+              <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+                Mueve dinero entre cuentas (ej: Caja Chica ↔ Caja Grande, Caja → Banco). 
+                Si la cuenta involucrada es de tipo Efectivo, el monto esperado al cierre del turno se ajustará automáticamente.
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cuenta origen <span className="text-destructive">*</span></Label>
+                <Select value={transferFromId} onValueChange={setTransferFromId} required>
+                  <SelectTrigger className={!transferFromId ? "border-destructive/50" : ""}>
+                    <SelectValue placeholder="Desde qué cuenta sale el dinero" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {transferAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.name} ({acc.type})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cuenta destino <span className="text-destructive">*</span></Label>
+                <Select value={transferToId} onValueChange={setTransferToId} required>
+                  <SelectTrigger className={!transferToId ? "border-destructive/50" : ""}>
+                    <SelectValue placeholder="A qué cuenta entra el dinero" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {transferAccounts
+                      .filter(acc => acc.id !== transferFromId)
+                      .map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.name} ({acc.type})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+
           {(type === 'movement' || type === 'close') && (
             <div className="space-y-2">
               <Label htmlFor="note">
