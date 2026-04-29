@@ -99,7 +99,7 @@ export default function CustomerPaymentFailure() {
               Pago No Completado
             </h1>
             <p className="text-muted-foreground">
-              No pudimos procesar tu pago. Tu pedido está reservado y puedes intentar nuevamente.
+              No pudimos procesar tu pago. El pedido fue cancelado, pero puedes generar uno nuevo con los mismos productos.
             </p>
           </div>
 
@@ -110,15 +110,15 @@ export default function CustomerPaymentFailure() {
                 <span className="font-semibold">#{order.order_number}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total a pagar:</span>
+                <span className="text-muted-foreground">Total:</span>
                 <span className="font-semibold">
                   ${order.total.toLocaleString('es-CL')}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Estado:</span>
-                <span className="font-semibold text-warning">
-                  Esperando pago
+                <span className="font-semibold text-destructive">
+                  Cancelado
                 </span>
               </div>
             </div>
