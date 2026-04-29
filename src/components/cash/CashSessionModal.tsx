@@ -81,6 +81,8 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
       setAcceptAppOrders(true);
       setSelectedCategory('');
       setSelectedAccountId('');
+      setTransferFromId('');
+      setTransferToId('');
       setAcknowledgedPendingPayments(false);
       
     }
