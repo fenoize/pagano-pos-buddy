@@ -37,7 +37,7 @@ serve(async (req) => {
     // Validar que el customer existe y está activo
     const { data: customer, error: customerError } = await supabase
       .from('customers')
-      .select('id, name, email, estado_cliente')
+      .select('id, name, apellido, nombres, apellidos, email, estado_cliente')
       .eq('id', customer_id)
       .single();
     
