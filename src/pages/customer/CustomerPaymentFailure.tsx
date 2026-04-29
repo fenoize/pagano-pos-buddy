@@ -33,6 +33,21 @@ export default function CustomerPaymentFailure() {
         .single();
 
       if (error) throw error;
+
+      // Auto-cancelar si la orden sigue en PendientePago (pago fallido/abandonado)
+      if (data.status === 'PendientePago') {
+        const { error: cancelError } = await supabase
+          .from('orders')
+          .update({
+            status: 'Cancelado',
+            notes: `${data.notes || ''}\n\n❌ Pago no completado en MercadoPago - cancelado automáticamente`.trim()
+          })
+          .eq('id', orderId)
+          .eq('status', 'PendientePago');
+        if (cancelError) console.error('Error auto-cancelling order:', cancelError);
+        data.status = 'Cancelado';
+      }
+
       setOrder({
         ...data,
         items: data.items as any
