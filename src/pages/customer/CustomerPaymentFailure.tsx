@@ -33,6 +33,21 @@ export default function CustomerPaymentFailure() {
         .single();
 
       if (error) throw error;
+
+      // Auto-cancelar si la orden sigue en PendientePago (pago fallido/abandonado)
+      if (data.status === 'PendientePago') {
+        const { error: cancelError } = await supabase
+          .from('orders')
+          .update({
+            status: 'Cancelado',
+            notes: `${data.notes || ''}\n\n❌ Pago no completado en MercadoPago - cancelado automáticamente`.trim()
+          })
+          .eq('id', orderId)
+          .eq('status', 'PendientePago');
+        if (cancelError) console.error('Error auto-cancelling order:', cancelError);
+        data.status = 'Cancelado';
+      }
+
       setOrder({
         ...data,
         items: data.items as any
@@ -84,7 +99,7 @@ export default function CustomerPaymentFailure() {
               Pago No Completado
             </h1>
             <p className="text-muted-foreground">
-              No pudimos procesar tu pago. Tu pedido está reservado y puedes intentar nuevamente.
+              No pudimos procesar tu pago. El pedido fue cancelado, pero puedes generar uno nuevo con los mismos productos.
             </p>
           </div>
 
@@ -95,15 +110,15 @@ export default function CustomerPaymentFailure() {
                 <span className="font-semibold">#{order.order_number}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total a pagar:</span>
+                <span className="text-muted-foreground">Total:</span>
                 <span className="font-semibold">
                   ${order.total.toLocaleString('es-CL')}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Estado:</span>
-                <span className="font-semibold text-warning">
-                  Esperando pago
+                <span className="font-semibold text-destructive">
+                  Cancelado
                 </span>
               </div>
             </div>
