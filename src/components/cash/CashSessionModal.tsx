@@ -48,24 +48,29 @@ const EXPENSE_CATEGORIES = [
 export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: CashSessionModalProps) {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
-  const [movementType, setMovementType] = useState<'ingreso' | 'egreso'>('ingreso');
+  const [movementType, setMovementType] = useState<'ingreso' | 'egreso' | 'transferencia'>('ingreso');
   const [acceptAppOrders, setAcceptAppOrders] = useState(true);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [transferFromId, setTransferFromId] = useState('');
+  const [transferToId, setTransferToId] = useState('');
   const [acknowledgedPendingPayments, setAcknowledgedPendingPayments] = useState(false);
   
   
-  const { openSession, closeSession, addCashMovement } = useCashSession();
+  const { openSession, closeSession, addCashMovement, registerAccountTransfer } = useCashSession();
   const { accounts } = useFinanceAccounts();
   const { pendingByPerson, loading: pendingLoading } = useDeliveryCashPending();
   const { count: pendingPaymentsCount, totalAmount: pendingPaymentsTotal, inheritedOrders } = usePendingPaymentOrders();
   const { toast } = useToast();
 
-  // Filtrar cuentas activas tipo efectivo/caja
+  // Filtrar cuentas activas tipo efectivo/caja para egresos
   const cashAccounts = accounts.filter(
     acc => acc.is_active && acc.type === 'Efectivo'
   );
+
+  // Para transferencias entre cuentas: cualquier cuenta activa
+  const transferAccounts = accounts.filter(acc => acc.is_active);
 
   // Reset form cuando se abre el modal
   useEffect(() => {
@@ -76,6 +81,8 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
       setAcceptAppOrders(true);
       setSelectedCategory('');
       setSelectedAccountId('');
+      setTransferFromId('');
+      setTransferToId('');
       setAcknowledgedPendingPayments(false);
       
     }
@@ -165,8 +172,45 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
             }
           }
 
+          // Validaciones específicas para transferencias
+          if (movementType === 'transferencia') {
+            if (!transferFromId || !transferToId) {
+              toast({
+                title: "Error",
+                description: "Selecciona la cuenta origen y la cuenta destino.",
+                variant: "destructive"
+              });
+              setLoading(false);
+              return;
+            }
+            if (transferFromId === transferToId) {
+              toast({
+                title: "Error",
+                description: "La cuenta origen y la cuenta destino deben ser distintas.",
+                variant: "destructive"
+              });
+              setLoading(false);
+              return;
+            }
+
+            await registerAccountTransfer(
+              transferFromId,
+              transferToId,
+              amountValue,
+              note.trim()
+            );
+
+            const fromName = transferAccounts.find(a => a.id === transferFromId)?.name || 'origen';
+            const toName = transferAccounts.find(a => a.id === transferToId)?.name || 'destino';
+            toast({
+              title: "Transferencia registrada",
+              description: `${formatCurrency(amountValue)} de ${fromName} → ${toName}.`
+            });
+            break;
+          }
+
           await addCashMovement(
-            movementType,
+            movementType as 'ingreso' | 'egreso',
             amountValue,
             note.trim(),
             movementType === 'egreso' ? selectedCategory : undefined,
@@ -318,12 +362,11 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {type === 'movement' && (
-            <div className="flex gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 type="button"
                 variant={movementType === 'ingreso' ? 'default' : 'outline'}
                 onClick={() => setMovementType('ingreso')}
-                className="flex-1"
               >
                 Ingreso
               </Button>
@@ -331,9 +374,15 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
                 type="button"
                 variant={movementType === 'egreso' ? 'default' : 'outline'}
                 onClick={() => setMovementType('egreso')}
-                className="flex-1"
               >
                 Egreso
+              </Button>
+              <Button
+                type="button"
+                variant={movementType === 'transferencia' ? 'default' : 'outline'}
+                onClick={() => setMovementType('transferencia')}
+              >
+                Movimiento
               </Button>
             </div>
           )}
@@ -433,6 +482,50 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
                   </Select>
                 </div>
               )}
+            </>
+          )}
+
+          {/* Campos para transferencia entre cuentas */}
+          {type === 'movement' && movementType === 'transferencia' && (
+            <>
+              <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+                Mueve dinero entre cuentas (ej: Caja Chica ↔ Caja Grande, Caja → Banco). 
+                Si la cuenta involucrada es de tipo Efectivo, el monto esperado al cierre del turno se ajustará automáticamente.
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cuenta origen <span className="text-destructive">*</span></Label>
+                <Select value={transferFromId} onValueChange={setTransferFromId} required>
+                  <SelectTrigger className={!transferFromId ? "border-destructive/50" : ""}>
+                    <SelectValue placeholder="Desde qué cuenta sale el dinero" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {transferAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.name} ({acc.type})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cuenta destino <span className="text-destructive">*</span></Label>
+                <Select value={transferToId} onValueChange={setTransferToId} required>
+                  <SelectTrigger className={!transferToId ? "border-destructive/50" : ""}>
+                    <SelectValue placeholder="A qué cuenta entra el dinero" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {transferAccounts
+                      .filter(acc => acc.id !== transferFromId)
+                      .map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.name} ({acc.type})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </>
           )}
 

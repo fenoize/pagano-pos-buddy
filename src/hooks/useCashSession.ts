@@ -218,6 +218,39 @@ export function useCashSession() {
     }
   };
 
+  const registerAccountTransfer = async (
+    fromAccountId: string,
+    toAccountId: string,
+    amount: number,
+    note?: string
+  ): Promise<string> => {
+    if (!currentSession) throw new Error('No active session');
+    if (!user?.id) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase.rpc('register_account_transfer', {
+      p_session_id: currentSession.id,
+      p_from_account_id: fromAccountId,
+      p_to_account_id: toAccountId,
+      p_amount: amount,
+      p_note: note || null,
+    });
+
+    if (error) {
+      console.error('Error registering account transfer:', error);
+      throw error;
+    }
+
+    triggerCashMovementNotification(
+      user.id,
+      user.full_name || user.username || 'Usuario',
+      'egreso',
+      amount,
+      `Transferencia entre cuentas${note ? ': ' + note : ''}`
+    ).catch(err => console.error('[CashSession] Notification error:', err));
+
+    return data as string;
+  };
+
   const getSessionSummary = async (sessionId?: string) => {
     const sessionToQuery = sessionId || currentSession?.id;
     if (!sessionToQuery) {
@@ -242,10 +275,14 @@ export function useCashSession() {
 
       console.log('Session found:', session);
 
-      // Get cash movements
+      // Get cash movements (incluye join con cuentas para resolver transferencias)
       const { data: movements, error: movementsError } = await supabase
         .from('cash_movements')
-        .select('*')
+        .select(`
+          *,
+          from_account:account_id (id, type),
+          to_account:account_to_id (id, type)
+        `)
         .eq('session_id', sessionToQuery)
         .order('created_at');
 
@@ -349,6 +386,15 @@ export function useCashSession() {
       const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
       const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
 
+      // Transferencias entre cuentas: si la cuenta destino es Efectivo, suma al cash de caja;
+      // si la cuenta origen es Efectivo, resta al cash de caja.
+      const transferenciasIn = movements
+        ?.filter((m: any) => m.type === 'transferencia' && m.to_account?.type === 'Efectivo')
+        .reduce((sum: number, m: any) => sum + m.amount, 0) || 0;
+      const transferenciasOut = movements
+        ?.filter((m: any) => m.type === 'transferencia' && m.from_account?.type === 'Efectivo')
+        .reduce((sum: number, m: any) => sum + m.amount, 0) || 0;
+
       // Get pending cash from delivery drivers
       const { data: pendingCashData } = await supabase
         .from('delivery_cash_pending')
@@ -396,7 +442,7 @@ export function useCashSession() {
       // We also subtract the delivery deposit ingresos to avoid double-counting, since
       // the deposit movements are already included in 'ingresos'.
       const cashInRegister = totalCash - deliveryCashFromOrders; // only retiro/in-store cash
-      const expectedCash = (session.opening_cash || 0) + cashInRegister + ingresos - egresos;
+      const expectedCash = (session.opening_cash || 0) + cashInRegister + ingresos - egresos + transferenciasIn - transferenciasOut;
 
       // Calculate runas totals from transactions (for reference)
       const totalRunasCanjeadas = runasTransactions?.filter(t => t.type === 'canje').reduce((sum, t) => sum + t.runas, 0) || 0;
@@ -611,6 +657,7 @@ export function useCashSession() {
     openSession,
     closeSession,
     addCashMovement,
+    registerAccountTransfer,
     getSessionSummary,
     updateSessionObservaciones,
     updateClosingCash,
