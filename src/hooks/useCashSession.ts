@@ -386,6 +386,15 @@ export function useCashSession() {
       const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
       const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
 
+      // Transferencias entre cuentas: si la cuenta destino es Efectivo, suma al cash de caja;
+      // si la cuenta origen es Efectivo, resta al cash de caja.
+      const transferenciasIn = movements
+        ?.filter((m: any) => m.type === 'transferencia' && m.to_account?.type === 'Efectivo')
+        .reduce((sum: number, m: any) => sum + m.amount, 0) || 0;
+      const transferenciasOut = movements
+        ?.filter((m: any) => m.type === 'transferencia' && m.from_account?.type === 'Efectivo')
+        .reduce((sum: number, m: any) => sum + m.amount, 0) || 0;
+
       // Get pending cash from delivery drivers
       const { data: pendingCashData } = await supabase
         .from('delivery_cash_pending')
