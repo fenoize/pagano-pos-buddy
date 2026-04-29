@@ -7309,6 +7309,7 @@ export type Database = {
           username: string
         }[]
       }
+      auto_cancel_stale_pending_payment_orders: { Args: never; Returns: number }
       check_and_award_badge: {
         Args: { p_badge_code: string; p_customer_id: string }
         Returns: boolean
