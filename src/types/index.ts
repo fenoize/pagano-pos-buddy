@@ -10,7 +10,7 @@ export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'aplicacion' | 'runas' |
 
 export type PaymentStatus = 'paid' | 'unpaid' | 'partial';
 
-export type CashMovementType = 'ingreso' | 'egreso';
+export type CashMovementType = 'ingreso' | 'egreso' | 'transferencia';
 
 export interface User {
   id: string;
