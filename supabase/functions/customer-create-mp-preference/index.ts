@@ -37,7 +37,7 @@ serve(async (req) => {
     // Validar que el customer existe y está activo
     const { data: customer, error: customerError } = await supabase
       .from('customers')
-      .select('id, name, email, estado_cliente')
+      .select('id, name, apellido, nombres, apellidos, email, estado_cliente')
       .eq('id', customer_id)
       .single();
     
@@ -232,7 +232,12 @@ serve(async (req) => {
       payment_method: 'mp',
       payment_mp: 0,
       notes: notes || 'Pedido desde app cliente - Pago pendiente',
-      nombre_resumen: items.map((i: any) => i.productName).join(', ').substring(0, 100)
+      nombre_resumen: (
+        [(customer as any).nombres || customer.name, (customer as any).apellidos || (customer as any).apellido]
+          .filter(Boolean)
+          .join(' ')
+          .trim() || customer.email || 'Cliente App'
+      ).substring(0, 100)
     };
     
     console.log('📝 Creating order in database...');
