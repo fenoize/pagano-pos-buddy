@@ -218,6 +218,39 @@ export function useCashSession() {
     }
   };
 
+  const registerAccountTransfer = async (
+    fromAccountId: string,
+    toAccountId: string,
+    amount: number,
+    note?: string
+  ): Promise<string> => {
+    if (!currentSession) throw new Error('No active session');
+    if (!user?.id) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase.rpc('register_account_transfer', {
+      p_session_id: currentSession.id,
+      p_from_account_id: fromAccountId,
+      p_to_account_id: toAccountId,
+      p_amount: amount,
+      p_note: note || null,
+    });
+
+    if (error) {
+      console.error('Error registering account transfer:', error);
+      throw error;
+    }
+
+    triggerCashMovementNotification(
+      user.id,
+      user.full_name || user.username || 'Usuario',
+      'egreso',
+      amount,
+      `Transferencia entre cuentas${note ? ': ' + note : ''}`
+    ).catch(err => console.error('[CashSession] Notification error:', err));
+
+    return data as string;
+  };
+
   const getSessionSummary = async (sessionId?: string) => {
     const sessionToQuery = sessionId || currentSession?.id;
     if (!sessionToQuery) {
