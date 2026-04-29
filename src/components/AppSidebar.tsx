@@ -363,16 +363,16 @@ export function AppSidebar() {
                   {renderLinks(sectionMain)}
 
                   {sep('s1')}
-                  {renderLinks(sectionKitchen)}
-                  {deliveryGroup}
-
-                  {sep('s2')}
                   {renderLinks(sectionCatalog)}
                   {inventoryGroup}
 
-                  {sep('s3')}
+                  {sep('s2')}
                   {renderLinks(sectionPeople)}
                   {rrhhGroup}
+
+                  {sep('s3')}
+                  {renderLinks(sectionKitchen)}
+                  {deliveryGroup}
 
                   {sep('s4')}
                   {renderLinks(sectionFinanceTop)}
