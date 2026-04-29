@@ -362,12 +362,11 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {type === 'movement' && (
-            <div className="flex gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 type="button"
                 variant={movementType === 'ingreso' ? 'default' : 'outline'}
                 onClick={() => setMovementType('ingreso')}
-                className="flex-1"
               >
                 Ingreso
               </Button>
@@ -375,9 +374,15 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
                 type="button"
                 variant={movementType === 'egreso' ? 'default' : 'outline'}
                 onClick={() => setMovementType('egreso')}
-                className="flex-1"
               >
                 Egreso
+              </Button>
+              <Button
+                type="button"
+                variant={movementType === 'transferencia' ? 'default' : 'outline'}
+                onClick={() => setMovementType('transferencia')}
+              >
+                Movimiento
               </Button>
             </div>
           )}
