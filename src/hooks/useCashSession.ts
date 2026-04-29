@@ -275,10 +275,14 @@ export function useCashSession() {
 
       console.log('Session found:', session);
 
-      // Get cash movements
+      // Get cash movements (incluye join con cuentas para resolver transferencias)
       const { data: movements, error: movementsError } = await supabase
         .from('cash_movements')
-        .select('*')
+        .select(`
+          *,
+          from_account:account_id (id, type),
+          to_account:account_to_id (id, type)
+        `)
         .eq('session_id', sessionToQuery)
         .order('created_at');
 
