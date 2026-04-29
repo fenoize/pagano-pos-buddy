@@ -657,6 +657,7 @@ export function useCashSession() {
     openSession,
     closeSession,
     addCashMovement,
+    registerAccountTransfer,
     getSessionSummary,
     updateSessionObservaciones,
     updateClosingCash,
