@@ -48,15 +48,17 @@ const EXPENSE_CATEGORIES = [
 export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: CashSessionModalProps) {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
-  const [movementType, setMovementType] = useState<'ingreso' | 'egreso'>('ingreso');
+  const [movementType, setMovementType] = useState<'ingreso' | 'egreso' | 'transferencia'>('ingreso');
   const [acceptAppOrders, setAcceptAppOrders] = useState(true);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [transferFromId, setTransferFromId] = useState('');
+  const [transferToId, setTransferToId] = useState('');
   const [acknowledgedPendingPayments, setAcknowledgedPendingPayments] = useState(false);
   
   
-  const { openSession, closeSession, addCashMovement } = useCashSession();
+  const { openSession, closeSession, addCashMovement, registerAccountTransfer } = useCashSession();
   const { accounts } = useFinanceAccounts();
   const { pendingByPerson, loading: pendingLoading } = useDeliveryCashPending();
   const { count: pendingPaymentsCount, totalAmount: pendingPaymentsTotal, inheritedOrders } = usePendingPaymentOrders();
