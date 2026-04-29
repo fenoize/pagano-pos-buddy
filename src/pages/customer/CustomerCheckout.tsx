@@ -245,6 +245,9 @@ export default function CustomerCheckout() {
 
     try {
       const deliveryAddress = selectedDeliveryAddressText || undefined;
+      const latestStoredCoupon = loadCartCoupon();
+      const couponToSend = latestStoredCoupon?.coupon ?? appliedCoupon;
+      const couponApplicationToSend = latestStoredCoupon?.application ?? couponApplication;
 
       if (selectedPaymentMethod === 'mercadopago') {
         // Flujo de MercadoPago (redirección)
@@ -282,8 +285,8 @@ export default function CustomerCheckout() {
           delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined,
           delivery_lat: fulfillmentType === 'delivery' ? selectedAddress?.latitude : undefined,
           delivery_lng: fulfillmentType === 'delivery' ? selectedAddress?.longitude : undefined,
-          coupon_id: appliedCoupon?.id || null,
-          coupon_code: appliedCoupon?.code || null,
+          coupon_id: couponToSend?.id || couponApplicationToSend?.coupon_id || null,
+          coupon_code: couponToSend?.code || couponApplicationToSend?.payload?.coupon_code || null,
           subscription_discount_amount: subscriptionDiscountAmount,
           subscription_delivery_discount: subscriptionDeliveryDiscount,
           alliance_delivery_discount: allianceDeliveryDiscount
