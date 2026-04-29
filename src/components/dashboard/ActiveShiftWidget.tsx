@@ -43,20 +43,7 @@ export function ActiveShiftWidget() {
   }
 
   if (!hasActiveSession) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Turno activo</CardTitle>
-          <CardDescription>No hay un turno abierto.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">Para ver estadísticas del turno, debe abrir una sesión de caja.</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   if (error) {

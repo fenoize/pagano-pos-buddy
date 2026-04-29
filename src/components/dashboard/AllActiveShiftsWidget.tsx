@@ -59,23 +59,7 @@ export function AllActiveShiftsWidget() {
   }
 
   if (!hasActiveShifts) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Turnos Activos del Equipo
-          </CardTitle>
-          <CardDescription>No hay turnos abiertos actualmente.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">Ningún usuario tiene un turno abierto en este momento.</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   return (
