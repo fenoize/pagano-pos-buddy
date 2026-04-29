@@ -96,6 +96,7 @@ export type Database = {
       cash_movements: {
         Row: {
           account_id: string | null
+          account_to_id: string | null
           amount: number
           category: string | null
           created_at: string | null
@@ -107,6 +108,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
+          account_to_id?: string | null
           amount: number
           category?: string | null
           created_at?: string | null
@@ -118,6 +120,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
+          account_to_id?: string | null
           amount?: number
           category?: string | null
           created_at?: string | null
@@ -131,6 +134,13 @@ export type Database = {
           {
             foreignKeyName: "cash_movements_account_id_fkey"
             columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_movements_account_to_id_fkey"
+            columns: ["account_to_id"]
             isOneToOne: false
             referencedRelation: "finance_accounts"
             referencedColumns: ["id"]
@@ -7938,6 +7948,16 @@ export type Database = {
           new_token: string
         }[]
       }
+      register_account_transfer: {
+        Args: {
+          p_amount: number
+          p_from_account_id: string
+          p_note?: string
+          p_session_id: string
+          p_to_account_id: string
+        }
+        Returns: string
+      }
       register_customer: {
         Args: {
           p_apellidos?: string
@@ -8074,7 +8094,7 @@ export type Database = {
         | "Cajero"
         | "TV"
         | "Leer QR"
-      cash_movement_type: "ingreso" | "egreso"
+      cash_movement_type: "ingreso" | "egreso" | "transferencia"
       estado_cliente: "Activo" | "Inactivo" | "Bloqueado"
       fulfillment_type: "retiro" | "delivery"
       loyalty_campaign_type:
@@ -8270,7 +8290,7 @@ export const Constants = {
         "TV",
         "Leer QR",
       ],
-      cash_movement_type: ["ingreso", "egreso"],
+      cash_movement_type: ["ingreso", "egreso", "transferencia"],
       estado_cliente: ["Activo", "Inactivo", "Bloqueado"],
       fulfillment_type: ["retiro", "delivery"],
       loyalty_campaign_type: [
