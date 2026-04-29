@@ -50,6 +50,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -65,21 +66,46 @@ import {
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 
-const menuItems = [
+// Section 1: Resumen / Operación principal
+const sectionMain = [
   { title: "Escritorio", url: "/pos", icon: Home, roles: ['Administrador', 'Cajero'] },
   { title: "Nueva Venta", url: "/pos/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
   { title: "Ventas", url: "/pos/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
+];
+
+// Section 2: Cocina / Despacho (Delivery se inserta como collapsible)
+const sectionKitchen = [
   { title: "Cocina", url: "/pos/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
   { title: "Pedido Listo", url: "/pos/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocinero', 'Preparador', 'TV'] },
   { title: "Lector QR", url: "/pos/qr-reader", icon: Camera, roles: ['Administrador', 'Leer QR'] },
+];
+
+// Section 3: Catálogo (Inventario es collapsible)
+const sectionCatalog = [
   { title: "Productos", url: "/pos/productos", icon: Package, roles: ['Administrador'] },
   { title: "Categorías", url: "/pos/categorias", icon: Tags, roles: ['Administrador'] },
+];
+
+// Section 4: Personas (RRHH collapsible)
+const sectionPeople = [
   { title: "Clientes", url: "/pos/clientes", icon: Users, roles: ['Administrador', 'Cajero'] },
   { title: "Usuarios", url: "/pos/usuarios", icon: User, roles: ['Administrador'] },
+];
+
+// Section 5: Finanzas (Finanzas y Reportes son collapsibles)
+const sectionFinanceTop = [
   { title: "Cierres Diarios", url: "/pos/cierres-diarios", icon: FileText, roles: ['Administrador'] },
+];
+
+// Section 7: Personal del usuario actual
+const sectionPersonal = [
+  { title: "Mi Calendario", url: "/pos/mi-calendario", icon: Calendar, roles: ['Administrador', 'Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer'] },
+];
+
+// Section 8: Configuración
+const sectionConfig = [
   { title: "Configuración", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
   { title: "Mi Configuración", url: "/pos/mi-configuracion", icon: Settings, roles: ['Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer', 'Leer QR'] },
-  { title: "Mi Calendario", url: "/pos/mi-calendario", icon: Calendar, roles: ['Administrador', 'Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer'] },
 ];
 
 // Fidelización menu items
@@ -204,411 +230,167 @@ export function AppSidebar() {
           </SidebarGroupLabel>
 
           <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems
-                .filter(item => canAccessRoute(item.roles as AppRole[]))
-                .map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                     <NavLink 
-                       to={item.url} 
-                       end 
-                       className={({ isActive }) => 
-                         `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${getNavCls({ isActive })}`
-                       }
-                     >
-                       <item.icon className="h-4 w-4 shrink-0" />
-                       {!isCollapsed && <span>{item.title}</span>}
-                     </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              
-              {/* Delivery Collapsible Group */}
-              {canAccessRoute(['Administrador', 'Reparto'] as AppRole[]) && (
-                <Collapsible
-                  open={deliveryOpen}
-                  onOpenChange={setDeliveryOpen}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                          currentPath.startsWith("/pos/delivery")
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-primary hover:bg-primary hover:text-primary-foreground"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <TruckIcon className="h-4 w-4 shrink-0" />
-                          {!isCollapsed && <span>Delivery</span>}
-                        </div>
-                        {!isCollapsed && (
-                          currentPath.startsWith("/pos/delivery") ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )
-                        )}
+            {(() => {
+              const renderLinks = (items: typeof sectionMain) =>
+                items
+                  .filter(item => canAccessRoute(item.roles as AppRole[]))
+                  .map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <NavLink
+                          to={item.url}
+                          end
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${getNavCls({ isActive })}`
+                          }
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          {!isCollapsed && <span>{item.title}</span>}
+                        </NavLink>
                       </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    {!isCollapsed && (
-                      <CollapsibleContent className="mt-1 space-y-1">
-                        {deliveryItems
-                          .filter(item => canAccessRoute(item.roles as AppRole[]))
-                          .map((item) => (
-                          <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton asChild>
-                              <NavLink
-                                to={item.url}
-                                end
-                                className={({ isActive }) =>
-                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
-                                }
-                              >
-                                <item.icon className="h-3 w-3 shrink-0" />
-                                <span className="text-xs">{item.title}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </CollapsibleContent>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
-              
-              {/* Fidelización Collapsible Group */}
-              {canAccessRoute(['Administrador'] as AppRole[]) && (
-                <Collapsible
-                  open={fidelizacionOpen}
-                  onOpenChange={setFidelizacionOpen}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                          currentPath.startsWith("/pos/fidelizacion")
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-primary hover:bg-primary hover:text-primary-foreground"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Star className="h-4 w-4 shrink-0" />
-                          {!isCollapsed && <span>Fidelización</span>}
-                        </div>
-                        {!isCollapsed && (
-                          fidelizacionOpen ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )
-                        )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    {!isCollapsed && (
-                      <CollapsibleContent className="mt-1 space-y-1">
-                        {fidelizacionItems
-                          .filter(item => canAccessRoute(item.roles as AppRole[]))
-                          .map((item) => (
-                          <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton asChild>
-                              <NavLink
-                                to={item.url}
-                                end
-                                className={({ isActive }) =>
-                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
-                                }
-                              >
-                                <item.icon className="h-3 w-3 shrink-0" />
-                                <span className="text-xs">{item.title}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </CollapsibleContent>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
-              
-              {/* Inventario Collapsible Group */}
-              {canAccessRoute(['Administrador'] as AppRole[]) && (
-                <Collapsible
-                  open={inventoryOpen}
-                  onOpenChange={setInventoryOpen}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                          currentPath.startsWith("/pos/inventario")
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-primary hover:bg-primary hover:text-primary-foreground"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Archive className="h-4 w-4 shrink-0" />
-                          {!isCollapsed && <span>Inventario</span>}
-                        </div>
-                        {!isCollapsed && (
-                          inventoryOpen ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )
-                        )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    {!isCollapsed && (
-                      <CollapsibleContent className="mt-1 space-y-1">
-                        {inventoryItems
-                          .filter(item => canAccessRoute(item.roles as AppRole[]))
-                          .map((item) => (
-                          <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton asChild>
-                              <NavLink
-                                to={item.url}
-                                end
-                                className={({ isActive }) =>
-                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
-                                }
-                              >
-                                <item.icon className="h-3 w-3 shrink-0" />
-                                <span className="text-xs">{item.title}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </CollapsibleContent>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
-              
-              {/* Finanzas Collapsible Group */}
-              {canAccessRoute(['Administrador', 'Cajero'] as AppRole[]) && (
-                <Collapsible
-                  open={financeOpen}
-                  onOpenChange={setFinanceOpen}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                          currentPath.startsWith("/pos/finanzas")
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-primary hover:bg-primary hover:text-primary-foreground"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <TrendingUpIcon className="h-4 w-4 shrink-0" />
-                          {!isCollapsed && <span>Finanzas</span>}
-                        </div>
-                        {!isCollapsed && (
-                          financeOpen ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )
-                        )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    {!isCollapsed && (
-                      <CollapsibleContent className="mt-1 space-y-1">
-                        {financeItems
-                          .filter(item => canAccessRoute(item.roles as AppRole[]))
-                          .map((item) => (
-                          <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton asChild>
-                              <NavLink
-                                to={item.url}
-                                end
-                                className={({ isActive }) =>
-                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
-                                }
-                              >
-                                <item.icon className="h-3 w-3 shrink-0" />
-                                <span className="text-xs">{item.title}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </CollapsibleContent>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
-              
-              {/* Marketing Collapsible Group */}
-              {canAccessRoute(['Administrador'] as AppRole[]) && (
-                <Collapsible
-                  open={marketingOpen}
-                  onOpenChange={setMarketingOpen}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                          currentPath.startsWith("/pos/marketing")
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-primary hover:bg-primary hover:text-primary-foreground"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Megaphone className="h-4 w-4 shrink-0" />
-                          {!isCollapsed && <span>Marketing</span>}
-                        </div>
-                        {!isCollapsed && (
-                          marketingOpen ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )
-                        )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    {!isCollapsed && (
-                      <CollapsibleContent className="mt-1 space-y-1">
-                        {marketingItems
-                          .filter(item => canAccessRoute(item.roles as AppRole[]))
-                          .map((item) => (
-                          <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton asChild>
-                              <NavLink
-                                to={item.url}
-                                end
-                                className={({ isActive }) =>
-                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
-                                }
-                              >
-                                <item.icon className="h-3 w-3 shrink-0" />
-                                <span className="text-xs">{item.title}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </CollapsibleContent>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
-              
-              {/* Reportes Collapsible Group */}
-              {canAccessRoute(['Administrador', 'Cajero'] as AppRole[]) && (
-                <Collapsible
-                  open={reportsOpen}
-                  onOpenChange={setReportsOpen}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                          currentPath.startsWith("/pos/reportes")
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-primary hover:bg-primary hover:text-primary-foreground"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <BarChart3 className="h-4 w-4 shrink-0" />
-                          {!isCollapsed && <span>Reportes</span>}
-                        </div>
-                        {!isCollapsed && (
-                          reportsOpen ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )
-                        )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    {!isCollapsed && (
-                      <CollapsibleContent className="mt-1 space-y-1">
-                        {reportItems
-                          .filter(item => canAccessRoute(item.roles as AppRole[]))
-                          .map((item) => (
-                          <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton asChild>
-                              <NavLink
-                                to={item.url}
-                                end
-                                className={({ isActive }) =>
-                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
-                                }
-                              >
-                                <item.icon className="h-3 w-3 shrink-0" />
-                                <span className="text-xs">{item.title}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </CollapsibleContent>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
-              
-              {/* RRHH Collapsible Group */}
-              {canAccessRoute(['Administrador'] as AppRole[]) && (
-                <Collapsible
-                  open={rrhhOpen}
-                  onOpenChange={setRrhhOpen}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                          currentPath.startsWith("/pos/rrhh")
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-primary hover:bg-primary hover:text-primary-foreground"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Briefcase className="h-4 w-4 shrink-0" />
-                          {!isCollapsed && <span>RRHH</span>}
-                        </div>
-                        {!isCollapsed && (
-                          rrhhOpen ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )
-                        )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    {!isCollapsed && (
-                      <CollapsibleContent className="mt-1 space-y-1">
-                        {rrhhItems
-                          .filter(item => canAccessRoute(item.roles as AppRole[]))
-                          .map((item) => (
-                          <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton asChild>
-                              <NavLink
-                                to={item.url}
-                                end
-                                className={({ isActive }) =>
-                                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
-                                }
-                              >
-                                <item.icon className="h-3 w-3 shrink-0" />
-                                <span className="text-xs">{item.title}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </CollapsibleContent>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
-            </SidebarMenu>
+                    </SidebarMenuItem>
+                  ));
+
+              const renderCollapsible = (
+                key: string,
+                label: string,
+                Icon: any,
+                pathPrefix: string,
+                open: boolean,
+                setOpen: (v: boolean) => void,
+                items: { title: string; url: string; icon: any; roles: string[] }[],
+                allowedRoles: AppRole[],
+              ) => {
+                if (!canAccessRoute(allowedRoles)) return null;
+                return (
+                  <Collapsible
+                    key={key}
+                    open={open}
+                    onOpenChange={setOpen}
+                    className="group/collapsible"
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                            currentPath.startsWith(pathPrefix)
+                              ? "bg-primary text-primary-foreground font-semibold"
+                              : "text-primary hover:bg-primary hover:text-primary-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className="h-4 w-4 shrink-0" />
+                            {!isCollapsed && <span>{label}</span>}
+                          </div>
+                          {!isCollapsed && (
+                            open ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      {!isCollapsed && (
+                        <CollapsibleContent className="mt-1 space-y-1">
+                          {items
+                            .filter(item => canAccessRoute(item.roles as AppRole[]))
+                            .map((item) => (
+                              <SidebarMenuItem key={item.title}>
+                                <SidebarMenuButton asChild>
+                                  <NavLink
+                                    to={item.url}
+                                    end
+                                    className={({ isActive }) =>
+                                      `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
+                                    }
+                                  >
+                                    <item.icon className="h-3 w-3 shrink-0" />
+                                    <span className="text-xs">{item.title}</span>
+                                  </NavLink>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            ))}
+                        </CollapsibleContent>
+                      )}
+                    </SidebarMenuItem>
+                  </Collapsible>
+                );
+              };
+
+              const sep = (k: string) => (
+                <SidebarSeparator key={k} className="my-2" />
+              );
+
+              const deliveryGroup = renderCollapsible(
+                'delivery', 'Delivery', TruckIcon, '/pos/delivery',
+                deliveryOpen, setDeliveryOpen, deliveryItems,
+                ['Administrador', 'Reparto'] as AppRole[],
+              );
+              const inventoryGroup = renderCollapsible(
+                'inventario', 'Inventario', Archive, '/pos/inventario',
+                inventoryOpen, setInventoryOpen, inventoryItems,
+                ['Administrador'] as AppRole[],
+              );
+              const rrhhGroup = renderCollapsible(
+                'rrhh', 'RRHH', Briefcase, '/pos/rrhh',
+                rrhhOpen, setRrhhOpen, rrhhItems,
+                ['Administrador'] as AppRole[],
+              );
+              const financeGroup = renderCollapsible(
+                'finanzas', 'Finanzas', TrendingUpIcon, '/pos/finanzas',
+                financeOpen, setFinanceOpen, financeItems,
+                ['Administrador', 'Cajero'] as AppRole[],
+              );
+              const reportsGroup = renderCollapsible(
+                'reportes', 'Reportes', BarChart3, '/pos/reportes',
+                reportsOpen, setReportsOpen, reportItems,
+                ['Administrador', 'Cajero'] as AppRole[],
+              );
+              const marketingGroup = renderCollapsible(
+                'marketing', 'Marketing', Megaphone, '/pos/marketing',
+                marketingOpen, setMarketingOpen, marketingItems,
+                ['Administrador'] as AppRole[],
+              );
+              const fidelizacionGroup = renderCollapsible(
+                'fidelizacion', 'Fidelización', Star, '/pos/fidelizacion',
+                fidelizacionOpen, setFidelizacionOpen, fidelizacionItems,
+                ['Administrador'] as AppRole[],
+              );
+
+              return (
+                <SidebarMenu>
+                  {renderLinks(sectionMain)}
+
+                  {sep('s1')}
+                  {renderLinks(sectionKitchen)}
+                  {deliveryGroup}
+
+                  {sep('s2')}
+                  {renderLinks(sectionCatalog)}
+                  {inventoryGroup}
+
+                  {sep('s3')}
+                  {renderLinks(sectionPeople)}
+                  {rrhhGroup}
+
+                  {sep('s4')}
+                  {renderLinks(sectionFinanceTop)}
+                  {financeGroup}
+                  {reportsGroup}
+
+                  {sep('s5')}
+                  {marketingGroup}
+                  {fidelizacionGroup}
+
+                  {sep('s6')}
+                  {renderLinks(sectionPersonal)}
+
+                  {sep('s7')}
+                  {renderLinks(sectionConfig)}
+                </SidebarMenu>
+              );
+            })()}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
