@@ -442,7 +442,7 @@ export function useCashSession() {
       // We also subtract the delivery deposit ingresos to avoid double-counting, since
       // the deposit movements are already included in 'ingresos'.
       const cashInRegister = totalCash - deliveryCashFromOrders; // only retiro/in-store cash
-      const expectedCash = (session.opening_cash || 0) + cashInRegister + ingresos - egresos;
+      const expectedCash = (session.opening_cash || 0) + cashInRegister + ingresos - egresos + transferenciasIn - transferenciasOut;
 
       // Calculate runas totals from transactions (for reference)
       const totalRunasCanjeadas = runasTransactions?.filter(t => t.type === 'canje').reduce((sum, t) => sum + t.runas, 0) || 0;
