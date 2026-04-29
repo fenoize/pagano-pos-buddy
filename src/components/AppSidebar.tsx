@@ -241,7 +241,7 @@ export function AppSidebar() {
                           to={item.url}
                           end
                           className={({ isActive }) =>
-                            `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${getNavCls({ isActive })}`
+                            `flex items-center gap-3 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${getNavCls({ isActive })}`
                           }
                         >
                           <item.icon className="h-4 w-4 shrink-0" />
@@ -272,7 +272,7 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
-                          className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                          className={`flex items-center justify-between gap-3 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                             currentPath.startsWith(pathPrefix)
                               ? "bg-primary text-primary-foreground font-semibold"
                               : "text-primary hover:bg-primary hover:text-primary-foreground"
@@ -292,7 +292,7 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       {!isCollapsed && (
-                        <CollapsibleContent className="mt-1 space-y-1">
+                        <CollapsibleContent className="mt-0.5 space-y-0.5">
                           {items
                             .filter(item => canAccessRoute(item.roles as AppRole[]))
                             .map((item) => (
@@ -302,7 +302,7 @@ export function AppSidebar() {
                                     to={item.url}
                                     end
                                     className={({ isActive }) =>
-                                      `flex items-center gap-3 rounded-md px-3 py-2 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
+                                      `flex items-center gap-3 rounded-md px-3 py-1 text-sm pl-10 transition-colors ${getNavCls({ isActive })}`
                                     }
                                   >
                                     <item.icon className="h-3 w-3 shrink-0" />
@@ -319,7 +319,7 @@ export function AppSidebar() {
               };
 
               const sep = (k: string) => (
-                <SidebarSeparator key={k} className="my-2" />
+                <SidebarSeparator key={k} className="my-1" />
               );
 
               const deliveryGroup = renderCollapsible(
