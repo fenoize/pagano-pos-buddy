@@ -94,15 +94,21 @@ serve(async (req) => {
     let validatedCouponId: string | null = null;
     let validatedCouponCode: string | null = null;
     
-    if (coupon_id) {
-      const { data: coupon, error: couponErr } = await supabase
+    if (coupon_id || coupon_code) {
+      let couponQuery = supabase
         .from('coupons')
-        .select('*')
-        .eq('id', coupon_id)
-        .maybeSingle();
+        .select('*');
+
+      if (coupon_id) {
+        couponQuery = couponQuery.eq('id', coupon_id);
+      } else if (coupon_code) {
+        couponQuery = couponQuery.eq('code', String(coupon_code).trim().toUpperCase());
+      }
+
+      const { data: coupon, error: couponErr } = await couponQuery.maybeSingle();
       
       if (couponErr || !coupon) {
-        console.warn('⚠️ Coupon not found, ignoring:', coupon_id);
+        console.warn('⚠️ Coupon not found, ignoring:', { coupon_id, coupon_code });
       } else if (!coupon.is_active) {
         console.warn('⚠️ Coupon inactive, ignoring:', coupon.code);
       } else {
@@ -147,8 +153,16 @@ serve(async (req) => {
         if (coupon.affects_products) {
           if (coupon.type === 'percent') {
             couponDiscountProducts = Math.round(subtotal * Number(coupon.amount) / 100);
-          } else if (coupon.type === 'fixed') {
+          } else if (coupon.type === 'fixed_cart') {
             couponDiscountProducts = Math.min(subtotal, Math.round(Number(coupon.amount)));
+          } else if (coupon.type === 'fixed_product') {
+            couponDiscountProducts = items.reduce((sum: number, item: any) => {
+              const base = ((item.basePrice || 0) + (Array.isArray(item.extras)
+                ? item.extras.reduce((s: number, e: any) => s + (Number(e.price) || 0) * (Number(e.quantity) || 1), 0)
+                : 0));
+              const perUnitDiscount = Math.min(Math.round(Number(coupon.amount) || 0), Math.max(0, base));
+              return sum + (perUnitDiscount * (Number(item.quantity) || 1));
+            }, 0);
           }
         }
         
@@ -165,7 +179,13 @@ serve(async (req) => {
         
         validatedCouponId = coupon.id;
         validatedCouponCode = coupon.code;
-        console.log('🎟️ Coupon applied server-side:', coupon.code, 'discount products:', couponDiscountProducts, 'discount delivery:', couponDiscountDelivery);
+        console.log('🎟️ Coupon applied server-side:', {
+          coupon_id: coupon.id,
+          coupon_code: coupon.code,
+          coupon_type: coupon.type,
+          discount_products: couponDiscountProducts,
+          discount_delivery: couponDiscountDelivery,
+        });
       }
     }
     
