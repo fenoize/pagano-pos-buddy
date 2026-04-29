@@ -405,6 +405,10 @@ export interface CashMovement {
   type: CashMovementType;
   amount: number;
   note?: string;
+  category?: string;
+  account_id?: string;
+  account_to_id?: string;
+  synced_to_finance?: boolean;
   created_at: string;
 }
 
