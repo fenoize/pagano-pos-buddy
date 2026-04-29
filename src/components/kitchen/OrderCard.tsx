@@ -253,9 +253,11 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
 
                   {/* Notes */}
                   {item.notes && (
-                    <div className={`flex items-start gap-1 text-muted-foreground mt-1 ${compact ? 'text-sm' : 'text-sm'}`}>
-                      <MessageSquare className={`${compact ? 'w-3 h-3' : 'w-3 h-3'} mt-0.5`} />
-                      <span className="italic">{item.notes}</span>
+                    <div className={`flex items-start gap-2 mt-2 p-2 rounded-md bg-white border-2 border-red-600 ${compact ? 'text-sm' : 'text-sm'}`}>
+                      <div className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-red-600">
+                        <MessageSquare className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="italic font-medium text-gray-900">{item.notes}</span>
                     </div>
                   )}
                 </div>
