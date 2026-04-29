@@ -281,7 +281,12 @@ export default function CustomerCheckout() {
           delivery_zone_id: fulfillmentType === 'delivery' ? matchedZoneInfo?.id : undefined,
           delivery_zone_name: fulfillmentType === 'delivery' ? matchedZoneInfo?.name : undefined,
           delivery_lat: fulfillmentType === 'delivery' ? selectedAddress?.latitude : undefined,
-          delivery_lng: fulfillmentType === 'delivery' ? selectedAddress?.longitude : undefined
+          delivery_lng: fulfillmentType === 'delivery' ? selectedAddress?.longitude : undefined,
+          coupon_id: appliedCoupon?.id || null,
+          coupon_code: appliedCoupon?.code || null,
+          subscription_discount_amount: subscriptionDiscountAmount,
+          subscription_delivery_discount: subscriptionDeliveryDiscount,
+          alliance_delivery_discount: allianceDeliveryDiscount
         });
       } else if (selectedPaymentMethod === 'runas') {
         // Flujo de Runas (sin redirección)

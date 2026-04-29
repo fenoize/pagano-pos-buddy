@@ -20,6 +20,11 @@ export interface CreateMPPreferenceParams {
   delivery_zone_name?: string;
   delivery_lat?: number | null;
   delivery_lng?: number | null;
+  coupon_id?: string | null;
+  coupon_code?: string | null;
+  subscription_discount_amount?: number;
+  subscription_delivery_discount?: number;
+  alliance_delivery_discount?: number;
 }
 
 export interface CreateMPPreferenceResponse {

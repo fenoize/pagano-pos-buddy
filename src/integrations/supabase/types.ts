@@ -4554,6 +4554,8 @@ export type Database = {
         Row: {
           cash_session_id: string | null
           combo_data: Json | null
+          coupon_code: string | null
+          coupon_id: string | null
           created_at: string | null
           created_by_user_id: string | null
           customer_id: string | null
@@ -4597,6 +4599,8 @@ export type Database = {
         Insert: {
           cash_session_id?: string | null
           combo_data?: Json | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string | null
           created_by_user_id?: string | null
           customer_id?: string | null
@@ -4640,6 +4644,8 @@ export type Database = {
         Update: {
           cash_session_id?: string | null
           combo_data?: Json | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string | null
           created_by_user_id?: string | null
           customer_id?: string | null
@@ -4686,6 +4692,13 @@ export type Database = {
             columns: ["cash_session_id"]
             isOneToOne: false
             referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
             referencedColumns: ["id"]
           },
           {

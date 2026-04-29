@@ -19,7 +19,12 @@ serve(async (req) => {
     );
     
     const body = await req.json();
-    const { items, customer_id, notes, fulfillment, delivery_address, delivery_fee, delivery_zone_id, delivery_zone_name, delivery_lat, delivery_lng } = body;
+    const { 
+      items, customer_id, notes, fulfillment, 
+      delivery_address, delivery_fee, delivery_zone_id, delivery_zone_name, delivery_lat, delivery_lng,
+      coupon_id, coupon_code,
+      subscription_discount_amount, subscription_delivery_discount, alliance_delivery_discount
+    } = body;
     
     if (!items || !Array.isArray(items) || items.length === 0) {
       throw new Error('Items are required');
@@ -69,31 +74,124 @@ serve(async (req) => {
       );
     }
     
-    // 2. CALCULAR TOTALES
+    // 2. CALCULAR SUBTOTAL (incluye items + extras)
     const subtotal = items.reduce((sum: number, item: any) => {
-      const itemTotal = (item.basePrice || 0) * (item.quantity || 1);
-      return sum + itemTotal;
+      const base = (item.basePrice || 0) * (item.quantity || 1);
+      const extrasTotal = Array.isArray(item.extras)
+        ? item.extras.reduce((s: number, e: any) => s + (Number(e.price) || 0) * (Number(e.quantity) || 1) * (item.quantity || 1), 0)
+        : 0;
+      return sum + base + extrasTotal;
     }, 0);
     
     console.log('💰 Subtotal calculated:', subtotal);
     
-    // Validar que el total no sea cero (MercadoPago no acepta pagos de $0)
-    if (subtotal <= 0) {
+    const actualDeliveryFee = Math.max(0, Number(delivery_fee) || 0);
+    const actualFulfillment = fulfillment === 'delivery' ? 'delivery' : 'retiro';
+    
+    // 2b. VALIDAR Y RECALCULAR DESCUENTO POR CUPÓN (server-side, fuente de verdad)
+    let couponDiscountProducts = 0;
+    let couponDiscountDelivery = 0;
+    let validatedCouponId: string | null = null;
+    let validatedCouponCode: string | null = null;
+    
+    if (coupon_id) {
+      const { data: coupon, error: couponErr } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('id', coupon_id)
+        .maybeSingle();
+      
+      if (couponErr || !coupon) {
+        console.warn('⚠️ Coupon not found, ignoring:', coupon_id);
+      } else if (!coupon.is_active) {
+        console.warn('⚠️ Coupon inactive, ignoring:', coupon.code);
+      } else {
+        const now = new Date();
+        const startOk = !coupon.date_start || new Date(coupon.date_start) <= now;
+        const endOk = !coupon.date_end || new Date(coupon.date_end) >= now;
+        const minOk = !coupon.min_spend || subtotal >= Number(coupon.min_spend);
+        const maxOk = !coupon.max_spend || subtotal <= Number(coupon.max_spend);
+        
+        // Validar usage_limit_total
+        let usageOk = true;
+        if (coupon.usage_limit_total) {
+          const { count } = await supabase
+            .from('orders')
+            .select('id', { count: 'exact', head: true })
+            .eq('coupon_id', coupon.id)
+            .not('status', 'in', '(Cancelado,PendientePago)');
+          if ((count || 0) >= coupon.usage_limit_total) usageOk = false;
+        }
+        
+        // Validar usage_limit_per_customer
+        let perCustomerOk = true;
+        if (coupon.usage_limit_per_customer && customer_id) {
+          const { count } = await supabase
+            .from('orders')
+            .select('id', { count: 'exact', head: true })
+            .eq('coupon_id', coupon.id)
+            .eq('customer_id', customer_id)
+            .not('status', 'in', '(Cancelado,PendientePago)');
+          if ((count || 0) >= coupon.usage_limit_per_customer) perCustomerOk = false;
+        }
+        
+        if (!startOk || !endOk || !minOk || !maxOk || !usageOk || !perCustomerOk) {
+          console.warn('⚠️ Coupon validation failed:', { startOk, endOk, minOk, maxOk, usageOk, perCustomerOk });
+          return new Response(
+            JSON.stringify({ error: `El cupón ${coupon.code} ya no es válido. Por favor revisa tu pedido.` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Calcular descuento sobre productos
+        if (coupon.affects_products) {
+          if (coupon.type === 'percent') {
+            couponDiscountProducts = Math.round(subtotal * Number(coupon.amount) / 100);
+          } else if (coupon.type === 'fixed') {
+            couponDiscountProducts = Math.min(subtotal, Math.round(Number(coupon.amount)));
+          }
+        }
+        
+        // Calcular descuento sobre delivery
+        if (coupon.affects_delivery && actualFulfillment === 'delivery' && actualDeliveryFee > 0) {
+          if (coupon.delivery_mode === 'free') {
+            couponDiscountDelivery = actualDeliveryFee;
+          } else if (coupon.delivery_mode === 'fixed') {
+            couponDiscountDelivery = Math.min(actualDeliveryFee, Math.round(Number(coupon.delivery_amount) || 0));
+          } else if (coupon.delivery_mode === 'percent') {
+            couponDiscountDelivery = Math.round(actualDeliveryFee * Number(coupon.delivery_amount || 0) / 100);
+          }
+        }
+        
+        validatedCouponId = coupon.id;
+        validatedCouponCode = coupon.code;
+        console.log('🎟️ Coupon applied server-side:', coupon.code, 'discount products:', couponDiscountProducts, 'discount delivery:', couponDiscountDelivery);
+      }
+    }
+    
+    // Descuentos adicionales (suscripción + alianza) — confiamos en cliente para estos
+    const subDiscount = Math.max(0, Number(subscription_discount_amount) || 0);
+    const subDeliveryDiscount = Math.max(0, Number(subscription_delivery_discount) || 0);
+    const allianceDeliveryDisc = Math.max(0, Number(alliance_delivery_discount) || 0);
+    
+    const totalProductDiscount = Math.min(subtotal, couponDiscountProducts + subDiscount);
+    const totalDeliveryDiscount = Math.min(actualDeliveryFee, couponDiscountDelivery + subDeliveryDiscount + allianceDeliveryDisc);
+    const effectiveSubtotal = subtotal - totalProductDiscount;
+    const effectiveDeliveryFee = actualDeliveryFee - totalDeliveryDiscount;
+    const total = effectiveSubtotal + (actualFulfillment === 'delivery' ? effectiveDeliveryFee : 0);
+    
+    console.log('💵 Final amounts:', { subtotal, totalProductDiscount, effectiveDeliveryFee, total });
+    
+    // Validar que el total no sea cero
+    if (total <= 0) {
       console.warn('⚠️ Cannot process $0 payment with MercadoPago');
       return new Response(
-        JSON.stringify({ 
-          error: 'No se puede procesar un pago de $0 con MercadoPago. Por favor verifica tu pedido.' 
-        }),
+        JSON.stringify({ error: 'No se puede procesar un pago de $0 con MercadoPago. Por favor verifica tu pedido.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    // 3. CREAR ORDEN EN DB con status='PendientePago' (pago no completado aún)
-    const actualDeliveryFee = delivery_fee || 0;
-    // Enum en DB: fulfillment_type = ('retiro', 'delivery')
-    const actualFulfillment = fulfillment === 'delivery' ? 'delivery' : 'retiro';
-    const total = subtotal + actualDeliveryFee;
-    
+    // 3. CREAR ORDEN EN DB con status='PendientePago'
     const orderData = {
       customer_id: customer_id || null,
       source: 'customer_app',
@@ -101,14 +199,16 @@ serve(async (req) => {
       items: items,
       subtotal: subtotal,
       total: total,
-      discount: 0,
-      delivery_fee: actualDeliveryFee,
+      discount: totalProductDiscount,
+      delivery_fee: actualFulfillment === 'delivery' ? effectiveDeliveryFee : 0,
       delivery_address: delivery_address || null,
       delivery_zone_id: delivery_zone_id || null,
       delivery_zone_name: delivery_zone_name || null,
       delivery_lat: delivery_lat || null,
       delivery_lng: delivery_lng || null,
-      status: 'PendientePago',  // ⚠️ CRÍTICO: No enviar a cocina hasta que se confirme el pago
+      coupon_id: validatedCouponId,
+      coupon_code: validatedCouponCode,
+      status: 'PendientePago',
       payment_method: 'mp',
       payment_mp: 0,
       notes: notes || 'Pedido desde app cliente - Pago pendiente',
