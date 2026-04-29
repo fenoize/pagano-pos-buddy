@@ -66,21 +66,46 @@ import {
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 
-const menuItems = [
+// Section 1: Resumen / Operación principal
+const sectionMain = [
   { title: "Escritorio", url: "/pos", icon: Home, roles: ['Administrador', 'Cajero'] },
   { title: "Nueva Venta", url: "/pos/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
   { title: "Ventas", url: "/pos/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
+];
+
+// Section 2: Cocina / Despacho (Delivery se inserta como collapsible)
+const sectionKitchen = [
   { title: "Cocina", url: "/pos/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
   { title: "Pedido Listo", url: "/pos/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocinero', 'Preparador', 'TV'] },
   { title: "Lector QR", url: "/pos/qr-reader", icon: Camera, roles: ['Administrador', 'Leer QR'] },
+];
+
+// Section 3: Catálogo (Inventario es collapsible)
+const sectionCatalog = [
   { title: "Productos", url: "/pos/productos", icon: Package, roles: ['Administrador'] },
   { title: "Categorías", url: "/pos/categorias", icon: Tags, roles: ['Administrador'] },
+];
+
+// Section 4: Personas (RRHH collapsible)
+const sectionPeople = [
   { title: "Clientes", url: "/pos/clientes", icon: Users, roles: ['Administrador', 'Cajero'] },
   { title: "Usuarios", url: "/pos/usuarios", icon: User, roles: ['Administrador'] },
+];
+
+// Section 5: Finanzas (Finanzas y Reportes son collapsibles)
+const sectionFinanceTop = [
   { title: "Cierres Diarios", url: "/pos/cierres-diarios", icon: FileText, roles: ['Administrador'] },
+];
+
+// Section 7: Personal del usuario actual
+const sectionPersonal = [
+  { title: "Mi Calendario", url: "/pos/mi-calendario", icon: Calendar, roles: ['Administrador', 'Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer'] },
+];
+
+// Section 8: Configuración
+const sectionConfig = [
   { title: "Configuración", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
   { title: "Mi Configuración", url: "/pos/mi-configuracion", icon: Settings, roles: ['Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer', 'Leer QR'] },
-  { title: "Mi Calendario", url: "/pos/mi-calendario", icon: Calendar, roles: ['Administrador', 'Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer'] },
 ];
 
 // Fidelización menu items
