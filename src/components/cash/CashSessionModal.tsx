@@ -64,10 +64,13 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
   const { count: pendingPaymentsCount, totalAmount: pendingPaymentsTotal, inheritedOrders } = usePendingPaymentOrders();
   const { toast } = useToast();
 
-  // Filtrar cuentas activas tipo efectivo/caja
+  // Filtrar cuentas activas tipo efectivo/caja para egresos
   const cashAccounts = accounts.filter(
     acc => acc.is_active && acc.type === 'Efectivo'
   );
+
+  // Para transferencias entre cuentas: cualquier cuenta activa
+  const transferAccounts = accounts.filter(acc => acc.is_active);
 
   // Reset form cuando se abre el modal
   useEffect(() => {
