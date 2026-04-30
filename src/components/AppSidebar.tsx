@@ -37,7 +37,8 @@ import {
   Briefcase,
   Calendar,
   FlaskConical,
-  Camera
+  Camera,
+  LayoutDashboard
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
