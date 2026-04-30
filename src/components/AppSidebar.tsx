@@ -37,7 +37,8 @@ import {
   Briefcase,
   Calendar,
   FlaskConical,
-  Camera
+  Camera,
+  LayoutDashboard
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -161,6 +162,7 @@ const marketingItems = [
 
 // Reports menu items
 const reportItems = [
+  { title: "Escritorio", url: "/pos/reportes/escritorio", icon: LayoutDashboard, roles: ['Administrador'] },
   { title: "Productos", url: "/pos/reportes/productos", icon: TrendingUpIcon, roles: ['Administrador', 'Cajero'] },
 ];
 
