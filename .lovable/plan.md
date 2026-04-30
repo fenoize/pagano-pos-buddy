@@ -1,100 +1,94 @@
-# Sistema de Etiquetas (Tags) para Clientes
+## Escritorio de Reportes
 
-Permite categorizar clientes con etiquetas reutilizables (ej. "Crossfit La Reina", "Influencer", "VIP") con auto-asignación desde Alianzas y gestión manual desde el panel admin.
+Crear una nueva página tipo "dashboard de análisis" dentro del módulo Reportes, complementando el reporte de Productos ya existente.
 
-## Arquitectura de datos
+### Ubicación
 
-Dos nuevas tablas en `public`:
+- **Ruta nueva:** `/pos/reportes/escritorio` (será el ítem por defecto del menú Reportes, listado primero).
+- **Sidebar:** agregar "Escritorio" arriba de "Productos" dentro del grupo Reportes.
+- **Permisos:** Administrador (igual que el resto de Reportes).
 
-**`customer_tags`** — catálogo maestro de etiquetas
-- `id` uuid PK
-- `name` text unique (case-insensitive)
-- `color` text (hex, para chips)
-- `description` text
-- `auto_source` text (`'manual' | 'alliance' | 'campaign'`)
-- `created_at`, `created_by`
+### Filtros (encabezado de la página)
 
-**`customer_tag_assignments`** — relación N:N cliente↔etiqueta
-- `id` uuid PK
-- `customer_id` uuid → customers
-- `tag_id` uuid → customer_tags
-- `source` text (`'manual' | 'alliance' | 'campaign' | 'import'`)
-- `source_ref_id` uuid (alliance_id u otro origen)
-- `assigned_by` uuid (staff)
-- `assigned_at` timestamptz
-- UNIQUE(customer_id, tag_id)
+1. **Rango de fecha** — usando el `ReportDatePicker` existente (presets: hoy, ayer, esta semana, semana pasada, este mes, mes pasado, custom).
+2. **Cajero** — selector con todos los usuarios staff que hayan registrado ventas (lista poblada desde `orders.created_by_user_id`). Opción "Todos" por defecto.
+3. Botón Actualizar + botón Exportar CSV del resumen.
 
-**Vínculo en alianzas**: agregar a `marketing_alliances` la columna `auto_tag_id uuid` (nullable, FK a `customer_tags`). Cuando un cliente se atribuye a la alianza (al firmar/comprar), se le asigna automáticamente esa etiqueta.
+### Widgets / KPIs principales (cards superiores)
 
-RLS: lectura/escritura para staff autenticado vía `withStaffContext` / función `has_role`. Customers no acceden directamente.
+Fila de cards de resumen con totales del período filtrado:
 
-## Backend (Supabase)
+- **Ticket promedio** = ingresos netos / cantidad de pedidos reales.
+- **Ventas totales** (ingresos netos, excluyendo runas/colación/canje según regla `counts_as_real_sale: false`).
+- **Pedidos totales** (excluye Cancelados).
+- **Unidades vendidas** (suma de `items[].quantity`).
+- **Total de gastos/egresos** del período (desde `finance_expenses` + `cash_movements` tipo egreso).
+- **Margen estimado** = Ventas - Gastos.
 
-1. Migración con las 2 tablas + columna `auto_tag_id` + índices.
-2. RPC `assign_customer_tag(_customer_id, _tag_id, _source, _source_ref_id)` (SECURITY DEFINER) — idempotente.
-3. RPC `remove_customer_tag(_customer_id, _tag_id)`.
-4. Modificar las RPC existentes `claim_marketing_alliance_signup` y `track_marketing_alliance_purchase` para que, si la alianza tiene `auto_tag_id`, llamen a `assign_customer_tag` con `source='alliance'` y `source_ref_id=alliance_id`.
-5. RPC `list_customer_tags_with_counts()` para listado admin con conteo de clientes.
+### Bloques de análisis (grid 2 columnas en desktop, 1 en mobile)
 
-## Frontend
+1. **Ventas por día de la semana** (gráfico de barras)
+   - Agrupa pedidos del rango por día de semana (Lun-Dom).
+   - Muestra ingresos y cantidad de pedidos.
+   - Resalta el día con más ventas.
 
-### Gestión de catálogo de etiquetas
-Nueva página **`/pos/clientes/etiquetas`** (o tab dentro de Clientes):
-- Tabla con: nombre, color, descripción, # clientes asignados, origen.
-- Botones acción `h-9 w-9` (estándar admin): editar, eliminar.
-- Modal "Nueva etiqueta" con nombre, color (color picker), descripción.
+2. **Ventas por horario** (gráfico de barras por hora 00-23)
+   - Agrupa pedidos por hora de `created_at`.
+   - Resalta franja horaria pico.
 
-### Gestión por cliente
-En el modal/detalle de cliente (componente existente en `src/components/clientes/`):
-- Nueva sección **"Etiquetas"** con chips coloreados.
-- Botón `+` abre popover con buscador/selector multi-select de etiquetas existentes + opción "Crear nueva".
-- Cada chip tiene `x` para quitar (con confirmación si `source != 'manual'`).
-- Mostrar tooltip con origen ("Asignada por alianza Crossfit La Reina").
+3. **Top productos vendidos** (tabla compacta top 10)
+   - Reutiliza la lógica de agregación de `useProductSalesAnalytics` (extraer a util compartida).
+   - Columnas: producto, unidades, ingresos, % del total.
+   - Link "Ver reporte completo" → `/pos/reportes/productos`.
 
-### Listado de clientes
-- Agregar columna/filtro **"Etiquetas"** en `Clientes.tsx`.
-- Filtro multi-select por etiquetas (AND/OR).
-- Mostrar chips coloreados en cada fila.
+4. **Mejor vendedor / Ranking de cajeros** (tabla)
+   - Agrupa pedidos por `created_by_user_id` (join contra usuarios para nombre).
+   - Columnas: cajero, # turnos trabajados (count distinct `cash_session_id`), # pedidos, ventas totales, ticket promedio.
+   - Ordenado por ventas. Resalta el #1.
+   - Si hay filtro de cajero específico aplicado, muestra solo esa fila con detalle.
 
-### Formulario de Alianza
-En `AllianceFormModal.tsx`:
-- Nuevo campo **"Etiqueta automática"** (Select de tags + botón "Crear"). 
-- Al guardar, persiste `auto_tag_id`.
-- Al landing page (`AllianceLanding.tsx`) mostrar opcionalmente "Serás identificado como [tag]".
+5. **Métodos de pago** (donut/pie pequeño)
+   - Distribución de ingresos por `payment_method` (efectivo, transferencia, POS, mixto, app).
+   - Ayuda al análisis de flujo de caja.
 
-### Hooks
-- `useCustomerTags()` — CRUD del catálogo (React Query).
-- `useCustomerTagAssignments(customerId)` — etiquetas del cliente + mutaciones assign/remove.
-- Extender `useCustomers` para incluir tags (join) y permitir filtro.
+6. **Resumen de gastos por categoría** (tabla compacta)
+   - Top categorías de `finance_expenses` en el período.
+   - Sirve como contexto financiero rápido.
 
-## Integración con campañas/mailings (preparación)
+### Reglas de negocio (consistentes con memoria del proyecto)
 
-El sistema de campañas (`useLoyaltyCampaigns`, `campaignEvaluator.ts`) y push (`MarketingNotifications`) podrá filtrar audiencia por `tag_id` en una iteración futura. Esta entrega deja la base lista (estructura + asignación), sin modificar aún los selectores de audiencia.
+- Excluir pedidos `Cancelado`.
+- Excluir métodos de pago con `counts_as_real_sale: false` (runas, colación, canje) usando `getNonRealSaleMethods()`.
+- Pedidos `mixto` se incluyen porque tienen ingreso real parcial.
+- Tiempos en zona `America/Santiago`.
+- El filtro por cajero se aplica vía `orders.created_by_user_id`.
 
-## Archivos a crear / modificar
+### Detalles técnicos
 
-**Nuevos**
-- `supabase/migrations/<timestamp>_customer_tags.sql`
-- `src/hooks/useCustomerTags.ts`
-- `src/hooks/useCustomerTagAssignments.ts`
-- `src/components/clientes/CustomerTagsManager.tsx` (catálogo)
-- `src/components/clientes/CustomerTagChips.tsx` (chips + selector reutilizable)
-- `src/pages/CustomerTags.tsx` (página de gestión, o tab en Clientes)
+**Archivos nuevos:**
+- `src/pages/reports/ReportsDashboard.tsx` — página principal.
+- `src/hooks/useReportsDashboard.ts` — hook que carga: orders del rango (con filtro cajero), expenses del rango, lista de cajeros con ventas, y devuelve KPIs + agregaciones.
+- `src/components/reports/dashboard/KPICards.tsx` — cards superiores.
+- `src/components/reports/dashboard/SalesByWeekdayChart.tsx`
+- `src/components/reports/dashboard/SalesByHourChart.tsx`
+- `src/components/reports/dashboard/TopProductsCompact.tsx`
+- `src/components/reports/dashboard/TopCashiersTable.tsx`
+- `src/components/reports/dashboard/PaymentMethodBreakdown.tsx`
+- `src/components/reports/dashboard/ExpensesByCategoryCompact.tsx`
+- `src/components/reports/dashboard/CashierFilter.tsx`
 
-**Modificados**
-- `src/pages/Clientes.tsx` — columna + filtro por tags
-- `src/components/clientes/` (modal de detalle de cliente) — sección etiquetas
-- `src/components/marketing/AllianceFormModal.tsx` — campo auto_tag_id
-- `src/hooks/useMarketingAlliances.ts` — incluir auto_tag_id
-- `src/lib/allianceAttribution.ts` — RPC ya disparará el tag desde backend, no requiere cambios
-- `src/pages/customer/AllianceLanding.tsx` — opcional, mostrar tag
-- `src/integrations/supabase/types.ts` — autogenerado
+**Archivos editados:**
+- `src/App.tsx` — agregar `lazy import` y `<Route path="/pos/reportes/escritorio">`. Opcional: redirigir `/pos/reportes` → `/pos/reportes/escritorio`.
+- `src/components/AppSidebar.tsx` — agregar `{ title: "Escritorio", url: "/pos/reportes/escritorio", icon: LayoutDashboard, roles: ['Administrador'] }` al inicio de `reportItems`.
 
-## Aceptación
+**Datos:**
+- `orders`: select de `id, total, items, created_at, status, payment_method, payment_runas, created_by_user_id, cash_session_id` filtrando por rango.
+- `finance_expenses`: select por rango (`expense_date`).
+- Lista de cajeros: distinct join contra tabla de usuarios staff para mostrar nombre legible.
+- Sin nuevas tablas ni migraciones — toda la información ya existe.
 
-1. Puedo crear la etiqueta "Crossfit La Reina" desde gestión de etiquetas.
-2. En la alianza "Crossfit La Reina", la asocio como etiqueta automática.
-3. Un cliente que se registra desde el landing de esa alianza recibe automáticamente la etiqueta.
-4. Desde el detalle de cualquier cliente puedo agregar/quitar/editar etiquetas manualmente.
-5. En el listado de clientes puedo filtrar por una o más etiquetas.
-6. Las etiquetas se ven como chips coloreados consistentes en todo el sistema.
+### Fuera de alcance (esta iteración)
+
+- Comparativos contra período previo (puede agregarse después).
+- Drill-down a pedidos individuales desde cada widget.
+- Exportación PDF (solo CSV de KPIs).
