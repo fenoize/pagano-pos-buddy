@@ -161,6 +161,7 @@ const marketingItems = [
 
 // Reports menu items
 const reportItems = [
+  { title: "Escritorio", url: "/pos/reportes/escritorio", icon: LayoutDashboard, roles: ['Administrador'] },
   { title: "Productos", url: "/pos/reportes/productos", icon: TrendingUpIcon, roles: ['Administrador', 'Cajero'] },
 ];
 

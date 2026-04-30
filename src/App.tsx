@@ -116,6 +116,7 @@ const FinanceConfig = lazy(() => import("@/pages/finance/FinanceConfig"));
 
 // Report Pages
 const ProductSalesReport = lazy(() => import("@/pages/reports/ProductSalesReport"));
+const ReportsDashboard = lazy(() => import("@/pages/reports/ReportsDashboard"));
 
 // RRHH Pages
 const RRHHResumen = lazy(() => import("@/pages/rrhh/RRHHResumen"));
@@ -752,6 +753,20 @@ const App = () => (
               } />
               
               {/* Reports Routes */}
+              <Route path="/pos/reportes" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <ReportsDashboard />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
+              <Route path="/pos/reportes/escritorio" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <ReportsDashboard />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
               <Route path="/pos/reportes/productos" element={
                 <StaffProtectedRoute>
                   <StaffLayout>
