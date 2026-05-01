@@ -247,6 +247,11 @@ export function useKitchenOrders() {
       }
 
       setOrders(prev => {
+        // Si el pedido es de otro local, no mostrarlo
+        if (activeBranchId && (orderWithItems as any).branch_id && (orderWithItems as any).branch_id !== activeBranchId) {
+          return prev.filter(order => order.id !== orderId);
+        }
+
         // Si el pedido está en estado final o pendiente de aceptación, no mostrarlo en KDS
         if (['Entregado', 'Cancelado', 'PendienteAceptacion'].includes(orderWithItems.status)) {
           if (['Entregado', 'Cancelado'].includes(orderWithItems.status)) {
