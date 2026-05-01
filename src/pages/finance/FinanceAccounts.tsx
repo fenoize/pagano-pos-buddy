@@ -111,11 +111,27 @@ export default function FinanceAccounts() {
     );
   }
 
+  // Filter accounts by branch (cash accounts may be tied to a branch; bank/digital usually global = null)
+  const filteredAccounts = useMemo(() => {
+    if (branchFilter === 'all') return accounts;
+    return accounts.filter((a) => {
+      const bid = (a as any).branch_id as string | null | undefined;
+      return bid === branchFilter || bid == null;
+    });
+  }, [accounts, branchFilter]);
+
+  const branchNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    branches.forEach((b) => map.set(b.id, b.name));
+    return map;
+  }, [branches]);
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-2">
         <h1 className="text-3xl font-bold">Cuentas Financieras</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <BranchFilter value={branchFilter} onChange={setBranchFilter} />
           {isAdmin && (
             <Button
               variant="outline"
