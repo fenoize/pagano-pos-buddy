@@ -10,6 +10,7 @@ import { TopCashiersTable } from '@/components/reports/dashboard/TopCashiersTabl
 import { PaymentMethodBreakdown } from '@/components/reports/dashboard/PaymentMethodBreakdown';
 import { ExpensesByCategoryCompact } from '@/components/reports/dashboard/ExpensesByCategoryCompact';
 import { CashierFilter } from '@/components/reports/dashboard/CashierFilter';
+import { BranchFilter } from '@/components/branches/BranchFilter';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 
@@ -22,6 +23,8 @@ export default function ReportsDashboard() {
     cashierFilter,
     setCashierFilter,
     cashiers,
+    branchFilter,
+    setBranchFilter,
     kpis,
     salesByWeekday,
     salesByHour,
@@ -109,13 +112,16 @@ export default function ReportsDashboard() {
             customDateRange={customDateRange}
             onCustomDateChange={setCustomDateRange}
           />
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Cajero:</span>
-            <CashierFilter
-              value={cashierFilter}
-              onChange={setCashierFilter}
-              cashiers={cashiers}
-            />
+          <div className="ml-auto flex items-center gap-3 flex-wrap">
+            <BranchFilter value={branchFilter} onChange={setBranchFilter} />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Cajero:</span>
+              <CashierFilter
+                value={cashierFilter}
+                onChange={setCashierFilter}
+                cashiers={cashiers}
+              />
+            </div>
           </div>
         </div>
       </div>
