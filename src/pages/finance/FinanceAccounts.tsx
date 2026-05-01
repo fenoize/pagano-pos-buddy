@@ -11,8 +11,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Power, Eye, EyeOff } from 'lucide-react';
+import { Plus, Pencil, Power, Eye, EyeOff, ArrowLeftRight } from 'lucide-react';
 import { FinanceAccount } from '@/types/finance';
+import { AccountMovementModal } from '@/components/finance/AccountMovementModal';
 
 export default function FinanceAccounts() {
   const { user } = useAuth();
