@@ -316,6 +316,14 @@ export default function FinanceAccounts() {
           )}
         </CardContent>
       </Card>
+
+      <AccountMovementModal
+        open={movementOpen}
+        onOpenChange={setMovementOpen}
+        accounts={accounts}
+        defaultAccountId={movementAccountId}
+        onSuccess={refetch}
+      />
     </div>
   );
 }
