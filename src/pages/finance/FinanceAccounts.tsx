@@ -111,6 +111,16 @@ export default function FinanceAccounts() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Cuentas Financieras</h1>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button
+              variant="outline"
+              onClick={() => { setMovementAccountId(undefined); setMovementOpen(true); }}
+            >
+              <ArrowLeftRight className="h-4 w-4 mr-2" />
+              Nuevo Movimiento
+            </Button>
+          )}
         {isAdmin && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
