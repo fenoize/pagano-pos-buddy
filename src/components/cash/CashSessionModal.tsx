@@ -299,6 +299,24 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
         {/* Preview de efectivo pendiente al abrir turno */}
         {type === 'open' && (
           <>
+            {activeBranch && (
+              <Alert className="border-primary/30 bg-primary/5">
+                <Building2 className="h-4 w-4" />
+                <AlertDescription>
+                  Vas a abrir caja en <strong>{activeBranch.name}</strong>
+                  {activeBranch.cash_account_id ? (
+                    <span className="block text-xs text-muted-foreground mt-0.5">
+                      Caja registradora vinculada — los movimientos se reflejarán en su saldo.
+                    </span>
+                  ) : (
+                    <span className="block text-xs text-destructive mt-0.5">
+                      ⚠ Este local no tiene caja registradora asignada. Configúrala en Configuración → Locales.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
             <DeliveryCashPreview pendingByPerson={pendingByPerson} loading={pendingLoading} />
             
             {/* Alerta de pedidos heredados pendientes de pago */}
