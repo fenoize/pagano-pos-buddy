@@ -115,7 +115,7 @@ export function useKitchenOrders() {
 
   const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select(`
           *,
@@ -141,6 +141,12 @@ export function useKitchenOrders() {
         .neq('status', 'Cancelado')
         .order('created_at', { ascending: true });
 
+      if (activeBranchId) {
+        query = query.eq('branch_id', activeBranchId);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
 
       // Filtrar órdenes que están en history (no mostrar si están en cache reciente)
@@ -156,7 +162,7 @@ export function useKitchenOrders() {
         return true;
       });
       
-      console.log(`[KDS] Loaded ${ordersWithItems.length} orders, showing ${filtered.length} (filtered: history + delivery ready)`);
+      console.log(`[KDS] Loaded ${ordersWithItems.length} orders, showing ${filtered.length} (filtered: history + delivery ready, branch=${activeBranchId || 'all'})`);
       
       setOrders(filtered);
     } catch (error) {
