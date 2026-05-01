@@ -27,8 +27,9 @@ import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { useDeliveryCashPending } from '@/hooks/useDeliveryCashPending';
 import { usePendingPaymentOrders } from '@/hooks/usePendingPaymentOrders';
 import { useToast } from '@/hooks/use-toast';
-import { Smartphone, Wallet, AlertTriangle, CircleDollarSign } from 'lucide-react';
+import { Smartphone, Wallet, AlertTriangle, CircleDollarSign, Building2 } from 'lucide-react';
 import { DeliveryCashPreview } from './DeliveryCashPreview';
+import { useBranchContext } from '@/contexts/BranchContext';
 
 interface CashSessionModalProps {
   isOpen: boolean;
@@ -62,6 +63,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
   const { accounts } = useFinanceAccounts();
   const { pendingByPerson, loading: pendingLoading } = useDeliveryCashPending();
   const { count: pendingPaymentsCount, totalAmount: pendingPaymentsTotal, inheritedOrders } = usePendingPaymentOrders();
+  const { activeBranch } = useBranchContext();
   const { toast } = useToast();
 
   // Filtrar cuentas activas tipo efectivo/caja para egresos
@@ -106,10 +108,28 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
     try {
       switch (type) {
         case 'open':
-          await openSession(amountValue, acceptAppOrders);
+          if (!activeBranch) {
+            toast({
+              title: 'Selecciona un local',
+              description: 'Debes elegir un local antes de abrir caja.',
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+          if (!activeBranch.cash_account_id) {
+            toast({
+              title: 'Caja no configurada',
+              description: `El local "${activeBranch.name}" no tiene caja registradora asignada. Configúrala en Configuración → Locales.`,
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+          await openSession(amountValue, acceptAppOrders, activeBranch.id);
           toast({
             title: "Turno abierto",
-            description: `Turno iniciado con ${formatCurrency(amountValue)} en caja.${acceptAppOrders ? ' Recibiendo pedidos desde app.' : ''}`
+            description: `Turno iniciado en ${activeBranch.name} con ${formatCurrency(amountValue)} en caja.${acceptAppOrders ? ' Recibiendo pedidos desde app.' : ''}`
           });
           break;
         
