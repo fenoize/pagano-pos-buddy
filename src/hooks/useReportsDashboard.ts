@@ -72,6 +72,7 @@ export function useReportsDashboard() {
     end: Date | null;
   }>({ start: null, end: null });
   const [cashierFilter, setCashierFilter] = useState<string>('all');
+  const [branchFilter, setBranchFilter] = useState<string>('all');
 
   const [orders, setOrders] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -127,7 +128,7 @@ export function useReportsDashboard() {
       let ordersQuery = supabase
         .from('orders')
         .select(
-          'id, total, items, created_at, status, payment_method, payment_runas, created_by_user_id, cash_session_id'
+          'id, total, items, created_at, status, payment_method, payment_runas, created_by_user_id, cash_session_id, branch_id'
         )
         .gte('created_at', startStr)
         .lte('created_at', endStr)
@@ -136,14 +137,22 @@ export function useReportsDashboard() {
       if (cashierFilter && cashierFilter !== 'all') {
         ordersQuery = ordersQuery.eq('created_by_user_id', cashierFilter);
       }
+      if (branchFilter && branchFilter !== 'all') {
+        ordersQuery = ordersQuery.eq('branch_id', branchFilter);
+      }
+
+      let expensesQuery = supabase
+        .from('finance_expenses')
+        .select('id, expense_date, category, amount, branch_id')
+        .gte('expense_date', startDate)
+        .lte('expense_date', endDate);
+      if (branchFilter && branchFilter !== 'all') {
+        expensesQuery = expensesQuery.eq('branch_id', branchFilter);
+      }
 
       const [ordersRes, expensesRes, usersRes] = await Promise.all([
         ordersQuery,
-        supabase
-          .from('finance_expenses')
-          .select('id, expense_date, category, amount')
-          .gte('expense_date', startDate)
-          .lte('expense_date', endDate),
+        expensesQuery,
         supabase
           .from('users')
           .select('id, username, full_name')
@@ -199,7 +208,7 @@ export function useReportsDashboard() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange, cashierFilter]);
+  }, [dateRange, cashierFilter, branchFilter]);
 
   // ---- KPIs
   const kpis = useMemo<DashboardKPIs>(() => {
@@ -417,6 +426,8 @@ export function useReportsDashboard() {
     cashierFilter,
     setCashierFilter,
     cashiers,
+    branchFilter,
+    setBranchFilter,
     // data
     kpis,
     salesByWeekday,
