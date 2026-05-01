@@ -101,7 +101,8 @@ export function useKitchenOrders() {
       console.log('[KDS] Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBranchId]);
 
   // Helper: determinar si un pedido delivery debe ocultarse del KDS
   const shouldHideDeliveryOrder = (order: Order) => {
