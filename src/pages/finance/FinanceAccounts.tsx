@@ -287,6 +287,14 @@ export default function FinanceAccounts() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            title="Nuevo movimiento"
+                            onClick={() => { setMovementAccountId(account.id); setMovementOpen(true); }}
+                          >
+                            <ArrowLeftRight className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => handleOpenDialog(account)}
                           >
                             <Pencil className="h-4 w-4" />
