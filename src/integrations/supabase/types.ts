@@ -7948,6 +7948,17 @@ export type Database = {
           new_token: string
         }[]
       }
+      register_account_movement: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_category?: string
+          p_note?: string
+          p_to_account_id?: string
+          p_type: string
+        }
+        Returns: string
+      }
       register_account_transfer: {
         Args: {
           p_amount: number
