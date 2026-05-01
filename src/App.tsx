@@ -728,6 +728,14 @@ const App = () => (
                   </StaffLayout>
                 </StaffProtectedRoute>
               } />
+
+              <Route path="/pos/configuracion/locales" element={
+                <StaffProtectedRoute>
+                  <StaffLayout>
+                    <BranchesManagement />
+                  </StaffLayout>
+                </StaffProtectedRoute>
+              } />
               
               <Route path="/pos/marketing/promos-app" element={
                 <StaffProtectedRoute>
