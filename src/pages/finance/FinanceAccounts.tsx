@@ -11,13 +11,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Power, Eye, EyeOff } from 'lucide-react';
+import { Plus, Pencil, Power, Eye, EyeOff, ArrowLeftRight } from 'lucide-react';
 import { FinanceAccount } from '@/types/finance';
+import { AccountMovementModal } from '@/components/finance/AccountMovementModal';
 
 export default function FinanceAccounts() {
   const { user } = useAuth();
-  const { accounts, loading, createAccount, updateAccount, toggleActiveAccount } = useFinanceAccounts();
+  const { accounts, loading, createAccount, updateAccount, toggleActiveAccount, refetch } = useFinanceAccounts();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [movementOpen, setMovementOpen] = useState(false);
+  const [movementAccountId, setMovementAccountId] = useState<string | undefined>(undefined);
   const [editingAccount, setEditingAccount] = useState<FinanceAccount | null>(null);
   const [visibleBalances, setVisibleBalances] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({
@@ -108,6 +111,16 @@ export default function FinanceAccounts() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Cuentas Financieras</h1>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button
+              variant="outline"
+              onClick={() => { setMovementAccountId(undefined); setMovementOpen(true); }}
+            >
+              <ArrowLeftRight className="h-4 w-4 mr-2" />
+              Nuevo Movimiento
+            </Button>
+          )}
         {isAdmin && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -203,6 +216,7 @@ export default function FinanceAccounts() {
             </DialogContent>
           </Dialog>
         )}
+        </div>
       </div>
 
       <Card>
@@ -273,6 +287,14 @@ export default function FinanceAccounts() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            title="Nuevo movimiento"
+                            onClick={() => { setMovementAccountId(account.id); setMovementOpen(true); }}
+                          >
+                            <ArrowLeftRight className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => handleOpenDialog(account)}
                           >
                             <Pencil className="h-4 w-4" />
@@ -294,6 +316,14 @@ export default function FinanceAccounts() {
           )}
         </CardContent>
       </Card>
+
+      <AccountMovementModal
+        open={movementOpen}
+        onOpenChange={setMovementOpen}
+        accounts={accounts}
+        defaultAccountId={movementAccountId}
+        onSuccess={refetch}
+      />
     </div>
   );
 }
