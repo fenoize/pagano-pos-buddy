@@ -17,8 +17,10 @@ import { AccountMovementModal } from '@/components/finance/AccountMovementModal'
 
 export default function FinanceAccounts() {
   const { user } = useAuth();
-  const { accounts, loading, createAccount, updateAccount, toggleActiveAccount } = useFinanceAccounts();
+  const { accounts, loading, createAccount, updateAccount, toggleActiveAccount, refetch } = useFinanceAccounts();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [movementOpen, setMovementOpen] = useState(false);
+  const [movementAccountId, setMovementAccountId] = useState<string | undefined>(undefined);
   const [editingAccount, setEditingAccount] = useState<FinanceAccount | null>(null);
   const [visibleBalances, setVisibleBalances] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({
