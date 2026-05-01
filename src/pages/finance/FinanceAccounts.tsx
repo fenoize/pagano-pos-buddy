@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,10 +14,14 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Power, Eye, EyeOff, ArrowLeftRight } from 'lucide-react';
 import { FinanceAccount } from '@/types/finance';
 import { AccountMovementModal } from '@/components/finance/AccountMovementModal';
+import { BranchFilter } from '@/components/branches/BranchFilter';
+import { useBranchContext } from '@/contexts/BranchContext';
 
 export default function FinanceAccounts() {
   const { user } = useAuth();
   const { accounts, loading, createAccount, updateAccount, toggleActiveAccount, refetch } = useFinanceAccounts();
+  const { branches } = useBranchContext();
+  const [branchFilter, setBranchFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [movementOpen, setMovementOpen] = useState(false);
   const [movementAccountId, setMovementAccountId] = useState<string | undefined>(undefined);
