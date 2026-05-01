@@ -238,6 +238,7 @@ const App = () => (
         disableTransitionOnChange
       >
         <AuthProvider>
+          <BranchProvider>
           <CustomerAuthProvider>
             <CartProvider>
               <TooltipProvider>
@@ -843,6 +844,7 @@ const App = () => (
           </TooltipProvider>
           </CartProvider>
         </CustomerAuthProvider>
+        </BranchProvider>
       </AuthProvider>
       </ThemeProvider>
     </HelmetProvider>
