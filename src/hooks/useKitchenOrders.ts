@@ -4,6 +4,7 @@ import { Order, OrderStatus } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useKDSHistory } from '@/hooks/useKDSHistory';
 import { triggerOrderStatusNotification } from '@/lib/notificationTriggers';
+import { useBranchContext } from '@/contexts/BranchContext';
 
 export function useKitchenOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -11,6 +12,8 @@ export function useKitchenOrders() {
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { addToHistory, isInHistory, removeFromHistory } = useKDSHistory();
+  const { activeBranch } = useBranchContext();
+  const activeBranchId = activeBranch?.id || null;
 
   useEffect(() => {
     fetchOrders();
