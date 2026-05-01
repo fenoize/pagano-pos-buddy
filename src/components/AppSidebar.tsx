@@ -106,6 +106,7 @@ const sectionPersonal = [
 // Section 8: Configuración
 const sectionConfig = [
   { title: "Configuración", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
+  { title: "Locales", url: "/pos/configuracion/locales", icon: Building2, roles: ['Administrador'] },
   { title: "Mi Configuración", url: "/pos/mi-configuracion", icon: Settings, roles: ['Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer', 'Leer QR'] },
 ];
 

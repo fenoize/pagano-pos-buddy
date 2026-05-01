@@ -52,7 +52,11 @@ export function useCashSession() {
     }
   };
 
-  const openSession = async (openingCash: number, acceptAppOrders: boolean = false): Promise<CashSession> => {
+  const openSession = async (
+    openingCash: number,
+    acceptAppOrders: boolean = false,
+    branchId?: string
+  ): Promise<CashSession> => {
     if (!user?.id) throw new Error('User not authenticated');
 
     try {
@@ -68,12 +72,30 @@ export function useCashSession() {
         throw new Error('Ya existe una sesión de caja abierta');
       }
 
+      // Resolver branch_id: parámetro > localStorage > local por defecto en BD
+      let resolvedBranchId = branchId
+        || (typeof window !== 'undefined' ? localStorage.getItem('paganos_active_branch_id') : null);
+
+      if (!resolvedBranchId) {
+        const { data: defaultBranch } = await supabase
+          .from('branches')
+          .select('id')
+          .eq('is_default', true)
+          .maybeSingle();
+        resolvedBranchId = defaultBranch?.id || null;
+      }
+
+      if (!resolvedBranchId) {
+        throw new Error('No hay un local configurado. Crea un local en Configuración > Locales.');
+      }
+
       const { data, error } = await supabase
         .from('cash_sessions')
         .insert({
           user_id: user.id,
           opening_cash: openingCash,
-          accept_app_orders: acceptAppOrders
+          accept_app_orders: acceptAppOrders,
+          branch_id: resolvedBranchId,
         })
         .select()
         .single();

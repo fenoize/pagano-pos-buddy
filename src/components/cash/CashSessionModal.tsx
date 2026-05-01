@@ -27,8 +27,9 @@ import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { useDeliveryCashPending } from '@/hooks/useDeliveryCashPending';
 import { usePendingPaymentOrders } from '@/hooks/usePendingPaymentOrders';
 import { useToast } from '@/hooks/use-toast';
-import { Smartphone, Wallet, AlertTriangle, CircleDollarSign } from 'lucide-react';
+import { Smartphone, Wallet, AlertTriangle, CircleDollarSign, Building2 } from 'lucide-react';
 import { DeliveryCashPreview } from './DeliveryCashPreview';
+import { useBranchContext } from '@/contexts/BranchContext';
 
 interface CashSessionModalProps {
   isOpen: boolean;
@@ -62,6 +63,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
   const { accounts } = useFinanceAccounts();
   const { pendingByPerson, loading: pendingLoading } = useDeliveryCashPending();
   const { count: pendingPaymentsCount, totalAmount: pendingPaymentsTotal, inheritedOrders } = usePendingPaymentOrders();
+  const { activeBranch } = useBranchContext();
   const { toast } = useToast();
 
   // Filtrar cuentas activas tipo efectivo/caja para egresos
@@ -106,10 +108,28 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
     try {
       switch (type) {
         case 'open':
-          await openSession(amountValue, acceptAppOrders);
+          if (!activeBranch) {
+            toast({
+              title: 'Selecciona un local',
+              description: 'Debes elegir un local antes de abrir caja.',
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+          if (!activeBranch.cash_account_id) {
+            toast({
+              title: 'Caja no configurada',
+              description: `El local "${activeBranch.name}" no tiene caja registradora asignada. Configúrala en Configuración → Locales.`,
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+          await openSession(amountValue, acceptAppOrders, activeBranch.id);
           toast({
             title: "Turno abierto",
-            description: `Turno iniciado con ${formatCurrency(amountValue)} en caja.${acceptAppOrders ? ' Recibiendo pedidos desde app.' : ''}`
+            description: `Turno iniciado en ${activeBranch.name} con ${formatCurrency(amountValue)} en caja.${acceptAppOrders ? ' Recibiendo pedidos desde app.' : ''}`
           });
           break;
         
@@ -279,6 +299,24 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
         {/* Preview de efectivo pendiente al abrir turno */}
         {type === 'open' && (
           <>
+            {activeBranch && (
+              <Alert className="border-primary/30 bg-primary/5">
+                <Building2 className="h-4 w-4" />
+                <AlertDescription>
+                  Vas a abrir caja en <strong>{activeBranch.name}</strong>
+                  {activeBranch.cash_account_id ? (
+                    <span className="block text-xs text-muted-foreground mt-0.5">
+                      Caja registradora vinculada — los movimientos se reflejarán en su saldo.
+                    </span>
+                  ) : (
+                    <span className="block text-xs text-destructive mt-0.5">
+                      ⚠ Este local no tiene caja registradora asignada. Configúrala en Configuración → Locales.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
             <DeliveryCashPreview pendingByPerson={pendingByPerson} loading={pendingLoading} />
             
             {/* Alerta de pedidos heredados pendientes de pago */}
