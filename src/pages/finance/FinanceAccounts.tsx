@@ -244,7 +244,7 @@ export default function FinanceAccounts() {
           <CardTitle>Listado de Cuentas</CardTitle>
         </CardHeader>
         <CardContent>
-          {accounts.length === 0 ? (
+          {filteredAccounts.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               No hay cuentas registradas
             </p>
@@ -254,6 +254,7 @@ export default function FinanceAccounts() {
                 <TableRow>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Local</TableHead>
                   <TableHead>Código</TableHead>
                   {isAdmin && <TableHead>Saldo</TableHead>}
                   <TableHead>Estado</TableHead>
@@ -261,10 +262,17 @@ export default function FinanceAccounts() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {accounts.map((account) => (
+                {filteredAccounts.map((account) => (
                   <TableRow key={account.id}>
                     <TableCell className="font-medium">{account.name}</TableCell>
                     <TableCell>{account.type}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const bid = (account as any).branch_id as string | null | undefined;
+                        if (!bid) return <span className="text-xs text-muted-foreground">Global</span>;
+                        return <Badge variant="outline" className="text-xs">{branchNameById.get(bid) || '—'}</Badge>;
+                      })()}
+                    </TableCell>
                     <TableCell>
                       {account.code ? (
                         <code className="text-xs bg-muted px-2 py-1 rounded">{account.code}</code>
