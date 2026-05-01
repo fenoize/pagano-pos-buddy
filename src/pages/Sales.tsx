@@ -478,9 +478,12 @@ export default function Sales() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end items-center">
-        
-        <div className="flex gap-2">
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <BranchFilter
+          value={filters.branchId || 'all'}
+          onChange={(v) => setFilters({ ...filters, branchId: v === 'all' ? undefined : v })}
+        />
+        <div className="flex gap-2 ml-auto">
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
