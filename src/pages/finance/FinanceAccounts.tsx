@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,10 +14,14 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Power, Eye, EyeOff, ArrowLeftRight } from 'lucide-react';
 import { FinanceAccount } from '@/types/finance';
 import { AccountMovementModal } from '@/components/finance/AccountMovementModal';
+import { BranchFilter } from '@/components/branches/BranchFilter';
+import { useBranchContext } from '@/contexts/BranchContext';
 
 export default function FinanceAccounts() {
   const { user } = useAuth();
   const { accounts, loading, createAccount, updateAccount, toggleActiveAccount, refetch } = useFinanceAccounts();
+  const { branches } = useBranchContext();
+  const [branchFilter, setBranchFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [movementOpen, setMovementOpen] = useState(false);
   const [movementAccountId, setMovementAccountId] = useState<string | undefined>(undefined);
@@ -107,11 +111,27 @@ export default function FinanceAccounts() {
     );
   }
 
+  // Filter accounts by branch (cash accounts may be tied to a branch; bank/digital usually global = null)
+  const filteredAccounts = useMemo(() => {
+    if (branchFilter === 'all') return accounts;
+    return accounts.filter((a) => {
+      const bid = (a as any).branch_id as string | null | undefined;
+      return bid === branchFilter || bid == null;
+    });
+  }, [accounts, branchFilter]);
+
+  const branchNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    branches.forEach((b) => map.set(b.id, b.name));
+    return map;
+  }, [branches]);
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-2">
         <h1 className="text-3xl font-bold">Cuentas Financieras</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <BranchFilter value={branchFilter} onChange={setBranchFilter} />
           {isAdmin && (
             <Button
               variant="outline"
@@ -224,7 +244,7 @@ export default function FinanceAccounts() {
           <CardTitle>Listado de Cuentas</CardTitle>
         </CardHeader>
         <CardContent>
-          {accounts.length === 0 ? (
+          {filteredAccounts.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               No hay cuentas registradas
             </p>
@@ -234,6 +254,7 @@ export default function FinanceAccounts() {
                 <TableRow>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Local</TableHead>
                   <TableHead>Código</TableHead>
                   {isAdmin && <TableHead>Saldo</TableHead>}
                   <TableHead>Estado</TableHead>
@@ -241,10 +262,17 @@ export default function FinanceAccounts() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {accounts.map((account) => (
+                {filteredAccounts.map((account) => (
                   <TableRow key={account.id}>
                     <TableCell className="font-medium">{account.name}</TableCell>
                     <TableCell>{account.type}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const bid = (account as any).branch_id as string | null | undefined;
+                        if (!bid) return <span className="text-xs text-muted-foreground">Global</span>;
+                        return <Badge variant="outline" className="text-xs">{branchNameById.get(bid) || '—'}</Badge>;
+                      })()}
+                    </TableCell>
                     <TableCell>
                       {account.code ? (
                         <code className="text-xs bg-muted px-2 py-1 rounded">{account.code}</code>

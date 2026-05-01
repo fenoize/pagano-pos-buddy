@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Order } from '@/types';
 import { usePermissions } from '@/hooks/usePermissions';
+import { BranchFilter } from '@/components/branches/BranchFilter';
 
 interface Customer {
   id: string;
@@ -42,6 +43,7 @@ interface SalesFilters {
   customerId?: string;
   status?: string;
   paymentMethod?: string;
+  branchId?: string;
 }
 
 export default function Sales() {
@@ -93,7 +95,7 @@ export default function Sales() {
       // El usuario puede usar filtros si necesita datos más antiguos
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, customer_id, status, total, payment_method, fulfillment, created_at, updated_at, nombre_resumen, notes')
+        .select('id, order_number, customer_id, status, total, payment_method, fulfillment, created_at, updated_at, nombre_resumen, notes, branch_id')
         .order('created_at', { ascending: false })
         .limit(200);
 
@@ -286,6 +288,11 @@ export default function Sales() {
       filtered = filtered.filter(order => order.payment_method === filters.paymentMethod);
     }
 
+    // Filter by branch
+    if (filters.branchId) {
+      filtered = filtered.filter(order => (order as any).branch_id === filters.branchId);
+    }
+
     // Search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -471,9 +478,12 @@ export default function Sales() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end items-center">
-        
-        <div className="flex gap-2">
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <BranchFilter
+          value={filters.branchId || 'all'}
+          onChange={(v) => setFilters({ ...filters, branchId: v === 'all' ? undefined : v })}
+        />
+        <div className="flex gap-2 ml-auto">
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}

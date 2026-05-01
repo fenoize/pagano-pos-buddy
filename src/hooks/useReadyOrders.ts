@@ -5,12 +5,13 @@ import type { Order, OrderItem, OrderStatus } from '@/types';
 interface UseReadyOrdersOptions {
   visibleStatuses?: string[];
   enabled?: boolean;
+  branchId?: string | null;
 }
 
 const DEFAULT_STATUSES: OrderStatus[] = ['En preparación', 'Listo'];
 
 export function useReadyOrders(options: UseReadyOrdersOptions = {}) {
-  const { visibleStatuses = DEFAULT_STATUSES, enabled = true } = options;
+  const { visibleStatuses = DEFAULT_STATUSES, enabled = true, branchId = null } = options;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,12 +19,18 @@ export function useReadyOrders(options: UseReadyOrdersOptions = {}) {
     // Filtrar solo estados válidos
     const statusesToFetch = visibleStatuses.length > 0 ? visibleStatuses : DEFAULT_STATUSES;
     
-    const { data, error } = await supabase
+    let query = supabase
       .from('orders')
       .select('*, customer:customers(*)')
       .in('status', statusesToFetch as OrderStatus[])
       .eq('fulfillment', 'retiro') // Solo pedidos de retiro, NO delivery
       .order('updated_at', { ascending: false });
+
+    if (branchId) {
+      query = query.eq('branch_id', branchId);
+    }
+
+    const { data, error } = await query;
     
     if (error) {
       console.error('Error fetching ready orders:', error);
@@ -39,7 +46,7 @@ export function useReadyOrders(options: UseReadyOrdersOptions = {}) {
       setOrders(mappedOrders);
     }
     setLoading(false);
-  }, [visibleStatuses]);
+  }, [visibleStatuses, branchId]);
 
   useEffect(() => {
     if (!enabled) return;

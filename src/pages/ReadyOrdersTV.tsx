@@ -28,6 +28,11 @@ export default function ReadyOrdersTV() {
   const storedScreenId = localStorage.getItem(STORAGE_KEYS.TV_SCREEN_ID) || undefined;
   const screenId = urlScreenId || storedScreenId || undefined;
 
+  // Resolve branchId: ?branch=<id> URL param > active branch in localStorage > null (all branches)
+  const urlBranchId = searchParams.get('branch') || undefined;
+  const storedBranchId = localStorage.getItem('paganos_active_branch_id') || undefined;
+  const tvBranchId = urlBranchId || storedBranchId || null;
+
   const { data: savedConfig, isLoading: configLoading } = useTVScreenConfig(screenId);
   const configReady = !configLoading;
 
@@ -51,7 +56,7 @@ export default function ReadyOrdersTV() {
 
   // Usar estados visibles de la configuración — solo cuando config está lista
   const visibleStatuses = localConfig.visible_statuses || ['En preparación', 'Listo', 'Entregado'];
-  const { readyOrders, loading, refetch } = useReadyOrders({ visibleStatuses, enabled: configReady });
+  const { readyOrders, loading, refetch } = useReadyOrders({ visibleStatuses, enabled: configReady, branchId: tvBranchId });
 
   const [recentlyReady, setRecentlyReady] = useState<Set<string>>(new Set());
   const [recentlyDelivered, setRecentlyDelivered] = useState<Set<string>>(new Set());

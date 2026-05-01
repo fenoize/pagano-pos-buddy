@@ -4,6 +4,7 @@ import { Order, OrderStatus } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useKDSHistory } from '@/hooks/useKDSHistory';
 import { triggerOrderStatusNotification } from '@/lib/notificationTriggers';
+import { useBranchContext } from '@/contexts/BranchContext';
 
 export function useKitchenOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -11,6 +12,8 @@ export function useKitchenOrders() {
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { addToHistory, isInHistory, removeFromHistory } = useKDSHistory();
+  const { activeBranch } = useBranchContext();
+  const activeBranchId = activeBranch?.id || null;
 
   useEffect(() => {
     fetchOrders();
@@ -98,7 +101,8 @@ export function useKitchenOrders() {
       console.log('[KDS] Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBranchId]);
 
   // Helper: determinar si un pedido delivery debe ocultarse del KDS
   const shouldHideDeliveryOrder = (order: Order) => {
@@ -112,7 +116,7 @@ export function useKitchenOrders() {
 
   const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select(`
           *,
@@ -138,6 +142,12 @@ export function useKitchenOrders() {
         .neq('status', 'Cancelado')
         .order('created_at', { ascending: true });
 
+      if (activeBranchId) {
+        query = query.eq('branch_id', activeBranchId);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
 
       // Filtrar órdenes que están en history (no mostrar si están en cache reciente)
@@ -153,7 +163,7 @@ export function useKitchenOrders() {
         return true;
       });
       
-      console.log(`[KDS] Loaded ${ordersWithItems.length} orders, showing ${filtered.length} (filtered: history + delivery ready)`);
+      console.log(`[KDS] Loaded ${ordersWithItems.length} orders, showing ${filtered.length} (filtered: history + delivery ready, branch=${activeBranchId || 'all'})`);
       
       setOrders(filtered);
     } catch (error) {
@@ -237,6 +247,11 @@ export function useKitchenOrders() {
       }
 
       setOrders(prev => {
+        // Si el pedido es de otro local, no mostrarlo
+        if (activeBranchId && (orderWithItems as any).branch_id && (orderWithItems as any).branch_id !== activeBranchId) {
+          return prev.filter(order => order.id !== orderId);
+        }
+
         // Si el pedido está en estado final o pendiente de aceptación, no mostrarlo en KDS
         if (['Entregado', 'Cancelado', 'PendienteAceptacion'].includes(orderWithItems.status)) {
           if (['Entregado', 'Cancelado'].includes(orderWithItems.status)) {
