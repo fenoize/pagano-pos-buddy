@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDateShort } from '@/lib/dateUtils';
 import { Badge } from '@/components/ui/badge';
 import * as XLSX from 'xlsx';
+import { BranchFilter } from '@/components/branches/BranchFilter';
 
 const EXPENSE_TYPES = ['Variable', 'Fijo', 'Inversión', 'Otro'];
 
@@ -56,6 +57,7 @@ export default function FinanceExpenses() {
   const [filterAccount, setFilterAccount] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterBranch, setFilterBranch] = useState<string>('all');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [monthInitialized, setMonthInitialized] = useState(false);
 
@@ -168,10 +170,11 @@ export default function FinanceExpenses() {
       if (filterAccount !== 'all' && expense.account_id !== filterAccount) return false;
       if (filterType !== 'all' && expense.expense_type !== filterType) return false;
       if (filterCategory !== 'all' && expense.category !== filterCategory) return false;
+      if (filterBranch !== 'all' && (expense as any).branch_id !== filterBranch) return false;
       
       return true;
     });
-  }, [expenses, currentMonth, filterStartDate, filterEndDate, filterAccount, filterType, filterCategory]);
+  }, [expenses, currentMonth, filterStartDate, filterEndDate, filterAccount, filterType, filterCategory, filterBranch]);
 
   const kpis = useMemo(() => {
     const total = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -721,7 +724,10 @@ export default function FinanceExpenses() {
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div className="md:col-span-1 flex items-end">
+              <BranchFilter value={filterBranch} onChange={setFilterBranch} className="w-full" alwaysShow />
+            </div>
             <div>
               <Label>Desde</Label>
               <Popover>
