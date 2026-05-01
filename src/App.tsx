@@ -81,6 +81,7 @@ const MarketingNotifications = lazy(() => import("@/pages/MarketingNotifications
 const MarketingTVContent = lazy(() => import("@/pages/MarketingTVContent"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const ForceUpdate = lazy(() => import("@/pages/ForceUpdate"));
+const BranchesManagement = lazy(() => import("@/pages/BranchesManagement"));
 
 // Delivery Pages
 const DeliveryDashboard = lazy(() => import("@/pages/delivery/DeliveryDashboard"));
@@ -194,6 +195,7 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-4">
                 <SidebarTrigger />
                 <h2 className="font-semibold text-primary">Paganos POS</h2>
+                <BranchIndicator />
               </div>
               <div className="flex items-center gap-2">
                 <CashSessionTopBar />
@@ -202,6 +204,9 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
              
              {/* Banner de pedidos entrantes - solo visible si hay sesión con accept_app_orders */}
              <IncomingOrderBanner />
+             
+             {/* Modal de selección de local cuando hay varios activos */}
+             <BranchSelectorModal />
              
             <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
               {children}
