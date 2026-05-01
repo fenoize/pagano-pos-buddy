@@ -216,6 +216,7 @@ export default function FinanceAccounts() {
             </DialogContent>
           </Dialog>
         )}
+        </div>
       </div>
 
       <Card>
