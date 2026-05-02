@@ -7560,6 +7560,10 @@ export type Database = {
         Args: { p_customer_id: string; p_order_id: string }
         Returns: Json
       }
+      evaluate_customer_badges: {
+        Args: { p_customer_id: string }
+        Returns: undefined
+      }
       evaluate_registration_campaigns: {
         Args: { p_customer_id: string }
         Returns: Json
