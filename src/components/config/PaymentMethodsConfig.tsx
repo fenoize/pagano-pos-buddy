@@ -172,6 +172,9 @@ export function PaymentMethodsConfig() {
     reorderPaymentMethods,
     restoreDefaults 
   } = usePaymentMethods();
+  const { user } = useAuthContext();
+  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  const canReorder = userRoles.includes('Administrador');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
