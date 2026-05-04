@@ -955,12 +955,23 @@ export default function PaymentModal({
                         key={denomination}
                         variant="outline"
                         className="h-12 flex flex-col gap-1 text-sm font-medium"
-                        onClick={() => setCurrentAmount(denomination.toString())}
+                        onClick={() => {
+                          const current = parseFloat(currentAmount) || 0;
+                          setCurrentAmount((current + denomination).toString());
+                        }}
                       >
                         <Banknote className="w-4 h-4" />
                         {formatPrice(denomination)}
                       </Button>
                     ))}
+                    <Button
+                      variant="outline"
+                      className="h-12 flex flex-col gap-1 text-sm font-medium text-destructive hover:text-destructive"
+                      onClick={() => setCurrentAmount('')}
+                    >
+                      <X className="w-4 h-4" />
+                      Borrar
+                    </Button>
                   </div>
                   <div>
                     <Label htmlFor="efectivo">Con cuánto paga</Label>
