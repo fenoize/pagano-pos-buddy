@@ -325,6 +325,7 @@ export function PaymentMethodsConfig() {
                       onEdit={handleOpenModal}
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}
+                      canReorder={canReorder}
                     />
                   ))}
                 </SortableContext>
