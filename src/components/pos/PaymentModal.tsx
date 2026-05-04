@@ -605,7 +605,9 @@ export default function PaymentModal({
         )}
 
         <div className="flex-1 overflow-y-auto px-6 pb-2">
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* ====== LEFT COLUMN: Order detail + customer ====== */}
+          <div className="space-y-4">
           {/* Order Name */}
           {orderName && (
             <Card>
