@@ -663,6 +663,7 @@ const App = () => (
               <Route path="/pos/finanzas/proveedores" element={<StaffProtectedRoute><StaffLayout><FinanceSuppliers /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/finanzas/gastos-fijos" element={<StaffProtectedRoute><StaffLayout><FixedExpenses /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/finanzas/egresos" element={<StaffProtectedRoute><StaffLayout><FinanceExpenses /></StaffLayout></StaffProtectedRoute>} />
+              <Route path="/pos/finanzas/movimientos" element={<StaffProtectedRoute><StaffLayout><FinanceMovements /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/finanzas/cierres" element={<StaffProtectedRoute><StaffLayout><FinanceCierres /></StaffLayout></StaffProtectedRoute>} />
               <Route path="/pos/finanzas/configuracion" element={<StaffProtectedRoute><StaffLayout><FinanceConfig /></StaffLayout></StaffProtectedRoute>} />
               
