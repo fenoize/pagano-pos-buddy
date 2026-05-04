@@ -308,6 +308,17 @@ export function useCashSession() {
         .eq('session_id', sessionToQuery)
         .order('created_at');
 
+      // Resolver la cuenta de efectivo de la sucursal del turno (caja del local)
+      let registerCashAccountId: string | null = null;
+      if (session.branch_id) {
+        const { data: branchData } = await supabase
+          .from('branches')
+          .select('cash_account_id')
+          .eq('id', session.branch_id)
+          .maybeSingle();
+        registerCashAccountId = branchData?.cash_account_id || null;
+      }
+
       if (movementsError) {
         console.error('Movements error:', movementsError);
         throw movementsError;
@@ -408,13 +419,18 @@ export function useCashSession() {
       const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
       const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
 
-      // Transferencias entre cuentas: si la cuenta destino es Efectivo, suma al cash de caja;
-      // si la cuenta origen es Efectivo, resta al cash de caja.
+      // Transferencias entre cuentas: solo afectan el efectivo de la caja del local (cash_account_id del branch).
+      // Si no hay branch asignado, fallback: cualquier cuenta tipo 'Efectivo'.
+      const isRegisterAccount = (acc: any) =>
+        registerCashAccountId
+          ? acc?.id === registerCashAccountId
+          : acc?.type === 'Efectivo';
+
       const transferenciasIn = movements
-        ?.filter((m: any) => m.type === 'transferencia' && m.to_account?.type === 'Efectivo')
+        ?.filter((m: any) => m.type === 'transferencia' && isRegisterAccount(m.to_account))
         .reduce((sum: number, m: any) => sum + m.amount, 0) || 0;
       const transferenciasOut = movements
-        ?.filter((m: any) => m.type === 'transferencia' && m.from_account?.type === 'Efectivo')
+        ?.filter((m: any) => m.type === 'transferencia' && isRegisterAccount(m.from_account))
         .reduce((sum: number, m: any) => sum + m.amount, 0) || 0;
 
       // Get pending cash from delivery drivers
