@@ -131,18 +131,12 @@ export function usePaymentMethods() {
   };
 
   const reorderPaymentMethods = async (reorderedMethods: PaymentMethod[]) => {
+    // Optimistic update
+    setPaymentMethods(reorderedMethods);
     try {
-      const updates = reorderedMethods.map((method, index) => ({
-        id: method.id,
-        display_order: index
-      }));
-
-      for (const update of updates) {
-        await supabase
-          .from('payment_methods')
-          .update({ display_order: update.display_order })
-          .eq('id', update.id);
-      }
+      const ids = reorderedMethods.map((m) => m.id);
+      const { error } = await supabase.rpc('reorder_payment_methods', { p_ids: ids });
+      if (error) throw error;
 
       toast({
         title: "Éxito",
