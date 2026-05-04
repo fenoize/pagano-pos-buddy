@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { 
   CreditCard, Banknote, Smartphone, Coins, Bike, Plus, X,
-  AppWindow, Sparkles, DollarSign, Wallet, User, Ticket
+  AppWindow, Sparkles, DollarSign, Wallet, User, Ticket, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,6 +54,131 @@ interface PaymentData {
   payments: SinglePayment[];
   fulfillment: FulfillmentType;
   notes?: string;
+}
+
+function PaymentItemRow({ item, itemTotal, formatPrice }: { item: OrderItem; itemTotal: number; formatPrice: (n: number) => string }) {
+  const isCombo = item.is_combo_item && item.combo_selections && item.combo_selections.length > 0;
+  const hasDetails = isCombo
+    || (item.variant_group_selections && item.variant_group_selections.length > 0)
+    || (item.extras && item.extras.length > 0)
+    || (item.modifiers && item.modifiers.length > 0)
+    || !!item.notes;
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="border border-border/60 rounded-lg bg-muted/20">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger
+          asChild
+          disabled={!hasDetails}
+        >
+          <button
+            type="button"
+            className="w-full flex justify-between items-start gap-2 p-3 text-left hover:bg-muted/40 rounded-lg transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+            disabled={!hasDetails}
+          >
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {hasDetails && (
+                open ? <ChevronUp className="w-4 h-4 shrink-0 text-muted-foreground" />
+                     : <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
+              )}
+              <span className="font-medium text-sm truncate">
+                {item.quantity}x {item.productName}
+                {item.variant_name ? ` (${item.variant_name})` : item.size ? ` (${item.size})` : ''}
+                {item.priceKind === 'combo' && !item.variant_name ? ' • Combo' : ''}
+              </span>
+            </div>
+            <span className="currency text-sm font-semibold whitespace-nowrap">
+              {formatPrice(itemTotal)}
+            </span>
+          </button>
+        </CollapsibleTrigger>
+        {hasDetails && (
+          <CollapsibleContent>
+            <div className="px-3 pb-3 pt-0 space-y-2">
+              {item.variant_group_selections && item.variant_group_selections.length > 0 && (
+                <div className="text-xs text-muted-foreground pl-2">
+                  {item.variant_group_selections.map((s: any, i: number) => (
+                    <div key={i}>• {s.option_name}</div>
+                  ))}
+                </div>
+              )}
+
+              {isCombo && (
+                <div className="space-y-2">
+                  {item.combo_selections!.map((selection: any, selIdx: number) => (
+                    <div key={selIdx} className="text-xs bg-background/60 rounded p-2 space-y-0.5">
+                      <div className="font-medium">
+                        {selection.comboSlot?.category?.name || 'Item'}
+                        {selection.quantity > 1 && ` x${selection.quantity}`}
+                      </div>
+                      {selection.selectedProduct && (
+                        <div className="text-muted-foreground pl-2">→ {selection.selectedProduct.name}</div>
+                      )}
+                      {selection.selectedVariant && (
+                        <div className="text-muted-foreground pl-2">
+                          • {selection.selectedVariant.variant?.name || selection.selectedVariant.name || 'Variante'}
+                          {selection.selectedVariant.price_adjustment ? (
+                            <span className="ml-1">
+                              ({selection.selectedVariant.price_adjustment > 0 ? '+' : ''}
+                              {formatPrice(selection.selectedVariant.price_adjustment)})
+                            </span>
+                          ) : null}
+                        </div>
+                      )}
+                      {selection.extras && selection.extras.length > 0 && (
+                        <div className="pl-2">
+                          {selection.extras.map((extra: any, ei: number) => (
+                            <div key={ei} className="flex justify-between text-muted-foreground">
+                              <span>+ {extra.label || extra.name}{extra.quantity > 1 ? ` x${extra.quantity}` : ''}</span>
+                              {extra.price > 0 && <span>{formatPrice(extra.price * (extra.quantity || 1))}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {selection.modifiers && selection.modifiers.length > 0 && (
+                        <div className="pl-2 italic text-muted-foreground">
+                          {selection.modifiers.map((m: any, mi: number) => (
+                            <div key={mi}>• {m.name}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!isCombo && item.extras && item.extras.length > 0 && (
+                <div className="text-xs">
+                  {item.extras.map((extra, ei) => (
+                    <div key={ei} className="flex justify-between text-muted-foreground">
+                      <span>+ {extra.label}{extra.quantity && extra.quantity > 1 ? ` x${extra.quantity}` : ''}</span>
+                      <span>{formatPrice(extra.price * (extra.quantity || 1))}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {item.modifiers && item.modifiers.length > 0 && (
+                <div className="text-xs italic text-muted-foreground">
+                  {item.modifiers.map((m: any, mi: number) => (
+                    <div key={mi}>• {m.name}</div>
+                  ))}
+                </div>
+              )}
+
+              {item.notes && (
+                <div className="text-xs bg-amber-50 dark:bg-amber-950/30 border-l-2 border-amber-400 px-2 py-1 rounded">
+                  <span className="font-medium text-amber-700 dark:text-amber-400">Nota:</span>{' '}
+                  <span className="text-amber-700 dark:text-amber-300">{item.notes}</span>
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
+        )}
+      </Collapsible>
+    </div>
+  );
 }
 
 export default function PaymentModal({ 
@@ -641,103 +767,13 @@ export default function PaymentModal({
               <div className="space-y-3">
                 {items.map((item, index) => {
                   const itemTotal = (item.basePrice + item.extras.reduce((sum, e) => sum + (e.price * (e.quantity || 1)), 0)) * item.quantity;
-                  const isCombo = item.is_combo_item && item.combo_selections && item.combo_selections.length > 0;
                   return (
-                    <div key={index} className="border border-border/60 rounded-lg p-3 bg-muted/20">
-                      <div className="flex justify-between items-start gap-2 mb-1">
-                        <span className="font-medium text-sm">
-                          {item.quantity}x {item.productName}
-                          {item.variant_name ? ` (${item.variant_name})` : item.size ? ` (${item.size})` : ''}
-                          {item.priceKind === 'combo' && !item.variant_name ? ' • Combo' : ''}
-                        </span>
-                        <span className="currency text-sm font-semibold whitespace-nowrap">
-                          {formatPrice(itemTotal)}
-                        </span>
-                      </div>
-
-                      {/* Variant group selections */}
-                      {item.variant_group_selections && item.variant_group_selections.length > 0 && (
-                        <div className="text-xs text-muted-foreground pl-2">
-                          {item.variant_group_selections.map((s: any, i: number) => (
-                            <div key={i}>• {s.option_name}</div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Combo selections */}
-                      {isCombo && (
-                        <div className="mt-2 space-y-2">
-                          {item.combo_selections!.map((selection: any, selIdx: number) => (
-                            <div key={selIdx} className="text-xs bg-background/60 rounded p-2 space-y-0.5">
-                              <div className="font-medium">
-                                {selection.comboSlot?.category?.name || 'Item'}
-                                {selection.quantity > 1 && ` x${selection.quantity}`}
-                              </div>
-                              {selection.selectedProduct && (
-                                <div className="text-muted-foreground pl-2">→ {selection.selectedProduct.name}</div>
-                              )}
-                              {selection.selectedVariant && (
-                                <div className="text-muted-foreground pl-2">
-                                  • {selection.selectedVariant.variant?.name || selection.selectedVariant.name || 'Variante'}
-                                  {selection.selectedVariant.price_adjustment ? (
-                                    <span className="ml-1">
-                                      ({selection.selectedVariant.price_adjustment > 0 ? '+' : ''}
-                                      {formatPrice(selection.selectedVariant.price_adjustment)})
-                                    </span>
-                                  ) : null}
-                                </div>
-                              )}
-                              {selection.extras && selection.extras.length > 0 && (
-                                <div className="pl-2">
-                                  {selection.extras.map((extra: any, ei: number) => (
-                                    <div key={ei} className="flex justify-between text-muted-foreground">
-                                      <span>+ {extra.label || extra.name}{extra.quantity > 1 ? ` x${extra.quantity}` : ''}</span>
-                                      {extra.price > 0 && <span>{formatPrice(extra.price * (extra.quantity || 1))}</span>}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {selection.modifiers && selection.modifiers.length > 0 && (
-                                <div className="pl-2 italic text-muted-foreground">
-                                  {selection.modifiers.map((m: any, mi: number) => (
-                                    <div key={mi}>• {m.name}</div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Regular extras */}
-                      {!isCombo && item.extras && item.extras.length > 0 && (
-                        <div className="mt-1 text-xs">
-                          {item.extras.map((extra, ei) => (
-                            <div key={ei} className="flex justify-between text-muted-foreground">
-                              <span>+ {extra.label}{extra.quantity && extra.quantity > 1 ? ` x${extra.quantity}` : ''}</span>
-                              <span>{formatPrice(extra.price * (extra.quantity || 1))}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Modifiers (no cost) */}
-                      {item.modifiers && item.modifiers.length > 0 && (
-                        <div className="mt-1 text-xs italic text-muted-foreground">
-                          {item.modifiers.map((m: any, mi: number) => (
-                            <div key={mi}>• {m.name}</div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Item notes */}
-                      {item.notes && (
-                        <div className="mt-2 text-xs bg-amber-50 dark:bg-amber-950/30 border-l-2 border-amber-400 px-2 py-1 rounded">
-                          <span className="font-medium text-amber-700 dark:text-amber-400">Nota:</span>{' '}
-                          <span className="text-amber-700 dark:text-amber-300">{item.notes}</span>
-                        </div>
-                      )}
-                    </div>
+                    <PaymentItemRow
+                      key={index}
+                      item={item}
+                      itemTotal={itemTotal}
+                      formatPrice={formatPrice}
+                    />
                   );
                 })}
                 <Separator />
