@@ -151,9 +151,10 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           .from('product_variant_options')
           .select(`
             *,
-            variant:category_variants(*)
+            variant:category_variants!inner(*)
           `)
           .eq('active', true)
+          .eq('variant.active', true)
           .order('variant(display_order)'),
         
         supabase
