@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { withStaffContext } from '@/lib/dbContext';
 
 export interface PaymentMethod {
   id: string;
