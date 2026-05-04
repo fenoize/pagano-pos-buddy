@@ -1122,8 +1122,8 @@ export default function PaymentModal({
 
           {/* Order Notes */}
           <Card>
-            <CardHeader>
-              <CardTitle>Comentarios del Pedido</CardTitle>
+            <CardHeader className="py-3">
+              <CardTitle className="text-base">Comentarios del Pedido</CardTitle>
             </CardHeader>
             <CardContent>
               <div>
