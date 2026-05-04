@@ -148,6 +148,7 @@ const financeItems = [
   { title: "Proveedores", url: "/pos/finanzas/proveedores", icon: Building2, roles: ['Administrador'] },
   { title: "Gastos Fijos", url: "/pos/finanzas/gastos-fijos", icon: Building2, roles: ['Administrador'] },
   { title: "Egresos", url: "/pos/finanzas/egresos", icon: FileTextIcon, roles: ['Administrador', 'Cajero'] },
+  { title: "Movimientos", url: "/pos/finanzas/movimientos", icon: ArrowRightLeft, roles: ['Administrador'] },
   { title: "Cierres Financieros", url: "/pos/finanzas/cierres", icon: FileText, roles: ['Administrador'] },
   { title: "Deliverys", url: "/pos/finanzas/deliverys", icon: TrendingUp, roles: ['Administrador', 'Cajero'] },
   { title: "Configuración", url: "/pos/finanzas/configuracion", icon: SettingsIcon, roles: ['Administrador'] },
