@@ -841,7 +841,19 @@ export default function PaymentModal({
           )}
           </div>
           {/* ====== RIGHT COLUMN: Payments + notes ====== */}
-          <div className="space-y-4">
+          <div className="space-y-3">
+
+          {/* Totals header */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col items-center justify-center px-3 py-2 bg-primary/5 rounded-md">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total a pagar</span>
+              <span className="text-lg font-bold text-primary leading-tight">{formatPrice(total)}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center px-3 py-2 bg-secondary/10 rounded-md">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Saldo pendiente</span>
+              <span className="text-lg font-bold text-secondary leading-tight">{formatPrice(getRemainingBalance())}</span>
+            </div>
+          </div>
 
           {/* Payments List */}
           {payments.length > 0 && (
