@@ -632,30 +632,114 @@ export default function PaymentModal({
             </div>
           </div>
 
-          {/* Order Summary */}
+          {/* Order Summary - Detailed */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Resumen del Pedido</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {items.map((item, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <span>
-                      {item.quantity}x {item.productName}
-                      {item.variant_group_selections && item.variant_group_selections.length > 0 &&
-                        ` [${item.variant_group_selections.map((s: any) => s.option_name).join('/')}]`}
-                      {item.variant_name ? (
-                        ` (${item.variant_name})`
-                      ) : item.size ? (
-                        ` (${item.size})`
-                      ) : ''}
-                    </span>
-                    <span className="currency">
-                      {formatPrice((item.basePrice + item.extras.reduce((sum, e) => sum + (e.price * (e.quantity || 1)), 0)) * item.quantity)}
-                    </span>
-                  </div>
-                ))}
+              <div className="space-y-3">
+                {items.map((item, index) => {
+                  const itemTotal = (item.basePrice + item.extras.reduce((sum, e) => sum + (e.price * (e.quantity || 1)), 0)) * item.quantity;
+                  const isCombo = item.is_combo_item && item.combo_selections && item.combo_selections.length > 0;
+                  return (
+                    <div key={index} className="border border-border/60 rounded-lg p-3 bg-muted/20">
+                      <div className="flex justify-between items-start gap-2 mb-1">
+                        <span className="font-medium text-sm">
+                          {item.quantity}x {item.productName}
+                          {item.variant_name ? ` (${item.variant_name})` : item.size ? ` (${item.size})` : ''}
+                          {item.priceKind === 'combo' && !item.variant_name ? ' • Combo' : ''}
+                        </span>
+                        <span className="currency text-sm font-semibold whitespace-nowrap">
+                          {formatPrice(itemTotal)}
+                        </span>
+                      </div>
+
+                      {/* Variant group selections */}
+                      {item.variant_group_selections && item.variant_group_selections.length > 0 && (
+                        <div className="text-xs text-muted-foreground pl-2">
+                          {item.variant_group_selections.map((s: any, i: number) => (
+                            <div key={i}>• {s.option_name}</div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Combo selections */}
+                      {isCombo && (
+                        <div className="mt-2 space-y-2">
+                          {item.combo_selections!.map((selection: any, selIdx: number) => (
+                            <div key={selIdx} className="text-xs bg-background/60 rounded p-2 space-y-0.5">
+                              <div className="font-medium">
+                                {selection.comboSlot?.category?.name || 'Item'}
+                                {selection.quantity > 1 && ` x${selection.quantity}`}
+                              </div>
+                              {selection.selectedProduct && (
+                                <div className="text-muted-foreground pl-2">→ {selection.selectedProduct.name}</div>
+                              )}
+                              {selection.selectedVariant && (
+                                <div className="text-muted-foreground pl-2">
+                                  • {selection.selectedVariant.variant?.name || selection.selectedVariant.name || 'Variante'}
+                                  {selection.selectedVariant.price_adjustment ? (
+                                    <span className="ml-1">
+                                      ({selection.selectedVariant.price_adjustment > 0 ? '+' : ''}
+                                      {formatPrice(selection.selectedVariant.price_adjustment)})
+                                    </span>
+                                  ) : null}
+                                </div>
+                              )}
+                              {selection.extras && selection.extras.length > 0 && (
+                                <div className="pl-2">
+                                  {selection.extras.map((extra: any, ei: number) => (
+                                    <div key={ei} className="flex justify-between text-muted-foreground">
+                                      <span>+ {extra.label || extra.name}{extra.quantity > 1 ? ` x${extra.quantity}` : ''}</span>
+                                      {extra.price > 0 && <span>{formatPrice(extra.price * (extra.quantity || 1))}</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {selection.modifiers && selection.modifiers.length > 0 && (
+                                <div className="pl-2 italic text-muted-foreground">
+                                  {selection.modifiers.map((m: any, mi: number) => (
+                                    <div key={mi}>• {m.name}</div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Regular extras */}
+                      {!isCombo && item.extras && item.extras.length > 0 && (
+                        <div className="mt-1 text-xs">
+                          {item.extras.map((extra, ei) => (
+                            <div key={ei} className="flex justify-between text-muted-foreground">
+                              <span>+ {extra.label}{extra.quantity && extra.quantity > 1 ? ` x${extra.quantity}` : ''}</span>
+                              <span>{formatPrice(extra.price * (extra.quantity || 1))}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Modifiers (no cost) */}
+                      {item.modifiers && item.modifiers.length > 0 && (
+                        <div className="mt-1 text-xs italic text-muted-foreground">
+                          {item.modifiers.map((m: any, mi: number) => (
+                            <div key={mi}>• {m.name}</div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Item notes */}
+                      {item.notes && (
+                        <div className="mt-2 text-xs bg-amber-50 dark:bg-amber-950/30 border-l-2 border-amber-400 px-2 py-1 rounded">
+                          <span className="font-medium text-amber-700 dark:text-amber-400">Nota:</span>{' '}
+                          <span className="text-amber-700 dark:text-amber-300">{item.notes}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 <Separator />
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
