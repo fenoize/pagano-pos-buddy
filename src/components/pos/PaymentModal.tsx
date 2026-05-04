@@ -692,7 +692,23 @@ export default function PaymentModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[92vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
-          <DialogTitle>Procesar Pago {payments.length > 1 ? '(Mixto)' : ''}</DialogTitle>
+          <div className="flex items-center justify-between gap-4 pr-8">
+            <DialogTitle className="flex items-center gap-3 flex-wrap">
+              <span>Procesar Pago {payments.length > 1 ? '(Mixto)' : ''}</span>
+              {(orderName || customer.name) && (
+                <span className="inline-flex items-center gap-1.5 text-sm font-normal text-muted-foreground">
+                  <User className="w-3.5 h-3.5" />
+                  <span className="text-foreground font-medium truncate max-w-[200px]">
+                    {orderName || customer.name}
+                  </span>
+                </span>
+              )}
+            </DialogTitle>
+            <div className="flex items-baseline gap-2 shrink-0">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">Total</span>
+              <span className="text-xl font-bold text-primary currency">{formatPrice(total)}</span>
+            </div>
+          </div>
         </DialogHeader>
 
         {/* Quick action buttons: Customer + Coupon */}
