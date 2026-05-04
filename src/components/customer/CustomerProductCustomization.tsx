@@ -718,8 +718,15 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           placeholder="Ej: Sin cebolla, más salsa..."
           value={specialNotes}
           onChange={(e) => setSpecialNotes(e.target.value)}
+          onFocus={(e) => {
+            // Asegura que el campo quede visible al abrir el teclado en iOS/Android PWA
+            const el = e.currentTarget;
+            setTimeout(() => {
+              el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }, 300);
+          }}
           className="min-h-[80px] rounded-xl resize-none bg-card text-white border-border placeholder:text-muted-foreground"
-          style={{ 
+          style={{
             fontSize: '16px',
             WebkitTextSizeAdjust: '100%',
             lineHeight: '1.5'
@@ -793,15 +800,24 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   // Mobile: Drawer with scrollable content including image
   if (isMobile) {
     return (
-      <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent className="customer-app max-h-[90vh] h-[90vh] flex flex-col bg-background text-white">
-          <div className="mx-auto w-full max-w-lg flex flex-col flex-1 overflow-hidden">
-            {/* Scrollable content - includes image */}
-            <div className="flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
-              <div className="pb-4">
+      <Drawer open={isOpen} onOpenChange={onClose} repositionInputs={false}>
+        <DrawerContent
+          className="customer-app flex flex-col bg-background text-white"
+          style={{
+            height: '90dvh',
+            maxHeight: '90dvh',
+          }}
+        >
+          <div className="mx-auto w-full max-w-lg flex flex-col flex-1 min-h-0 overflow-hidden">
+            {/* Scrollable content - includes image, header, customization AND action bar */}
+            <div
+              className="flex-1 min-h-0 overflow-y-auto"
+              style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+            >
+              <div>
                 {/* Product image - square aspect ratio */}
                 <ProductImage />
-                
+
                 {/* Header */}
                 <div className="px-4 pt-4 pb-2">
                   <h2 className="text-xl font-bold text-white">{product.name}</h2>
@@ -814,12 +830,16 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
                 <div className="px-4">
                   {CustomizationContent()}
                 </div>
-              </div>
-            </div>
 
-            {/* Fixed bottom action bar */}
-            <div className="flex-shrink-0 border-t border-border bg-background p-4">
-              {ActionBar()}
+                {/* Action bar - now part of the scrollable flow so the keyboard
+                    can never push it out of the viewport in iOS/Android PWA */}
+                <div
+                  className="border-t border-border bg-background px-4 py-4 mt-4 sticky bottom-0"
+                  style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
+                >
+                  {ActionBar()}
+                </div>
+              </div>
             </div>
           </div>
         </DrawerContent>
