@@ -818,6 +818,9 @@ export default function PaymentModal({
               </CardContent>
             </Card>
           )}
+          </div>
+          {/* ====== RIGHT COLUMN: Payments + notes ====== */}
+          <div className="space-y-4">
 
           {/* Payments List */}
           {payments.length > 0 && (
