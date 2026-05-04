@@ -25,6 +25,7 @@ export function usePaymentMethods() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuthContext();
 
   const fetchPaymentMethods = async () => {
     setLoading(true);
