@@ -1136,23 +1136,37 @@ export default function PaymentModal({
             </CardContent>
           </Card>
 
-          {/* Order Notes */}
+          {/* Order Notes - Collapsible */}
           <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-base">Comentarios del Pedido</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div>
-                <Label htmlFor="order-notes">Comentarios (opcional)</Label>
-                <Textarea
-                  id="order-notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Agregar comentarios especiales para el pedido..."
-                  className="min-h-[80px] mt-2"
-                />
-              </div>
-            </CardContent>
+            <Collapsible defaultOpen={!!notes}>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="group w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 rounded-lg transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base">Comentarios del Pedido</CardTitle>
+                    {notes && (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        1
+                      </span>
+                    )}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <Textarea
+                    id="order-notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Agregar comentarios especiales para el pedido..."
+                    className="min-h-[80px]"
+                  />
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
           </div>
           </div>
