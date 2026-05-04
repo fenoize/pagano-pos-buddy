@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { withStaffContext } from '@/lib/dbContext';
 
 export interface PaymentMethod {
   id: string;
@@ -23,6 +25,7 @@ export function usePaymentMethods() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuthContext();
 
   const fetchPaymentMethods = async () => {
     setLoading(true);
@@ -131,21 +134,30 @@ export function usePaymentMethods() {
   };
 
   const reorderPaymentMethods = async (reorderedMethods: PaymentMethod[]) => {
-    // Optimistic update
+    if (!user?.id) {
+      toast({ title: "Error", description: "Sesión no válida", variant: "destructive" });
+      return;
+    }
+    const userRoles = user.roles?.length ? user.roles : (user.role ? [user.role] : []);
+    if (!userRoles.includes('Administrador')) {
+      toast({ title: "Permiso denegado", description: "Solo los Administradores pueden reordenar los métodos de pago", variant: "destructive" });
+      return;
+    }
+
+    const previous = paymentMethods;
     setPaymentMethods(reorderedMethods);
     try {
       const ids = reorderedMethods.map((m) => m.id);
-      const { error } = await supabase.rpc('reorder_payment_methods', { p_ids: ids });
+      const { error } = await withStaffContext(user.id, async () => {
+        return await supabase.rpc('reorder_payment_methods', { p_ids: ids });
+      });
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Orden actualizado correctamente"
-      });
-
+      toast({ title: "Éxito", description: "Orden actualizado correctamente" });
       await fetchPaymentMethods();
     } catch (error: any) {
       console.error('Error reordering payment methods:', error);
+      setPaymentMethods(previous);
       toast({
         title: "Error",
         description: error.message || "No se pudo actualizar el orden",

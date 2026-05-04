@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,11 +68,12 @@ function getIconComponent(iconName: string) {
   return iconOption ? iconOption.icon : DollarSign;
 }
 
-function SortableRow({ method, onEdit, onDelete, onToggleActive }: {
+function SortableRow({ method, onEdit, onDelete, onToggleActive, canReorder }: {
   method: PaymentMethod;
   onEdit: (method: PaymentMethod) => void;
   onDelete: (id: string) => void;
   onToggleActive: (method: PaymentMethod) => void;
+  canReorder: boolean;
 }) {
   const {
     attributes,
@@ -79,7 +81,7 @@ function SortableRow({ method, onEdit, onDelete, onToggleActive }: {
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id: method.id });
+  } = useSortable({ id: method.id, disabled: !canReorder });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -91,9 +93,13 @@ function SortableRow({ method, onEdit, onDelete, onToggleActive }: {
   return (
     <TableRow ref={setNodeRef} style={style}>
       <TableCell>
-        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
-          <GripVertical className="w-4 h-4 text-muted-foreground" />
-        </div>
+        {canReorder ? (
+          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </div>
+        ) : (
+          <GripVertical className="w-4 h-4 text-muted-foreground/30" />
+        )}
       </TableCell>
       <TableCell>
         <Icon className="w-5 h-5" />
@@ -166,6 +172,9 @@ export function PaymentMethodsConfig() {
     reorderPaymentMethods,
     restoreDefaults 
   } = usePaymentMethods();
+  const { user } = useAuthContext();
+  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  const canReorder = userRoles.includes('Administrador');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -316,6 +325,7 @@ export function PaymentMethodsConfig() {
                       onEdit={handleOpenModal}
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}
+                      canReorder={canReorder}
                     />
                   ))}
                 </SortableContext>
