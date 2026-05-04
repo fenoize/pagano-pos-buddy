@@ -718,8 +718,15 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
           placeholder="Ej: Sin cebolla, más salsa..."
           value={specialNotes}
           onChange={(e) => setSpecialNotes(e.target.value)}
+          onFocus={(e) => {
+            // Asegura que el campo quede visible al abrir el teclado en iOS/Android PWA
+            const el = e.currentTarget;
+            setTimeout(() => {
+              el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }, 300);
+          }}
           className="min-h-[80px] rounded-xl resize-none bg-card text-white border-border placeholder:text-muted-foreground"
-          style={{ 
+          style={{
             fontSize: '16px',
             WebkitTextSizeAdjust: '100%',
             lineHeight: '1.5'
