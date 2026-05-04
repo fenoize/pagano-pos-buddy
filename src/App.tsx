@@ -117,6 +117,7 @@ const FinanceExpenses = lazy(() => import("@/pages/finance/FinanceExpenses"));
 const FixedExpenses = lazy(() => import("@/pages/finance/FixedExpenses"));
 const FinanceSuppliers = lazy(() => import("@/pages/finance/FinanceSuppliers"));
 const FinanceConfig = lazy(() => import("@/pages/finance/FinanceConfig"));
+const FinanceMovements = lazy(() => import("@/pages/finance/FinanceMovements"));
 
 // Report Pages
 const ProductSalesReport = lazy(() => import("@/pages/reports/ProductSalesReport"));
