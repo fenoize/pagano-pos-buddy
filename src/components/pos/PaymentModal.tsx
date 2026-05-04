@@ -910,8 +910,8 @@ export default function PaymentModal({
 
           {/* Payment Method Selection */}
           <Card>
-            <CardHeader>
-              <CardTitle>Agregar método de pago</CardTitle>
+            <CardHeader className="py-3">
+              <CardTitle className="text-base">Agregar método de pago</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-2">
