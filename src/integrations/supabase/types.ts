@@ -8108,6 +8108,7 @@ export type Database = {
         Args: { _customer_id: string; _tag_id: string }
         Returns: boolean
       }
+      reorder_payment_methods: { Args: { p_ids: string[] }; Returns: undefined }
       request_customer_password_reset: {
         Args: { p_email: string; p_ip_address?: unknown }
         Returns: Json
