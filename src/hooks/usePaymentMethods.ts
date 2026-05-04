@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { withStaffContext } from '@/lib/dbContext';
+import { getStaffSupabaseClient } from '@/lib/supabaseClient';
 
 export interface PaymentMethod {
   id: string;
@@ -148,9 +148,8 @@ export function usePaymentMethods() {
     setPaymentMethods(reorderedMethods);
     try {
       const ids = reorderedMethods.map((m) => m.id);
-      const { error } = await withStaffContext(user.id, async () => {
-        return await supabase.rpc('reorder_payment_methods', { p_ids: ids });
-      });
+      const staff = getStaffSupabaseClient();
+      const { error } = await staff.rpc('reorder_payment_methods', { p_ids: ids });
       if (error) throw error;
 
       toast({ title: "Éxito", description: "Orden actualizado correctamente" });
