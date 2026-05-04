@@ -564,14 +564,14 @@ export default function PaymentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-6xl max-h-[92vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle>Procesar Pago {payments.length > 1 ? '(Mixto)' : ''}</DialogTitle>
         </DialogHeader>
 
         {/* Quick action buttons: Customer + Coupon */}
         {(onOpenCustomerModal || onOpenCouponModal) && (
-          <div className="px-6 pb-1 flex items-center gap-2 shrink-0">
+          <div className="px-6 pb-2 flex items-center gap-2 shrink-0 flex-wrap">
             {onOpenCustomerModal && (
               <Button 
                 variant="outline" 
