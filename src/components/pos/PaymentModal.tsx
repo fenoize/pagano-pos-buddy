@@ -1106,6 +1106,7 @@ export default function PaymentModal({
             </CardContent>
           </Card>
           </div>
+          </div>
         </div>
 
         {/* Fixed Footer */}
