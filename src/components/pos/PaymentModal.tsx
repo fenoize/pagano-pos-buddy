@@ -858,8 +858,8 @@ export default function PaymentModal({
           {/* Payments List */}
           {payments.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle>Pagos agregados</CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-base">Pagos agregados</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
