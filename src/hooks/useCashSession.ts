@@ -308,6 +308,17 @@ export function useCashSession() {
         .eq('session_id', sessionToQuery)
         .order('created_at');
 
+      // Resolver la cuenta de efectivo de la sucursal del turno (caja del local)
+      let registerCashAccountId: string | null = null;
+      if (session.branch_id) {
+        const { data: branchData } = await supabase
+          .from('branches')
+          .select('cash_account_id')
+          .eq('id', session.branch_id)
+          .maybeSingle();
+        registerCashAccountId = branchData?.cash_account_id || null;
+      }
+
       if (movementsError) {
         console.error('Movements error:', movementsError);
         throw movementsError;
