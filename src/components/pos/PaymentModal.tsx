@@ -733,37 +733,22 @@ export default function PaymentModal({
         <div className="flex-1 overflow-y-auto px-6 pb-2">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* ====== LEFT COLUMN: Order detail + customer ====== */}
-          <div className="space-y-4">
-          {/* Order Name */}
+          <div className="space-y-3">
+          {/* Order / Customer name - compact */}
           {orderName && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Nombre del Pedido</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="font-medium text-primary">{orderName}</div>
-              </CardContent>
-            </Card>
+            <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 rounded-md text-sm">
+              <User className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">Nombre cliente:</span>
+              <span className="font-medium text-primary truncate">{orderName}</span>
+            </div>
           )}
-
-          {/* Summary with remaining balance */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col items-center justify-center p-4 bg-primary/5 rounded-lg">
-              <span className="text-xs font-medium mb-1">Total a pagar</span>
-              <span className="text-xl font-bold text-primary">{formatPrice(total)}</span>
-            </div>
-            <div className="flex flex-col items-center justify-center p-4 bg-secondary/10 rounded-lg">
-              <span className="text-xs font-medium mb-1">Saldo pendiente</span>
-              <span className="text-xl font-bold text-secondary">{formatPrice(getRemainingBalance())}</span>
-            </div>
-          </div>
 
           {/* Order Summary - Detailed */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Resumen del Pedido</CardTitle>
+            <CardHeader className="py-3">
+              <CardTitle className="text-base">Resumen del Pedido</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <div className="space-y-3">
                 {items.map((item, index) => {
                   const itemTotal = (item.basePrice + item.extras.reduce((sum, e) => sum + (e.price * (e.quantity || 1)), 0)) * item.quantity;
@@ -856,13 +841,25 @@ export default function PaymentModal({
           )}
           </div>
           {/* ====== RIGHT COLUMN: Payments + notes ====== */}
-          <div className="space-y-4">
+          <div className="space-y-3">
+
+          {/* Totals header */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col items-center justify-center px-3 py-2 bg-primary/5 rounded-md">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total a pagar</span>
+              <span className="text-lg font-bold text-primary leading-tight">{formatPrice(total)}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center px-3 py-2 bg-secondary/10 rounded-md">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Saldo pendiente</span>
+              <span className="text-lg font-bold text-secondary leading-tight">{formatPrice(getRemainingBalance())}</span>
+            </div>
+          </div>
 
           {/* Payments List */}
           {payments.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle>Pagos agregados</CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-base">Pagos agregados</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -913,8 +910,8 @@ export default function PaymentModal({
 
           {/* Payment Method Selection */}
           <Card>
-            <CardHeader>
-              <CardTitle>Agregar método de pago</CardTitle>
+            <CardHeader className="py-3">
+              <CardTitle className="text-base">Agregar método de pago</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-2">
@@ -1125,8 +1122,8 @@ export default function PaymentModal({
 
           {/* Order Notes */}
           <Card>
-            <CardHeader>
-              <CardTitle>Comentarios del Pedido</CardTitle>
+            <CardHeader className="py-3">
+              <CardTitle className="text-base">Comentarios del Pedido</CardTitle>
             </CardHeader>
             <CardContent>
               <div>
