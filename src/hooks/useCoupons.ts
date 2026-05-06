@@ -199,6 +199,7 @@ export const useCoupons = () => {
         excluded_extras,
         allowed_modifiers,
         excluded_modifiers,
+        allowed_tags,
         total_used,
         total_discounted,
         total_sales,
@@ -225,6 +226,7 @@ export const useCoupons = () => {
         excluded_extras,
         allowed_modifiers,
         excluded_modifiers,
+        allowed_tags,
       });
 
       toast({
