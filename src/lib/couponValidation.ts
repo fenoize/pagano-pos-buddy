@@ -220,6 +220,22 @@ export const validateCouponEligibility = async (
     errors.push('Este cupón no se puede combinar con otros cupones');
   }
 
+  // Verificar etiquetas permitidas (cliente debe tener al menos una de las etiquetas)
+  if (coupon.allowed_tags && coupon.allowed_tags.length > 0) {
+    if (!customer?.id) {
+      errors.push('Este cupón requiere una cuenta de cliente con etiqueta autorizada');
+    } else {
+      const { data: assignments } = await supabase
+        .from('customer_tag_assignments')
+        .select('tag_id')
+        .eq('customer_id', customer.id)
+        .in('tag_id', coupon.allowed_tags);
+      if (!assignments || assignments.length === 0) {
+        errors.push('Este cupón está reservado para clientes con etiqueta autorizada');
+      }
+    }
+  }
+
   // Si hay errores, retornar
   if (errors.length > 0) {
     return { valid: false, errors };
