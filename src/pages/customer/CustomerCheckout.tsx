@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 import { Coupon, CouponApplication } from '@/types';
 import { loadCartCoupon, saveCartCoupon, clearCartCoupon } from '@/lib/cartCouponStorage';
+import { useAllianceAutoCoupon } from '@/hooks/useAllianceAutoCoupon';
 
 interface CustomerAddress {
   id: string;
@@ -187,6 +188,24 @@ export default function CustomerCheckout() {
     if (!customer?.id) return;
     getPendingAllianceFreeDeliveryBenefit(customer.id).then(setAllianceFreeDeliveryBenefit);
   }, [customer?.id]);
+
+  // Auto-aplicar cupón de alianza si el cliente no tiene uno manualmente aplicado
+  const { autoCoupon } = useAllianceAutoCoupon({
+    customerId: customer?.id,
+    cartItems: items,
+    subtotal,
+    deliveryFee,
+    enabled: !appliedCoupon,
+  });
+
+  useEffect(() => {
+    if (appliedCoupon) return;
+    if (autoCoupon) {
+      setAppliedCoupon(autoCoupon.coupon);
+      setCouponApplication(autoCoupon.application);
+      saveCartCoupon(autoCoupon.coupon, autoCoupon.application);
+    }
+  }, [autoCoupon, appliedCoupon]);
 
   const selectedAddress = customerAddresses.find(a => a.id === selectedAddressId);
   const selectedDeliveryAddressText = selectedAddress
