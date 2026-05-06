@@ -725,6 +725,42 @@ export type Database = {
           },
         ]
       }
+      coupon_allowed_tags: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_allowed_tags_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_allowed_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "customer_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_allowed_variants: {
         Row: {
           category_variant_id: string
