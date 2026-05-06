@@ -72,6 +72,7 @@ export const useAllianceAutoCoupon = ({
             { data: excludedProds },
             { data: allowedVars },
             { data: excludedVars },
+            { data: allowedTags },
           ] = await Promise.all([
             supabase.from('coupon_allowed_categories').select('category_id').eq('coupon_id', c.id),
             supabase.from('coupon_excluded_categories').select('category_id').eq('coupon_id', c.id),
@@ -79,6 +80,7 @@ export const useAllianceAutoCoupon = ({
             supabase.from('coupon_excluded_products').select('product_id').eq('coupon_id', c.id),
             supabase.from('coupon_allowed_variants').select('category_variant_id').eq('coupon_id', c.id),
             supabase.from('coupon_excluded_variants').select('category_variant_id').eq('coupon_id', c.id),
+            (supabase as any).from('coupon_allowed_tags').select('tag_id').eq('coupon_id', c.id),
           ]);
           return {
             ...c,
@@ -89,6 +91,7 @@ export const useAllianceAutoCoupon = ({
             excluded_products: excludedProds?.map((r) => r.product_id) || [],
             allowed_variants: allowedVars?.map((r) => r.category_variant_id) || [],
             excluded_variants: excludedVars?.map((r) => r.category_variant_id) || [],
+            allowed_tags: (allowedTags as any)?.map((r: any) => r.tag_id) || [],
           } as Coupon;
         })
       );

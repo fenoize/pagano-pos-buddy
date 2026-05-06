@@ -18,16 +18,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, Edit, Trash2, Tag, BarChart3, Download, Users, MoreVertical } from 'lucide-react';
 import { useCoupons } from '@/hooks/useCoupons';
 import { useCouponStats, CouponApplicationDetail } from '@/hooks/useCouponStats';
+import { useCustomerTags } from '@/hooks/useCustomerTags';
 import { Coupon, CouponType, Category, DeliveryMode } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { CouponTimeWindowEditor } from '@/components/coupons/CouponTimeWindowEditor';
 
 export default function CouponsManagement() {
   const { user } = useAuthContext();
   const { coupons, loading, createCoupon, updateCoupon, deleteCoupon, toggleCouponStatus } = useCoupons();
   const { statsMap, loadingStats, fetchAllStats, fetchCouponDetail } = useCouponStats();
+  const { tags: customerTags } = useCustomerTags();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [formData, setFormData] = useState<Partial<Coupon>>({
@@ -325,6 +328,54 @@ export default function CouponsManagement() {
                     <Label>Usos por Cliente</Label>
                     <Input type="number" value={formData.usage_limit_per_customer || ''} onChange={(e) => setFormData({ ...formData, usage_limit_per_customer: e.target.value ? Number(e.target.value) : undefined })} placeholder="Ilimitado" />
                   </div>
+                </div>
+
+                <CouponTimeWindowEditor
+                  value={formData.time_windows}
+                  onChange={(tw) => setFormData({ ...formData, time_windows: tw })}
+                />
+
+                <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+                  <Label className="text-sm font-medium">Etiquetas de cliente permitidas</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Si seleccionas etiquetas, solo los clientes que tengan al menos una de ellas podrán usar el cupón. Útil para alianzas (ej: clientes con etiqueta "CFLaReina").
+                  </p>
+                  <ScrollArea className="h-[160px] border rounded-md p-3 bg-background">
+                    <div className="space-y-2">
+                      {customerTags.length === 0 && (
+                        <p className="text-sm text-muted-foreground">No hay etiquetas creadas todavía. Créalas desde Clientes.</p>
+                      )}
+                      {customerTags.map((tag) => {
+                        const checked = (formData.allowed_tags || []).includes(tag.id);
+                        return (
+                          <div key={tag.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`tag-${tag.id}`}
+                              checked={checked}
+                              onCheckedChange={(c) => {
+                                const current = formData.allowed_tags || [];
+                                setFormData({
+                                  ...formData,
+                                  allowed_tags: c
+                                    ? [...current, tag.id]
+                                    : current.filter((id) => id !== tag.id),
+                                });
+                              }}
+                            />
+                            <Label htmlFor={`tag-${tag.id}`} className="font-normal cursor-pointer flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: tag.color }} />
+                              {tag.name}
+                            </Label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                  {(formData.allowed_tags?.length || 0) > 0 && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setFormData({ ...formData, allowed_tags: [] })}>
+                      Quitar restricción de etiquetas
+                    </Button>
+                  )}
                 </div>
               </TabsContent>
 

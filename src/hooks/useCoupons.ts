@@ -54,6 +54,7 @@ export const useCoupons = () => {
       excludedExtras,
       allowedModifiers,
       excludedModifiers,
+      allowedTags,
     ] = await Promise.all([
       supabase.from('coupon_allowed_categories').select('category_id').eq('coupon_id', couponId),
       supabase.from('coupon_excluded_categories').select('category_id').eq('coupon_id', couponId),
@@ -65,6 +66,7 @@ export const useCoupons = () => {
       supabase.from('coupon_excluded_extras').select('extra_id').eq('coupon_id', couponId),
       supabase.from('coupon_allowed_modifiers').select('modifier_id').eq('coupon_id', couponId),
       supabase.from('coupon_excluded_modifiers').select('modifier_id').eq('coupon_id', couponId),
+      (supabase as any).from('coupon_allowed_tags').select('tag_id').eq('coupon_id', couponId),
     ]);
 
     return {
@@ -78,6 +80,7 @@ export const useCoupons = () => {
       excluded_extras: excludedExtras.data?.map(r => r.extra_id) || [],
       allowed_modifiers: allowedModifiers.data?.map(r => r.modifier_id) || [],
       excluded_modifiers: excludedModifiers.data?.map(r => r.modifier_id) || [],
+      allowed_tags: (allowedTags as any).data?.map((r: any) => r.tag_id) || [],
     };
   };
 
@@ -118,6 +121,7 @@ export const useCoupons = () => {
         excluded_extras,
         allowed_modifiers,
         excluded_modifiers,
+        allowed_tags,
         total_used,
         total_discounted,
         total_sales,
@@ -158,6 +162,7 @@ export const useCoupons = () => {
         excluded_extras,
         allowed_modifiers,
         excluded_modifiers,
+        allowed_tags,
       });
 
       toast({
@@ -194,6 +199,7 @@ export const useCoupons = () => {
         excluded_extras,
         allowed_modifiers,
         excluded_modifiers,
+        allowed_tags,
         total_used,
         total_discounted,
         total_sales,
@@ -220,6 +226,7 @@ export const useCoupons = () => {
         excluded_extras,
         allowed_modifiers,
         excluded_modifiers,
+        allowed_tags,
       });
 
       toast({
@@ -253,6 +260,7 @@ export const useCoupons = () => {
       supabase.from('coupon_excluded_extras').delete().eq('coupon_id', couponId),
       supabase.from('coupon_allowed_modifiers').delete().eq('coupon_id', couponId),
       supabase.from('coupon_excluded_modifiers').delete().eq('coupon_id', couponId),
+      (supabase as any).from('coupon_allowed_tags').delete().eq('coupon_id', couponId),
     ]);
 
     // Insertar nuevo alcance
@@ -325,6 +333,13 @@ export const useCoupons = () => {
       inserts.push(
         supabase.from('coupon_excluded_modifiers').insert(
           scope.excluded_modifiers.map((id: string) => ({ coupon_id: couponId, modifier_id: id }))
+        )
+      );
+    }
+    if (scope.allowed_tags?.length) {
+      inserts.push(
+        (supabase as any).from('coupon_allowed_tags').insert(
+          scope.allowed_tags.map((id: string) => ({ coupon_id: couponId, tag_id: id }))
         )
       );
     }
