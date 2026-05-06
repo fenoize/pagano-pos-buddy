@@ -154,7 +154,7 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2"><Label>Runas registro</Label><Input type="number" min="0" value={form.welcome_runas} onChange={(e) => setForm(prev => ({ ...prev, welcome_runas: Number(e.target.value) }))} /></div>
               <div className="space-y-2 md:col-span-2">
-                <Label>Cupón primera compra</Label>
+                <Label>Cupón asociado</Label>
                 <Select value={form.coupon_id} onValueChange={(value) => setForm(prev => ({ ...prev, coupon_id: value }))} disabled={isLoadingCoupons}>
                   <SelectTrigger><SelectValue placeholder={isLoadingCoupons ? 'Cargando cupones...' : 'Seleccionar cupón'} /></SelectTrigger>
                   <SelectContent position="popper">
@@ -166,7 +166,9 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Solo se muestran cupones activos sin embajador/comisión asociada.</p>
+                <p className="text-xs text-muted-foreground">
+                  El cupón define sus reglas (categorías, días, % descuento, monto mínimo). Para que sea solo de primera compra, configúralo con "Límite por cliente = 1" en Cupones; sin límite será permanente.
+                </p>
               </div>
             </div>
             <div className="flex items-center justify-between rounded-md bg-muted/50 p-3">
