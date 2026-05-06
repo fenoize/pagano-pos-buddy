@@ -336,6 +336,13 @@ export const useCoupons = () => {
         )
       );
     }
+    if (scope.allowed_tags?.length) {
+      inserts.push(
+        (supabase as any).from('coupon_allowed_tags').insert(
+          scope.allowed_tags.map((id: string) => ({ coupon_id: couponId, tag_id: id }))
+        )
+      );
+    }
 
     if (inserts.length > 0) {
       await Promise.all(inserts);
