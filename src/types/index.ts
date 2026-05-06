@@ -533,6 +533,7 @@ export interface Coupon {
   excluded_extras?: string[];
   allowed_modifiers?: string[];
   excluded_modifiers?: string[];
+  allowed_tags?: string[];
   
   // Auditoría
   created_at: string;
