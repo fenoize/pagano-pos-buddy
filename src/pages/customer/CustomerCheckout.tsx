@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 import { Coupon, CouponApplication } from '@/types';
 import { loadCartCoupon, saveCartCoupon, clearCartCoupon } from '@/lib/cartCouponStorage';
+import { useAllianceAutoCoupon } from '@/hooks/useAllianceAutoCoupon';
 
 interface CustomerAddress {
   id: string;
