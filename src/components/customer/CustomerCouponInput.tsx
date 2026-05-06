@@ -86,6 +86,7 @@ export function CustomerCouponInput({
         { data: excludedProds },
         { data: allowedVars },
         { data: excludedVars },
+        { data: allowedTags },
       ] = await Promise.all([
         supabase.from('coupon_allowed_categories').select('category_id').eq('coupon_id', data.id),
         supabase.from('coupon_excluded_categories').select('category_id').eq('coupon_id', data.id),
@@ -93,6 +94,7 @@ export function CustomerCouponInput({
         supabase.from('coupon_excluded_products').select('product_id').eq('coupon_id', data.id),
         supabase.from('coupon_allowed_variants').select('category_variant_id').eq('coupon_id', data.id),
         supabase.from('coupon_excluded_variants').select('category_variant_id').eq('coupon_id', data.id),
+        (supabase as any).from('coupon_allowed_tags').select('tag_id').eq('coupon_id', data.id),
       ]);
 
       const coupon: Coupon = {
@@ -104,6 +106,7 @@ export function CustomerCouponInput({
         excluded_products: excludedProds?.map(p => p.product_id) || [],
         allowed_variants: allowedVars?.map(v => v.category_variant_id) || [],
         excluded_variants: excludedVars?.map(v => v.category_variant_id) || [],
+        allowed_tags: (allowedTags as any)?.map((t: any) => t.tag_id) || [],
       } as Coupon;
 
       // Map CartItem[] to OrderItem-like for validation
