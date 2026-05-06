@@ -7657,6 +7657,16 @@ export type Database = {
         Args: { p_customer_id: string; p_user_id: string }
         Returns: Json
       }
+      get_customer_alliance_coupons: {
+        Args: { _customer_id: string }
+        Returns: {
+          alliance_id: string
+          alliance_name: string
+          benefit_id: string
+          coupon_code: string
+          coupon_id: string
+        }[]
+      }
       get_customer_order_stats_with_context: {
         Args: { p_customer_id: string; p_user_id: string }
         Returns: Json
