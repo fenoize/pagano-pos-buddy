@@ -260,6 +260,7 @@ export const useCoupons = () => {
       supabase.from('coupon_excluded_extras').delete().eq('coupon_id', couponId),
       supabase.from('coupon_allowed_modifiers').delete().eq('coupon_id', couponId),
       supabase.from('coupon_excluded_modifiers').delete().eq('coupon_id', couponId),
+      (supabase as any).from('coupon_allowed_tags').delete().eq('coupon_id', couponId),
     ]);
 
     // Insertar nuevo alcance
