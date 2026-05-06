@@ -30,6 +30,7 @@ export default function CouponsManagement() {
   const { user } = useAuthContext();
   const { coupons, loading, createCoupon, updateCoupon, deleteCoupon, toggleCouponStatus } = useCoupons();
   const { statsMap, loadingStats, fetchAllStats, fetchCouponDetail } = useCouponStats();
+  const { tags: customerTags } = useCustomerTags();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [formData, setFormData] = useState<Partial<Coupon>>({
