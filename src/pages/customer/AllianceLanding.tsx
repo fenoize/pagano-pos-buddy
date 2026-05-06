@@ -62,7 +62,7 @@ export default function AllianceLanding() {
           </div>
           <div className="rounded-lg bg-muted/60 p-4 space-y-2 text-sm text-left">
             {alliance.welcome_runas > 0 && <p className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> {alliance.welcome_runas} runas al registrarte</p>}
-            {alliance.coupon_id && <p className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Cupón para tu primera compra</p>}
+            {alliance.coupon_id && <p className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Cupón de descuento exclusivo</p>}
             {alliance.free_delivery_first_order && <p className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Delivery gratis en tu primera compra</p>}
             {(alliance.free_delivery_addresses?.length || 0) > 0 && <p className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Delivery gratis a dirección de convenio</p>}
           </div>
