@@ -170,7 +170,7 @@ export const useAllianceAutoCoupon = ({
                 affected_lines: [],
                 delivery_original: deliveryFee,
                 delivery_final: deliveryFee - (result.preview.discount_delivery || 0),
-                source: 'alliance_auto',
+                
               },
             },
           };
