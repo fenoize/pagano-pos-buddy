@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AllianceCouponOption, MarketingAlliance, MarketingAllianceInput } from '@/hooks/useMarketingAlliances';
+import { CouponTimeWindowEditor } from '@/components/coupons/CouponTimeWindowEditor';
 import { useCustomerTags } from '@/hooks/useCustomerTags';
 import { formatCurrency } from '@/lib/utils';
 
@@ -47,6 +48,8 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
     coupon_id: '',
     free_delivery_first_order: false,
     free_delivery_addresses_text: '',
+    free_delivery_min_amount: '',
+    free_delivery_time_windows: undefined as Record<string, string[]> | undefined,
     usage_limit: '',
     once_per_customer: true,
     internal_notes: '',
@@ -67,13 +70,15 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
         coupon_id: alliance.coupon_id || '__none__',
         free_delivery_first_order: alliance.free_delivery_first_order,
         free_delivery_addresses_text: (alliance.free_delivery_addresses || []).join('\n'),
+        free_delivery_min_amount: alliance.free_delivery_min_amount ? String(alliance.free_delivery_min_amount) : '',
+        free_delivery_time_windows: alliance.free_delivery_time_windows || undefined,
         usage_limit: alliance.usage_limit ? String(alliance.usage_limit) : '',
         once_per_customer: alliance.once_per_customer,
         internal_notes: alliance.internal_notes || '',
         auto_tag_id: alliance.auto_tag_id || '__none__',
       });
     } else {
-      setForm({ name: '', type: 'empresa_aliada', slug: '', description: '', is_active: true, starts_at: '', ends_at: '', welcome_runas: 0, coupon_id: '__none__', free_delivery_first_order: false, free_delivery_addresses_text: '', usage_limit: '', once_per_customer: true, internal_notes: '', auto_tag_id: '__none__' });
+      setForm({ name: '', type: 'empresa_aliada', slug: '', description: '', is_active: true, starts_at: '', ends_at: '', welcome_runas: 0, coupon_id: '__none__', free_delivery_first_order: false, free_delivery_addresses_text: '', free_delivery_min_amount: '', free_delivery_time_windows: undefined, usage_limit: '', once_per_customer: true, internal_notes: '', auto_tag_id: '__none__' });
     }
   }, [alliance, open]);
 
@@ -95,6 +100,8 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
         coupon_id: form.coupon_id === '__none__' ? null : form.coupon_id,
         free_delivery_first_order: form.free_delivery_first_order,
         free_delivery_addresses: form.free_delivery_addresses_text.split('\n').map(address => address.trim()).filter(Boolean),
+        free_delivery_min_amount: Number(form.free_delivery_min_amount) || 0,
+        free_delivery_time_windows: form.free_delivery_time_windows || null,
         usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
         once_per_customer: form.once_per_customer,
         internal_notes: form.internal_notes.trim() || null,
@@ -185,6 +192,22 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
               />
               <p className="text-xs text-muted-foreground">Una dirección por línea. Debe coincidir con la dirección guardada por el cliente.</p>
             </div>
+            <div className="space-y-2">
+              <Label>Monto mínimo para delivery gratis (CLP)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="100"
+                value={form.free_delivery_min_amount}
+                onChange={(e) => setForm(prev => ({ ...prev, free_delivery_min_amount: e.target.value }))}
+                placeholder="0 = sin mínimo"
+              />
+              <p className="text-xs text-muted-foreground">Solo se aplica delivery gratis si el subtotal del pedido alcanza este monto.</p>
+            </div>
+            <CouponTimeWindowEditor
+              value={form.free_delivery_time_windows}
+              onChange={(next) => setForm(prev => ({ ...prev, free_delivery_time_windows: next }))}
+            />
             <div className="space-y-2 pt-2 border-t">
               <Label>Etiqueta automática del cliente</Label>
               <div className="flex gap-2">

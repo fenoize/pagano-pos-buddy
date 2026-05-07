@@ -23,7 +23,7 @@ import { useDeliveryGeo, DeliveryZoneWithGeo } from '@/hooks/useDeliveryGeo';
 import { createRunasOrder } from '@/lib/integrations/runasPayment';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
-import { getPendingAllianceFreeDeliveryBenefit, normalizeAllianceAddress, trackAlliancePurchase, type AllianceFreeDeliveryBenefit } from '@/lib/allianceAttribution';
+import { getPendingAllianceFreeDeliveryBenefit, normalizeAllianceAddress, trackAlliancePurchase, isAllianceFreeDeliveryEligible, type AllianceFreeDeliveryBenefit } from '@/lib/allianceAttribution';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
 import { Coupon, CouponApplication } from '@/types';
@@ -213,6 +213,7 @@ export default function CustomerCheckout() {
     : '';
   const allianceFreeDeliveryApplies = (() => {
     if (fulfillmentType !== 'delivery' || deliveryFee <= 0 || !allianceFreeDeliveryBenefit) return false;
+    if (!isAllianceFreeDeliveryEligible(allianceFreeDeliveryBenefit, subtotal)) return false;
     if (allianceFreeDeliveryBenefit.freeFirstOrder) return true;
     const selectedNormalized = normalizeAllianceAddress(selectedDeliveryAddressText);
     return allianceFreeDeliveryBenefit.addresses.some(address => normalizeAllianceAddress(address) === selectedNormalized);
