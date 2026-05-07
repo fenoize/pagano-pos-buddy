@@ -66,7 +66,37 @@ export interface AllianceFreeDeliveryBenefit {
   benefitId: string;
   freeFirstOrder: boolean;
   addresses: string[];
+  minAmount: number;
+  timeWindows: Record<string, string[]> | null;
 }
+
+const isInTimeWindows = (windows: Record<string, string[]> | null | undefined): boolean => {
+  if (!windows || Object.keys(windows).length === 0) return true;
+  const now = new Date();
+  const dayKey = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
+  const list = windows[dayKey];
+  if (!list?.length) return false;
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  return list.some(range => {
+    const [s, e] = range.split('-');
+    if (!s || !e) return false;
+    const [sh, sm] = s.split(':').map(Number);
+    const [eh, em] = e.split(':').map(Number);
+    const start = sh * 60 + sm;
+    const end = eh * 60 + em;
+    return minutes >= start && minutes <= end;
+  });
+};
+
+export const isAllianceFreeDeliveryEligible = (
+  benefit: AllianceFreeDeliveryBenefit | null | undefined,
+  subtotal: number,
+): boolean => {
+  if (!benefit) return false;
+  if (benefit.minAmount > 0 && subtotal < benefit.minAmount) return false;
+  if (!isInTimeWindows(benefit.timeWindows)) return false;
+  return true;
+};
 
 export const normalizeAllianceAddress = (value: string) =>
   value
