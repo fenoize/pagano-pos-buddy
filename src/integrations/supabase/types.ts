@@ -3901,6 +3901,8 @@ export type Database = {
           ends_at: string | null
           free_delivery_addresses: Json
           free_delivery_first_order: boolean
+          free_delivery_min_amount: number
+          free_delivery_time_windows: Json | null
           id: string
           internal_notes: string | null
           is_active: boolean
@@ -3922,6 +3924,8 @@ export type Database = {
           ends_at?: string | null
           free_delivery_addresses?: Json
           free_delivery_first_order?: boolean
+          free_delivery_min_amount?: number
+          free_delivery_time_windows?: Json | null
           id?: string
           internal_notes?: string | null
           is_active?: boolean
@@ -3943,6 +3947,8 @@ export type Database = {
           ends_at?: string | null
           free_delivery_addresses?: Json
           free_delivery_first_order?: boolean
+          free_delivery_min_amount?: number
+          free_delivery_time_windows?: Json | null
           id?: string
           internal_notes?: string | null
           is_active?: boolean
