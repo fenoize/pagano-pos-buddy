@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AllianceCouponOption, MarketingAlliance, MarketingAllianceInput } from '@/hooks/useMarketingAlliances';
+import { CouponTimeWindowEditor } from '@/components/coupons/CouponTimeWindowEditor';
 import { useCustomerTags } from '@/hooks/useCustomerTags';
 import { formatCurrency } from '@/lib/utils';
 
