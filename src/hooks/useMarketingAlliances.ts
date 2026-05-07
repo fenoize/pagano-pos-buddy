@@ -19,6 +19,8 @@ export interface MarketingAlliance {
   coupon_id: string | null;
   free_delivery_first_order: boolean;
   free_delivery_addresses: string[];
+  free_delivery_min_amount: number;
+  free_delivery_time_windows: Record<string, string[]> | null;
   usage_limit: number | null;
   once_per_customer: boolean;
   internal_notes: string | null;
