@@ -70,13 +70,15 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
         coupon_id: alliance.coupon_id || '__none__',
         free_delivery_first_order: alliance.free_delivery_first_order,
         free_delivery_addresses_text: (alliance.free_delivery_addresses || []).join('\n'),
+        free_delivery_min_amount: alliance.free_delivery_min_amount ? String(alliance.free_delivery_min_amount) : '',
+        free_delivery_time_windows: alliance.free_delivery_time_windows || undefined,
         usage_limit: alliance.usage_limit ? String(alliance.usage_limit) : '',
         once_per_customer: alliance.once_per_customer,
         internal_notes: alliance.internal_notes || '',
         auto_tag_id: alliance.auto_tag_id || '__none__',
       });
     } else {
-      setForm({ name: '', type: 'empresa_aliada', slug: '', description: '', is_active: true, starts_at: '', ends_at: '', welcome_runas: 0, coupon_id: '__none__', free_delivery_first_order: false, free_delivery_addresses_text: '', usage_limit: '', once_per_customer: true, internal_notes: '', auto_tag_id: '__none__' });
+      setForm({ name: '', type: 'empresa_aliada', slug: '', description: '', is_active: true, starts_at: '', ends_at: '', welcome_runas: 0, coupon_id: '__none__', free_delivery_first_order: false, free_delivery_addresses_text: '', free_delivery_min_amount: '', free_delivery_time_windows: undefined, usage_limit: '', once_per_customer: true, internal_notes: '', auto_tag_id: '__none__' });
     }
   }, [alliance, open]);
 
