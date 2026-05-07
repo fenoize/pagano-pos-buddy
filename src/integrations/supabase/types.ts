@@ -7702,9 +7702,6 @@ export type Database = {
       get_customer_alliance_coupons: {
         Args: { _customer_id: string }
         Returns: {
-          alliance_id: string
-          alliance_name: string
-          benefit_id: string
           coupon_code: string
           coupon_id: string
         }[]

@@ -48,7 +48,7 @@ export const useAllianceAutoCoupon = ({
         return;
       }
 
-      const couponIds = (data as Array<{ coupon_id: string }>).map((r) => r.coupon_id);
+      const couponIds = (data as Array<{ coupon_id: string }>).map((r) => r.coupon_id).filter(Boolean);
       if (couponIds.length === 0) {
         setAllianceCoupons([]);
         return;

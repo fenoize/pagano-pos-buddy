@@ -41,6 +41,8 @@ export const claimAllianceSignup = async (customerId: string) => {
     return false;
   }
 
+  // Limpiar slug tras éxito para no reintentar en cada carga
+  if (data) clearAllianceAttribution();
   return Boolean(data);
 };
 
