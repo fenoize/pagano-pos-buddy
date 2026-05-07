@@ -192,6 +192,22 @@ export function AllianceFormModal({ open, onOpenChange, alliance, coupons = [], 
               />
               <p className="text-xs text-muted-foreground">Una dirección por línea. Debe coincidir con la dirección guardada por el cliente.</p>
             </div>
+            <div className="space-y-2">
+              <Label>Monto mínimo para delivery gratis (CLP)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="100"
+                value={form.free_delivery_min_amount}
+                onChange={(e) => setForm(prev => ({ ...prev, free_delivery_min_amount: e.target.value }))}
+                placeholder="0 = sin mínimo"
+              />
+              <p className="text-xs text-muted-foreground">Solo se aplica delivery gratis si el subtotal del pedido alcanza este monto.</p>
+            </div>
+            <CouponTimeWindowEditor
+              value={form.free_delivery_time_windows}
+              onChange={(next) => setForm(prev => ({ ...prev, free_delivery_time_windows: next }))}
+            />
             <div className="space-y-2 pt-2 border-t">
               <Label>Etiqueta automática del cliente</Label>
               <div className="flex gap-2">
