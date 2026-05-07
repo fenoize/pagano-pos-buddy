@@ -122,10 +122,12 @@ export const getPendingAllianceFreeDeliveryBenefit = async (customerId: string):
 
   if (error || !data) return null;
 
-  const metadata = (data.metadata || {}) as { free_delivery_first_order?: boolean; addresses?: unknown };
+  const metadata = (data.metadata || {}) as { free_delivery_first_order?: boolean; addresses?: unknown; min_amount?: number; time_windows?: Record<string, string[]> | null };
   return {
     benefitId: data.id,
     freeFirstOrder: Boolean(metadata.free_delivery_first_order),
     addresses: Array.isArray(metadata.addresses) ? metadata.addresses.filter((address): address is string => typeof address === 'string') : [],
+    minAmount: Number(metadata.min_amount) || 0,
+    timeWindows: metadata.time_windows && typeof metadata.time_windows === 'object' ? metadata.time_windows : null,
   };
 };
