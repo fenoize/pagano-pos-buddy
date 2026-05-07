@@ -61,6 +61,13 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
           console.error('Failed to set customer DB context:', contextError);
         }
       }
+
+      // Reclamar atribución de alianza si hay slug guardado (para signup, login normal y Google)
+      if (customerData?.id) {
+        claimAllianceSignup(customerData.id).catch(err =>
+          console.error('Error claiming alliance signup (post-login):', err)
+        );
+      }
       
       // OneSignal initialization is handled by useCustomerOneSignal hook
       // to keep it decoupled from auth context
