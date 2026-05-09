@@ -7551,6 +7551,10 @@ export type Database = {
           token: string
         }[]
       }
+      customer_matches_coupon_tags: {
+        Args: { _coupon_id: string; _customer_id: string }
+        Returns: boolean
+      }
       deduct_from_recipe: {
         Args: {
           p_order_id: string

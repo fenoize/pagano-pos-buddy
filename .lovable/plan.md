@@ -1,46 +1,41 @@
 ## Objetivo
-Estabilizar el campo **“Notas especiales”** dentro de la personalización de producto en móvil/PWA para que al abrir el teclado no se rompa la estructura visual en iPhone ni Android.
+Hacer que los clientes registrados desde la alianza de CrossFit La Reina reciban y puedan usar automáticamente su beneficio en checkout cuando realmente califican.
 
-## Qué voy a implementar
-1. **Refactor del contenedor móvil del modal de personalización**
-   - Ajustar `CustomerProductCustomization` para que el drawer no dependa de un alto fijo `90vh` cuando aparece el teclado.
-   - Pasar a una estrategia compatible con viewport móvil real (`100dvh` / altura dinámica) para evitar que el contenido “salte” o quede recortado.
+## Hallazgos
+- La alianza `cflareina` sí está activa y tiene cupón configurado.
+- El registro de alianza sí se está grabando.
+- La etiqueta `CFLaReina` sí se está asignando automáticamente al cliente.
+- La función `get_customer_alliance_coupons(...)` sí devuelve el cupón correcto para el cliente.
+- El corte más probable está en la validación frontend del cupón: hoy consulta `customer_tag_assignments` directamente, pero esa tabla solo la puede leer staff por RLS. Para un cliente normal, la validación puede rechazar el cupón aunque sí tenga la etiqueta.
+- Además, hay evidencia de duplicación de beneficios/cupones de alianza al reclamar el signup varias veces; eso no bloquea el descuento, pero conviene endurecerlo.
 
-2. **Layout keyboard-aware dentro del drawer**
-   - Reorganizar la composición actual (imagen + contenido scrollable + barra inferior fija) para que el teclado no desarme la jerarquía.
-   - Evitar la combinación problemática de:
-     - contenedor fijo alto
-     - scroll interno
-     - action bar fija al fondo
-   - Mantener siempre visible el flujo principal sin dejar grandes zonas vacías negras como en tu captura.
+## Plan
+1. Corregir la validación de etiquetas de cupones para clientes
+- Mover la comprobación de etiquetas permitidas a una función/RPC segura en Supabase con `SECURITY DEFINER`, en vez de consultar `customer_tag_assignments` directo desde el cliente.
+- Mantener RLS cerrada sobre asignaciones de etiquetas para no exponer datos sensibles innecesariamente.
 
-3. **Comportamiento correcto al enfocar el textarea**
-   - Hacer que al enfocar “Notas especiales” el contenedor ajuste su altura y haga scroll al campo si hace falta.
-   - Evitar que el teclado tape el textarea o empuje elementos fuera de lugar.
+2. Ajustar la autoaplicación en checkout
+- Actualizar `useAllianceAutoCoupon` y el flujo manual de `CustomerCouponInput` para usar la validación segura.
+- Asegurar que el cupón se muestre automáticamente en checkout cuando el cliente califica y no tenga otro cupón aplicado.
+- Si no califica, conservar mensajes de error correctos (por horario, mínimo, productos no elegibles, etc.).
 
-4. **Hardening para PWA móvil**
-   - Añadir ajustes específicos para iOS/Android PWA donde el viewport visual cambia mientras el teclado está abierto.
-   - Respetar safe areas y evitar regresiones con notch/home indicator.
+3. Endurecer el alta de beneficios de alianza
+- Revisar `claim_marketing_alliance_signup` para evitar que inserte beneficios duplicados para el mismo cliente y alianza al ejecutarse más de una vez.
+- Dejar una sola fuente de verdad por beneficio pendiente/aplicado donde corresponda.
 
-## Resultado esperado
-- Al tocar **“Notas especiales”**, el teclado se abre sin romper la interfaz.
-- El modal mantiene su estructura y no aparece el espacio negro gigante.
-- Al terminar de escribir, la UI permanece estable y no depende de “volver sola” a la normalidad.
+4. Validación final
+- Probar con un cliente real de la alianza que tenga etiqueta `CFLaReina`.
+- Verificar estos escenarios:
+  - cliente con alianza + horario válido => cupón visible y descuento aplicado
+  - cliente con alianza + fuera de horario => no se autoaplica
+  - cliente sin etiqueta => no se autoaplica
+  - checkout sigue permitiendo aplicar/remover cupón manualmente
 
 ## Detalles técnicos
-- Archivo principal: `src/components/customer/CustomerProductCustomization.tsx`
-- Posible apoyo en estilos globales: `src/index.css`
-- Causa probable detectada:
-  - el drawer móvil usa `max-h-[90vh] h-[90vh]`
-  - tiene `overflow-y-auto` interno
-  - y una barra inferior fija/separada
-  - en PWA móvil, al abrir teclado, `vh` y el viewport visual no coinciden bien, especialmente en iOS
-- Solución prevista:
-  - reemplazar altura fija por layout con altura dinámica real
-  - revisar si la barra inferior debe pasar de fija a `sticky`/integrada al mismo flujo scrollable
-  - aplicar ajuste al foco del textarea para mantenerlo visible
-
-## Validación
-- Probar en viewport móvil del proyecto.
-- Verificar específicamente el flujo de abrir producto → tocar “Notas especiales” → escribir → cerrar teclado.
-- Confirmar que no se rompa el modal en customer app y que desktop no cambie.
+- Archivos probables:
+  - `src/lib/couponValidation.ts`
+  - `src/hooks/useAllianceAutoCoupon.ts`
+  - `src/components/customer/CustomerCouponInput.tsx`
+  - migración SQL para RPC/función segura y deduplicación de beneficios
+- No abriré lectura pública de `customer_tag_assignments`; la solución segura será por función SQL.
+- También revisaré el warning de múltiples `GoTrueClient` si interfiere, pero no lo tomaré como causa principal salvo que aparezca evidencia adicional.

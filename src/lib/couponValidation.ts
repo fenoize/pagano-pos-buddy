@@ -221,16 +221,19 @@ export const validateCouponEligibility = async (
   }
 
   // Verificar etiquetas permitidas (cliente debe tener al menos una de las etiquetas)
+  // Se usa una RPC SECURITY DEFINER para no requerir lectura directa de customer_tag_assignments
   if (coupon.allowed_tags && coupon.allowed_tags.length > 0) {
     if (!customer?.id) {
       errors.push('Este cupón requiere una cuenta de cliente con etiqueta autorizada');
     } else {
-      const { data: assignments } = await supabase
-        .from('customer_tag_assignments')
-        .select('tag_id')
-        .eq('customer_id', customer.id)
-        .in('tag_id', coupon.allowed_tags);
-      if (!assignments || assignments.length === 0) {
+      const { data: matches, error: rpcError } = await (supabase as any).rpc('customer_matches_coupon_tags', {
+        _customer_id: customer.id,
+        _coupon_id: coupon.id,
+      });
+      if (rpcError) {
+        console.error('Error validando etiquetas del cupón:', rpcError);
+        errors.push('No se pudo validar la elegibilidad del cupón');
+      } else if (matches !== true) {
         errors.push('Este cupón está reservado para clientes con etiqueta autorizada');
       }
     }
