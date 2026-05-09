@@ -203,16 +203,34 @@ export const useCoupons = () => {
         total_used,
         total_discounted,
         total_sales,
+        // Campos no actualizables / gestionados por el servidor
+        id: _omitId,
+        created_at: _omitCreatedAt,
+        created_by: _omitCreatedBy,
         ...couponFields
-      } = couponData;
+      } = couponData as any;
+
+      const updatePayload = {
+        ...couponFields,
+        code: couponData.code?.toUpperCase(),
+      };
+
+      console.log('[updateCoupon] payload', { id, updatePayload });
 
       // Actualizar cupón
-      const { error: couponError } = await supabase
+      const { data: updated, error: couponError } = await supabase
         .from('coupons')
-        .update({ ...couponFields, code: couponData.code?.toUpperCase() })
-        .eq('id', id);
+        .update(updatePayload)
+        .eq('id', id)
+        .select('id');
 
-      if (couponError) throw couponError;
+      if (couponError) {
+        console.error('[updateCoupon] error', couponError);
+        throw couponError;
+      }
+      if (!updated || updated.length === 0) {
+        throw new Error('No se actualizó ningún cupón. Verifica permisos o que el cupón aún exista.');
+      }
 
       // Actualizar alcance
       await saveCouponScope(id, {
