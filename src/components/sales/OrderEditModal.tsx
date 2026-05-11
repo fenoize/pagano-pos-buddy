@@ -991,6 +991,28 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
               </CardContent>
             </Card>
 
+            {/* Comentarios del Pedido */}
+            {(() => {
+              const raw = (order as any).notes;
+              if (!raw || typeof raw !== 'string') return null;
+              let display = raw.trim();
+              // Si es JSON legacy, ignorar (no mostrar payload técnico)
+              if (display.startsWith('{') || display.startsWith('[')) {
+                try { JSON.parse(display); return null; } catch { /* no-op */ }
+              }
+              if (!display) return null;
+              return (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Comentarios del Pedido</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm whitespace-pre-wrap text-foreground">{display}</p>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
             {/* Payment Information */}
             <Card>
               <CardHeader>

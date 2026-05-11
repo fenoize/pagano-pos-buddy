@@ -119,7 +119,7 @@ export function useCashSession() {
     }
   };
 
-  const closeSession = async (closingCash: number): Promise<void> => {
+  const closeSession = async (closingCash: number, observaciones?: string): Promise<void> => {
     if (!currentSession) throw new Error('No active session to close');
     if (!user?.id) throw new Error('User not authenticated');
 
@@ -127,15 +127,25 @@ export function useCashSession() {
       console.log('🔒 Cerrando sesión:', {
         sessionId: currentSession.id,
         closingCash,
-        userId: user.id
+        userId: user.id,
+        hasObservaciones: !!observaciones?.trim(),
       });
       
+      const updatePayload: Record<string, any> = {
+        closed_at: new Date().toISOString(),
+        closing_cash: closingCash,
+      };
+      if (observaciones && observaciones.trim()) {
+        // Concatenar con observaciones previas si existen
+        const prev = (currentSession as any).observaciones?.trim();
+        updatePayload.observaciones = prev
+          ? `${prev}\n\n${observaciones.trim()}`
+          : observaciones.trim();
+      }
+
       const { data, error } = await supabase
         .from('cash_sessions')
-        .update({
-          closed_at: new Date().toISOString(),
-          closing_cash: closingCash
-        })
+        .update(updatePayload)
         .eq('id', currentSession.id)
         .select();
 

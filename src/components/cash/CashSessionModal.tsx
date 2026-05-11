@@ -135,7 +135,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
         
         case 'close':
           try {
-            await closeSession(amountValue);
+            await closeSession(amountValue, note);
             
             toast({
               title: "✅ Turno cerrado",
