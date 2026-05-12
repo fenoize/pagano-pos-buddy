@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,7 @@ import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { ForceCloseSessionModal } from './ForceCloseSessionModal';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
+import { useCashSession } from '@/hooks/useCashSession';
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -62,6 +63,7 @@ interface CashSessionWithUser extends CashSession {
 export function CashSessionReport() {
   const { user } = useAuthContext();
   const isAdmin = user?.role === 'Administrador';
+  const { getSessionSummary } = useCashSession();
   
   const [sessions, setSessions] = useState<CashSessionWithUser[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<CashSessionWithUser[]>([]);
@@ -77,18 +79,9 @@ export function CashSessionReport() {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [sessions, filters, searchTerm]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Load sessions and users separately
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('cash_sessions')
         .select('*')
@@ -96,7 +89,6 @@ export function CashSessionReport() {
 
       if (sessionsError) throw sessionsError;
 
-      // Load users for filter
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, username, role, active, created_at, updated_at, can_do_delivery')
@@ -106,83 +98,51 @@ export function CashSessionReport() {
 
       if (usersError) throw usersError;
 
-      // Map users to sessions
       const userMap = new Map(usersData?.map(user => [user.id, user]) || []);
-
-      // Get non-real payment methods once
       const nonRealMethods = await getNonRealSaleMethods();
 
-      // Calculate summaries for closed sessions
       const sessionsWithSummary = await Promise.all(
         (sessionsData || []).map(async (session) => {
-          if (session.closed_at) {
-            try {
-              // Get orders from this session
-              const { data: orders } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('created_by_user_id', session.user_id)
-                .gte('created_at', session.opened_at)
-                .lte('created_at', session.closed_at)
-                .eq('status', 'Entregado');
-
-              // Get cash movements
-              const { data: movements } = await supabase
-                .from('cash_movements')
-                .select('*')
-                .eq('session_id', session.id);
-
-              // Calculate totals - only count real revenue
-              const totalSales = (orders || []).reduce((sum, order) => sum + getOrderRealRevenue(order, nonRealMethods), 0);
-              const grossSales = (orders || []).reduce((sum, order) => sum + (order.subtotal || 0), 0);
-              const totalDiscounts = (orders || []).reduce((sum, order) => sum + (order.discount || 0), 0);
-              const totalCash = orders?.reduce((sum, order) => sum + (order.payment_efectivo || 0), 0) || 0;
-              const totalMP = orders?.reduce((sum, order) => sum + (order.payment_mp || 0), 0) || 0;
-              const totalPOS = orders?.reduce((sum, order) => sum + (order.payment_pos || 0), 0) || 0;
-              const totalAplicacion = orders?.reduce((sum, order) => sum + (order.payment_aplicacion || 0), 0) || 0;
-              const totalRunas = orders?.reduce((sum, order) => sum + (order.payment_runas || 0), 0) || 0;
-
-              const ingresos = movements?.filter(m => m.type === 'ingreso').reduce((sum, m) => sum + m.amount, 0) || 0;
-              const egresos = movements?.filter(m => m.type === 'egreso').reduce((sum, m) => sum + m.amount, 0) || 0;
-
-              // Subtract delivery cash — drivers hold it, not the register
-              const deliveryCashFromOrders = (orders || [])
-                .filter(o => o.fulfillment === 'delivery' && (o.payment_efectivo || 0) > 0)
-                .reduce((sum, o) => sum + (o.payment_efectivo || 0), 0);
-              const cashInRegister = totalCash - deliveryCashFromOrders;
-              const expectedCash = session.opening_cash + cashInRegister + ingresos - egresos;
-              const difference = (session.closing_cash || 0) - expectedCash;
-
-              return {
-                ...session,
-                user: userMap.get(session.user_id),
-                summary: {
-                  totalSales,
-                  grossSales,
-                  totalDiscounts,
-                  totalCash,
-                  totalMP,
-                  totalPOS,
-                  totalAplicacion,
-                  totalRunas,
-                  ingresos,
-                  egresos,
-                  expectedCash,
-                  difference
-                }
-              };
-            } catch (error) {
-              console.error('Error calculating session summary:', error);
-              return {
-                ...session,
-                user: userMap.get(session.user_id)
-              };
-            }
+          if (!session.closed_at) {
+            return {
+              ...session,
+              user: userMap.get(session.user_id)
+            };
           }
-          return {
-            ...session,
-            user: userMap.get(session.user_id)
-          };
+
+          try {
+            const summaryData = await getSessionSummary(session.id);
+            const detailOrders = summaryData?.orders || [];
+            const totalSales = summaryData?.summary?.totalSalesReal
+              ?? detailOrders.reduce((sum: number, order: any) => sum + getOrderRealRevenue(order, nonRealMethods), 0);
+            const grossSales = detailOrders.reduce((sum: number, order: any) => sum + (order.subtotal || 0), 0);
+            const totalDiscounts = detailOrders.reduce((sum: number, order: any) => sum + (order.discount || 0), 0);
+
+            return {
+              ...session,
+              user: userMap.get(session.user_id),
+              summary: {
+                totalSales,
+                grossSales,
+                totalDiscounts,
+                totalCash: summaryData?.summary?.totalCash || 0,
+                totalMP: summaryData?.summary?.totalMP || 0,
+                totalPOS: summaryData?.summary?.totalPOS || 0,
+                totalAplicacion: summaryData?.summary?.totalAplicacion || 0,
+                totalRunas: summaryData?.summary?.totalRunasAmount || 0,
+                ingresos: summaryData?.summary?.ingresos || 0,
+                egresos: summaryData?.summary?.egresos || 0,
+                expectedCash: summaryData?.summary?.expectedCash || 0,
+                difference: summaryData?.summary?.difference || 0,
+              }
+            };
+          } catch (error) {
+            console.error('Error calculating session summary:', error);
+            return {
+              ...session,
+              user: userMap.get(session.user_id)
+            };
+          }
         })
       );
 
@@ -201,7 +161,15 @@ export function CashSessionReport() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getSessionSummary, toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [sessions, filters, searchTerm]);
 
   const applyFilters = () => {
     let filtered = [...sessions];
