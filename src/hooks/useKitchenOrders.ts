@@ -140,6 +140,7 @@ export function useKitchenOrders() {
         .neq('status', 'PendienteAceptacion' as any)
         .neq('status', 'Entregado')
         .neq('status', 'Cancelado')
+        .neq('payment_method', 'pendiente' as any)
         .order('created_at', { ascending: true });
 
       if (activeBranchId) {
@@ -258,6 +259,12 @@ export function useKitchenOrders() {
             console.log(`[KDS] Order #${orderWithItems.order_number} marked as ${orderWithItems.status}, adding to history`);
             addToHistory(orderId);
           }
+          return prev.filter(order => order.id !== orderId);
+        }
+
+        // Si el pedido tiene pago pendiente, ocultarlo del KDS hasta que se cobre
+        if ((orderWithItems as any).payment_method === 'pendiente') {
+          console.log(`[KDS] Order #${orderWithItems.order_number} has pending payment, hiding from KDS`);
           return prev.filter(order => order.id !== orderId);
         }
         
