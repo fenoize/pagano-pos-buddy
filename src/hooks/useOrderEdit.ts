@@ -213,6 +213,41 @@ export function useOrderEdit() {
         }
       }
 
+      // 6.5. Sincronizar delivery_cash_pending si cambió payment_efectivo
+      const oldEfectivo = Number(orderData.payment_efectivo) || 0;
+      const newEfectivo = Number(editData.payment_efectivo) || 0;
+      if (oldEfectivo !== newEfectivo) {
+        const { data: existingPending } = await supabase
+          .from('delivery_cash_pending')
+          .select('id, status, amount, deposited_to_session_id')
+          .eq('order_id', orderId)
+          .maybeSingle();
+
+        if (existingPending) {
+          if (existingPending.status === 'depositado') {
+            throw new Error(
+              `No se puede modificar el efectivo: ya fue depositado en una sesión de caja (monto previo: $${existingPending.amount.toLocaleString('es-CL')}). Anula el depósito primero.`
+            );
+          }
+          // Pendiente: actualizar el monto, o ajustar si quedó en 0
+          if (newEfectivo === 0) {
+            await supabase
+              .from('delivery_cash_pending')
+              .update({
+                status: 'ajustado',
+                amount: 0,
+                notes: `Ajustado por edición de pedido: método de pago cambió (efectivo previo $${oldEfectivo.toLocaleString('es-CL')})`
+              })
+              .eq('id', existingPending.id);
+          } else {
+            await supabase
+              .from('delivery_cash_pending')
+              .update({ amount: newEfectivo })
+              .eq('id', existingPending.id);
+          }
+        }
+      }
+
       // 7. Set staff context before update (required for RLS)
       console.log('[updateOrder] Updating order:', {
         orderId,
