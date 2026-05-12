@@ -261,6 +261,12 @@ export function useKitchenOrders() {
           }
           return prev.filter(order => order.id !== orderId);
         }
+
+        // Si el pedido tiene pago pendiente, ocultarlo del KDS hasta que se cobre
+        if ((orderWithItems as any).payment_method === 'pendiente') {
+          console.log(`[KDS] Order #${orderWithItems.order_number} has pending payment, hiding from KDS`);
+          return prev.filter(order => order.id !== orderId);
+        }
         
         // Si es un pedido delivery y está "Listo" o "En camino", ocultarlo del KDS
         if (shouldHideDeliveryOrder(orderWithItems)) {
