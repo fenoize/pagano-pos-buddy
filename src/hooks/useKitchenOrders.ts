@@ -140,6 +140,7 @@ export function useKitchenOrders() {
         .neq('status', 'PendienteAceptacion' as any)
         .neq('status', 'Entregado')
         .neq('status', 'Cancelado')
+        .neq('payment_method', 'pendiente' as any)
         .order('created_at', { ascending: true });
 
       if (activeBranchId) {
