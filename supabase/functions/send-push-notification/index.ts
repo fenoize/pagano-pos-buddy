@@ -171,7 +171,7 @@ async function handleTestNotification(
 
     const email = customer?.email?.trim();
 
-    const oneSignalPayload: any = {
+    const basePayload: any = {
       app_id: appId,
       target_channel: 'push',
       headings: { en: title },
@@ -179,42 +179,60 @@ async function handleTestNotification(
       data: { type: 'test' }
     };
 
+    // Build attempts: try email tag first (if available), then fallback to external_id alias.
+    const attempts: Array<{ label: string; payload: any }> = [];
     if (email) {
-      // Target by tag set in the customer app: setUserTags({ email })
-      oneSignalPayload.filters = [
-        { field: 'tag', key: 'email', relation: '=', value: email }
-      ];
-      console.log('Sending test OneSignal notification (by email tag):', JSON.stringify(oneSignalPayload));
-    } else {
-      oneSignalPayload.include_aliases = {
-        external_id: [external_user_id]
-      };
-      console.log('Sending test OneSignal notification (by external_id):', JSON.stringify(oneSignalPayload));
+      attempts.push({
+        label: 'email-tag',
+        payload: { ...basePayload, filters: [{ field: 'tag', key: 'email', relation: '=', value: email }] }
+      });
     }
-
-    const response = await fetch(ONESIGNAL_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${apiKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(oneSignalPayload)
+    attempts.push({
+      label: 'external_id',
+      payload: { ...basePayload, include_aliases: { external_id: [external_user_id] }, target_channel: 'push' }
     });
 
-    const result = await response.json();
-    console.log('OneSignal test response:', JSON.stringify(result));
+    let lastResult: any = null;
+    let lastStatus = 0;
+    let sentId: string | null = null;
 
-    if (!response.ok || result.errors) {
-      const errorMessage = result.errors ? JSON.stringify(result.errors) : 'OneSignal API error';
+    for (const attempt of attempts) {
+      console.log(`Sending test OneSignal notification (${attempt.label}):`, JSON.stringify(attempt.payload));
+      const response = await fetch(ONESIGNAL_API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${apiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(attempt.payload)
+      });
+      const result = await response.json();
+      lastResult = result;
+      lastStatus = response.status;
+      console.log(`OneSignal test response (${attempt.label}):`, JSON.stringify(result));
+
+      const hasErrors = !response.ok || !!result.errors;
+      const recipients = typeof result.recipients === 'number' ? result.recipients : null;
+      if (!hasErrors && result.id && (recipients === null || recipients > 0)) {
+        sentId = result.id;
+        break;
+      }
+    }
+
+    if (!sentId) {
+      const errorMessage = lastResult?.errors
+        ? (Array.isArray(lastResult.errors) ? lastResult.errors.join('; ') : JSON.stringify(lastResult.errors))
+        : 'OneSignal API error';
+      // Return 200 so supabase.functions.invoke surfaces the body to the client
       return new Response(
-        JSON.stringify({ success: false, error: errorMessage }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: errorMessage, status: lastStatus }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
-      JSON.stringify({ success: true, notification_id: result.id }),
+      JSON.stringify({ success: true, notification_id: sentId }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
