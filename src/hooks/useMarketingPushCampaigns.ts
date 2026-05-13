@@ -83,15 +83,17 @@ export function useMarketingPushCampaigns() {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success(`Notificación enviada a ${data.sent_count} clientes`);
+        toast.success(`Notificación enviada a ${data.sent_count} clientes${data.error_count ? ` (${data.error_count} fallidos)` : ''}`);
+      } else if (data?.total === 0) {
+        toast.warning('No hay destinatarios suscritos a notificaciones push');
       } else {
-        toast.error(data?.error || 'Error al enviar notificación');
+        toast.error(data?.error || `No se pudo entregar a ningún destinatario (${data?.error_count || 0} fallidos de ${data?.total || 0})`);
       }
 
       await fetchCampaigns();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending campaign:', error);
-      toast.error('Error al enviar campaña');
+      toast.error(`Error al enviar campaña: ${error?.message || 'desconocido'}`);
     } finally {
       setSending(null);
     }
