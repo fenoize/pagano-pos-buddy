@@ -449,92 +449,113 @@ async function handleBulkNotification(
   // Generate click URL for marketing notification
   const clickUrl = generateClickUrl('marketing', payload, appBaseUrl);
 
-  // Send to all eligible customers using OneSignal segment
-  try {
-    const oneSignalPayload: any = {
-      app_id: appId,
-      include_aliases: {
-        external_id: customerIds
-      },
-      target_channel: 'push',
-      headings: { en: title },
-      contents: { en: body },
-      data: { ...payload, type: 'marketing', campaign_id }
-    };
+  // Send per-recipient with email-tag → external_id fallback (same strategy as test).
+  // Bulk include_aliases often fails because devices are linked by tag, not external_id.
+  const clickUrl = generateClickUrl('marketing', payload, appBaseUrl);
+  let sentCount = 0;
+  let errorCount = 0;
+  const events: any[] = [];
 
-    // Add click URL - only use web_url for web push (not both url and web_url)
-    if (clickUrl) {
-      oneSignalPayload.web_url = clickUrl;
+  try {
+    for (const r of recipients) {
+      const basePayload: any = {
+        app_id: appId,
+        target_channel: 'push',
+        headings: { en: title },
+        contents: { en: body },
+        data: { ...payload, type: 'marketing', campaign_id },
+      };
+      if (clickUrl) basePayload.web_url = clickUrl;
+
+      const attempts: Array<{ label: string; payload: any }> = [];
+      if (r.email) {
+        attempts.push({
+          label: 'email-tag',
+          payload: { ...basePayload, filters: [{ field: 'tag', key: 'email', relation: '=', value: r.email }] },
+        });
+      }
+      attempts.push({
+        label: 'external_id',
+        payload: { ...basePayload, include_aliases: { external_id: [r.id] } },
+      });
+
+      let ok = false;
+      let lastError: string | null = null;
+      for (const attempt of attempts) {
+        try {
+          const response = await fetch(ONESIGNAL_API_URL, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${apiKey}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify(attempt.payload),
+          });
+          const result = await response.json();
+          const hasErrors = !response.ok || !!result.errors;
+          const recipientsCount = typeof result.recipients === 'number' ? result.recipients : null;
+          if (!hasErrors && result.id && (recipientsCount === null || recipientsCount > 0)) {
+            ok = true;
+            break;
+          }
+          lastError = result.errors
+            ? (Array.isArray(result.errors) ? result.errors.join('; ') : JSON.stringify(result.errors))
+            : `HTTP ${response.status}`;
+        } catch (e: any) {
+          lastError = e.message;
+        }
+      }
+
+      if (ok) sentCount++;
+      else errorCount++;
+
+      events.push({
+        customer_id: r.id,
+        type: 'marketing',
+        title,
+        body,
+        payload: { ...payload, campaign_id },
+        status: ok ? 'sent' : 'error',
+        sent_at: ok ? new Date().toISOString() : null,
+        error_message: ok ? null : lastError,
+      });
     }
 
-    console.log('Sending bulk OneSignal notification to', customerIds.length, 'customers');
-
-    const response = await fetch(ONESIGNAL_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${apiKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(oneSignalPayload)
-    });
-
-    const result = await response.json();
-    console.log('OneSignal bulk response:', JSON.stringify(result));
-
-    // Create notification events for tracking
-    const events = customerIds.map((customerId: string) => ({
-      customer_id: customerId,
-      type: 'marketing',
-      title,
-      body,
-      payload: { ...payload, campaign_id },
-      status: response.ok ? 'sent' : 'error',
-      sent_at: response.ok ? new Date().toISOString() : null,
-      error_message: !response.ok ? JSON.stringify(result.errors) : null
-    }));
-
-    // Insert in batches
+    // Insert events in batches
     const batchSize = 100;
     for (let i = 0; i < events.length; i += batchSize) {
-      const batch = events.slice(i, i + batchSize);
-      await supabase.from('notification_events').insert(batch);
+      await supabase.from('notification_events').insert(events.slice(i, i + batchSize));
     }
 
-    // Update campaign status
     await supabase
       .from('marketing_push_campaigns')
-      .update({ 
-        status: response.ok ? 'sent' : 'error',
+      .update({
+        status: sentCount > 0 ? 'sent' : 'error',
         sent_at: new Date().toISOString(),
-        sent_count: response.ok ? customerIds.length : 0,
-        error_count: response.ok ? 0 : customerIds.length
+        sent_count: sentCount,
+        error_count: errorCount,
       })
       .eq('id', campaign_id);
 
     return new Response(
-      JSON.stringify({ 
-        success: response.ok, 
-        sent_count: response.ok ? customerIds.length : 0,
-        notification_id: result.id 
+      JSON.stringify({
+        success: sentCount > 0,
+        sent_count: sentCount,
+        error_count: errorCount,
+        total: customerIds.length,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
     console.error('Error sending bulk notification:', error);
-    
     await supabase
       .from('marketing_push_campaigns')
-      .update({ 
-        status: 'error',
-        error_count: customerIds.length
-      })
+      .update({ status: 'error', error_count: customerIds.length })
       .eq('id', campaign_id);
-
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 }
