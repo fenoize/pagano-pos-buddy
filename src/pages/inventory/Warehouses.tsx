@@ -24,7 +24,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-import { toast } from "sonner";
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -34,6 +33,7 @@ import { toast } from "sonner";
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export default function Warehouses() {
   const navigate = useNavigate();

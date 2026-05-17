@@ -14,7 +14,6 @@ import { setStaffContext } from '@/lib/dbContext';
 import { StaffNotificationBell } from '@/components/notifications/StaffNotificationBell';
 import { PendingPaymentsIndicator } from '@/components/pos/PendingPaymentsIndicator';
 import {
-import { toast } from "sonner";
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -22,6 +21,7 @@ import { toast } from "sonner";
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { toast } from "sonner";
 
 export function CashSessionTopBar() {
   const { 
