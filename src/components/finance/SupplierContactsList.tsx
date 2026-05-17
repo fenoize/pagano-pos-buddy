@@ -19,9 +19,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, Star, Mail, Phone, MessageCircle, Loader2 } from 'lucide-react';
 import { SupplierContact, useSupplierContacts, CreateSupplierContactData } from '@/hooks/useSupplierContacts';
+import { toast } from "sonner";
 
 interface SupplierContactsListProps {
   supplierId: string;
@@ -82,7 +82,7 @@ export function SupplierContactsList({ supplierId }: SupplierContactsListProps) 
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast({ title: 'Error', description: 'El nombre es requerido', variant: 'destructive' });
+      toast.error('Error', { description: 'El nombre es requerido' });
       return;
     }
 

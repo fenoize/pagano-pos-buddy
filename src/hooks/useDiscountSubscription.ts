@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export interface DiscountSubscription {
   id: string;
   customer_id: string;
@@ -40,8 +39,6 @@ export type DiscountSubscriptionUpdatable = Partial<Pick<DiscountSubscription,
 export function useDiscountSubscription(customerId?: string) {
   const [subscription, setSubscription] = useState<DiscountSubscription | null>(null);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
   const fetchSubscription = useCallback(async () => {
     if (!customerId) return;
     setLoading(true);
@@ -124,19 +121,19 @@ export function useDiscountSubscription(customerId?: string) {
 
       if (error) {
         if (error.code === '23505') {
-          toast({ title: "Error", description: "Este cliente ya tiene una suscripción de descuento", variant: "destructive" });
+          toast.error("Error", { description: "Este cliente ya tiene una suscripción de descuento" });
         } else {
           throw error;
         }
         return false;
       }
 
-      toast({ title: "Éxito", description: `Descuento del ${data.discountPercent}% creado` });
+      toast.success("Éxito", { description: `Descuento del ${data.discountPercent}% creado` });
       await fetchSubscription();
       return true;
     } catch (error) {
       console.error('Error creating discount subscription:', error);
-      toast({ title: "Error", description: "Error al crear la suscripción", variant: "destructive" });
+      toast.error("Error", { description: "Error al crear la suscripción" });
       return false;
     }
   };
@@ -152,12 +149,12 @@ export function useDiscountSubscription(customerId?: string) {
       } as any);
 
       if (error) throw error;
-      toast({ title: "Éxito", description: "Suscripción actualizada" });
+      toast.success("Éxito", { description: "Suscripción actualizada" });
       await fetchSubscription();
       return true;
     } catch (error) {
       console.error('Error updating discount subscription:', error);
-      toast({ title: "Error", description: "Error al actualizar", variant: "destructive" });
+      toast.error("Error", { description: "Error al actualizar" });
       return false;
     }
   };
@@ -169,12 +166,12 @@ export function useDiscountSubscription(customerId?: string) {
       } as any);
 
       if (error) throw error;
-      toast({ title: "Éxito", description: "Suscripción eliminada" });
+      toast.success("Éxito", { description: "Suscripción eliminada" });
       setSubscription(null);
       return true;
     } catch (error) {
       console.error('Error deleting discount subscription:', error);
-      toast({ title: "Error", description: "Error al eliminar", variant: "destructive" });
+      toast.error("Error", { description: "Error al eliminar" });
       return false;
     }
   };

@@ -23,11 +23,11 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FinanceExpense } from '@/types/finance';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 import { formatDateShort } from '@/lib/dateUtils';
 import { Badge } from '@/components/ui/badge';
 import * as XLSX from 'xlsx';
 import { BranchFilter } from '@/components/branches/BranchFilter';
+import { toast } from "sonner";
 
 const EXPENSE_TYPES = ['Variable', 'Fijo', 'Inversión', 'Otro'];
 
@@ -38,7 +38,6 @@ export default function FinanceExpenses() {
   const { expenses, loading: loadingExpenses, createExpense, updateExpense, deleteExpense } = useFinanceExpenses();
   const { accounts } = useFinanceAccounts();
   const { activeRecurringExpenses } = useRecurringExpenses();
-  const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<FinanceExpense | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -239,19 +238,11 @@ export default function FinanceExpenses() {
     // Validaciones de documentación
     if (includeDocumentation) {
       if (!formData.document_type) {
-        toast({
-          title: 'Error',
-          description: 'Selecciona un tipo de documento',
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: 'Selecciona un tipo de documento' });
         return;
       }
       if (!formData.document_number) {
-        toast({
-          title: 'Error',
-          description: 'Ingresa el número de documento',
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: 'Ingresa el número de documento' });
         return;
       }
     }
@@ -298,11 +289,7 @@ export default function FinanceExpenses() {
 
   const handleExportToExcel = () => {
     if (filteredExpenses.length === 0) {
-      toast({
-        title: 'No hay datos',
-        description: 'No hay egresos para exportar en este mes',
-        variant: 'destructive',
-      });
+      toast.error('No hay datos', { description: 'No hay egresos para exportar en este mes' });
       return;
     }
 
@@ -351,10 +338,7 @@ export default function FinanceExpenses() {
     // Descargar archivo
     XLSX.writeFile(wb, fileName);
 
-    toast({
-      title: 'Exportación exitosa',
-      description: `Se descargó ${fileName} con ${filteredExpenses.length} registros`,
-    });
+    toast.success('Exportación exitosa', { description: `Se descargó ${fileName} con ${filteredExpenses.length} registros` });
   };
 
   if (loadingExpenses) {
@@ -661,19 +645,12 @@ export default function FinanceExpenses() {
                           if (file) {
                             // Validar tamaño (5MB)
                             if (file.size > 5 * 1024 * 1024) {
-                              toast({
-                                title: 'Error',
-                                description: 'El archivo no puede superar 5MB',
-                                variant: 'destructive',
-                              });
+                              toast.error('Error', { description: 'El archivo no puede superar 5MB' });
                               e.target.value = '';
                               return;
                             }
                             setSelectedFile(file);
-                            toast({
-                              title: 'Archivo seleccionado',
-                              description: file.name,
-                            });
+                            toast.success('Archivo seleccionado', { description: file.name });
                           }
                         }}
                       />
@@ -922,11 +899,7 @@ export default function FinanceExpenses() {
                                     }
                                   }
                                 } catch (error) {
-                                  toast({
-                                    title: 'Error',
-                                    description: 'No se pudo abrir el documento',
-                                    variant: 'destructive',
-                                  });
+                                  toast.error('Error', { description: 'No se pudo abrir el documento' });
                                 }
                               }}
                             >
@@ -940,11 +913,7 @@ export default function FinanceExpenses() {
                                   // Extraer el path del archivo
                                   const pathMatch = expense.attachment_url!.match(/finance-documents\/(.+)\?/);
                                   if (!pathMatch) {
-                                    toast({
-                                      title: 'Error',
-                                      description: 'No se pudo obtener el archivo',
-                                      variant: 'destructive',
-                                    });
+                                    toast.error('Error', { description: 'No se pudo obtener el archivo' });
                                     return;
                                   }
 
@@ -985,17 +954,10 @@ export default function FinanceExpenses() {
                                   window.URL.revokeObjectURL(url);
                                   document.body.removeChild(a);
                                   
-                                  toast({
-                                    title: 'Descarga iniciada',
-                                    description: fileName,
-                                  });
+                                  toast.success('Descarga iniciada', { description: fileName });
                                 } catch (error) {
                                   console.error('Error downloading:', error);
-                                  toast({
-                                    title: 'Error',
-                                    description: 'No se pudo descargar el documento',
-                                    variant: 'destructive',
-                                  });
+                                  toast.error('Error', { description: 'No se pudo descargar el documento' });
                                 }
                               }}
                             >

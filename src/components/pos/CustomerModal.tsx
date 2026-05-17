@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, User, Coins, ScanLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import { QRScannerModal } from './QRScannerModal';
+import { toast } from "sonner";
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -28,8 +28,6 @@ export function CustomerModal({
   const [isSearching, setIsSearching] = useState(false);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
-  const { toast } = useToast();
-
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -76,7 +74,7 @@ export function CustomerModal({
       setSearchResults(result.data || []);
     } catch (error) {
       console.error('Error searching customers:', error);
-      toast({ title: "Error", description: error instanceof Error ? error.message : "No se pudieron buscar clientes", variant: "destructive" });
+      toast.error("Error", { description: error instanceof Error ? error.message : "No se pudieron buscar clientes" });
       setSearchResults([]);
     } finally {
       setIsSearching(false);

@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe, RecipeIngredient } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export const useRecipes = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const fetchRecipes = async () => {
     try {
       setLoading(true);
@@ -31,11 +28,7 @@ export const useRecipes = () => {
       setRecipes(data || []);
     } catch (error) {
       console.error('Error fetching recipes:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las recetas',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar las recetas' });
     } finally {
       setLoading(false);
     }
@@ -69,20 +62,13 @@ export const useRecipes = () => {
         if (ingredientsError) throw ingredientsError;
       }
 
-      toast({
-        title: 'Éxito',
-        description: 'Receta creada correctamente',
-      });
+      toast.success('Éxito', { description: 'Receta creada correctamente' });
 
       await fetchRecipes();
       return { success: true, data: recipeData };
     } catch (error: any) {
       console.error('Error creating recipe:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo crear la receta',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo crear la receta' });
       return { success: false, error };
     }
   };
@@ -96,20 +82,13 @@ export const useRecipes = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Éxito',
-        description: 'Receta actualizada',
-      });
+      toast.success('Éxito', { description: 'Receta actualizada' });
 
       await fetchRecipes();
       return { success: true };
     } catch (error: any) {
       console.error('Error updating recipe:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar la receta',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo actualizar la receta' });
       return { success: false, error };
     }
   };
@@ -124,20 +103,13 @@ export const useRecipes = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Éxito',
-        description: 'Receta desactivada',
-      });
+      toast.success('Éxito', { description: 'Receta desactivada' });
 
       await fetchRecipes();
       return { success: true };
     } catch (error: any) {
       console.error('Error deleting recipe:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo desactivar la receta',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo desactivar la receta' });
       return { success: false, error };
     }
   };
@@ -159,20 +131,13 @@ export const useRecipes = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Éxito',
-        description: 'Ingrediente agregado',
-      });
+      toast.success('Éxito', { description: 'Ingrediente agregado' });
 
       await fetchRecipes();
       return { success: true, data };
     } catch (error: any) {
       console.error('Error adding ingredient:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo agregar el ingrediente',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo agregar el ingrediente' });
       return { success: false, error };
     }
   };
@@ -186,20 +151,13 @@ export const useRecipes = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Éxito',
-        description: 'Ingrediente actualizado',
-      });
+      toast.success('Éxito', { description: 'Ingrediente actualizado' });
 
       await fetchRecipes();
       return { success: true };
     } catch (error: any) {
       console.error('Error updating ingredient:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar el ingrediente',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo actualizar el ingrediente' });
       return { success: false, error };
     }
   };
@@ -214,20 +172,13 @@ export const useRecipes = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Éxito',
-        description: 'Ingrediente eliminado',
-      });
+      toast.success('Éxito', { description: 'Ingrediente eliminado' });
 
       await fetchRecipes();
       return { success: true };
     } catch (error: any) {
       console.error('Error removing ingredient:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo eliminar el ingrediente',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo eliminar el ingrediente' });
       return { success: false, error };
     }
   };
@@ -285,20 +236,13 @@ export const useRecipes = () => {
         if (ingredientsError) throw ingredientsError;
       }
 
-      toast({
-        title: 'Éxito',
-        description: 'Receta duplicada correctamente',
-      });
+      toast.success('Éxito', { description: 'Receta duplicada correctamente' });
 
       await fetchRecipes();
       return { success: true, data: newRecipeData };
     } catch (error: any) {
       console.error('Error duplicating recipe:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo duplicar la receta',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo duplicar la receta' });
       return { success: false, error };
     }
   };

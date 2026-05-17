@@ -12,9 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from "sonner";
 
 interface CustomerLevelsBadgesProps {
   customerId: string;
@@ -84,7 +84,6 @@ const getIcon = (iconName: string | null) => {
 };
 
 export default function CustomerLevelsBadges({ customerId }: CustomerLevelsBadgesProps) {
-  const { toast } = useToast();
   const [levelData, setLevelData] = useState<CustomerLevelData | null>(null);
   const [levelDefs, setLevelDefs] = useState<LevelDefinition[]>([]);
   const [allBadges, setAllBadges] = useState<BadgeDef[]>([]);
@@ -166,13 +165,13 @@ export default function CustomerLevelsBadges({ customerId }: CustomerLevelsBadge
         .eq('id', customerId);
       if (updateError) throw updateError;
 
-      toast({ title: 'Puntos actualizados', description: `${pointsMode === 'add' ? '+' : '-'}${pointsAmount} puntos` });
+      toast.success('Puntos actualizados', { description: `${pointsMode === 'add' ? '+' : '-'}${pointsAmount} puntos` });
       setIsPointsModalOpen(false);
       setPointsAmount(0);
       setPointsMotivo('');
       loadData();
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast.error('Error', { description: error.message });
     }
   };
 
@@ -199,11 +198,11 @@ export default function CustomerLevelsBadges({ customerId }: CustomerLevelsBadge
         description: `Nivel forzado a: ${def.level_name}`,
       });
 
-      toast({ title: 'Nivel actualizado', description: `Cliente asignado a nivel ${def.level_name}` });
+      toast.success('Nivel actualizado', { description: `Cliente asignado a nivel ${def.level_name}` });
       setIsLevelModalOpen(false);
       loadData();
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast.error('Error', { description: error.message });
     }
   };
 
@@ -217,17 +216,17 @@ export default function CustomerLevelsBadges({ customerId }: CustomerLevelsBadge
       });
       if (error) {
         if (error.code === '23505') {
-          toast({ title: 'Ya otorgada', description: 'El cliente ya tiene esta insignia', variant: 'destructive' });
+          toast.error('Ya otorgada', { description: 'El cliente ya tiene esta insignia' });
           return;
         }
         throw error;
       }
-      toast({ title: 'Insignia otorgada' });
+      toast.success('Insignia otorgada');
       setIsBadgeModalOpen(false);
       setSelectedBadgeId('');
       loadData();
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast.error('Error', { description: error.message });
     }
   };
 
@@ -240,10 +239,10 @@ export default function CustomerLevelsBadges({ customerId }: CustomerLevelsBadge
         .eq('customer_id', customerId)
         .eq('badge_id', badgeId);
       if (error) throw error;
-      toast({ title: 'Insignia removida' });
+      toast.success('Insignia removida');
       loadData();
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast.error('Error', { description: error.message });
     }
   };
 

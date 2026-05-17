@@ -18,8 +18,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { DeliveryData } from './FulfillmentStep';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { CouponApplication } from '@/types';
-import { useToast } from '@/hooks/use-toast';
 import { PaymentMethod as ConfiguredPaymentMethod } from '@/hooks/usePaymentMethods';
+import { toast } from "sonner";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -211,8 +211,6 @@ export default function PaymentModal({
   const [runaRewardValue, setRunaRewardValue] = useState(1300);
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-
   useEffect(() => {
     if (isOpen) {
       fetchConfig();
@@ -394,58 +392,35 @@ export default function PaymentModal({
         amount: 0,
       };
       setPayments([newPayment]);
-      toast({
-        title: "Pago pendiente",
-        description: "El pedido irá a cocina sin pago inmediato"
-      });
+      toast.success("Pago pendiente", { description: "El pedido irá a cocina sin pago inmediato" });
       return;
     }
 
     if (currentMethod !== 'runas' && currentMethod !== 'pendiente' && amount <= 0) {
-      toast({
-        title: "Error",
-        description: "Ingrese un monto válido",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Ingrese un monto válido" });
       return;
     }
 
     if (methodConfig?.requires_receipt && !currentReceiptNumber.trim()) {
-      toast({
-        title: "Error",
-        description: "Ingrese el número de boleta",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Ingrese el número de boleta" });
       return;
     }
 
     if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
-      toast({
-        title: "Error",
-        description: "Ingrese el número de operación",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Ingrese el número de operación" });
       return;
     }
 
     if (currentMethod === 'runas') {
       const runasNum = parseFloat(currentRunas) || 0;
       if (runasNum <= 0) {
-        toast({
-          title: "Error",
-          description: "Ingrese cantidad de runas",
-          variant: "destructive"
-        });
+        toast.error("Error", { description: "Ingrese cantidad de runas" });
         return;
       }
       
       // Validar que el cliente tenga suficientes runas
       if (runasNum > (customer.cantidad_runas || 0)) {
-        toast({
-          title: "Error",
-          description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles`,
-          variant: "destructive"
-        });
+        toast.error("Error", { description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles` });
         return;
       }
       
@@ -453,11 +428,7 @@ export default function PaymentModal({
       const runasValue = runasNum * runaRewardValue;
       const remainingBalance = getRemainingBalance();
       if (runasValue < remainingBalance) {
-        toast({
-          title: "Error",
-          description: `Se necesitan al menos ${Math.ceil(remainingBalance / runaRewardValue)} runas para cubrir el saldo restante`,
-          variant: "destructive"
-        });
+        toast.error("Error", { description: `Se necesitan al menos ${Math.ceil(remainingBalance / runaRewardValue)} runas para cubrir el saldo restante` });
         return;
       }
     }
@@ -481,10 +452,7 @@ export default function PaymentModal({
     setCurrentReceiptNumber('');
     setCurrentOperationNumber('');
     setCurrentRunas('');
-    toast({
-      title: "Pago agregado",
-      description: `${methodConfig?.display_name || currentMethod} agregado a la lista`
-    });
+    toast.success("Pago agregado", { description: `${methodConfig?.display_name || currentMethod} agregado a la lista` });
   };
 
   const handleRemovePayment = (index: number) => {
@@ -514,29 +482,17 @@ export default function PaymentModal({
         }];
       } else if (currentMethod !== 'runas' && amount <= 0) {
         // Validar método actual
-        toast({
-          title: "Error",
-          description: "Ingrese un monto válido",
-          variant: "destructive"
-        });
+        toast.error("Error", { description: "Ingrese un monto válido" });
         setIsSubmitting(false);
         return;
       }
       else if (methodConfig?.requires_receipt && !currentReceiptNumber.trim()) {
-        toast({
-          title: "Error",
-          description: "Ingrese el número de boleta",
-          variant: "destructive"
-        });
+        toast.error("Error", { description: "Ingrese el número de boleta" });
         setIsSubmitting(false);
         return;
       }
       else if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
-        toast({
-          title: "Error",
-          description: "Ingrese el número de operación",
-          variant: "destructive"
-        });
+        toast.error("Error", { description: "Ingrese el número de operación" });
         setIsSubmitting(false);
         return;
       }
@@ -544,32 +500,20 @@ export default function PaymentModal({
       else if (currentMethod === 'runas') {
         const runasNum = parseFloat(currentRunas) || 0;
         if (runasNum <= 0) {
-          toast({
-            title: "Error",
-            description: "Ingrese cantidad de runas",
-            variant: "destructive"
-          });
+          toast.error("Error", { description: "Ingrese cantidad de runas" });
           setIsSubmitting(false);
           return;
         }
         
         if (runasNum > (customer.cantidad_runas || 0)) {
-          toast({
-            title: "Error",
-            description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles`,
-            variant: "destructive"
-          });
+          toast.error("Error", { description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles` });
           setIsSubmitting(false);
           return;
         }
         
         const runasValue = runasNum * runaRewardValue;
         if (runasValue < total) {
-          toast({
-            title: "Error",
-            description: `Se necesitan al menos ${Math.ceil(total / runaRewardValue)} runas para cubrir el total`,
-            variant: "destructive"
-          });
+          toast.error("Error", { description: `Se necesitan al menos ${Math.ceil(total / runaRewardValue)} runas para cubrir el total` });
           setIsSubmitting(false);
           return;
         }
@@ -608,11 +552,7 @@ export default function PaymentModal({
     }, 0);
     
     if (!isPendingPayment && totalPaid < total) {
-      toast({
-        title: "Error",
-        description: "El total pagado es menor al total de la venta",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "El total pagado es menor al total de la venta" });
       setIsSubmitting(false);
       return;
     }
@@ -629,11 +569,7 @@ export default function PaymentModal({
     } catch (error) {
       console.error('Error in payment confirmation:', error);
       setIsSubmitting(false);
-      toast({
-        title: "Error",
-        description: "No se pudo confirmar el pago",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo confirmar el pago" });
     }
   };
 

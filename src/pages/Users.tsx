@@ -34,8 +34,8 @@ import { User, AppRole } from '@/types';
 import { UserForm } from '@/components/users/UserForm';
 import { PasswordModal } from '@/components/users/PasswordModal';
 import { useUsers } from '@/hooks/useUsers';
-import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/lib/utils';
+import { toast } from "sonner";
 
 export default function Users() {
   const { user: currentUser } = useAuthContext();
@@ -48,8 +48,6 @@ export default function Users() {
   const [deleteDialogUser, setDeleteDialogUser] = useState<User | null>(null);
   const [passwordModalUser, setPasswordModalUser] = useState<User | null>(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const { toast } = useToast();
-
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -94,35 +92,21 @@ export default function Users() {
     
     try {
       await deleteUser(deleteDialogUser.id);
-      toast({
-        title: "Usuario eliminado",
-        description: "El usuario ha sido eliminado correctamente."
-      });
+      toast.success("Usuario eliminado", { description: "El usuario ha sido eliminado correctamente." });
       setDeleteDialogUser(null);
       fetchUsers();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el usuario.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo eliminar el usuario." });
     }
   };
 
   const handleToggleStatus = async (user: User) => {
     try {
       await toggleUserStatus(user.id, !user.active);
-      toast({
-        title: user.active ? "Usuario desactivado" : "Usuario activado",
-        description: `El usuario ha sido ${user.active ? 'desactivado' : 'activado'} correctamente.`
-      });
+      toast.success(user.active ? "Usuario desactivado" : "Usuario activado", { description: `El usuario ha sido ${user.active ? 'desactivado' : 'activado'} correctamente.` });
       fetchUsers();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo cambiar el estado del usuario.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo cambiar el estado del usuario." });
     }
   };
 
@@ -136,17 +120,10 @@ export default function Users() {
     setPasswordLoading(true);
     try {
       await updateUserPassword(passwordModalUser.id, password);
-      toast({
-        title: "Contraseña actualizada",
-        description: `Nueva contraseña aplicada para ${passwordModalUser.username}`
-      });
+      toast.success("Contraseña actualizada", { description: `Nueva contraseña aplicada para ${passwordModalUser.username}` });
       setPasswordModalUser(null);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la contraseña.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo actualizar la contraseña." });
     } finally {
       setPasswordLoading(false);
     }

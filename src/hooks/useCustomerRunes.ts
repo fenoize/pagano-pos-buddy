@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RunasTransaction, RunaMovementType, OrigenMovimiento } from '@/types';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from './usePermissions';
 import { triggerRunasEarnedNotification } from '@/lib/notificationTriggers';
+import { toast } from "sonner";
 
 export interface RunasAdjustmentData {
   runas: number;
@@ -22,7 +22,6 @@ export function useCustomerRunes() {
   const [loading, setLoading] = useState(false);
   const [runaValue, setRunaValue] = useState(10000); // Monto para GANAR 1 runa
   const [runaRewardValue, setRunaRewardValue] = useState(600); // Valor de CANJE de 1 runa
-  const { toast } = useToast();
   const { user } = useAuth();
 
   // Usar hook de permisos centralizado
@@ -208,11 +207,7 @@ export function useCustomerRunes() {
       const currentSaldo = await calculateRunasSaldo(customerId);
       
       if (currentSaldo < runasUsed) {
-        toast({
-          title: "Error",
-          description: "Saldo de runas insuficiente",
-          variant: "destructive"
-        });
+        toast.error("Error", { description: "Saldo de runas insuficiente" });
         return null;
       }
 
@@ -258,20 +253,12 @@ export function useCustomerRunes() {
     adjustmentData: RunasAdjustmentData
   ): Promise<RunasTransaction | null> => {
     if (!canAdjustRunes) {
-      toast({
-        title: "Error",
-        description: "Solo los administradores pueden hacer ajustes manuales",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Solo los administradores pueden hacer ajustes manuales" });
       return null;
     }
 
     if (!adjustmentData.motivo.trim()) {
-      toast({
-        title: "Error",
-        description: "El motivo es obligatorio para ajustes manuales",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "El motivo es obligatorio para ajustes manuales" });
       return null;
     }
 
@@ -311,10 +298,7 @@ export function useCustomerRunes() {
 
       const newSaldo = result.new_balance ?? 0;
 
-      toast({
-        title: "Éxito",
-        description: `Ajuste de ${adjustmentData.runas > 0 ? '+' : ''}${adjustmentData.runas} runas realizado. Nuevo saldo: ${newSaldo}`,
-      });
+      toast.success("Éxito", { description: `Ajuste de ${adjustmentData.runas > 0 ? '+' : ''}${adjustmentData.runas} runas realizado. Nuevo saldo: ${newSaldo}` });
 
       return {
         id: result.transaction_id,
@@ -328,11 +312,7 @@ export function useCustomerRunes() {
       } as RunasTransaction;
     } catch (error) {
       console.error('Error creating manual adjustment:', error);
-      toast({
-        title: "Error",
-        description: "Error al realizar el ajuste de runas",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al realizar el ajuste de runas" });
       return null;
     } finally {
       setLoading(false);

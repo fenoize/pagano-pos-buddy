@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Order, OrderStatus, FulfillmentType, PaymentMethod } from '@/types';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from "sonner";
 
 export interface CustomerOrderFilters {
   status?: OrderStatus;
@@ -21,7 +21,6 @@ export interface CustomerOrderStats {
 
 export function useCustomerOrders() {
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const { user } = useAuth();
 
   const canViewOrders = user?.role === 'Administrador' || user?.role === 'Cajero' || user?.role === 'Reparto';
@@ -65,11 +64,7 @@ export function useCustomerOrders() {
       };
     } catch (error) {
       console.error('Error fetching customer orders:', error);
-      toast({
-        title: "Error",
-        description: "Error al cargar el historial de pedidos",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al cargar el historial de pedidos" });
       return { orders: [], totalCount: 0 };
     } finally {
       setLoading(false);
@@ -169,22 +164,14 @@ export function useCustomerOrders() {
   // Duplicar un pedido para "Reordenar"
   const reorderCustomerOrder = async (orderId: string): Promise<Order | null> => {
     if (user?.role !== 'Administrador' && user?.role !== 'Cajero') {
-      toast({
-        title: "Error",
-        description: "No tienes permisos para reordenar",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No tienes permisos para reordenar" });
       return null;
     }
 
     try {
       const originalOrder = await getOrderById(orderId);
       if (!originalOrder) {
-        toast({
-          title: "Error",
-          description: "No se pudo encontrar el pedido original",
-          variant: "destructive"
-        });
+        toast.error("Error", { description: "No se pudo encontrar el pedido original" });
         return null;
       }
 
@@ -217,10 +204,7 @@ export function useCustomerOrders() {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: `Pedido duplicado como #${data.order_number}`,
-      });
+      toast.success("Éxito", { description: `Pedido duplicado como #${data.order_number}` });
 
       return {
         ...data,
@@ -228,11 +212,7 @@ export function useCustomerOrders() {
       } as Order;
     } catch (error) {
       console.error('Error reordering:', error);
-      toast({
-        title: "Error",
-        description: "Error al duplicar el pedido",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al duplicar el pedido" });
       return null;
     }
   };

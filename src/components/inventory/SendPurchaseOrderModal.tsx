@@ -12,10 +12,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useSupplierContacts } from '@/hooks/useSupplierContacts';
-import { useToast } from '@/hooks/use-toast';
 import type { PurchaseOrder, PurchaseOrderItem } from '@/hooks/usePurchaseOrders';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from "sonner";
 
 interface SendPurchaseOrderModalProps {
   open: boolean;
@@ -28,7 +28,6 @@ export function SendPurchaseOrderModal({
   onOpenChange, 
   order 
 }: SendPurchaseOrderModalProps) {
-  const { toast } = useToast();
   const { contacts, loading, createContact, refetch } = useSupplierContacts(order?.supplier_id);
   const [selectedContactId, setSelectedContactId] = useState<string>('');
   const [copied, setCopied] = useState(false);
@@ -81,11 +80,7 @@ ${order.notes ? `📝 Notas: ${order.notes}` : ''}`;
   const handleSendWhatsApp = () => {
     const contact = contacts.find(c => c.id === selectedContactId);
     if (!contact?.phone) {
-      toast({
-        title: 'Error',
-        description: 'El contacto no tiene número de teléfono',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'El contacto no tiene número de teléfono' });
       return;
     }
 
@@ -102,11 +97,7 @@ ${order.notes ? `📝 Notas: ${order.notes}` : ''}`;
   const handleSendEmail = () => {
     const contact = contacts.find(c => c.id === selectedContactId);
     if (!contact?.email) {
-      toast({
-        title: 'Error',
-        description: 'El contacto no tiene correo electrónico',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'El contacto no tiene correo electrónico' });
       return;
     }
 
@@ -120,14 +111,10 @@ ${order.notes ? `📝 Notas: ${order.notes}` : ''}`;
     try {
       await navigator.clipboard.writeText(generateMessage().replace(/\*/g, ''));
       setCopied(true);
-      toast({ title: 'Copiado al portapapeles' });
+      toast.success('Copiado al portapapeles');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast({
-        title: 'Error',
-        description: 'No se pudo copiar al portapapeles',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo copiar al portapapeles' });
     }
   };
 

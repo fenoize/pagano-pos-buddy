@@ -12,8 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Key, Lock } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface ResetPasswordModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,8 +31,6 @@ export default function ResetPasswordModal({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { toast } = useToast();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -107,10 +104,7 @@ export default function ResetPasswordModal({
       }
 
       // Success
-      toast({
-        title: "Contraseña actualizada",
-        description: "Tu contraseña ha sido cambiada exitosamente",
-      });
+      toast.success("Contraseña actualizada", { description: "Tu contraseña ha sido cambiada exitosamente" });
 
       onSuccess();
       handleClose();

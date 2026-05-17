@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export type SubscriptionType = 'monthly' | 'weekly' | 'birthday';
 
 export interface RunaSubscription {
@@ -40,8 +39,6 @@ export function useRunaSubscriptions(customerId?: string) {
   const [subscriptions, setSubscriptions] = useState<RunaSubscription[]>([]);
   const [config, setConfig] = useState<RunaAutoConfig | null>(null);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
   const fetchSubscriptions = useCallback(async () => {
     if (!customerId) return;
     
@@ -133,31 +130,20 @@ export function useRunaSubscriptions(customerId?: string) {
 
       if (error) {
         if (error.code === '23505') {
-          toast({
-            title: "Error",
-            description: "Este cliente ya tiene una suscripción de este tipo",
-            variant: "destructive"
-          });
+          toast.error("Error", { description: "Este cliente ya tiene una suscripción de este tipo" });
         } else {
           throw error;
         }
         return false;
       }
 
-      toast({
-        title: "Éxito",
-        description: `Suscripción ${type === 'monthly' ? 'mensual' : type === 'weekly' ? 'semanal' : 'de cumpleaños'} creada`,
-      });
+      toast.success("Éxito", { description: `Suscripción ${type === 'monthly' ? 'mensual' : type === 'weekly' ? 'semanal' : 'de cumpleaños'} creada` });
 
       await fetchSubscriptions();
       return true;
     } catch (error) {
       console.error('Error creating subscription:', error);
-      toast({
-        title: "Error",
-        description: "Error al crear la suscripción",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al crear la suscripción" });
       return false;
     }
   };
@@ -177,20 +163,13 @@ export function useRunaSubscriptions(customerId?: string) {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Suscripción actualizada",
-      });
+      toast.success("Éxito", { description: "Suscripción actualizada" });
 
       await fetchSubscriptions();
       return true;
     } catch (error) {
       console.error('Error updating subscription:', error);
-      toast({
-        title: "Error",
-        description: "Error al actualizar la suscripción",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al actualizar la suscripción" });
       return false;
     }
   };
@@ -204,20 +183,13 @@ export function useRunaSubscriptions(customerId?: string) {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Suscripción eliminada",
-      });
+      toast.success("Éxito", { description: "Suscripción eliminada" });
 
       await fetchSubscriptions();
       return true;
     } catch (error) {
       console.error('Error deleting subscription:', error);
-      toast({
-        title: "Error",
-        description: "Error al eliminar la suscripción",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al eliminar la suscripción" });
       return false;
     }
   };

@@ -20,11 +20,11 @@ import { useCoupons } from '@/hooks/useCoupons';
 import { useCouponStats, CouponApplicationDetail } from '@/hooks/useCouponStats';
 import { useCustomerTags } from '@/hooks/useCustomerTags';
 import { Coupon, CouponType, Category, DeliveryMode } from '@/types';
-import { toast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { CouponTimeWindowEditor } from '@/components/coupons/CouponTimeWindowEditor';
+import { toast } from "sonner";
 
 export default function CouponsManagement() {
   const { user } = useAuthContext();
@@ -142,7 +142,7 @@ export default function CouponsManagement() {
   const handleSubmit = async () => {
     try {
       if (!formData.code || !formData.type || formData.amount === undefined) {
-        toast({ title: 'Error', description: 'Completa los campos obligatorios', variant: 'destructive' });
+        toast.error('Error', { description: 'Completa los campos obligatorios' });
         return;
       }
 

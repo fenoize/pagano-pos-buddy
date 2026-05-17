@@ -22,8 +22,8 @@
  } from 'lucide-react';
 import { PendingPaymentOrder, PaymentCollectionData } from '@/hooks/usePendingPaymentOrders';
  import { formatCurrency } from '@/lib/utils';
- import { useToast } from '@/hooks/use-toast';
  import { supabase } from '@/integrations/supabase/client';
+import { toast } from "sonner";
  
  interface CollectPaymentModalProps {
    isOpen: boolean;
@@ -48,8 +48,6 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
    const [operationNumber, setOperationNumber] = useState('');
    const [loading, setLoading] = useState(false);
    const [paymentMethods, setPaymentMethods] = useState<PaymentMethodOption[]>([]);
-   const { toast } = useToast();
- 
    useEffect(() => {
      if (isOpen) {
        setAmount(order.total.toString());
@@ -92,31 +90,19 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
      const amountValue = parseFloat(amount) || 0;
      
      if (amountValue < order.total) {
-       toast({
-         title: 'Error',
-         description: 'El monto debe cubrir el total del pedido',
-         variant: 'destructive'
-       });
+       toast.error('Error', { description: 'El monto debe cubrir el total del pedido' });
        return;
      }
  
      const methodConfig = getCurrentMethodConfig();
      
      if (methodConfig?.requires_receipt && !receiptNumber.trim()) {
-       toast({
-         title: 'Error',
-         description: 'Ingrese el número de boleta',
-         variant: 'destructive'
-       });
+       toast.error('Error', { description: 'Ingrese el número de boleta' });
        return;
      }
  
      if (methodConfig?.requires_operation_number && !operationNumber.trim()) {
-       toast({
-         title: 'Error',
-         description: 'Ingrese el número de operación',
-         variant: 'destructive'
-       });
+       toast.error('Error', { description: 'Ingrese el número de operación' });
        return;
      }
  

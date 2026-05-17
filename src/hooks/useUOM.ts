@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UnitOfMeasure } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export const useUOM = () => {
   const [uoms, setUoms] = useState<UnitOfMeasure[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const fetchUOMs = async () => {
     try {
       setLoading(true);
@@ -21,11 +18,7 @@ export const useUOM = () => {
       setUoms(data || []);
     } catch (error) {
       console.error('Error fetching UOMs:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las unidades de medida',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar las unidades de medida' });
     } finally {
       setLoading(false);
     }
@@ -41,20 +34,13 @@ export const useUOM = () => {
 
       if (error) throw error;
       
-      toast({
-        title: 'Éxito',
-        description: 'Unidad de medida creada correctamente',
-      });
+      toast.success('Éxito', { description: 'Unidad de medida creada correctamente' });
       
       await fetchUOMs();
       return { success: true, data };
     } catch (error: any) {
       console.error('Error creating UOM:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo crear la unidad de medida',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo crear la unidad de medida' });
       return { success: false, error };
     }
   };
@@ -68,20 +54,13 @@ export const useUOM = () => {
 
       if (error) throw error;
       
-      toast({
-        title: 'Éxito',
-        description: 'Unidad de medida actualizada',
-      });
+      toast.success('Éxito', { description: 'Unidad de medida actualizada' });
       
       await fetchUOMs();
       return { success: true };
     } catch (error: any) {
       console.error('Error updating UOM:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar la unidad de medida',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo actualizar la unidad de medida' });
       return { success: false, error };
     }
   };
@@ -95,20 +74,13 @@ export const useUOM = () => {
 
       if (error) throw error;
       
-      toast({
-        title: 'Éxito',
-        description: 'Unidad de medida desactivada',
-      });
+      toast.success('Éxito', { description: 'Unidad de medida desactivada' });
       
       await fetchUOMs();
       return { success: true };
     } catch (error: any) {
       console.error('Error deleting UOM:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo desactivar la unidad de medida',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo desactivar la unidad de medida' });
       return { success: false, error };
     }
   };

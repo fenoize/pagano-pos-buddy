@@ -12,9 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
 import { User, AppRole } from '@/types';
 import { useUsers } from '@/hooks/useUsers';
+import { toast } from "sonner";
 
 interface UserFormProps {
   isOpen: boolean;
@@ -45,8 +45,6 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
   });
   const [loading, setLoading] = useState(false);
   const { createUser, updateUser } = useUsers();
-  const { toast } = useToast();
-
   const isEditing = !!editingUser;
 
   useEffect(() => {
@@ -90,22 +88,22 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
     e.preventDefault();
     
     if (!formData.username.trim()) {
-      toast({ title: "Error", description: "El nombre de usuario es requerido.", variant: "destructive" });
+      toast.error("Error", { description: "El nombre de usuario es requerido." });
       return;
     }
 
     if (formData.roles.length === 0) {
-      toast({ title: "Error", description: "Debes seleccionar al menos un rol.", variant: "destructive" });
+      toast.error("Error", { description: "Debes seleccionar al menos un rol." });
       return;
     }
 
     if (!isEditing && !formData.password.trim()) {
-      toast({ title: "Error", description: "La contraseña es requerida para nuevos usuarios.", variant: "destructive" });
+      toast.error("Error", { description: "La contraseña es requerida para nuevos usuarios." });
       return;
     }
 
     if (!isEditing && formData.password.length < 6) {
-      toast({ title: "Error", description: "La contraseña debe tener al menos 6 caracteres.", variant: "destructive" });
+      toast.error("Error", { description: "La contraseña debe tener al menos 6 caracteres." });
       return;
     }
 
@@ -120,7 +118,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           roles: formData.roles,
           can_do_delivery: formData.can_do_delivery,
         });
-        toast({ title: "Usuario actualizado", description: "El usuario ha sido actualizado correctamente." });
+        toast.success("Usuario actualizado", { description: "El usuario ha sido actualizado correctamente." });
       } else {
         await createUser({
           username: formData.username,
@@ -130,7 +128,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           roles: formData.roles,
           can_do_delivery: formData.can_do_delivery,
         });
-        toast({ title: "Usuario creado", description: "El usuario ha sido creado correctamente." });
+        toast.success("Usuario creado", { description: "El usuario ha sido creado correctamente." });
       }
 
       onSuccess();
@@ -140,7 +138,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
       if (error?.message?.includes('users_username_key')) {
         errorMessage = "El nombre de usuario ya existe.";
       }
-      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+      toast.error("Error", { description: errorMessage });
     } finally {
       setLoading(false);
     }

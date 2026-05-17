@@ -7,7 +7,6 @@ import { useCashSession } from '@/hooks/useCashSession';
 import { useDeliveryCashPending } from '@/hooks/useDeliveryCashPending';
 import { CashSessionModal } from './CashSessionModal';
 import { DeliveryCashHistoryPanel } from './DeliveryCashHistoryPanel';
-import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { toast } from "sonner";
 
 export function CashSessionTopBar() {
   const { 
@@ -38,8 +38,6 @@ export function CashSessionTopBar() {
   const [showDeliveryCashPanel, setShowDeliveryCashPanel] = useState(false);
   const { pendingByPerson } = useDeliveryCashPending();
   const { user } = useAuthContext();
-  const { toast } = useToast();
-  
   const totalPendingCash = pendingByPerson.reduce((sum, p) => sum + p.total_pending, 0);
 
   // Sync accept_app_orders with current session
@@ -68,11 +66,7 @@ export function CashSessionTopBar() {
       setModalType('close');
       setShowModal(true);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo cargar el resumen del turno.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo cargar el resumen del turno." });
     }
   };
 
@@ -106,19 +100,12 @@ export function CashSessionTopBar() {
       setAcceptAppOrders(checked);
       updateCurrentSessionLocally({ accept_app_orders: checked });
       
-      toast({
-        title: checked ? "✅ Recibiendo pedidos desde app" : "⏸️ App pausada",
-        description: checked 
+      toast.success(checked ? "✅ Recibiendo pedidos desde app" : "⏸️ App pausada", { description: checked 
           ? "Los clientes pueden hacer pedidos desde la app"
-          : "Los pedidos desde la app están pausados temporalmente"
-      });
+          : "Los pedidos desde la app están pausados temporalmente" });
     } catch (error: any) {
       console.error('Error toggling app orders:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado de pedidos desde app",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo actualizar el estado de pedidos desde app" });
     }
   };
 

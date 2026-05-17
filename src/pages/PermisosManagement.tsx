@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Shield, Save, RefreshCw } from 'lucide-react';
 import type { AppRole } from '@/types';
+import { toast } from "sonner";
 
 interface RolePermission {
   role: string;
@@ -43,8 +43,6 @@ export default function PermisosManagement() {
   const [changedPermissions, setChangedPermissions] = useState<Set<string>>(new Set());
   const { user } = useAuthContext();
   const { canManageConfig } = usePermissions();
-  const { toast } = useToast();
-
   // Administradores siempre tienen acceso
   const hasAccess = user?.role === 'Administrador' || canManageConfig;
 
@@ -66,11 +64,7 @@ export default function PermisosManagement() {
       if (error) throw error;
       setPermissions(data || []);
     } catch (error: any) {
-      toast({
-        title: 'Error al cargar permisos',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error al cargar permisos', { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -119,19 +113,12 @@ export default function PermisosManagement() {
         }
       }
 
-      toast({
-        title: 'Permisos actualizados',
-        description: 'Los cambios han sido guardados exitosamente.',
-      });
+      toast.success('Permisos actualizados', { description: 'Los cambios han sido guardados exitosamente.' });
 
       setChangedPermissions(new Set());
       await fetchPermissions();
     } catch (error: any) {
-      toast({
-        title: 'Error al guardar permisos',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error al guardar permisos', { description: error.message });
     } finally {
       setSaving(false);
     }

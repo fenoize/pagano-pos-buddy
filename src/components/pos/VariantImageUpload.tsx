@@ -3,8 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { compressImage } from '@/lib/imageCompression';
+import { toast } from "sonner";
 
 interface VariantImageUploadProps {
   imageUrl?: string | null;
@@ -15,7 +15,6 @@ interface VariantImageUploadProps {
 
 export function VariantImageUpload({ imageUrl, onImageChange, variantName = 'variante', compact = false }: VariantImageUploadProps) {
   const [uploading, setUploading] = useState(false);
-  const { toast } = useToast();
   const inputId = `variant-img-${Math.random().toString(36).substring(2, 8)}`;
 
   const uploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,9 +39,9 @@ export function VariantImageUpload({ imageUrl, onImageChange, variantName = 'var
         .getPublicUrl(filePath);
 
       onImageChange(data.publicUrl);
-      toast({ title: "Éxito", description: "Imagen de variante subida" });
+      toast.success("Éxito", { description: "Imagen de variante subida" });
     } catch (error) {
-      toast({ title: "Error", description: "No se pudo subir la imagen", variant: "destructive" });
+      toast.error("Error", { description: "No se pudo subir la imagen" });
     } finally {
       setUploading(false);
     }

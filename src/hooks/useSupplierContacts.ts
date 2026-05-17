@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export interface SupplierContact {
   id: string;
   supplier_id: string;
@@ -66,20 +65,13 @@ export function useSupplierContacts(supplierId?: string) {
 
       if (error) throw error;
 
-      toast({
-        title: 'Contacto creado',
-        description: 'El contacto se ha registrado exitosamente',
-      });
+      toast.success('Contacto creado', { description: 'El contacto se ha registrado exitosamente' });
 
       await fetchContacts();
       return true;
     } catch (error) {
       console.error('Error creating contact:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo crear el contacto',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo crear el contacto' });
       return false;
     }
   };
@@ -102,20 +94,13 @@ export function useSupplierContacts(supplierId?: string) {
 
       if (error) throw error;
 
-      toast({
-        title: 'Contacto actualizado',
-        description: 'Los cambios se han guardado correctamente',
-      });
+      toast.success('Contacto actualizado', { description: 'Los cambios se han guardado correctamente' });
 
       await fetchContacts();
       return true;
     } catch (error) {
       console.error('Error updating contact:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo actualizar el contacto',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo actualizar el contacto' });
       return false;
     }
   };
@@ -129,20 +114,13 @@ export function useSupplierContacts(supplierId?: string) {
 
       if (error) throw error;
 
-      toast({
-        title: 'Contacto eliminado',
-        description: 'El contacto se ha eliminado correctamente',
-      });
+      toast.success('Contacto eliminado', { description: 'El contacto se ha eliminado correctamente' });
 
       await fetchContacts();
       return true;
     } catch (error) {
       console.error('Error deleting contact:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo eliminar el contacto',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo eliminar el contacto' });
       return false;
     }
   };

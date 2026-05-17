@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Save, Edit2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { useRawMaterials } from "@/hooks/useRawMaterials";
 import { useVariantGroups, VariantGroupOptionRow } from "@/hooks/useVariantGroups";
 import {
@@ -15,6 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface CategoryVariant {
   id: string;
@@ -62,7 +62,6 @@ export default function ProductVariantsManagementEnhanced({
   const [loading, setLoading] = useState(false);
   const [bulkEditMode, setBulkEditMode] = useState(false);
   const [bulkPrices, setBulkPrices] = useState<Record<string, string>>({});
-  const { toast } = useToast();
   const { materials } = useRawMaterials();
   const { getProductGroups } = useVariantGroups();
 
@@ -102,7 +101,7 @@ export default function ProductVariantsManagementEnhanced({
       setBulkPrices(initialBulkPrices);
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast({ title: "Error", description: "Error al cargar las variantes", variant: "destructive" });
+      toast.error("Error", { description: "Error al cargar las variantes" });
     } finally {
       setLoading(false);
     }
@@ -123,35 +122,35 @@ export default function ProductVariantsManagementEnhanced({
           price: 0, is_default: false, active: true, is_enabled: false,
         });
         if (error) throw error;
-        toast({ title: "Variante agregada", description: "Recuerda asignar un precio válido (≥ $500)" });
+        toast.success("Variante agregada", { description: "Recuerda asignar un precio válido (≥ $500)" });
       } else {
         const { error } = await supabase.from("product_variant_options").delete()
           .eq("product_id", productId).eq("category_variant_id", categoryVariantId);
         if (error) throw error;
-        toast({ title: "Variante eliminada" });
+        toast.success("Variante eliminada");
       }
       fetchData();
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Error al actualizar la variante", variant: "destructive" });
+      toast.error("Error", { description: "Error al actualizar la variante" });
     }
   };
 
   const updateVariantPrice = async (variantOptionId: string, price: string) => {
     const numericPrice = parseInt(price.replace(/\D/g, ''));
     if (isNaN(numericPrice) || numericPrice < 500) {
-      toast({ title: "Precio inválido", description: "El precio debe ser mínimo $500", variant: "destructive" });
+      toast.error("Precio inválido", { description: "El precio debe ser mínimo $500" });
       return;
     }
     try {
       const { error } = await supabase.from("product_variant_options")
         .update({ price: numericPrice, is_enabled: true }).eq("id", variantOptionId);
       if (error) throw error;
-      toast({ title: "Precio actualizado" });
+      toast.success("Precio actualizado");
       fetchData();
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Error al actualizar el precio", variant: "destructive" });
+      toast.error("Error", { description: "Error al actualizar el precio" });
     }
   };
 
@@ -161,11 +160,11 @@ export default function ProductVariantsManagementEnhanced({
       await supabase.from("product_variant_options").update({ is_default: false }).eq("product_id", productId);
       const { error } = await supabase.from("product_variant_options").update({ is_default: true }).eq("id", variantOptionId);
       if (error) throw error;
-      toast({ title: "Variante por defecto actualizada" });
+      toast.success("Variante por defecto actualizada");
       fetchData();
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", variant: "destructive" });
+      toast.error("Error");
     }
   };
 
@@ -175,11 +174,11 @@ export default function ProductVariantsManagementEnhanced({
         .update({ raw_material_id: rawMaterialId === "none" ? null : rawMaterialId })
         .eq("id", variantOptionId);
       if (error) throw error;
-      toast({ title: "Materia prima actualizada" });
+      toast.success("Materia prima actualizada");
       fetchData();
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", variant: "destructive" });
+      toast.error("Error");
     }
   };
 
@@ -194,12 +193,12 @@ export default function ProductVariantsManagementEnhanced({
           .update({ price: update.price, is_enabled: update.is_enabled }).eq("id", update.id);
         if (error) throw error;
       }
-      toast({ title: "Precios actualizados" });
+      toast.success("Precios actualizados");
       setBulkEditMode(false);
       fetchData();
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", variant: "destructive" });
+      toast.error("Error");
     }
   };
 
@@ -220,7 +219,7 @@ export default function ProductVariantsManagementEnhanced({
           await fetchData();
         } catch (error) {
           console.error(error);
-          toast({ title: "Error", variant: "destructive" });
+          toast.error("Error");
           return;
         }
       }

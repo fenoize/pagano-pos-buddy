@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface InventoryDeductionResult {
   success: boolean;
   processed: number;
@@ -10,8 +9,6 @@ interface InventoryDeductionResult {
 
 export const useInventory = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
   /**
    * Descuenta automáticamente el inventario según las recetas de los productos vendidos
    * @param orderId - ID de la orden
@@ -92,22 +89,14 @@ export const useInventory = () => {
       });
 
       if (error) {
-        toast({
-          title: 'Error',
-          description: `Error al procesar recepción: ${error.message}`,
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: `Error al procesar recepción: ${error.message}` });
         return { success: false, error: error.message };
       }
 
       return { success: true, movementId: data };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: message });
       return { success: false, error: message };
     } finally {
       setIsLoading(false);
@@ -137,27 +126,16 @@ export const useInventory = () => {
       });
 
       if (error) {
-        toast({
-          title: 'Error',
-          description: `Error al procesar ajuste: ${error.message}`,
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: `Error al procesar ajuste: ${error.message}` });
         return { success: false, error: error.message };
       }
 
-      toast({
-        title: 'Ajuste registrado',
-        description: 'El ajuste de inventario se ha registrado correctamente',
-      });
+      toast.success('Ajuste registrado', { description: 'El ajuste de inventario se ha registrado correctamente' });
 
       return { success: true, movementId: data };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: message });
       return { success: false, error: message };
     } finally {
       setIsLoading(false);
@@ -191,27 +169,16 @@ export const useInventory = () => {
       });
 
       if (error) {
-        toast({
-          title: 'Error',
-          description: `Error al procesar transferencia: ${error.message}`,
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: `Error al procesar transferencia: ${error.message}` });
         return { success: false, error: error.message };
       }
 
-      toast({
-        title: 'Transferencia completada',
-        description: 'La transferencia se ha realizado correctamente',
-      });
+      toast.success('Transferencia completada', { description: 'La transferencia se ha realizado correctamente' });
 
       return { success: true, movementIds: data };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: message });
       return { success: false, error: message };
     } finally {
       setIsLoading(false);

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export interface VariantGroupRow {
   id: string;
   name: string;
@@ -29,8 +28,6 @@ export interface VariantGroupOptionRow {
 export function useVariantGroups() {
   const [groups, setGroups] = useState<VariantGroupRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const fetchGroups = useCallback(async () => {
     try {
       setLoading(true);
@@ -57,22 +54,22 @@ export function useVariantGroups() {
 
   const createGroup = async (name: string) => {
     const { error } = await supabase.from('variant_groups').insert({ name, display_order: groups.length });
-    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return false; }
-    toast({ title: 'Grupo creado' });
+    if (error) { toast.error('Error', { description: error.message }); return false; }
+    toast.success('Grupo creado');
     await fetchGroups();
     return true;
   };
 
   const updateGroup = async (id: string, updates: { name?: string; active?: boolean }) => {
     const { error } = await supabase.from('variant_groups').update(updates).eq('id', id);
-    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    if (error) { toast.error('Error', { description: error.message }); return; }
     await fetchGroups();
   };
 
   const deleteGroup = async (id: string) => {
     const { error } = await supabase.from('variant_groups').delete().eq('id', id);
-    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
-    toast({ title: 'Grupo eliminado' });
+    if (error) { toast.error('Error', { description: error.message }); return; }
+    toast.success('Grupo eliminado');
     await fetchGroups();
   };
 
@@ -83,19 +80,19 @@ export function useVariantGroups() {
     const { error } = await supabase.from('variant_group_options').insert({
       group_id: groupId, name, display_order: order, is_default: isDefault,
     });
-    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    if (error) { toast.error('Error', { description: error.message }); return; }
     await fetchGroups();
   };
 
   const updateOption = async (id: string, updates: { name?: string; is_default?: boolean; active?: boolean; price_delta?: number }) => {
     const { error } = await supabase.from('variant_group_options').update(updates).eq('id', id);
-    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    if (error) { toast.error('Error', { description: error.message }); return; }
     await fetchGroups();
   };
 
   const deleteOption = async (id: string) => {
     const { error } = await supabase.from('variant_group_options').delete().eq('id', id);
-    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    if (error) { toast.error('Error', { description: error.message }); return; }
     await fetchGroups();
   };
 
@@ -119,15 +116,15 @@ export function useVariantGroups() {
 
   const assignGroupToProduct = async (productId: string, groupId: string) => {
     const { error } = await supabase.from('product_variant_groups').insert({ product_id: productId, group_id: groupId });
-    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
-    toast({ title: 'Grupo asignado al producto' });
+    if (error) { toast.error('Error', { description: error.message }); return; }
+    toast.success('Grupo asignado al producto');
   };
 
   const removeGroupFromProduct = async (productId: string, groupId: string) => {
     const { error } = await supabase.from('product_variant_groups').delete()
       .eq('product_id', productId).eq('group_id', groupId);
-    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
-    toast({ title: 'Grupo removido del producto' });
+    if (error) { toast.error('Error', { description: error.message }); return; }
+    toast.success('Grupo removido del producto');
   };
 
   return {

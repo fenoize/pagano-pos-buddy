@@ -32,7 +32,6 @@ import {
   Trash2
 } from "lucide-react";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRawMaterials } from "@/hooks/useRawMaterials";
@@ -48,6 +47,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface StockItem {
   id: string;
@@ -67,7 +67,6 @@ type SortDirection = 'asc' | 'desc';
 export default function StockManagement() {
   const { warehouses, loading: warehousesLoading } = useWarehouses();
   const { user } = useAuth();
-  const { toast } = useToast();
   const { createMaterial, updateMaterial, deleteMaterial } = useRawMaterials();
   
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("");
@@ -147,11 +146,7 @@ export default function StockManagement() {
       setStockItems(items);
     } catch (error) {
       console.error('Error fetching stock data:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo cargar el stock',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo cargar el stock' });
     } finally {
       setLoading(false);
     }
@@ -256,20 +251,13 @@ export default function StockManagement() {
         }
       }
 
-      toast({
-        title: 'Stock actualizado',
-        description: `Se actualizaron ${changedItems.length} items correctamente`,
-      });
+      toast.success('Stock actualizado', { description: `Se actualizaron ${changedItems.length} items correctamente` });
 
       setShowConfirmDialog(false);
       fetchStockData(); // Refresh data
     } catch (error: any) {
       console.error('Error saving stock:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo guardar el stock',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo guardar el stock' });
     } finally {
       setSaving(false);
     }

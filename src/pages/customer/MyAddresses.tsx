@@ -7,9 +7,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { MapPin, Plus } from 'lucide-react';
 import { AddressFormWithMap } from '@/components/customer/AddressFormWithMap';
+import { toast } from "sonner";
 
 // Helper to validate UUID format
 const isValidUUID = (value: unknown): value is string => {
@@ -33,8 +33,6 @@ interface AddressFormData {
 
 export default function MyAddresses() {
   const { customer } = useCustomerAuth();
-  const { toast } = useToast();
-
   const [addresses, setAddresses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingAddress, setSavingAddress] = useState(false);
@@ -63,11 +61,7 @@ export default function MyAddresses() {
       setAddresses(data || []);
     } catch (error: any) {
       console.error('Error fetching addresses:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar tus direcciones',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar tus direcciones' });
     } finally {
       setLoading(false);
     }
@@ -90,21 +84,13 @@ export default function MyAddresses() {
     // Validar que customer.id sea un UUID válido
     if (!customer?.id || !isValidUUID(customer.id)) {
       console.error('Invalid customer ID:', customer?.id);
-      toast({
-        title: 'Error',
-        description: 'No se pudo identificar tu cuenta. Por favor, cierra sesión e inicia nuevamente.',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo identificar tu cuenta. Por favor, cierra sesión e inicia nuevamente.' });
       return;
     }
 
     // Validar máximo 5 direcciones
     if (!editingAddress && addresses.length >= 5) {
-      toast({
-        title: 'Límite alcanzado',
-        description: 'Solo puedes tener un máximo de 5 direcciones guardadas',
-        variant: 'destructive',
-      });
+      toast.error('Límite alcanzado', { description: 'Solo puedes tener un máximo de 5 direcciones guardadas' });
       return;
     }
 
@@ -144,10 +130,7 @@ export default function MyAddresses() {
 
         if (error) throw error;
 
-        toast({
-          title: 'Dirección actualizada',
-          description: 'Tu dirección ha sido actualizada correctamente',
-        });
+        toast.success('Dirección actualizada', { description: 'Tu dirección ha sido actualizada correctamente' });
       } else {
         // Create new address
         const { error } = await supabase.from('addresses').insert([{
@@ -167,21 +150,14 @@ export default function MyAddresses() {
 
         if (error) throw error;
 
-        toast({
-          title: 'Dirección agregada',
-          description: 'Tu dirección ha sido agregada correctamente',
-        });
+        toast.success('Dirección agregada', { description: 'Tu dirección ha sido agregada correctamente' });
       }
 
       setDialogOpen(false);
       fetchAddresses();
     } catch (error: any) {
       console.error('Error saving address:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo guardar la dirección',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo guardar la dirección' });
     } finally {
       setSavingAddress(false);
     }
@@ -195,20 +171,13 @@ export default function MyAddresses() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Dirección eliminada',
-        description: 'La dirección ha sido eliminada correctamente',
-      });
+      toast.success('Dirección eliminada', { description: 'La dirección ha sido eliminada correctamente' });
 
       setDeleteDialogOpen(false);
       fetchAddresses();
     } catch (error: any) {
       console.error('Error deleting address:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo eliminar la dirección',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo eliminar la dirección' });
     }
   };
 
@@ -216,21 +185,13 @@ export default function MyAddresses() {
     // Validar ambos UUIDs
     if (!customer?.id || !isValidUUID(customer.id)) {
       console.error('Invalid customer ID:', customer?.id);
-      toast({
-        title: 'Error',
-        description: 'No se pudo identificar tu cuenta',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo identificar tu cuenta' });
       return;
     }
     
     if (!isValidUUID(id)) {
       console.error('Invalid address ID:', id);
-      toast({
-        title: 'Error',
-        description: 'ID de dirección inválido',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'ID de dirección inválido' });
       return;
     }
 
@@ -249,19 +210,12 @@ export default function MyAddresses() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Dirección principal actualizada',
-        description: 'Esta dirección ahora es tu dirección principal',
-      });
+      toast.success('Dirección principal actualizada', { description: 'Esta dirección ahora es tu dirección principal' });
 
       fetchAddresses();
     } catch (error: any) {
       console.error('Error setting default address:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo actualizar la dirección principal',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo actualizar la dirección principal' });
     }
   };
 

@@ -14,9 +14,9 @@ import {
   Code2,
   Palette
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
  import { APP_VERSION, APP_BUILD_DATE, APP_NAME, CHANGELOG } from '@/config/version.ts';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { toast } from "sonner";
 
 export function SystemLogConfig() {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -76,10 +76,7 @@ export function SystemLogConfig() {
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
 
-      toast({
-        title: "Actualización en progreso",
-        description: "Recargando la aplicación...",
-      });
+      toast.success("Actualización en progreso", { description: "Recargando la aplicación..." });
 
       // 4. Force reload bypassing cache
       setTimeout(() => {
@@ -89,11 +86,7 @@ export function SystemLogConfig() {
     } catch (error) {
       console.error('Error forzando actualización:', error);
       setIsUpdating(false);
-      toast({
-        title: "Error",
-        description: "No se pudo forzar la actualización. Intenta recargar manualmente.",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "No se pudo forzar la actualización. Intenta recargar manualmente." });
     }
   };
 

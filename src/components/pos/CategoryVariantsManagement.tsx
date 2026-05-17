@@ -7,9 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Plus, Edit2, Trash2, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { CategoryVariant } from "@/types";
 import { VariantImageUpload } from "./VariantImageUpload";
+import { toast } from "sonner";
 
 interface CategoryVariantsManagementProps {
   categoryId?: string;
@@ -25,8 +25,6 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
     display_order: 0,
     image_url: null as string | null,
   });
-  const { toast } = useToast();
-
   useEffect(() => {
     if (categoryId) {
       fetchVariants();
@@ -44,7 +42,7 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
       if (error) throw error;
       setVariants(data || []);
     } catch (error) {
-      toast({ title: "Error", description: "Error al cargar las variantes", variant: "destructive" });
+      toast.error("Error", { description: "Error al cargar las variantes" });
     }
   };
 
@@ -61,16 +59,16 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
       if (editingVariant) {
         const { error } = await supabase.from('category_variants').update(payload).eq('id', editingVariant.id);
         if (error) throw error;
-        toast({ title: "Éxito", description: "Variante actualizada correctamente" });
+        toast.success("Éxito", { description: "Variante actualizada correctamente" });
       } else {
         const { error } = await supabase.from('category_variants').insert({ ...payload, category_id: categoryId });
         if (error) throw error;
-        toast({ title: "Éxito", description: "Variante creada correctamente" });
+        toast.success("Éxito", { description: "Variante creada correctamente" });
       }
       fetchVariants();
       handleClose();
     } catch (error) {
-      toast({ title: "Error", description: "Error al guardar la variante", variant: "destructive" });
+      toast.error("Error", { description: "Error al guardar la variante" });
     }
   };
 
@@ -79,10 +77,10 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
     try {
       const { error } = await supabase.from('category_variants').delete().eq('id', variant.id);
       if (error) throw error;
-      toast({ title: "Éxito", description: "Variante eliminada correctamente" });
+      toast.success("Éxito", { description: "Variante eliminada correctamente" });
       fetchVariants();
     } catch (error) {
-      toast({ title: "Error", description: "Error al eliminar la variante", variant: "destructive" });
+      toast.error("Error", { description: "Error al eliminar la variante" });
     }
   };
 
@@ -161,7 +159,7 @@ const CategoryVariantsManagement: React.FC<CategoryVariantsManagementProps> = ({
                             await supabase.from('category_variants').update({ active: checked }).eq('id', variant.id);
                             fetchVariants();
                           } catch (error) {
-                            toast({ title: "Error", description: "Error al actualizar estado", variant: "destructive" });
+                            toast.error("Error", { description: "Error al actualizar estado" });
                           }
                         }}
                       />

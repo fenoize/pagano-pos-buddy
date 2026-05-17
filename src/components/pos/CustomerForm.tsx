@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, Search } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
 interface CustomerFormProps {
@@ -18,8 +17,6 @@ export default function CustomerForm({ customer, onCustomerChange }: CustomerFor
   const [comunas, setComunas] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [existingCustomers, setExistingCustomers] = useState<Customer[]>([]);
-  const { toast } = useToast();
-
   useEffect(() => {
     fetchComunas();
     if (searchTerm.length > 2) {

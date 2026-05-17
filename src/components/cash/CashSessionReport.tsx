@@ -22,7 +22,6 @@ import { Badge } from '@/components/ui/badge';
 import { Download, Eye, EyeOff, Calendar, Search, Filter, LockOpen, ChevronDown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { CashSession, User, AppRole } from '@/types';
 import { CashSessionDetailButton } from './CashSessionDetailButton';
@@ -31,6 +30,7 @@ import { ForceCloseSessionModal } from './ForceCloseSessionModal';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
 import { useCashSession } from '@/hooks/useCashSession';
+import { toast } from "sonner";
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
@@ -77,8 +77,6 @@ export function CashSessionReport() {
     status: 'all', // 'all', 'open', 'closed'
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const { toast } = useToast();
-
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -153,11 +151,7 @@ export function CashSessionReport() {
       })) || []);
     } catch (error) {
       console.error('Error loading sessions:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los turnos.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar los turnos." });
     } finally {
       setLoading(false);
     }
@@ -329,10 +323,7 @@ export function CashSessionReport() {
     link.click();
     document.body.removeChild(link);
 
-    toast({
-      title: "Exportación exitosa",
-      description: "El reporte ha sido descargado."
-    });
+    toast.success("Exportación exitosa", { description: "El reporte ha sido descargado." });
   };
 
   return (

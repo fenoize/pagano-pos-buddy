@@ -9,8 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface ModifiersManagementProps {
   productId?: string;
 }
@@ -24,8 +23,6 @@ export function ModifiersManagement({ productId }: ModifiersManagementProps) {
     price: 0,
     active: true
   });
-  const { toast } = useToast();
-
   useEffect(() => {
     if (productId) {
       fetchModifiers();
@@ -45,11 +42,7 @@ export function ModifiersManagement({ productId }: ModifiersManagementProps) {
       if (error) throw error;
       setModifiers(data || []);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los modificadores",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar los modificadores" });
     }
   };
 
@@ -57,11 +50,7 @@ export function ModifiersManagement({ productId }: ModifiersManagementProps) {
     e.preventDefault();
     
     if (!productId) {
-      toast({
-        title: "Error",
-        description: "Debe guardar el producto primero",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Debe guardar el producto primero" });
       return;
     }
 
@@ -79,10 +68,7 @@ export function ModifiersManagement({ productId }: ModifiersManagementProps) {
 
         if (error) throw error;
         
-        toast({
-          title: "Éxito",
-          description: "Modificador actualizado correctamente"
-        });
+        toast.success("Éxito", { description: "Modificador actualizado correctamente" });
       } else {
         const { error } = await supabase
           .from('product_modifiers')
@@ -90,10 +76,7 @@ export function ModifiersManagement({ productId }: ModifiersManagementProps) {
 
         if (error) throw error;
         
-        toast({
-          title: "Éxito",
-          description: "Modificador creado correctamente"
-        });
+        toast.success("Éxito", { description: "Modificador creado correctamente" });
       }
 
       setIsDialogOpen(false);
@@ -101,11 +84,7 @@ export function ModifiersManagement({ productId }: ModifiersManagementProps) {
       resetForm();
       fetchModifiers();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo guardar el modificador",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo guardar el modificador" });
     }
   };
 
@@ -123,16 +102,9 @@ export function ModifiersManagement({ productId }: ModifiersManagementProps) {
       if (error) throw error;
       
       fetchModifiers();
-      toast({
-        title: "Éxito",
-        description: "Modificador eliminado correctamente"
-      });
+      toast.success("Éxito", { description: "Modificador eliminado correctamente" });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo eliminar el modificador",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo eliminar el modificador" });
     }
   };
 
@@ -148,11 +120,7 @@ export function ModifiersManagement({ productId }: ModifiersManagementProps) {
 
   const openNewDialog = () => {
     if (!productId) {
-      toast({
-        title: "Aviso",
-        description: "Debe guardar el producto primero para agregar modificadores",
-        variant: "default"
-      });
+      toast.success("Aviso", { description: "Debe guardar el producto primero para agregar modificadores" });
       return;
     }
     resetForm();

@@ -23,8 +23,8 @@ import ProductVariantsManagementEnhanced from './ProductVariantsManagementEnhanc
 import ComboManagement from './ComboManagement';
 import ProductVariantGroupsAssignment from './ProductVariantGroupsAssignment';
 import { AlertTriangle, Package } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { useRawMaterials } from '@/hooks/useRawMaterials';
+import { toast } from "sonner";
 interface ProductEditModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -46,8 +46,6 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
   const [activeTab, setActiveTab] = useState('general');
   const [isComboProduct, setIsComboProduct] = useState(false);
   const { materials } = useRawMaterials();
-  const { toast } = useToast();
-
   useEffect(() => {
     if (product) {
       setFormData({
@@ -102,11 +100,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
 
   const handleSave = async () => {
     if (selectedCategories.length === 0) {
-      toast({
-        title: "Error",
-        description: "Debe seleccionar al menos una categoría",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Debe seleccionar al menos una categoría" });
       return;
     }
 
@@ -174,19 +168,12 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
         }
       }
 
-      toast({
-        title: "Éxito",
-        description: product ? "Producto actualizado correctamente" : "Producto creado correctamente"
-      });
+      toast.success("Éxito", { description: product ? "Producto actualizado correctamente" : "Producto creado correctamente" });
 
       onProductUpdated();
       onClose();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo guardar el producto",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo guardar el producto" });
     }
   };
 

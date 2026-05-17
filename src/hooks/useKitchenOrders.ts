@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Order, OrderStatus } from '@/types';
-import { useToast } from '@/hooks/use-toast';
 import { useKDSHistory } from '@/hooks/useKDSHistory';
 import { triggerOrderStatusNotification } from '@/lib/notificationTriggers';
 import { useBranchContext } from '@/contexts/BranchContext';
+import { toast } from "sonner";
 
 export function useKitchenOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
-  const { toast } = useToast();
   const { addToHistory, isInHistory, removeFromHistory } = useKDSHistory();
   const { activeBranch } = useBranchContext();
   const activeBranchId = activeBranch?.id || null;
@@ -49,10 +48,7 @@ export function useKitchenOrders() {
               fetchOrderById(payload.new.id);
               
               // Show notification for new orders
-              toast({
-                title: "¡Nuevo Pedido!",
-                description: `Pedido #${payload.new.order_number} recibido`,
-              });
+              toast.success("¡Nuevo Pedido!", { description: `Pedido #${payload.new.order_number} recibido` });
             } else if (payload.eventType === 'UPDATE') {
               // Validar que new existe
               if (!payload.new || !payload.new.id) {
@@ -74,11 +70,7 @@ export function useKitchenOrders() {
             }
           } catch (error) {
             console.error('[KDS] Error handling realtime event:', error);
-            toast({
-              title: "Error de sincronización",
-              description: "Hubo un problema al actualizar los pedidos. Intenta refrescar.",
-              variant: "destructive"
-            });
+            toast.error("Error de sincronización", { description: "Hubo un problema al actualizar los pedidos. Intenta refrescar." });
           }
         }
       )
@@ -87,11 +79,7 @@ export function useKitchenOrders() {
         
         if (status === 'CHANNEL_ERROR') {
           console.error('[KDS] Channel error, attempting to reconnect...');
-          toast({
-            title: "Error de conexión",
-            description: "Reconectando en tiempo real...",
-            variant: "destructive"
-          });
+          toast.error("Error de conexión", { description: "Reconectando en tiempo real..." });
         } else if (status === 'SUBSCRIBED') {
           console.log('[KDS] Successfully subscribed to realtime updates');
         }
@@ -168,11 +156,7 @@ export function useKitchenOrders() {
       setOrders(filtered);
     } catch (error) {
       console.error('[KDS] Error fetching orders:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los pedidos",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar los pedidos" });
     } finally {
       setLoading(false);
     }
@@ -369,25 +353,13 @@ export function useKitchenOrders() {
 
       // PASO 5: Mostrar notificación de éxito local
       if (newStatus === 'Listo') {
-        toast({
-          title: "¡Pedido Listo!",
-          description: `Pedido #${previousOrder.order_number} está listo para ${previousOrder.fulfillment}`,
-        });
+        toast.success("¡Pedido Listo!", { description: `Pedido #${previousOrder.order_number} está listo para ${previousOrder.fulfillment}` });
       } else if (newStatus === 'Entregado') {
-        toast({
-          title: "¡Pedido Entregado!",
-          description: `Pedido #${previousOrder.order_number} ha sido entregado`,
-        });
+        toast.success("¡Pedido Entregado!", { description: `Pedido #${previousOrder.order_number} ha sido entregado` });
       } else if (newStatus === 'Cancelado') {
-        toast({
-          title: "Pedido Cancelado",
-          description: `Pedido #${previousOrder.order_number} ha sido cancelado`,
-        });
+        toast.success("Pedido Cancelado", { description: `Pedido #${previousOrder.order_number} ha sido cancelado` });
       } else {
-        toast({
-          title: "Estado Actualizado",
-          description: `Pedido #${previousOrder.order_number}: ${newStatus}`,
-        });
+        toast.success("Estado Actualizado", { description: `Pedido #${previousOrder.order_number}: ${newStatus}` });
       }
 
     } catch (error) {
@@ -407,11 +379,7 @@ export function useKitchenOrders() {
         );
       });
       
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado del pedido. Intenta nuevamente.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo actualizar el estado del pedido. Intenta nuevamente." });
     } finally {
       // PASO 5: Remover de "updating"
       setUpdatingOrders(prev => {

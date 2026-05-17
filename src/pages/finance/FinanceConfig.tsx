@@ -29,8 +29,6 @@ import {
   CalendarDays,
   Info
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
 const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
 export default function FinanceConfig() {
@@ -38,8 +36,6 @@ export default function FinanceConfig() {
   const { categories, createCategory, updateCategory, deleteCategory } = useFinanceExpenseCategories();
   const { paymentMethods, updatePaymentMethod } = usePaymentMethods();
   const { users, fetchUsers } = useUsers();
-  const { toast } = useToast();
-  
   // Local state for each card
   const [businessData, setBusinessData] = useState({
     razon_social: '',

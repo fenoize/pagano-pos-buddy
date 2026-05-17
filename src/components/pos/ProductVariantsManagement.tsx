@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { CategoryVariant, ProductVariantOption } from "@/types";
+import { toast } from "sonner";
 
 interface ProductVariantsManagementProps {
   productId?: string;
@@ -22,8 +22,6 @@ const ProductVariantsManagement: React.FC<ProductVariantsManagementProps> = ({
   const [categoryVariants, setCategoryVariants] = useState<CategoryVariant[]>([]);
   const [productVariants, setProductVariants] = useState<ProductVariantOption[]>([]);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
   useEffect(() => {
     if (productId && categoryIds.length > 0) {
       fetchData();
@@ -59,11 +57,7 @@ const ProductVariantsManagement: React.FC<ProductVariantsManagementProps> = ({
       setCategoryVariants(variantsData || []);
       setProductVariants(productVariantsData || []);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al cargar las variantes",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al cargar las variantes" });
     }
     setLoading(false);
   };
@@ -98,11 +92,7 @@ const ProductVariantsManagement: React.FC<ProductVariantsManagementProps> = ({
 
       fetchData();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al actualizar la variante",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al actualizar la variante" });
     }
   };
 
@@ -121,11 +111,7 @@ const ProductVariantsManagement: React.FC<ProductVariantsManagementProps> = ({
 
       fetchData();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al actualizar la variante",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al actualizar la variante" });
     }
   };
 
@@ -149,11 +135,7 @@ const ProductVariantsManagement: React.FC<ProductVariantsManagementProps> = ({
 
       fetchData();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al establecer variante por defecto",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al establecer variante por defecto" });
     }
   };
 

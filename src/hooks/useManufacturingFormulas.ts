@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export interface ManufacturingFormula {
   id: string;
   raw_material_id: string;
@@ -35,8 +34,6 @@ export interface ManufacturingFormulaIngredient {
 export const useManufacturingFormulas = () => {
   const [formulas, setFormulas] = useState<ManufacturingFormula[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const fetchFormulas = async () => {
     try {
       setLoading(true);
@@ -59,7 +56,7 @@ export const useManufacturingFormulas = () => {
       setFormulas((data as any) || []);
     } catch (error) {
       console.error('Error fetching manufacturing formulas:', error);
-      toast({ title: 'Error', description: 'No se pudieron cargar las fórmulas', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudieron cargar las fórmulas' });
     } finally {
       setLoading(false);
     }
@@ -87,12 +84,12 @@ export const useManufacturingFormulas = () => {
         if (ingError) throw ingError;
       }
 
-      toast({ title: 'Éxito', description: 'Fórmula de fabricación creada' });
+      toast.success('Éxito', { description: 'Fórmula de fabricación creada' });
       await fetchFormulas();
       return { success: true, data: formulaData };
     } catch (error: any) {
       console.error('Error creating formula:', error);
-      toast({ title: 'Error', description: error.message || 'No se pudo crear la fórmula', variant: 'destructive' });
+      toast.error('Error', { description: error.message || 'No se pudo crear la fórmula' });
       return { success: false, error };
     }
   };
@@ -120,12 +117,12 @@ export const useManufacturingFormulas = () => {
         }
       }
 
-      toast({ title: 'Éxito', description: 'Fórmula actualizada' });
+      toast.success('Éxito', { description: 'Fórmula actualizada' });
       await fetchFormulas();
       return { success: true };
     } catch (error: any) {
       console.error('Error updating formula:', error);
-      toast({ title: 'Error', description: error.message || 'No se pudo actualizar', variant: 'destructive' });
+      toast.error('Error', { description: error.message || 'No se pudo actualizar' });
       return { success: false, error };
     }
   };
@@ -147,12 +144,12 @@ export const useManufacturingFormulas = () => {
         await supabase.from('raw_materials').update({ is_manufactured: false } as any).eq('id', rawMaterialId);
       }
 
-      toast({ title: 'Éxito', description: 'Fórmula desactivada' });
+      toast.success('Éxito', { description: 'Fórmula desactivada' });
       await fetchFormulas();
       return { success: true };
     } catch (error: any) {
       console.error('Error deleting formula:', error);
-      toast({ title: 'Error', description: error.message || 'No se pudo desactivar', variant: 'destructive' });
+      toast.error('Error', { description: error.message || 'No se pudo desactivar' });
       return { success: false, error };
     }
   };

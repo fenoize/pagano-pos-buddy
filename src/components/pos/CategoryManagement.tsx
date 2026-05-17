@@ -10,8 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface CategoryManagementProps {
   selectedCategories: string[];
   onCategoriesChange: (categoryIds: string[]) => void;
@@ -26,8 +25,6 @@ export function CategoryManagement({ selectedCategories, onCategoriesChange }: C
     description: '',
     active: true
   });
-  const { toast } = useToast();
-
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -42,11 +39,7 @@ export function CategoryManagement({ selectedCategories, onCategoriesChange }: C
       if (error) throw error;
       setCategories(data || []);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las categorías",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar las categorías" });
     }
   };
 
@@ -62,10 +55,7 @@ export function CategoryManagement({ selectedCategories, onCategoriesChange }: C
 
         if (error) throw error;
         
-        toast({
-          title: "Éxito",
-          description: "Categoría actualizada correctamente"
-        });
+        toast.success("Éxito", { description: "Categoría actualizada correctamente" });
       } else {
         const { error } = await supabase
           .from('categories')
@@ -73,10 +63,7 @@ export function CategoryManagement({ selectedCategories, onCategoriesChange }: C
 
         if (error) throw error;
         
-        toast({
-          title: "Éxito",
-          description: "Categoría creada correctamente"
-        });
+        toast.success("Éxito", { description: "Categoría creada correctamente" });
       }
 
       setIsDialogOpen(false);
@@ -84,11 +71,7 @@ export function CategoryManagement({ selectedCategories, onCategoriesChange }: C
       resetForm();
       fetchCategories();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo guardar la categoría",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo guardar la categoría" });
     }
   };
 
@@ -106,16 +89,9 @@ export function CategoryManagement({ selectedCategories, onCategoriesChange }: C
       if (error) throw error;
       
       fetchCategories();
-      toast({
-        title: "Éxito",
-        description: "Categoría eliminada correctamente"
-      });
+      toast.success("Éxito", { description: "Categoría eliminada correctamente" });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo eliminar la categoría",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo eliminar la categoría" });
     }
   };
 

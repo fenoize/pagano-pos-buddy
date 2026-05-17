@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Customer, EstadoCliente } from '@/types';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from './usePermissions';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import { withStaffContext } from '@/lib/dbContext';
+import { toast } from "sonner";
 
 export interface CustomerFilters {
   search?: string;
@@ -42,7 +42,6 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       c.id === customerId ? { ...c, ...updates } : c
     ));
   };
-  const { toast } = useToast();
   const { user } = useAuth();
 
   // Usar hook de permisos centralizado
@@ -125,11 +124,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       if (requestId !== fetchRequestIdRef.current) return;
 
       console.error('Error fetching customers:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "No se pudieron cargar los clientes",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error instanceof Error ? error.message : "No se pudieron cargar los clientes" });
     } finally {
       if (requestId === fetchRequestIdRef.current) {
         setLoading(false);
@@ -175,20 +170,12 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
 
   const createCustomer = async (customerData: CustomerFormData): Promise<Customer | null> => {
     if (!canManageCustomers) {
-      toast({
-        title: "Error",
-        description: "No tienes permisos para crear clientes",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No tienes permisos para crear clientes" });
       return null;
     }
 
     if (!user?.id) {
-      toast({
-        title: "Error",
-        description: "No hay sesión de usuario activa",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No hay sesión de usuario activa" });
       return null;
     }
 
@@ -252,39 +239,24 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
         return data;
       });
 
-      toast({
-        title: "Éxito",
-        description: "Cliente creado correctamente",
-      });
+      toast.success("Éxito", { description: "Cliente creado correctamente" });
 
       return data;
     } catch (error) {
       console.error('Error creating customer:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al crear el cliente",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error instanceof Error ? error.message : "Error al crear el cliente" });
       return null;
     }
   };
 
   const updateCustomer = async (id: string, customerData: Partial<CustomerFormData>): Promise<Customer | null> => {
     if (!canManageCustomers) {
-      toast({
-        title: "Error",
-        description: "No tienes permisos para editar clientes",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No tienes permisos para editar clientes" });
       return null;
     }
 
     if (!user?.id) {
-      toast({
-        title: "Error",
-        description: "No hay sesión de usuario activa",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No hay sesión de usuario activa" });
       return null;
     }
 
@@ -348,39 +320,24 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
         return data;
       });
 
-      toast({
-        title: "Éxito",
-        description: "Cliente actualizado correctamente",
-      });
+      toast.success("Éxito", { description: "Cliente actualizado correctamente" });
 
       return data;
     } catch (error) {
       console.error('Error updating customer:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al actualizar el cliente",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error instanceof Error ? error.message : "Error al actualizar el cliente" });
       return null;
     }
   };
 
   const deleteCustomer = async (id: string): Promise<boolean> => {
     if (user?.role !== 'Administrador') {
-      toast({
-        title: "Error",
-        description: "Solo los administradores pueden eliminar clientes",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Solo los administradores pueden eliminar clientes" });
       return false;
     }
 
     if (!user?.id) {
-      toast({
-        title: "Error",
-        description: "No hay sesión de usuario activa",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No hay sesión de usuario activa" });
       return false;
     }
 
@@ -399,39 +356,24 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
         if (error) throw error;
       });
 
-      toast({
-        title: "Éxito",
-        description: "Cliente marcado como inactivo correctamente",
-      });
+      toast.success("Éxito", { description: "Cliente marcado como inactivo correctamente" });
 
       return true;
     } catch (error) {
       console.error('Error deleting customer:', error);
-      toast({
-        title: "Error",
-        description: "Error al desactivar el cliente",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al desactivar el cliente" });
       return false;
     }
   };
 
   const deleteCustomerPermanently = async (id: string): Promise<boolean> => {
     if (user?.role !== 'Administrador') {
-      toast({
-        title: "Error",
-        description: "Solo los administradores pueden eliminar clientes definitivamente",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Solo los administradores pueden eliminar clientes definitivamente" });
       return false;
     }
 
     if (!user?.id) {
-      toast({
-        title: "Error",
-        description: "No hay sesión de usuario activa",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No hay sesión de usuario activa" });
       return false;
     }
 
@@ -446,19 +388,12 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
         if (error) throw error;
       });
 
-      toast({
-        title: "Éxito",
-        description: "Cliente eliminado definitivamente. Los datos históricos en órdenes se preservan.",
-      });
+      toast.success("Éxito", { description: "Cliente eliminado definitivamente. Los datos históricos en órdenes se preservan." });
 
       return true;
     } catch (error) {
       console.error('Error permanently deleting customer:', error);
-      toast({
-        title: "Error",
-        description: "Error al eliminar definitivamente el cliente",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al eliminar definitivamente el cliente" });
       return false;
     }
   };
@@ -536,7 +471,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
 
   const exportCustomersCSV = async (filters: CustomerFilters = {}) => {
     if (!canViewCustomers) {
-      toast({ title: "Error", description: "No tienes permisos para exportar clientes", variant: "destructive" });
+      toast.error("Error", { description: "No tienes permisos para exportar clientes" });
       return;
     }
     try {
@@ -570,16 +505,16 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       link.click();
       document.body.removeChild(link);
 
-      toast({ title: "Éxito", description: `${data.length} clientes exportados a CSV` });
+      toast.success("Éxito", { description: `${data.length} clientes exportados a CSV` });
     } catch (error) {
       console.error('Error exporting customers:', error);
-      toast({ title: "Error", description: "Error al exportar clientes", variant: "destructive" });
+      toast.error("Error", { description: "Error al exportar clientes" });
     }
   };
 
   const exportCustomersPDF = async (filters: CustomerFilters = {}) => {
     if (!canViewCustomers) {
-      toast({ title: "Error", description: "No tienes permisos para exportar clientes", variant: "destructive" });
+      toast.error("Error", { description: "No tienes permisos para exportar clientes" });
       return;
     }
     try {
@@ -629,20 +564,16 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       });
 
       doc.save(`clientes_${new Date().toISOString().split('T')[0]}.pdf`);
-      toast({ title: "Éxito", description: `${data.length} clientes exportados a PDF` });
+      toast.success("Éxito", { description: `${data.length} clientes exportados a PDF` });
     } catch (error) {
       console.error('Error exporting PDF:', error);
-      toast({ title: "Error", description: "Error al exportar PDF", variant: "destructive" });
+      toast.error("Error", { description: "Error al exportar PDF" });
     }
   };
 
   const updateCustomerPassword = async (customerId: string, newPassword: string): Promise<boolean> => {
     if (user?.role !== 'Administrador') {
-      toast({
-        title: "Error",
-        description: "Solo los administradores pueden cambiar contraseñas",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Solo los administradores pueden cambiar contraseñas" });
       return false;
     }
 
@@ -657,11 +588,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       if (fetchError) throw fetchError;
 
       if (!customer?.auth_user_id) {
-        toast({
-          title: "Error",
-          description: "Este cliente no tiene una cuenta de autenticación vinculada",
-          variant: "destructive"
-        });
+        toast.error("Error", { description: "Este cliente no tiene una cuenta de autenticación vinculada" });
         return false;
       }
 
@@ -673,19 +600,12 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Contraseña actualizada correctamente",
-      });
+      toast.success("Éxito", { description: "Contraseña actualizada correctamente" });
 
       return true;
     } catch (error) {
       console.error('Error updating customer password:', error);
-      toast({
-        title: "Error",
-        description: "Error al actualizar la contraseña",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al actualizar la contraseña" });
       return false;
     }
   };

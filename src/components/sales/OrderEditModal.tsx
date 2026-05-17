@@ -18,7 +18,6 @@ import { useUsers } from '@/hooks/useUsers';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { useCustomerRunes } from '@/hooks/useCustomerRunes';
 import { useCashSession } from '@/hooks/useCashSession';
-import { useToast } from '@/hooks/use-toast';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { formatCurrency } from '@/lib/utils';
 import { OrderItemEditRow } from './OrderItemEditRow';
@@ -30,6 +29,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Edit, Save, X, History, Plus, MapPin, User, Banknote, CreditCard, Smartphone, AppWindow, Sparkles, DollarSign, Coins, Wallet, AlertTriangle, Search, UtensilsCrossed, ShoppingBag, Clock, ArrowRightLeft } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { toast } from "sonner";
 
 interface OrderEditModalProps {
   order: Order | null;
@@ -75,7 +75,6 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const { paymentMethods } = usePaymentMethods();
   const { getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
   const { checkActiveSession } = useCashSession();
-  const { toast } = useToast();
   const { canManageCashSessions } = usePermissions();
   const repartidores = users.filter(u => u.can_do_delivery && u.active);
 
@@ -112,11 +111,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       })) as Product[]);
     } catch (error) {
       console.error('Error loading products:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los productos",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar los productos" });
     }
   };
 
@@ -234,7 +229,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       
       if (error) throw error;
       
-      toast({ title: "Turno asignado", description: "El pedido fue asignado al turno correctamente." });
+      toast.success("Turno asignado", { description: "El pedido fue asignado al turno correctamente." });
       setOrderCashSessionId(sessionId);
       setShowSessionSelector(false);
       await checkIfClosedSession();
@@ -242,7 +237,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       onOrderUpdated({ ...order });
     } catch (error) {
       console.error('Error assigning session:', error);
-      toast({ title: "Error", description: "No se pudo asignar el turno", variant: "destructive" });
+      toast.error("Error", { description: "No se pudo asignar el turno" });
     } finally {
       setAssigningSession(false);
     }

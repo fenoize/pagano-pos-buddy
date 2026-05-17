@@ -13,8 +13,7 @@ import { AlertTriangle, Plus, Minus, ChevronRight } from 'lucide-react';
 import VariantSelector from './VariantSelector';
 import ComboSelector from './ComboSelector';
 import { ExtrasModal } from './ExtrasModal';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface ProductExtra {
   id: string;
   name: string;
@@ -87,9 +86,6 @@ export function ProductCustomizationModalEnhanced({
 
   // Extras modal state
   const [showExtrasModal, setShowExtrasModal] = useState(false);
-
-  const { toast } = useToast();
-
   // Reset initialization when modal closes or product changes
   useEffect(() => {
     if (!isOpen) {
@@ -296,20 +292,12 @@ export function ProductCustomizationModalEnhanced({
   const handleAddToCart = () => {
     if (!isValidForCart()) {
       if (!selectedVariantOption && !useCombo) {
-        toast({
-          title: "Variante requerida",
-          description: "Debes seleccionar una variante para continuar",
-          variant: "destructive"
-        });
+        toast.error("Variante requerida", { description: "Debes seleccionar una variante para continuar" });
         return;
       }
 
       if (useCombo) {
-        toast({
-          title: "Selección incompleta",
-          description: "Debes completar todas las selecciones del combo",
-          variant: "destructive"
-        });
+        toast.error("Selección incompleta", { description: "Debes completar todas las selecciones del combo" });
         return;
       }
     }

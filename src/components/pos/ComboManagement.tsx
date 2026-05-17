@@ -9,8 +9,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Settings, AlertTriangle, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { ComboProduct, ComboItem, Category, Product, PricingMode } from "@/types";
+import { toast } from "sonner";
 
 interface ComboManagementProps {
   productId?: string;
@@ -24,8 +24,6 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categoryVariants, setCategoryVariants] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
   useEffect(() => {
     if (productId) {
       fetchComboData();
@@ -72,11 +70,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
         setComboItems([]);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al cargar la configuración de combo",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al cargar la configuración de combo" });
     }
   };
 
@@ -160,16 +154,9 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
         setIsCombo(false);
       }
 
-      toast({
-        title: "Éxito",
-        description: enabled ? "Combo habilitado" : "Combo deshabilitado",
-      });
+      toast.success("Éxito", { description: enabled ? "Combo habilitado" : "Combo deshabilitado" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al actualizar configuración de combo",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al actualizar configuración de combo" });
     }
     setLoading(false);
   };
@@ -187,11 +174,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
 
       setComboConfig({ ...comboConfig, [field]: value });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al actualizar configuración",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al actualizar configuración" });
     }
   };
 
@@ -220,11 +203,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
       if (error) throw error;
       setComboItems([...comboItems, data as unknown as ComboItem]);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al agregar slot de combo",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al agregar slot de combo" });
     }
   };
 
@@ -243,11 +222,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
         )
       );
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al actualizar slot",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al actualizar slot" });
     }
   };
 
@@ -261,11 +236,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
       if (error) throw error;
       setComboItems(items => items.filter(item => item.id !== itemId));
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al eliminar slot",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al eliminar slot" });
     }
   };
 
@@ -479,7 +450,7 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                             value={item.default_product_id || undefined}
                             onValueChange={(value) => {
                               if (value === productId) {
-                                toast({ title: 'Error', description: 'Un combo no puede apuntar a sí mismo como producto por defecto', variant: 'destructive' });
+                                toast.error('Error', { description: 'Un combo no puede apuntar a sí mismo como producto por defecto' });
                                 return;
                               }
                               updateComboItem(item.id, 'default_product_id', value || null);

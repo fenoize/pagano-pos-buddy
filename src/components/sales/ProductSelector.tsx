@@ -7,8 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { OrderItem } from '@/types';
 import { Search, X, ShoppingCart } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface Product {
   id: string;
   name: string;
@@ -28,8 +27,6 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [addedCount, setAddedCount] = useState(0);
-  const { toast } = useToast();
-
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -79,11 +76,7 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
     setAddedCount(prev => prev + 1);
     
     // Show success toast
-    toast({
-      title: "Producto agregado",
-      description: `${product.name}${size !== 'unico' ? ` (${size}, ${priceKind === 'combo' ? 'Combo' : 'Solo'})` : ''}`,
-      duration: 2000,
-    });
+    toast.success("Producto agregado", { description: `${product.name}${size !== 'unico' ? ` (${size}, ${priceKind === 'combo' ? 'Combo' : 'Solo'})` : ''}`, duration: 2000 });
   };
 
   // Check if product has combo/only prices with sizes

@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Warehouse } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export const useWarehouses = () => {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const fetchWarehouses = async () => {
     try {
       setLoading(true);
@@ -21,11 +18,7 @@ export const useWarehouses = () => {
       setWarehouses(data || []);
     } catch (error) {
       console.error('Error fetching warehouses:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los almacenes',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar los almacenes' });
     } finally {
       setLoading(false);
     }
@@ -45,19 +38,12 @@ export const useWarehouses = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Almacén creado',
-        description: 'El almacén se creó correctamente',
-      });
+      toast.success('Almacén creado', { description: 'El almacén se creó correctamente' });
 
       fetchWarehouses();
       return { success: true };
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo crear el almacén',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo crear el almacén' });
       return { success: false, error };
     }
   };
@@ -71,19 +57,12 @@ export const useWarehouses = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Almacén actualizado',
-        description: 'Los cambios se guardaron correctamente',
-      });
+      toast.success('Almacén actualizado', { description: 'Los cambios se guardaron correctamente' });
 
       fetchWarehouses();
       return { success: true };
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar el almacén',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo actualizar el almacén' });
       return { success: false, error };
     }
   };
@@ -97,19 +76,12 @@ export const useWarehouses = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Almacén eliminado',
-        description: 'El almacén se eliminó correctamente',
-      });
+      toast.success('Almacén eliminado', { description: 'El almacén se eliminó correctamente' });
 
       fetchWarehouses();
       return { success: true };
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo eliminar el almacén',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo eliminar el almacén' });
       return { success: false, error };
     }
   };

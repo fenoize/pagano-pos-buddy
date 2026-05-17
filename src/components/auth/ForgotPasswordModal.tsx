@@ -12,8 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Mail, User } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface ForgotPasswordModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -28,8 +27,6 @@ export default function ForgotPasswordModal({
   const [identifier, setIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { toast } = useToast();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -64,10 +61,7 @@ export default function ForgotPasswordModal({
       }
 
       // Success
-      toast({
-        title: "Código enviado",
-        description: "Si el usuario existe, recibirás un código por email",
-      });
+      toast.success("Código enviado", { description: "Si el usuario existe, recibirás un código por email" });
 
       onCodeSent(identifier);
       onOpenChange(false);

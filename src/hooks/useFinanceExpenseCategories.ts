@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export interface ExpenseCategory {
   id: string;
   name: string;
@@ -16,8 +15,6 @@ export interface ExpenseCategory {
 export function useFinanceExpenseCategories() {
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const fetchCategories = useCallback(async () => {
     setLoading(true);
     try {
@@ -30,11 +27,7 @@ export function useFinanceExpenseCategories() {
       setCategories((data || []) as unknown as ExpenseCategory[]);
     } catch (error) {
       console.error('Error fetching expense categories:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las categorías de egresos',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar las categorías de egresos' });
     } finally {
       setLoading(false);
     }
@@ -57,21 +50,14 @@ export function useFinanceExpenseCategories() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Categoría creada',
-        description: `La categoría "${name}" se creó correctamente`,
-      });
+      toast.success('Categoría creada', { description: `La categoría "${name}" se creó correctamente` });
       await fetchCategories();
       return true;
     } catch (error: any) {
       console.error('Error creating category:', error);
-      toast({
-        title: 'Error',
-        description: error.message?.includes('unique') 
+      toast.error('Error', { description: error.message?.includes('unique') 
           ? 'Ya existe una categoría con ese nombre'
-          : 'No se pudo crear la categoría',
-        variant: 'destructive',
-      });
+          : 'No se pudo crear la categoría' });
       return false;
     }
   };
@@ -85,21 +71,14 @@ export function useFinanceExpenseCategories() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Categoría actualizada',
-        description: 'Los cambios se guardaron correctamente',
-      });
+      toast.success('Categoría actualizada', { description: 'Los cambios se guardaron correctamente' });
       await fetchCategories();
       return true;
     } catch (error: any) {
       console.error('Error updating category:', error);
-      toast({
-        title: 'Error',
-        description: error.message?.includes('unique')
+      toast.error('Error', { description: error.message?.includes('unique')
           ? 'Ya existe una categoría con ese nombre'
-          : 'No se pudo actualizar la categoría',
-        variant: 'destructive',
-      });
+          : 'No se pudo actualizar la categoría' });
       return false;
     }
   };
@@ -113,19 +92,12 @@ export function useFinanceExpenseCategories() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Categoría eliminada',
-        description: 'La categoría se eliminó correctamente',
-      });
+      toast.success('Categoría eliminada', { description: 'La categoría se eliminó correctamente' });
       await fetchCategories();
       return true;
     } catch (error) {
       console.error('Error deleting category:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo eliminar la categoría',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo eliminar la categoría' });
       return false;
     }
   };

@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Plus, ChevronRight } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import VariantSelector from './VariantSelector';
 import { ExtrasModal } from './ExtrasModal';
+import { toast } from "sonner";
 
 interface VariantGroupWithOptions {
   group_id: string;
@@ -58,8 +58,6 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const [productVariantGroups, setProductVariantGroups] = useState<Record<string, VariantGroupWithOptions[]>>({});
   // Selected group options per slot: slotIndex -> { groupId: optionId }
   const [slotGroupSelections, setSlotGroupSelections] = useState<Record<number, Record<string, string>>>({});
-  const { toast } = useToast();
-
   // Track initialization to prevent re-fetching
   const isInitialized = useRef(false);
   const lastProductId = useRef<string | null>(null);
@@ -469,11 +467,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
 
     } catch (error) {
       console.error('Error fetching combo data:', error);
-      toast({
-        title: "Error",
-        description: "Error al cargar la configuración del combo",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al cargar la configuración del combo" });
     } finally {
       setLoading(false);
     }
