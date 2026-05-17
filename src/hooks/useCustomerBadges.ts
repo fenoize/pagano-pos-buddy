@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface CustomerBadge {
   id: string;
   code: string;
@@ -21,8 +20,6 @@ export const useCustomerBadges = (customerId?: string) => {
   const [allBadges, setAllBadges] = useState<CustomerBadge[]>([]);
   const [awardedBadges, setAwardedBadges] = useState<CustomerBadgeAwarded[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   // Obtener todas las badges activas del catálogo
   const fetchAllBadges = async () => {
     try {
@@ -36,11 +33,7 @@ export const useCustomerBadges = (customerId?: string) => {
       setAllBadges(data || []);
     } catch (error: any) {
       console.error('Error fetching badges:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las insignias',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar las insignias' });
     }
   };
 
@@ -81,11 +74,7 @@ export const useCustomerBadges = (customerId?: string) => {
       setAwardedBadges(transformedData);
     } catch (error: any) {
       console.error('Error fetching awarded badges:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar tus insignias obtenidas',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar tus insignias obtenidas' });
     }
   };
 

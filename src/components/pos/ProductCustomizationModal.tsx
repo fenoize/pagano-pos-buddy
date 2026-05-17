@@ -12,8 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Minus } from 'lucide-react';
 import VariantSelector from './VariantSelector';
 import ComboSelector from './ComboSelector';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface VariantGroupWithOptions {
   group_id: string;
   group_name: string;
@@ -73,9 +72,6 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
   // Variant groups state (multi-dimensional)
   const [variantGroups, setVariantGroups] = useState<VariantGroupWithOptions[]>([]);
   const [selectedGroupOptions, setSelectedGroupOptions] = useState<Record<string, string>>({});
-  
-  const { toast } = useToast();
-
   // Memoizar variantes disponibles para evitar recalcular en cada render
   const availableVariantsLegacy = useMemo(() => {
     const prices: any = product.prices || {};
@@ -225,11 +221,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       await fetchExtrasAndModifiers();
     } catch (error) {
       console.error('Error fetching product variants:', error);
-      toast({
-        title: "Error",
-        description: "Error al cargar las variantes del producto",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al cargar las variantes del producto" });
       // Fallback to legacy system
       setUseNewVariantSystem(false);
       await fetchExtrasAndModifiers();

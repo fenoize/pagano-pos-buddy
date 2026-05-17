@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Product, Customer, OrderItem, FulfillmentType, CouponApplication, PickupMode } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCashSession } from '@/hooks/useCashSession';
@@ -31,6 +30,7 @@ import { accruePointsForOrder } from '@/lib/pointsAccruer';
 import { RecentOrdersModal } from '@/components/sales/RecentOrdersModal';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { CashSessionModal } from '@/components/cash/CashSessionModal';
+import { toast } from "sonner";
 
 export default function NewSale() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -68,7 +68,6 @@ export default function NewSale() {
     modifiers: any[];
     combos: Record<string, any>;
   }>({ variants: {}, extras: [], modifiers: [], combos: {} });
-  const { toast } = useToast();
   const { user } = useAuthContext();
   const { canCreateOrders, loading: permissionsLoading } = usePermissions();
   const { hasActiveSession } = useCashSession();
@@ -192,11 +191,7 @@ export default function NewSale() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los datos",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar los datos" });
     } finally {
       setLoading(false);
     }
@@ -366,30 +361,18 @@ export default function NewSale() {
   }) => {
     // Prevenir procesamiento duplicado
     if (isProcessingOrder) {
-      toast({
-        title: "Procesando",
-        description: "Ya hay un pedido siendo procesado",
-        variant: "destructive"
-      });
+      toast.error("Procesando", { description: "Ya hay un pedido siendo procesado" });
       return;
     }
 
     // Validaciones inmediatas
     if (!user?.id) {
-      toast({
-        title: "Error",
-        description: "Usuario no autenticado. Por favor, inicie sesión nuevamente.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Usuario no autenticado. Por favor, inicie sesión nuevamente." });
       return;
     }
 
     if (!canCreateOrders) {
-      toast({
-        title: "Error",
-        description: "Usuario sin permisos para crear órdenes. Se requiere rol de Cajero o Administrador.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Usuario sin permisos para crear órdenes. Se requiere rol de Cajero o Administrador." });
       return;
     }
 
@@ -431,10 +414,7 @@ export default function NewSale() {
     setCurrentStep(1);
 
     // Mostrar feedback inicial
-    toast({
-      title: "Procesando pedido...",
-      description: "El pedido se está enviando a cocina"
-    });
+    toast.success("Procesando pedido...", { description: "El pedido se está enviando a cocina" });
 
     // Marcar como procesando
     setIsProcessingOrder(true);
@@ -878,12 +858,7 @@ export default function NewSale() {
         errorMessage = (error as any).message;
       }
       
-      toast({
-        title: "Error al procesar pedido",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 7000
-      });
+      toast.error("Error al procesar pedido", { description: errorMessage, duration: 7000 });
     } finally {
       setIsProcessingOrder(false);
     }
@@ -956,11 +931,7 @@ export default function NewSale() {
                   deliveryFee={deliveryFee}
                   onCheckout={() => {
                       if (cartItems.length === 0) {
-                        toast({
-                          title: "Error",
-                          description: "Agrega productos al carrito",
-                          variant: "destructive"
-                        });
+                        toast.error("Error", { description: "Agrega productos al carrito" });
                         return;
                       }
                       if (!hasActiveSession()) {
@@ -1260,7 +1231,6 @@ export default function NewSale() {
 // Hook: listen for remote QR scans via Supabase Broadcast
 // Listens on both the generic channel (backward compat) and session-specific channel
 function useRemoteQRScanner(onCustomerScanned: (customer: Customer) => void) {
-  const { toast } = useToast();
   const { hasActiveSession } = useCashSession();
 
   useEffect(() => {
@@ -1269,10 +1239,7 @@ function useRemoteQRScanner(onCustomerScanned: (customer: Customer) => void) {
         const c = payload.customer as Customer;
         onCustomerScanned(c);
         const name = `${c.nombres || c.name || ''} ${c.apellidos || c.apellido || ''}`.trim();
-        toast({
-          title: '📱 Cliente escaneado',
-          description: name || 'Cliente vinculado a la venta',
-        });
+        toast.success('📱 Cliente escaneado', { description: name || 'Cliente vinculado a la venta' });
       }
     };
 

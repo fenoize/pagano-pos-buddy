@@ -11,7 +11,7 @@ import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { useBranches } from '@/hooks/useBranches';
 import { formatDateTime } from '@/lib/dateUtils';
 import { toast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 type Movement = {
   id: string;
   created_at: string;
@@ -71,7 +71,7 @@ export default function FinanceMovements() {
       setMovements((data || []) as any);
     } catch (e: any) {
       console.error(e);
-      toast({ title: 'Error', description: e.message || 'No se pudieron cargar los movimientos', variant: 'destructive' });
+      toast.error('Error', { description: e.message || 'No se pudieron cargar los movimientos' });
     } finally {
       setLoading(false);
     }

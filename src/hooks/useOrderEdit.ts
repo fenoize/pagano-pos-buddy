@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { Order, OrderItem, PaymentMethod } from '@/types';
 import { useCustomerRunes } from '@/hooks/useCustomerRunes';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCashSession } from '@/hooks/useCashSession';
 import { setStaffContext } from '@/lib/dbContext';
+import { toast } from "sonner";
 
 export interface OrderEditData {
   items: OrderItem[];
@@ -40,7 +40,6 @@ export interface OrderEditAction {
 }
 
 export function useOrderEdit() {
-  const { toast } = useToast();
   const { user } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const { createEditAdjustmentTransaction, getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
@@ -386,19 +385,12 @@ export function useOrderEdit() {
           .insert(auditRecords);
       }
 
-      toast({
-        title: "Pedido actualizado",
-        description: "Los cambios se han guardado correctamente",
-      });
+      toast.success("Pedido actualizado", { description: "Los cambios se han guardado correctamente" });
 
       return finalOrder as any;
     } catch (error) {
       console.error('Error updating order:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error actualizando el pedido",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error instanceof Error ? error.message : "Error actualizando el pedido" });
       throw error;
     } finally {
       setIsLoading(false);
@@ -425,11 +417,7 @@ export function useOrderEdit() {
       return data || [];
     } catch (error) {
       console.error('Error fetching order history:', error);
-      toast({
-        title: "Error",
-        description: "Error cargando el historial de cambios",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error cargando el historial de cambios" });
       return [];
     }
   }, [toast]);

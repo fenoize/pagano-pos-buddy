@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { compressImage } from '@/lib/imageCompression';
+import { toast } from "sonner";
 
 interface ImageUploadProps {
   imageUrl?: string;
@@ -15,8 +15,6 @@ interface ImageUploadProps {
 
 export function ImageUpload({ imageUrl, onImageChange, productName = 'producto' }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
-  const { toast } = useToast();
-
   const uploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
@@ -47,16 +45,9 @@ export function ImageUpload({ imageUrl, onImageChange, productName = 'producto' 
 
       onImageChange(data.publicUrl);
       
-      toast({
-        title: "Éxito",
-        description: "Imagen subida correctamente"
-      });
+      toast.success("Éxito", { description: "Imagen subida correctamente" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo subir la imagen",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo subir la imagen" });
     } finally {
       setUploading(false);
     }
@@ -85,10 +76,7 @@ export function ImageUpload({ imageUrl, onImageChange, productName = 'producto' 
 
     onImageChange(null);
     
-    toast({
-      title: "Éxito",
-      description: "Imagen eliminada"
-    });
+    toast.success("Éxito", { description: "Imagen eliminada" });
   };
 
   return (

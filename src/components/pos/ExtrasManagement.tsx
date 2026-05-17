@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, GripVertical } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import {
   DndContext,
   closestCenter,
@@ -30,6 +29,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { toast } from "sonner";
 
 interface ExtrasManagementProps {
   selectedCategories: string[];
@@ -46,8 +46,6 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
     category_id: '',
     active: true
   });
-  const { toast } = useToast();
-
   useEffect(() => {
     fetchExtras();
     fetchCategories();
@@ -69,11 +67,7 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
       if (error) throw error;
       setExtras(data || []);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los extras",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar los extras" });
     }
   };
 
@@ -107,10 +101,7 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
 
         if (error) throw error;
         
-        toast({
-          title: "Éxito",
-          description: "Extra actualizado correctamente"
-        });
+        toast.success("Éxito", { description: "Extra actualizado correctamente" });
       } else {
         // Get the max display_order for the category
         const { data: maxOrderData } = await supabase
@@ -132,10 +123,7 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
 
         if (error) throw error;
         
-        toast({
-          title: "Éxito",
-          description: "Extra creado correctamente"
-        });
+        toast.success("Éxito", { description: "Extra creado correctamente" });
       }
 
       setIsDialogOpen(false);
@@ -143,11 +131,7 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
       resetForm();
       fetchExtras();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo guardar el extra",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo guardar el extra" });
     }
   };
 
@@ -165,16 +149,9 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
       if (error) throw error;
       
       fetchExtras();
-      toast({
-        title: "Éxito",
-        description: "Extra eliminado correctamente"
-      });
+      toast.success("Éxito", { description: "Extra eliminado correctamente" });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo eliminar el extra",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo eliminar el extra" });
     }
   };
 
@@ -249,16 +226,9 @@ export function ExtrasManagement({ selectedCategories }: ExtrasManagementProps) 
         // Refresh the extras list
         fetchExtras();
         
-        toast({
-          title: "Éxito",
-          description: "Orden de extras actualizado"
-        });
+        toast.success("Éxito", { description: "Orden de extras actualizado" });
       } catch (error: any) {
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar el orden de los extras",
-          variant: "destructive"
-        });
+        toast.error("Error", { description: "No se pudo actualizar el orden de los extras" });
       }
     }
   };

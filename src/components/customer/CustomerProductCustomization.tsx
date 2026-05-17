@@ -9,10 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Plus, Minus, Check, Flame, ShoppingCart, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import CustomerComboSelector from '@/components/customer/CustomerComboSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { toast } from "sonner";
 
 interface VariantGroupWithOptions {
   group_id: string;
@@ -71,9 +71,6 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
   // Variant groups state (multi-dimensional)
   const [variantGroups, setVariantGroups] = useState<VariantGroupWithOptions[]>([]);
   const [selectedGroupOptions, setSelectedGroupOptions] = useState<Record<string, string>>({});
-  
-  const { toast } = useToast();
-
   // Get available legacy variants
   const getAvailableVariantsLegacy = () => {
     const prices: any = product.prices || {};
@@ -355,7 +352,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
     const itemTotal = (finalBasePrice + extrasTotal) * quantity;
 
     if (itemTotal <= 0) {
-      toast({ title: 'No se puede agregar un producto con valor $0', variant: 'destructive' });
+      toast.error('No se puede agregar un producto con valor $0');
       return;
     }
 

@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CategoryVariantsManagement from "@/components/pos/CategoryVariantsManagement";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -56,8 +56,6 @@ export default function Categorias() {
     description: "",
     active: true,
   });
-  const { toast } = useToast();
-
   useEffect(() => {
     fetchData();
   }, []);
@@ -95,11 +93,7 @@ export default function Categorias() {
       setProductCounts(productCountsArray);
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast({
-        title: "Error",
-        description: "Error al cargar las categorías",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al cargar las categorías" });
     } finally {
       setLoading(false);
     }
@@ -109,11 +103,7 @@ export default function Categorias() {
     e.preventDefault();
     
     if (!formData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "El nombre de la categoría es obligatorio",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "El nombre de la categoría es obligatorio" });
       return;
     }
 
@@ -130,10 +120,7 @@ export default function Categorias() {
 
         if (error) throw error;
 
-        toast({
-          title: "Éxito",
-          description: "Categoría actualizada correctamente",
-        });
+        toast.success("Éxito", { description: "Categoría actualizada correctamente" });
       } else {
         const { error } = await supabase
           .from("categories")
@@ -145,10 +132,7 @@ export default function Categorias() {
 
         if (error) throw error;
 
-        toast({
-          title: "Éxito",
-          description: "Categoría creada correctamente",
-        });
+        toast.success("Éxito", { description: "Categoría creada correctamente" });
       }
 
       setIsDialogOpen(false);
@@ -156,11 +140,7 @@ export default function Categorias() {
       fetchData();
     } catch (error) {
       console.error("Error saving category:", error);
-      toast({
-        title: "Error",
-        description: "Error al guardar la categoría",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al guardar la categoría" });
     }
   };
 
@@ -192,10 +172,7 @@ export default function Categorias() {
 
         if (error) throw error;
 
-        toast({
-          title: "Éxito",
-          description: "Categoría eliminada correctamente",
-        });
+        toast.success("Éxito", { description: "Categoría eliminada correctamente" });
       }
 
       setIsDeleteDialogOpen(false);
@@ -203,11 +180,7 @@ export default function Categorias() {
       fetchData();
     } catch (error) {
       console.error("Error deleting category:", error);
-      toast({
-        title: "Error",
-        description: "Error al eliminar la categoría",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Error al eliminar la categoría" });
     }
   };
 

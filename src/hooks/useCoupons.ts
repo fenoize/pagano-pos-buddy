@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Coupon } from '@/types';
 import { toast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export const useCoupons = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,11 +32,7 @@ export const useCoupons = () => {
 
       setCoupons(couponsWithScope);
     } catch (error: any) {
-      toast({
-        title: 'Error al cargar cupones',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error al cargar cupones', { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -173,11 +169,7 @@ export const useCoupons = () => {
       await fetchCoupons();
       return coupon;
     } catch (error: any) {
-      toast({
-        title: 'Error al crear cupón',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error al crear cupón', { description: error.message });
       throw error;
     } finally {
       setLoading(false);
@@ -247,18 +239,11 @@ export const useCoupons = () => {
         allowed_tags,
       });
 
-      toast({
-        title: 'Cupón actualizado',
-        description: 'Los cambios han sido guardados.',
-      });
+      toast.success('Cupón actualizado', { description: 'Los cambios han sido guardados.' });
 
       await fetchCoupons();
     } catch (error: any) {
-      toast({
-        title: 'Error al actualizar cupón',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error al actualizar cupón', { description: error.message });
       throw error;
     } finally {
       setLoading(false);
@@ -374,18 +359,11 @@ export const useCoupons = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Cupón eliminado',
-        description: 'El cupón ha sido eliminado exitosamente.',
-      });
+      toast.success('Cupón eliminado', { description: 'El cupón ha sido eliminado exitosamente.' });
 
       await fetchCoupons();
     } catch (error: any) {
-      toast({
-        title: 'Error al eliminar cupón',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error al eliminar cupón', { description: error.message });
       throw error;
     } finally {
       setLoading(false);
@@ -401,17 +379,11 @@ export const useCoupons = () => {
 
       if (error) throw error;
 
-      toast({
-        title: isActive ? 'Cupón activado' : 'Cupón desactivado',
-      });
+      toast.success(isActive ? 'Cupón activado' : 'Cupón desactivado');
 
       await fetchCoupons();
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message });
     }
   };
 

@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from "sonner";
 
 interface SupplierPayablesTableProps {
   supplierId: string;
@@ -72,13 +73,13 @@ export function SupplierPayablesTable({ supplierId, showSupplierColumn }: Suppli
 
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast({ title: 'Error', description: 'Ingrese un monto válido', variant: 'destructive' });
+      toast.error('Error', { description: 'Ingrese un monto válido' });
       return;
     }
 
     const pending = selectedPayable.amount_total - selectedPayable.amount_paid;
     if (amount > pending) {
-      toast({ title: 'Error', description: 'El monto no puede superar el saldo pendiente', variant: 'destructive' });
+      toast.error('Error', { description: 'El monto no puede superar el saldo pendiente' });
       return;
     }
 

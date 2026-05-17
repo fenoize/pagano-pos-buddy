@@ -14,8 +14,8 @@ import { useRawMaterials } from '@/hooks/useRawMaterials';
 import { useStockBalances } from '@/hooks/useStockBalances';
 import { useInventory } from '@/hooks/useInventory';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from "sonner";
 
 interface TransferHistory {
   id: string;
@@ -31,7 +31,6 @@ interface TransferHistory {
 
 export default function StockTransfers() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
   const { warehouses, loading: warehousesLoading } = useWarehouses();
   const { materials: rawMaterials, loading: materialsLoading } = useRawMaterials();
@@ -120,30 +119,18 @@ export default function StockTransfers() {
     e.preventDefault();
     
     if (!fromWarehouseId || !toWarehouseId || !selectedMaterialId || !quantity || !user) {
-      toast({
-        title: 'Error',
-        description: 'Complete todos los campos requeridos',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'Complete todos los campos requeridos' });
       return;
     }
     
     if (fromWarehouseId === toWarehouseId) {
-      toast({
-        title: 'Error',
-        description: 'El almacén origen y destino no pueden ser iguales',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'El almacén origen y destino no pueden ser iguales' });
       return;
     }
     
     const qty = parseFloat(quantity);
     if (isNaN(qty) || qty <= 0) {
-      toast({
-        title: 'Error',
-        description: 'La cantidad debe ser mayor a 0',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'La cantidad debe ser mayor a 0' });
       return;
     }
     

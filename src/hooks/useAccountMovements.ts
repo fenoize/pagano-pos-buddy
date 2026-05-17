@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export type AccountMovementType = 'ingreso' | 'egreso' | 'transferencia';
 
 export function useAccountMovements() {
@@ -28,18 +28,11 @@ export function useAccountMovements() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Movimiento registrado',
-        description: 'El saldo de la cuenta se actualizó correctamente',
-      });
+      toast.success('Movimiento registrado', { description: 'El saldo de la cuenta se actualizó correctamente' });
       return true;
     } catch (error: any) {
       console.error('Error registering account movement:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo registrar el movimiento',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo registrar el movimiento' });
       return false;
     } finally {
       setSubmitting(false);

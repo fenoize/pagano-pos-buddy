@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { withStaffContext } from '@/lib/dbContext';
 import { getStaffUserId } from '@/lib/staffSession';
 import type {
+import { toast } from "sonner";
   PurchaseRequest,
   PurchaseRequestItem,
   PurchaseRequestStatus,
@@ -16,8 +16,6 @@ const TAX_RATE = 0.19;
 export const usePurchaseRequests = () => {
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
@@ -38,7 +36,7 @@ export const usePurchaseRequests = () => {
       setRequests((data || []) as unknown as PurchaseRequest[]);
     } catch (error) {
       console.error('Error fetching purchase requests:', error);
-      toast({ title: 'Error', description: 'No se pudieron cargar las solicitudes de compra', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudieron cargar las solicitudes de compra' });
     } finally {
       setLoading(false);
     }
@@ -106,7 +104,7 @@ export const usePurchaseRequests = () => {
       };
     } catch (error) {
       console.error('Error fetching purchase request:', error);
-      toast({ title: 'Error', description: 'No se pudo cargar la solicitud de compra', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo cargar la solicitud de compra' });
       return null;
     }
   };
@@ -159,18 +157,15 @@ export const usePurchaseRequests = () => {
 
       if (itemsError) throw itemsError;
 
-      toast({
-        title: 'Solicitud creada',
-        description: data.submit_for_approval
+      toast.success('Solicitud creada', { description: data.submit_for_approval
           ? 'La solicitud ha sido enviada para aprobación'
-          : 'La solicitud ha sido guardada como borrador',
-      });
+          : 'La solicitud ha sido guardada como borrador' });
 
       await fetchRequests();
       return request.id;
     } catch (error) {
       console.error('Error creating purchase request:', error);
-      toast({ title: 'Error', description: 'No se pudo crear la solicitud de compra', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo crear la solicitud de compra' });
       return null;
     }
   };
@@ -214,12 +209,12 @@ export const usePurchaseRequests = () => {
 
       if (error) throw error;
 
-      toast({ title: 'Solicitud actualizada' });
+      toast.success('Solicitud actualizada');
       await fetchRequests();
       return true;
     } catch (error) {
       console.error('Error updating purchase request:', error);
-      toast({ title: 'Error', description: 'No se pudo actualizar la solicitud', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo actualizar la solicitud' });
       return false;
     }
   };
@@ -231,12 +226,12 @@ export const usePurchaseRequests = () => {
         .update({ status: 'pending_approval' as PurchaseRequestStatus })
         .eq('id', id);
       if (error) throw error;
-      toast({ title: 'Solicitud enviada', description: 'La solicitud ha sido enviada para aprobación' });
+      toast.success('Solicitud enviada', { description: 'La solicitud ha sido enviada para aprobación' });
       await fetchRequests();
       return true;
     } catch (error) {
       console.error('Error submitting for approval:', error);
-      toast({ title: 'Error', description: 'No se pudo enviar la solicitud', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo enviar la solicitud' });
       return false;
     }
   };
@@ -255,12 +250,12 @@ export const usePurchaseRequests = () => {
 
       if (error) throw error;
 
-      toast({ title: 'Solicitud aprobada', description: 'La solicitud está lista para gestión de logística' });
+      toast.success('Solicitud aprobada', { description: 'La solicitud está lista para gestión de logística' });
       await fetchRequests();
       return true;
     } catch (error) {
       console.error('Error approving request:', error);
-      toast({ title: 'Error', description: 'No se pudo aprobar la solicitud', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo aprobar la solicitud' });
       return false;
     }
   };
@@ -282,12 +277,12 @@ export const usePurchaseRequests = () => {
           .eq('id', id)
       );
       if (error) throw error;
-      toast({ title: 'Gestión iniciada', description: 'Se generaron las Órdenes de Compra por proveedor' });
+      toast.success('Gestión iniciada', { description: 'Se generaron las Órdenes de Compra por proveedor' });
       await fetchRequests();
       return true;
     } catch (error) {
       console.error('Error starting processing:', error);
-      toast({ title: 'Error', description: 'No se pudo iniciar el proceso', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo iniciar el proceso' });
       return false;
     }
   };
@@ -394,12 +389,12 @@ export const usePurchaseRequests = () => {
           .eq('id', id)
       );
       if (error) throw error;
-      toast({ title: 'Gestión finalizada', description: 'Los precios y proveedores han sido actualizados' });
+      toast.success('Gestión finalizada', { description: 'Los precios y proveedores han sido actualizados' });
       await fetchRequests();
       return true;
     } catch (error) {
       console.error('Error completing request:', error);
-      toast({ title: 'Error', description: 'No se pudo completar la solicitud', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo completar la solicitud' });
       return false;
     }
   };
@@ -486,7 +481,7 @@ export const usePurchaseRequests = () => {
       return true;
     } catch (error) {
       console.error('Error resolving item:', error);
-      toast({ title: 'Error', description: 'No se pudo resolver el item', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo resolver el item' });
       return false;
     }
   };
@@ -506,7 +501,7 @@ export const usePurchaseRequests = () => {
       return true;
     } catch (error) {
       console.error('Error unresolving item:', error);
-      toast({ title: 'Error', description: 'No se pudo desmarcar el item', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo desmarcar el item' });
       return false;
     }
   };
@@ -518,12 +513,12 @@ export const usePurchaseRequests = () => {
         .update({ status: 'rejected' as PurchaseRequestStatus, rejection_reason: reason })
         .eq('id', id);
       if (error) throw error;
-      toast({ title: 'Solicitud rechazada' });
+      toast.success('Solicitud rechazada');
       await fetchRequests();
       return true;
     } catch (error) {
       console.error('Error rejecting request:', error);
-      toast({ title: 'Error', description: 'No se pudo rechazar la solicitud', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo rechazar la solicitud' });
       return false;
     }
   };
@@ -535,12 +530,12 @@ export const usePurchaseRequests = () => {
         .update({ status: 'cancelled' as PurchaseRequestStatus })
         .eq('id', id);
       if (error) throw error;
-      toast({ title: 'Solicitud cancelada' });
+      toast.success('Solicitud cancelada');
       await fetchRequests();
       return true;
     } catch (error) {
       console.error('Error cancelling request:', error);
-      toast({ title: 'Error', description: 'No se pudo cancelar la solicitud', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo cancelar la solicitud' });
       return false;
     }
   };
@@ -549,12 +544,12 @@ export const usePurchaseRequests = () => {
     try {
       const { error } = await supabase.from('purchase_requests').delete().eq('id', id);
       if (error) throw error;
-      toast({ title: 'Solicitud eliminada' });
+      toast.success('Solicitud eliminada');
       await fetchRequests();
       return true;
     } catch (error) {
       console.error('Error deleting request:', error);
-      toast({ title: 'Error', description: 'No se pudo eliminar la solicitud', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo eliminar la solicitud' });
       return false;
     }
   };
@@ -566,12 +561,12 @@ export const usePurchaseRequests = () => {
         .update({ status: 'draft' as PurchaseRequestStatus, rejection_reason: null })
         .eq('id', id);
       if (error) throw error;
-      toast({ title: 'Solicitud devuelta a borrador' });
+      toast.success('Solicitud devuelta a borrador');
       await fetchRequests();
       return true;
     } catch (error) {
       console.error('Error returning to draft:', error);
-      toast({ title: 'Error', description: 'No se pudo devolver la solicitud a borrador', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo devolver la solicitud a borrador' });
       return false;
     }
   };

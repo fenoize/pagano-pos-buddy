@@ -6,11 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Loader2, Eye, EyeOff, UtensilsCrossed, IceCream, Cookie, Coffee, Sandwich, Pizza, Cake, Beef } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal';
 import ResetPasswordModal from '@/components/auth/ResetPasswordModal';
 import { usePOSThemeLogin } from '@/components/theme/POSThemeProvider';
 import { configuredSupabase } from '@/lib/supabaseClient';
+import { toast } from "sonner";
 
 // Food icons grid component
 function FoodIconsPattern() {
@@ -45,8 +45,6 @@ export default function Login() {
   const [logoError, setLogoError] = useState(false);
   const { login, loading, error, user } = useAuthContext();
   const navigate = useNavigate();
-  const { toast } = useToast();
-
   // Cargar logo desde PWA config
   useEffect(() => {
     const loadLogo = async () => {
@@ -78,28 +76,17 @@ export default function Login() {
     e.preventDefault();
     
     if (!username || !password) {
-      toast({
-        title: "Error",
-        description: "Por favor ingresa usuario y contraseña",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Por favor ingresa usuario y contraseña" });
       return;
     }
 
     const result = await login(username, password);
     
     if (result.success) {
-      toast({
-        title: "Bienvenido",
-        description: "Inicio de sesión exitoso",
-      });
+      toast.success("Bienvenido", { description: "Inicio de sesión exitoso" });
       navigate('/pos');
     } else {
-      toast({
-        title: "Error",
-        description: result.error || "Error al iniciar sesión",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: result.error || "Error al iniciar sesión" });
     }
   };
 
@@ -242,10 +229,7 @@ export default function Login() {
         onOpenChange={setShowResetPassword}
         identifier={resetIdentifier}
         onSuccess={() => {
-          toast({
-            title: "¡Listo!",
-            description: "Ahora puedes iniciar sesión con tu nueva contraseña",
-          });
+          toast.success("¡Listo!", { description: "Ahora puedes iniciar sesión con tu nueva contraseña" });
           setUsername('');
           setPassword('');
         }}

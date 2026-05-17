@@ -9,13 +9,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Store, Truck, MapPin, Edit2, Check, AlertCircle, Loader2, UtensilsCrossed, ShoppingBag } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { useComunas } from '@/hooks/useComunas';
 import { useCustomerAddresses } from '@/hooks/useCustomerAddresses';
 import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import { useDeliveryGeo, DeliveryZoneWithGeo } from '@/hooks/useDeliveryGeo';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from "sonner";
 
 export interface DeliveryData {
   zone: DeliveryZone | null;
@@ -78,8 +78,6 @@ export default function FulfillmentStep({ fulfillment, pickupMode, customer, ini
   
   // Customer addresses
   const [customerAddresses, setCustomerAddresses] = useState<Address[]>([]);
-  
-  const { toast } = useToast();
   const { comunas } = useComunas();
   const { getCustomerAddresses } = useCustomerAddresses();
   const { zones } = useDeliveryZones();
@@ -359,19 +357,11 @@ export default function FulfillmentStep({ fulfillment, pickupMode, customer, ini
       // Exception mode - use manual address and fee
       if (isExceptionMode) {
         if (!exceptionAddress.trim()) {
-          toast({
-            title: "Error",
-            description: "Ingresa la dirección de excepción",
-            variant: "destructive"
-          });
+          toast.error("Error", { description: "Ingresa la dirección de excepción" });
           return;
         }
         if (!exceptionFee || parseInt(exceptionFee) <= 0) {
-          toast({
-            title: "Error",
-            description: "Ingresa el costo de delivery para la excepción",
-            variant: "destructive"
-          });
+          toast.error("Error", { description: "Ingresa el costo de delivery para la excepción" });
           return;
         }
         // Update fee and address for exception
@@ -385,20 +375,12 @@ export default function FulfillmentStep({ fulfillment, pickupMode, customer, ini
       
       // Normal mode
       if (!fullAddress.trim()) {
-        toast({
-          title: "Error",
-          description: "Ingresa la dirección de entrega",
-          variant: "destructive"
-        });
+        toast.error("Error", { description: "Ingresa la dirección de entrega" });
         return;
       }
       
       if (zoneError && !isExceptionMode) {
-        toast({
-          title: "Error",
-          description: zoneError,
-          variant: "destructive"
-        });
+        toast.error("Error", { description: zoneError });
         return;
       }
     }

@@ -2,8 +2,8 @@
  import { supabase } from '@/integrations/supabase/client';
  import { useCashSession } from '@/hooks/useCashSession';
  import { useAuthContext } from '@/contexts/AuthContext';
- import { useToast } from '@/hooks/use-toast';
  import { setStaffContext } from '@/lib/dbContext';
+import { toast } from "sonner";
 
 // ID único para la suscripción compartida
 let globalSubscriptionId = 0;
@@ -63,8 +63,6 @@ const initGlobalSubscription = () => {
   const [loading, setLoading] = useState(true);
    const { currentSession } = useCashSession();
    const { user } = useAuthContext();
-   const { toast } = useToast();
- 
    const fetchPendingOrders = useCallback(async () => {
      try {
       setLoading(true);
@@ -168,21 +166,14 @@ const initGlobalSubscription = () => {
  
        if (error) throw error;
  
-       toast({
-         title: '✅ Pago registrado',
-         description: 'El pedido ha sido cobrado correctamente'
-       });
+       toast.success('✅ Pago registrado', { description: 'El pedido ha sido cobrado correctamente' });
  
        // Refrescar lista
        await fetchPendingOrders();
        return true;
      } catch (error: any) {
        console.error('Error collecting payment:', error);
-       toast({
-         title: 'Error',
-         description: error.message || 'No se pudo registrar el pago',
-         variant: 'destructive'
-       });
+       toast.error('Error', { description: error.message || 'No se pudo registrar el pago' });
        return false;
      }
    };

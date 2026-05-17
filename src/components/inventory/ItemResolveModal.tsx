@@ -27,8 +27,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { PROCUREMENT_MODE_CONFIG, type PurchaseRequestItem, type ProcurementMode } from '@/types/purchaseRequests';
 import { Package, Truck, ShoppingBag, Store, Plus, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface ItemResolveModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,8 +46,6 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
   const { resolveItem } = usePurchaseRequests();
   const { presentations, fetchPresentations } = usePurchasePresentations(item?.raw_material_id);
   const { user } = useAuthContext();
-  const { toast } = useToast();
-
   const [mode, setMode] = useState<ProcurementMode | ''>('');
   const [supplierId, setSupplierId] = useState<string>('__none__');
   const [unitCost, setUnitCost] = useState('');
@@ -107,7 +104,7 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
       quoted_by: user?.id || null,
     });
     if (error) {
-      toast({ title: 'Error', description: 'No se pudo guardar la cotización', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo guardar la cotización' });
       return;
     }
     setNewQuoteSupplier('');
@@ -148,7 +145,7 @@ export default function ItemResolveModal({ open, onOpenChange, item, onResolved 
 
     setSaving(false);
     if (success) {
-      toast({ title: 'Item resuelto' });
+      toast.success('Item resuelto');
       onResolved();
       onOpenChange(false);
     }

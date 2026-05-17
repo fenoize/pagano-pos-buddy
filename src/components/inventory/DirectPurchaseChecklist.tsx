@@ -24,9 +24,9 @@ import { ShoppingBag, Maximize2, X, Loader2 } from 'lucide-react';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { usePurchasePresentations } from '@/hooks/usePurchasePresentations';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { PurchaseRequestItem } from '@/types/purchaseRequests';
+import { toast } from "sonner";
 
 interface Props {
   items: PurchaseRequestItem[];
@@ -63,8 +63,6 @@ function DirectPurchaseEditModal({
   const { suppliers } = useSuppliers();
   const { presentations } = usePurchasePresentations(item.raw_material_id);
   const { user } = useAuthContext();
-  const { toast } = useToast();
-
   const [supplierId, setSupplierId] = useState(item.actual_supplier_id || '__none__');
   const [unitCost, setUnitCost] = useState(item.actual_unit_cost > 0 ? String(item.actual_unit_cost) : '');
   const [actualQty, setActualQty] = useState(String(item.qty || ''));
@@ -116,7 +114,7 @@ function DirectPurchaseEditModal({
         actual_unit_cost: 0,
         actual_supplier_id: null,
       });
-      toast({ title: 'Error', description: 'No se pudo marcar el item', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudo marcar el item' });
     }
   };
 
@@ -227,7 +225,6 @@ function DirectPurchaseItemRow({
   resolveItemFn: Props['resolveItemFn'];
   unresolveItemFn: Props['unresolveItemFn'];
 }) {
-  const { toast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const isResolved = !!item.resolved_at;
@@ -251,7 +248,7 @@ function DirectPurchaseItemRow({
           actual_unit_cost: item.actual_unit_cost,
           actual_supplier_id: item.actual_supplier_id,
         });
-        toast({ title: 'Error', description: 'No se pudo desmarcar el item', variant: 'destructive' });
+        toast.error('Error', { description: 'No se pudo desmarcar el item' });
       }
     }
   };

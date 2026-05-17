@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { FinanceExpense } from '@/types/finance';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from "sonner";
 
 const BUCKET_NAME = 'finance-documents';
 
@@ -27,11 +28,7 @@ export function useFinanceExpenses() {
       setExpenses((data || []) as FinanceExpense[]);
     } catch (error) {
       console.error('Error fetching expenses:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los egresos',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar los egresos' });
     } finally {
       setLoading(false);
     }
@@ -60,11 +57,7 @@ export function useFinanceExpenses() {
       return urlData?.signedUrl || null;
     } catch (error) {
       console.error('Error uploading document:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo subir el documento',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo subir el documento' });
       return null;
     }
   };
@@ -75,11 +68,7 @@ export function useFinanceExpenses() {
   ) => {
     try {
       if (!user?.id) {
-        toast({
-          title: 'Error',
-          description: 'Usuario no autenticado',
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: 'Usuario no autenticado' });
         return false;
       }
 
@@ -108,20 +97,13 @@ export function useFinanceExpenses() {
         }
       }
 
-      toast({
-        title: 'Egreso registrado',
-        description: 'El egreso se ha registrado exitosamente',
-      });
+      toast.success('Egreso registrado', { description: 'El egreso se ha registrado exitosamente' });
 
       await fetchExpenses();
       return true;
     } catch (error) {
       console.error('Error creating expense:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo registrar el egreso',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo registrar el egreso' });
       return false;
     }
   };
@@ -147,20 +129,13 @@ export function useFinanceExpenses() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Egreso actualizado',
-        description: 'Los cambios se han guardado correctamente',
-      });
+      toast.success('Egreso actualizado', { description: 'Los cambios se han guardado correctamente' });
 
       await fetchExpenses();
       return true;
     } catch (error) {
       console.error('Error updating expense:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo actualizar el egreso',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo actualizar el egreso' });
       return false;
     }
   };
@@ -174,20 +149,13 @@ export function useFinanceExpenses() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Egreso eliminado',
-        description: 'El egreso se ha eliminado correctamente',
-      });
+      toast.success('Egreso eliminado', { description: 'El egreso se ha eliminado correctamente' });
 
       await fetchExpenses();
       return true;
     } catch (error) {
       console.error('Error deleting expense:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo eliminar el egreso',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo eliminar el egreso' });
       return false;
     }
   };

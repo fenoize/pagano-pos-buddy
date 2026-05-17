@@ -12,9 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Copy, RefreshCw, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { Customer } from '@/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from "sonner";
 
 interface CustomerPasswordModalProps {
   isOpen: boolean;
@@ -28,8 +28,6 @@ export function CustomerPasswordModal({ isOpen, onClose, onConfirm, customer, lo
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [mode, setMode] = useState<'generate' | 'manual'>('generate');
-  const { toast } = useToast();
-
   const generatePassword = () => {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
@@ -53,35 +51,20 @@ export function CustomerPasswordModal({ isOpen, onClose, onConfirm, customer, lo
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(password);
-      toast({
-        title: "Contraseña copiada",
-        description: "La contraseña ha sido copiada al portapapeles."
-      });
+      toast.success("Contraseña copiada", { description: "La contraseña ha sido copiada al portapapeles." });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo copiar la contraseña.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo copiar la contraseña." });
     }
   };
 
   const handleConfirm = async () => {
     if (!password.trim()) {
-      toast({
-        title: "Error",
-        description: "La contraseña no puede estar vacía.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "La contraseña no puede estar vacía." });
       return;
     }
 
     if (password.length < 6) {
-      toast({
-        title: "Error",
-        description: "La contraseña debe tener al menos 6 caracteres.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "La contraseña debe tener al menos 6 caracteres." });
       return;
     }
 

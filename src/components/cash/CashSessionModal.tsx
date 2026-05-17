@@ -26,10 +26,10 @@ import { useCashSession } from '@/hooks/useCashSession';
 import { useFinanceAccounts } from '@/hooks/useFinanceAccounts';
 import { useDeliveryCashPending } from '@/hooks/useDeliveryCashPending';
 import { usePendingPaymentOrders } from '@/hooks/usePendingPaymentOrders';
-import { useToast } from '@/hooks/use-toast';
 import { Smartphone, Wallet, AlertTriangle, CircleDollarSign, Building2 } from 'lucide-react';
 import { DeliveryCashPreview } from './DeliveryCashPreview';
 import { useBranchContext } from '@/contexts/BranchContext';
+import { toast } from "sonner";
 
 interface CashSessionModalProps {
   isOpen: boolean;
@@ -64,8 +64,6 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
   const { pendingByPerson, loading: pendingLoading } = useDeliveryCashPending();
   const { count: pendingPaymentsCount, totalAmount: pendingPaymentsTotal, inheritedOrders } = usePendingPaymentOrders();
   const { activeBranch } = useBranchContext();
-  const { toast } = useToast();
-
   // Filtrar cuentas activas tipo efectivo/caja para egresos
   const cashAccounts = accounts.filter(
     acc => acc.is_active && acc.type === 'Efectivo'
@@ -95,11 +93,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
     
     const amountValue = parseFloat(amount);
     if (isNaN(amountValue) || amountValue < 0) {
-      toast({
-        title: "Error",
-        description: "Ingresa un monto válido.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Ingresa un monto válido." });
       return;
     }
 
@@ -109,11 +103,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
       switch (type) {
         case 'open':
           if (!activeBranch) {
-            toast({
-              title: 'Selecciona un local',
-              description: 'Debes elegir un local antes de abrir caja.',
-              variant: 'destructive',
-            });
+            toast.error('Selecciona un local', { description: 'Debes elegir un local antes de abrir caja.' });
             setLoading(false);
             return;
           }

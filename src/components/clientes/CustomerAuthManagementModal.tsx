@@ -17,9 +17,9 @@ import {
   Copy, RefreshCw, Eye, EyeOff, AlertCircle, Mail, 
   CheckCircle, Shield, KeyRound, Loader2, Send, UserCheck 
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { Customer } from '@/types';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { toast } from "sonner";
 
 interface AuthStatus {
   has_auth_account: boolean;
@@ -54,8 +54,6 @@ export function CustomerAuthManagementModal({
   const [newEmail, setNewEmail] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [activeTab, setActiveTab] = useState('status');
-  const { toast } = useToast();
-
   const fetchAuthStatus = async () => {
     if (!customer?.id) return;
     
@@ -88,11 +86,7 @@ export function CustomerAuthManagementModal({
       setAuthStatus(data);
     } catch (error) {
       console.error('Error fetching auth status:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al obtener estado",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error instanceof Error ? error.message : "Error al obtener estado" });
     } finally {
       setLoading(false);
     }
@@ -124,11 +118,7 @@ export function CustomerAuthManagementModal({
 
       if (action === 'update_password' || action === 'activate_credentials') {
         if (!password || password.length < 6) {
-          toast({
-            title: "Error",
-            description: "La contraseña debe tener al menos 6 caracteres",
-            variant: "destructive"
-          });
+          toast.error("Error", { description: "La contraseña debe tener al menos 6 caracteres" });
           return;
         }
         body.new_password = password;
@@ -136,11 +126,7 @@ export function CustomerAuthManagementModal({
 
       if (action === 'update_email' || action === 'activate_credentials') {
         if (!newEmail || !newEmail.includes('@')) {
-          toast({
-            title: "Error",
-            description: "Email inválido",
-            variant: "destructive"
-          });
+          toast.error("Error", { description: "Email inválido" });
           return;
         }
         body.new_email = newEmail;
@@ -164,10 +150,7 @@ export function CustomerAuthManagementModal({
         throw new Error(data.error || 'Error al ejecutar acción');
       }
 
-      toast({
-        title: "Éxito",
-        description: data.message,
-      });
+      toast.success("Éxito", { description: data.message });
 
       // Refresh auth status
       await fetchAuthStatus();
@@ -184,11 +167,7 @@ export function CustomerAuthManagementModal({
       onAuthUpdated?.();
     } catch (error) {
       console.error('Error executing action:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al ejecutar acción",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error instanceof Error ? error.message : "Error al ejecutar acción" });
     } finally {
       setActionLoading(null);
     }
@@ -207,16 +186,9 @@ export function CustomerAuthManagementModal({
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(password);
-      toast({
-        title: "Copiado",
-        description: "Contraseña copiada al portapapeles",
-      });
+      toast.success("Copiado", { description: "Contraseña copiada al portapapeles" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo copiar",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo copiar" });
     }
   };
 

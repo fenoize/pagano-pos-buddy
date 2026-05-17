@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Comuna } from '@/types';
-import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { toast } from "sonner";
 
 export function useComunas() {
   const [comunas, setComunas] = useState<Comuna[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
   const { user } = useAuthContext();
 
   const canManageComunas = user?.role === 'Administrador';
@@ -33,11 +32,7 @@ export function useComunas() {
     } catch (err: any) {
       console.error('Error fetching comunas:', err);
       setError(err.message);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las comunas",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar las comunas" });
     } finally {
       setLoading(false);
     }
@@ -45,11 +40,7 @@ export function useComunas() {
 
   const createComuna = async (comunaData: { name: string; sort_order?: number }) => {
     if (!canManageComunas) {
-      toast({
-        title: "Sin permisos",
-        description: "No tienes permisos para crear comunas",
-        variant: "destructive"
-      });
+      toast.error("Sin permisos", { description: "No tienes permisos para crear comunas" });
       return null;
     }
 
@@ -77,11 +68,7 @@ export function useComunas() {
       return data ? (data as any as Comuna) : null;
     } catch (err: any) {
       console.error('Error creating comuna:', err);
-      toast({
-        title: "Error",
-        description: err.message || "No se pudo crear la comuna",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: err.message || "No se pudo crear la comuna" });
       return null;
     } finally {
       setLoading(false);
@@ -90,11 +77,7 @@ export function useComunas() {
 
   const updateComuna = async (comunaId: string, updateData: Partial<Comuna>) => {
     if (!canManageComunas) {
-      toast({
-        title: "Sin permisos",
-        description: "No tienes permisos para actualizar comunas",
-        variant: "destructive"
-      });
+      toast.error("Sin permisos", { description: "No tienes permisos para actualizar comunas" });
       return null;
     }
 
@@ -110,20 +93,13 @@ export function useComunas() {
 
       if (updateError) throw updateError;
 
-      toast({
-        title: "Comuna actualizada",
-        description: "Comuna actualizada exitosamente"
-      });
+      toast.success("Comuna actualizada", { description: "Comuna actualizada exitosamente" });
 
       await fetchComunas();
       return data ? (data as any as Comuna) : null;
     } catch (err: any) {
       console.error('Error updating comuna:', err);
-      toast({
-        title: "Error",
-        description: err.message || "No se pudo actualizar la comuna",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: err.message || "No se pudo actualizar la comuna" });
       return null;
     } finally {
       setLoading(false);
@@ -132,11 +108,7 @@ export function useComunas() {
 
   const deleteComuna = async (comunaId: string) => {
     if (!canManageComunas) {
-      toast({
-        title: "Sin permisos",
-        description: "No tienes permisos para eliminar comunas",
-        variant: "destructive"
-      });
+      toast.error("Sin permisos", { description: "No tienes permisos para eliminar comunas" });
       return false;
     }
 
@@ -150,20 +122,13 @@ export function useComunas() {
 
       if (deleteError) throw deleteError;
 
-      toast({
-        title: "Comuna eliminada",
-        description: "Comuna eliminada exitosamente"
-      });
+      toast.success("Comuna eliminada", { description: "Comuna eliminada exitosamente" });
 
       await fetchComunas();
       return true;
     } catch (err: any) {
       console.error('Error deleting comuna:', err);
-      toast({
-        title: "Error",
-        description: err.message || "No se pudo eliminar la comuna",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: err.message || "No se pudo eliminar la comuna" });
       return false;
     } finally {
       setLoading(false);
@@ -172,11 +137,7 @@ export function useComunas() {
 
   const toggleComunaStatus = async (comunaId: string, isActive: boolean) => {
     if (!canManageComunas) {
-      toast({
-        title: "Sin permisos",
-        description: "No tienes permisos para cambiar el estado de comunas",
-        variant: "destructive"
-      });
+      toast.error("Sin permisos", { description: "No tienes permisos para cambiar el estado de comunas" });
       return false;
     }
 
@@ -199,11 +160,7 @@ export function useComunas() {
       return true;
     } catch (err: any) {
       console.error('Error toggling comuna status:', err);
-      toast({
-        title: "Error",
-        description: err.message || "No se pudo cambiar el estado",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: err.message || "No se pudo cambiar el estado" });
       return false;
     } finally {
       setLoading(false);

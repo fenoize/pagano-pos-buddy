@@ -8,18 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { formatCLP, formatRunas } from '@/lib/utils';
 import { formatDateTime } from '@/lib/dateUtils';
 import { ChevronLeft, ChevronRight, Coins, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from "sonner";
 
 const ITEMS_PER_PAGE = 50;
 
 export default function MyRunes() {
   const { customer } = useCustomerAuth();
-  const { toast } = useToast();
-
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -53,7 +51,7 @@ export default function MyRunes() {
       setTransactions(data || []);
       setTotalPages(Math.ceil((count || 0) / ITEMS_PER_PAGE));
     } catch (error: any) {
-      toast({ title: 'Error', description: 'No se pudieron cargar tus runas', variant: 'destructive' });
+      toast.error('Error', { description: 'No se pudieron cargar tus runas' });
     } finally {
       setLoading(false);
     }

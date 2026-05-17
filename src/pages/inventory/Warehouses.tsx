@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Edit2, Trash2, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Warehouse } from "@/types";
 import {
@@ -25,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+import { toast } from "sonner";
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -37,7 +37,6 @@ import {
 
 export default function Warehouses() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -68,11 +67,7 @@ export default function Warehouses() {
       setWarehouses(data || []);
     } catch (error) {
       console.error("Error fetching warehouses:", error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los almacenes",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "No se pudieron cargar los almacenes" });
     } finally {
       setLoading(false);
     }
@@ -101,11 +96,7 @@ export default function Warehouses() {
 
   const handleSave = async () => {
     if (!formData.code.trim() || !formData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Complete todos los campos requeridos",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Complete todos los campos requeridos" });
       return;
     }
 
@@ -118,10 +109,7 @@ export default function Warehouses() {
 
         if (error) throw error;
 
-        toast({
-          title: "Almacén actualizado",
-          description: "Los cambios se guardaron correctamente",
-        });
+        toast.success("Almacén actualizado", { description: "Los cambios se guardaron correctamente" });
       } else {
         const { error } = await supabase
           .from("warehouses")
@@ -129,21 +117,14 @@ export default function Warehouses() {
 
         if (error) throw error;
 
-        toast({
-          title: "Almacén creado",
-          description: "El almacén se creó correctamente",
-        });
+        toast.success("Almacén creado", { description: "El almacén se creó correctamente" });
       }
 
       setDialogOpen(false);
       fetchWarehouses();
     } catch (error: any) {
       console.error("Error saving warehouse:", error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo guardar el almacén",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "No se pudo guardar el almacén" });
     }
   };
 
@@ -158,21 +139,14 @@ export default function Warehouses() {
 
       if (error) throw error;
 
-      toast({
-        title: "Almacén eliminado",
-        description: "El almacén se eliminó correctamente",
-      });
+      toast.success("Almacén eliminado", { description: "El almacén se eliminó correctamente" });
 
       setDeleteDialogOpen(false);
       setDeletingId(null);
       fetchWarehouses();
     } catch (error: any) {
       console.error("Error deleting warehouse:", error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo eliminar el almacén",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: error.message || "No se pudo eliminar el almacén" });
     }
   };
 

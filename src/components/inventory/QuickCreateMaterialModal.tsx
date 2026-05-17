@@ -20,7 +20,7 @@ import { useUOM } from '@/hooks/useUOM';
 import { supabase } from '@/integrations/supabase/client';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 import { toast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface QuickCreateMaterialModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -58,17 +58,13 @@ export function QuickCreateMaterialModal({
 
       if (error) throw error;
 
-      toast({ title: 'Éxito', description: 'Material creado correctamente' });
+      toast.success('Éxito', { description: 'Material creado correctamente' });
       onCreated(data as any);
       resetForm();
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error creating material:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo crear el material',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo crear el material' });
     } finally {
       setSaving(false);
     }

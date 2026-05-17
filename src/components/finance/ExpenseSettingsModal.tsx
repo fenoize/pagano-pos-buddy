@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, Plus, Pencil, Trash2, Tag, CreditCard } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface ExpenseSettingsModalProps {
   categories: string[];
   paymentMethods: string[];
@@ -22,8 +21,6 @@ export function ExpenseSettingsModal({
 }: ExpenseSettingsModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('categories');
-  const { toast } = useToast();
-
   // Categories state
   const [newCategory, setNewCategory] = useState('');
   const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
@@ -46,11 +43,7 @@ export function ExpenseSettingsModal({
   const addCategory = () => {
     if (!newCategory.trim()) return;
     if (localCategories.includes(newCategory.trim())) {
-      toast({
-        title: 'Error',
-        description: 'Esta categoría ya existe',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'Esta categoría ya existe' });
       return;
     }
     const updated = [...localCategories, newCategory.trim()];
@@ -83,21 +76,14 @@ export function ExpenseSettingsModal({
     setLocalCategories(updated);
     onCategoriesChange(updated);
     setEditingCategoryIndex(null);
-    toast({
-      title: 'Categoría actualizada',
-      description: 'La categoría se actualizó correctamente',
-    });
+    toast.success('Categoría actualizada', { description: 'La categoría se actualizó correctamente' });
   };
 
   // Payment method management
   const addPaymentMethod = () => {
     if (!newMethod.trim()) return;
     if (localMethods.includes(newMethod.trim())) {
-      toast({
-        title: 'Error',
-        description: 'Este método de pago ya existe',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'Este método de pago ya existe' });
       return;
     }
     const updated = [...localMethods, newMethod.trim()];
@@ -130,10 +116,7 @@ export function ExpenseSettingsModal({
     setLocalMethods(updated);
     onPaymentMethodsChange(updated);
     setEditingMethodIndex(null);
-    toast({
-      title: 'Método actualizado',
-      description: 'El método de pago se actualizó correctamente',
-    });
+    toast.success('Método actualizado', { description: 'El método de pago se actualizó correctamente' });
   };
 
   return (

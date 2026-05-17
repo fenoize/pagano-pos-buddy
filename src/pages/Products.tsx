@@ -10,8 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit, Image as ImageIcon, Trash2, Filter, ArrowUpDown, Search } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ProductEditModal } from '@/components/pos/ProductEditModal';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -25,9 +24,6 @@ export default function Products() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name-asc');
-  
-  const { toast } = useToast();
-
   useEffect(() => {
     fetchProducts();
     fetchCategories();
@@ -76,11 +72,7 @@ export default function Products() {
       // Obtener variantes para todos los productos
       await fetchProductVariants(productsWithCategories.map(p => p.id));
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los productos",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar los productos" });
     } finally {
       setLoading(false);
     }
@@ -145,11 +137,7 @@ export default function Products() {
         description: `Producto ${!product.active ? 'activado' : 'desactivado'}`
       });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el producto",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo actualizar el producto" });
     }
   };
 
@@ -163,16 +151,9 @@ export default function Products() {
       if (error) throw error;
       
       fetchProducts();
-      toast({
-        title: "Éxito",
-        description: "Producto eliminado correctamente"
-      });
+      toast.success("Éxito", { description: "Producto eliminado correctamente" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el producto",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo eliminar el producto" });
     }
   };
 

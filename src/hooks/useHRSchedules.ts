@@ -4,6 +4,7 @@ import { withStaffContext } from '@/lib/dbContext';
 import { getStaffUserId } from '@/lib/staffSession';
 import { toast } from '@/hooks/use-toast';
 import type { HRSchedule, HRScheduleFormData, HRSchedulePositionFormData } from '@/types/hr';
+import { toast } from "sonner";
 
 interface UseHRSchedulesOptions {
   userId?: string;
@@ -48,11 +49,7 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
       setSchedules(schedulesWithPositions);
     } catch (error) {
       console.error('Error fetching schedules:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los horarios',
-        variant: 'destructive'
-      });
+      toast.error('Error', { description: 'No se pudieron cargar los horarios' });
     } finally {
       setLoading(false);
     }
@@ -65,7 +62,7 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
   const createSchedule = async (data: HRScheduleFormData): Promise<HRSchedule | null> => {
     const userId = getUserId();
     if (!userId) {
-      toast({ title: 'Error', description: 'Sesión no válida', variant: 'destructive' });
+      toast.error('Error', { description: 'Sesión no válida' });
       return null;
     }
 
@@ -105,11 +102,7 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
       return result;
     } catch (error) {
       console.error('Error creating schedule:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo crear el horario',
-        variant: 'destructive'
-      });
+      toast.error('Error', { description: 'No se pudo crear el horario' });
       return null;
     }
   };
@@ -117,7 +110,7 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
   const updateSchedule = async (id: string, data: Partial<HRScheduleFormData> & { is_active?: boolean }): Promise<boolean> => {
     const userId = getUserId();
     if (!userId) {
-      toast({ title: 'Error', description: 'Sesión no válida', variant: 'destructive' });
+      toast.error('Error', { description: 'Sesión no válida' });
       return false;
     }
 
@@ -142,20 +135,13 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
         if (error) throw error;
       });
 
-      toast({
-        title: 'Horario actualizado',
-        description: 'Los cambios se guardaron correctamente'
-      });
+      toast.success('Horario actualizado', { description: 'Los cambios se guardaron correctamente' });
 
       await fetchSchedules();
       return true;
     } catch (error) {
       console.error('Error updating schedule:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo actualizar el horario',
-        variant: 'destructive'
-      });
+      toast.error('Error', { description: 'No se pudo actualizar el horario' });
       return false;
     }
   };
@@ -163,7 +149,7 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
   const deleteSchedule = async (id: string): Promise<boolean> => {
     const userId = getUserId();
     if (!userId) {
-      toast({ title: 'Error', description: 'Sesión no válida', variant: 'destructive' });
+      toast.error('Error', { description: 'Sesión no válida' });
       return false;
     }
 
@@ -177,20 +163,13 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
         if (error) throw error;
       });
 
-      toast({
-        title: 'Horario eliminado',
-        description: 'El horario fue eliminado correctamente'
-      });
+      toast.success('Horario eliminado', { description: 'El horario fue eliminado correctamente' });
 
       await fetchSchedules();
       return true;
     } catch (error) {
       console.error('Error deleting schedule:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo eliminar el horario',
-        variant: 'destructive'
-      });
+      toast.error('Error', { description: 'No se pudo eliminar el horario' });
       return false;
     }
   };
@@ -198,7 +177,7 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
   const addPosition = async (scheduleId: string, data: HRSchedulePositionFormData): Promise<boolean> => {
     const userId = getUserId();
     if (!userId) {
-      toast({ title: 'Error', description: 'Sesión no válida', variant: 'destructive' });
+      toast.error('Error', { description: 'Sesión no válida' });
       return false;
     }
 
@@ -220,20 +199,13 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
         if (error) throw error;
       });
 
-      toast({
-        title: 'Posición agregada',
-        description: 'Se agregó la posición al horario'
-      });
+      toast.success('Posición agregada', { description: 'Se agregó la posición al horario' });
 
       await fetchSchedules();
       return true;
     } catch (error) {
       console.error('Error adding position:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo agregar la posición',
-        variant: 'destructive'
-      });
+      toast.error('Error', { description: 'No se pudo agregar la posición' });
       return false;
     }
   };
@@ -241,7 +213,7 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
   const removePosition = async (positionId: string): Promise<boolean> => {
     const userId = getUserId();
     if (!userId) {
-      toast({ title: 'Error', description: 'Sesión no válida', variant: 'destructive' });
+      toast.error('Error', { description: 'Sesión no válida' });
       return false;
     }
 
@@ -255,20 +227,13 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
         if (error) throw error;
       });
 
-      toast({
-        title: 'Posición eliminada',
-        description: 'Se eliminó la posición del horario'
-      });
+      toast.success('Posición eliminada', { description: 'Se eliminó la posición del horario' });
 
       await fetchSchedules();
       return true;
     } catch (error) {
       console.error('Error removing position:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo eliminar la posición',
-        variant: 'destructive'
-      });
+      toast.error('Error', { description: 'No se pudo eliminar la posición' });
       return false;
     }
   };

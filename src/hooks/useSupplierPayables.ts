@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export interface SupplierPayable {
   id: string;
   supplier_id: string;
@@ -96,20 +96,13 @@ export function useSupplierPayables(supplierId?: string) {
 
       if (error) throw error;
 
-      toast({
-        title: 'Cuenta por pagar creada',
-        description: 'Se ha registrado la deuda correctamente',
-      });
+      toast.success('Cuenta por pagar creada', { description: 'Se ha registrado la deuda correctamente' });
 
       await fetchPayables();
       return true;
     } catch (error) {
       console.error('Error creating payable:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo crear la cuenta por pagar',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo crear la cuenta por pagar' });
       return false;
     }
   };
@@ -145,11 +138,7 @@ export function useSupplierPayables(supplierId?: string) {
       return true;
     } catch (error) {
       console.error('Error registering payment:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo registrar el pago',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo registrar el pago' });
       return false;
     }
   };

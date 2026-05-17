@@ -7,10 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
 import { Star, Save, Loader2, Award, Play, RefreshCw, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from "sonner";
 
 
 interface FidelizationSettings {
@@ -43,8 +43,6 @@ export function FidelizationConfig() {
   const [processingRunas, setProcessingRunas] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [lastProcessed, setLastProcessed] = useState<string | null>(null);
-  const { toast } = useToast();
-
   useEffect(() => {
     loadSettings();
     loadLevels();
@@ -87,11 +85,7 @@ export function FidelizationConfig() {
         runas_min_eligible_amount: Number(configMap.runas_min_eligible_amount) || 1000,
       });
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo cargar la configuración',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo cargar la configuración' });
     } finally {
       setLoading(false);
     }
@@ -158,11 +152,7 @@ export function FidelizationConfig() {
       await loadPendingSubscriptions();
     } catch (error: any) {
       console.error('Error processing auto runas:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudieron procesar las runas automáticas",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudieron procesar las runas automáticas" });
     } finally {
       setProcessingRunas(false);
     }
@@ -198,17 +188,10 @@ export function FidelizationConfig() {
 
       if (error) throw error;
 
-      toast({
-        title: "¡Éxito!",
-        description: "Configuración de fidelización guardada correctamente",
-      });
+      toast.success("¡Éxito!", { description: "Configuración de fidelización guardada correctamente" });
     } catch (error: any) {
       console.error('Error saving fidelization settings:', error);
-      toast({
-        title: "Error",
-        description: error?.message || "No se pudo guardar la configuración",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error?.message || "No se pudo guardar la configuración" });
     } finally {
       setSaving(false);
     }

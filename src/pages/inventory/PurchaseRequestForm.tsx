@@ -25,10 +25,10 @@ import { MaterialSearchAutocomplete } from '@/components/inventory/MaterialSearc
 import { QuickCreateMaterialModal } from '@/components/inventory/QuickCreateMaterialModal';
 import { usePurchaseRequests } from '@/hooks/usePurchaseRequests';
 import { useRawMaterials } from '@/hooks/useRawMaterials';
-import { useToast } from '@/hooks/use-toast';
 import { useUOM } from '@/hooks/useUOM';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { CreatePurchaseRequestItemData } from '@/types/purchaseRequests';
+import { toast } from "sonner";
 
 interface FormItem extends CreatePurchaseRequestItemData {
   tempId: string;
@@ -40,7 +40,6 @@ export default function PurchaseRequestForm() {
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
   const navigate = useNavigate();
-  const { toast } = useToast();
   const isMobile = useIsMobile();
   const { createRequest, getRequestById, updateRequest, submitForApproval: submitRequestForApproval } = usePurchaseRequests();
   const { materials, fetchMaterials } = useRawMaterials();
@@ -118,12 +117,12 @@ export default function PurchaseRequestForm() {
 
   const validateForm = (): boolean => {
     if (items.length === 0) {
-      toast({ title: 'Error', description: 'Debes agregar al menos un item', variant: 'destructive' });
+      toast.error('Error', { description: 'Debes agregar al menos un item' });
       return false;
     }
     for (const item of items) {
       if (!item.raw_material_id || item.qty <= 0) {
-        toast({ title: 'Error', description: 'Todos los items deben tener material y cantidad válida', variant: 'destructive' });
+        toast.error('Error', { description: 'Todos los items deben tener material y cantidad válida' });
         return false;
       }
     }

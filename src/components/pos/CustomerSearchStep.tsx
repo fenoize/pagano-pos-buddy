@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
+import { toast } from "sonner";
 
 interface CustomerSearchStepProps {
   customer: Partial<Customer>;
@@ -24,8 +24,6 @@ export default function CustomerSearchStep({ customer, onCustomerChange, orderNa
   const [isSearching, setIsSearching] = useState(false);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [runaValue, setRunaValue] = useState(1000);
-  const { toast } = useToast();
-
   useEffect(() => {
     fetchRunaValue();
   }, []);
@@ -97,11 +95,7 @@ export default function CustomerSearchStep({ customer, onCustomerChange, orderNa
       setSearchResults(result.data || []);
     } catch (error) {
       console.error('Error searching customers:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "No se pudieron buscar clientes",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error instanceof Error ? error.message : "No se pudieron buscar clientes" });
       setSearchResults([]);
     } finally {
       setIsSearching(false);

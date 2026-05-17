@@ -11,17 +11,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { formatCLP } from '@/lib/utils';
 import { ShoppingBag, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { toast } from "sonner";
 
 const ORDERS_PER_PAGE = 20;
 
 export default function MyOrders() {
   const { customer } = useCustomerAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -69,11 +67,7 @@ export default function MyOrders() {
       setTotalPages(Math.ceil((count || 0) / ORDERS_PER_PAGE));
     } catch (error: any) {
       console.error('Error fetching orders:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar tus pedidos',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar tus pedidos' });
     } finally {
       setLoading(false);
     }
@@ -92,11 +86,7 @@ export default function MyOrders() {
     const productIds = items.map((item: any) => item.product_id).filter(Boolean);
 
     if (productIds.length === 0) {
-      toast({
-        title: 'Error',
-        description: 'No se encontraron productos en este pedido',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se encontraron productos en este pedido' });
       return;
     }
 
@@ -131,20 +121,13 @@ export default function MyOrders() {
       setReorderDialogOpen(true);
     } catch (error: any) {
       console.error('Error validating products:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo validar el pedido',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo validar el pedido' });
     }
   };
 
   const confirmReorder = () => {
     // TODO: Implementar lógica de reorden con items validados
-    toast({
-      title: 'Funcionalidad próximamente',
-      description: 'La opción de volver a pedir estará disponible pronto',
-    });
+    toast.success('Funcionalidad próximamente', { description: 'La opción de volver a pedir estará disponible pronto' });
     setReorderDialogOpen(false);
   };
 

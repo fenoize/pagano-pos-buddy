@@ -31,8 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Tags, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
+import { toast } from "sonner";
 interface InventoryCategory {
   id: string;
   name: string;
@@ -56,7 +55,6 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export default function InventoryCategories() {
-  const { toast } = useToast();
   const [categories, setCategories] = useState<InventoryCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -125,11 +123,7 @@ export default function InventoryCategories() {
       setCategories(categoriesList);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las categorías',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar las categorías' });
     } finally {
       setLoading(false);
     }
@@ -182,21 +176,13 @@ export default function InventoryCategories() {
       fetchCategories();
     } catch (error: any) {
       console.error('Error deleting category:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo eliminar la categoría',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo eliminar la categoría' });
     }
   };
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast({
-        title: 'Error',
-        description: 'El nombre es obligatorio',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'El nombre es obligatorio' });
       return;
     }
 
@@ -217,11 +203,7 @@ export default function InventoryCategories() {
       } else {
         // Check if category already exists
         if (categories.some(c => c.name.toLowerCase() === formData.name.trim().toLowerCase())) {
-          toast({
-            title: 'Error',
-            description: 'Ya existe una categoría con ese nombre',
-            variant: 'destructive',
-          });
+          toast.error('Error', { description: 'Ya existe una categoría con ese nombre' });
           return;
         }
 
@@ -235,11 +217,7 @@ export default function InventoryCategories() {
       fetchCategories();
     } catch (error: any) {
       console.error('Error saving category:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo guardar la categoría',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo guardar la categoría' });
     }
   };
 

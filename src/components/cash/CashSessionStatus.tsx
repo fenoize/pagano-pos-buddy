@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, DollarSign, Plus, Minus, Lock, Unlock } from 'lucide-react';
 import { useCashSession } from '@/hooks/useCashSession';
 import { CashSessionModal } from './CashSessionModal';
-import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { toast } from "sonner";
 
 export function CashSessionStatus() {
   const { currentSession, hasActiveSession, checkActiveSession, getSessionSummary } = useCashSession();
@@ -15,8 +15,6 @@ export function CashSessionStatus() {
   const [modalType, setModalType] = useState<'open' | 'close' | 'movement'>('open');
   const [sessionSummary, setSessionSummary] = useState<any>(null);
   const { user } = useAuthContext();
-  const { toast } = useToast();
-
   // Only show for Cajero/Caja and Administrador roles
   if (!user || !['Cajero', 'Caja', 'Administrador'].includes(user.role)) {
     return null;
@@ -36,11 +34,7 @@ export function CashSessionStatus() {
       setModalType('close');
       setShowModal(true);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo cargar el resumen del turno.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo cargar el resumen del turno." });
     }
   };
 

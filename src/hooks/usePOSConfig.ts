@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 interface POSConfig {
   gridColumns: number;
   showVariantStock: boolean;
@@ -10,8 +9,6 @@ interface POSConfig {
 export function usePOSConfig() {
   const [config, setConfig] = useState<POSConfig>({ gridColumns: 4, showVariantStock: false });
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const fetchConfig = async () => {
     try {
       const { data, error } = await supabase
@@ -44,11 +41,7 @@ export function usePOSConfig() {
 
   const updateGridColumns = async (columns: number) => {
     if (columns < 3 || columns > 6) {
-      toast({
-        title: "Error",
-        description: "El número de columnas debe estar entre 3 y 6",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "El número de columnas debe estar entre 3 y 6" });
       return;
     }
 
@@ -69,11 +62,7 @@ export function usePOSConfig() {
       });
     } catch (error: any) {
       console.error('Error updating POS config:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar la configuración",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo actualizar la configuración" });
     }
   };
 
@@ -89,17 +78,10 @@ export function usePOSConfig() {
       if (error) throw error;
       
       setConfig(prev => ({ ...prev, showVariantStock: show }));
-      toast({
-        title: "Éxito",
-        description: show ? "Stock de variantes visible" : "Stock de variantes oculto"
-      });
+      toast.success("Éxito", { description: show ? "Stock de variantes visible" : "Stock de variantes oculto" });
     } catch (error: any) {
       console.error('Error updating POS config:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar la configuración",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo actualizar la configuración" });
     }
   };
 

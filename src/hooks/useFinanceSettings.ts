@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { addDays, addWeeks, addMonths, startOfWeek, startOfMonth, format, nextMonday, nextTuesday, nextWednesday, nextThursday, nextFriday, nextSaturday, nextSunday } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from "sonner";
 
 export interface FinanceSettings {
   id: string;
@@ -77,8 +77,6 @@ export function useFinanceSettings() {
   const [settings, setSettings] = useState<FinanceSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
@@ -105,11 +103,7 @@ export function useFinanceSettings() {
       }
     } catch (error) {
       console.error('Error fetching finance settings:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo cargar la configuración financiera',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo cargar la configuración financiera' });
     } finally {
       setLoading(false);
     }
@@ -132,18 +126,11 @@ export function useFinanceSettings() {
       if (error) throw error;
 
       setSettings(prev => prev ? { ...prev, ...updates } : null);
-      toast({
-        title: 'Guardado',
-        description: 'Configuración actualizada correctamente',
-      });
+      toast.success('Guardado', { description: 'Configuración actualizada correctamente' });
       return true;
     } catch (error) {
       console.error('Error updating finance settings:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar la configuración',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo guardar la configuración' });
       return false;
     } finally {
       setSaving(false);

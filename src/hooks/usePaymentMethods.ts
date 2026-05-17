@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { getStaffSupabaseClient } from '@/lib/supabaseClient';
+import { toast } from "sonner";
 
 export interface PaymentMethod {
   id: string;
@@ -24,7 +24,6 @@ export interface PaymentMethod {
 export function usePaymentMethods() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const { user } = useAuthContext();
 
   const fetchPaymentMethods = async () => {
@@ -39,11 +38,7 @@ export function usePaymentMethods() {
       setPaymentMethods(data || []);
     } catch (error) {
       console.error('Error fetching payment methods:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los métodos de pago",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar los métodos de pago" });
     } finally {
       setLoading(false);
     }
@@ -63,20 +58,13 @@ export function usePaymentMethods() {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Método de pago creado correctamente"
-      });
+      toast.success("Éxito", { description: "Método de pago creado correctamente" });
 
       await fetchPaymentMethods();
       return data;
     } catch (error: any) {
       console.error('Error creating payment method:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo crear el método de pago",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo crear el método de pago" });
       throw error;
     }
   };
@@ -90,19 +78,12 @@ export function usePaymentMethods() {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Método de pago actualizado correctamente"
-      });
+      toast.success("Éxito", { description: "Método de pago actualizado correctamente" });
 
       await fetchPaymentMethods();
     } catch (error: any) {
       console.error('Error updating payment method:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar el método de pago",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo actualizar el método de pago" });
       throw error;
     }
   };
@@ -116,31 +97,24 @@ export function usePaymentMethods() {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Método de pago eliminado correctamente"
-      });
+      toast.success("Éxito", { description: "Método de pago eliminado correctamente" });
 
       await fetchPaymentMethods();
     } catch (error: any) {
       console.error('Error deleting payment method:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo eliminar el método de pago",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo eliminar el método de pago" });
       throw error;
     }
   };
 
   const reorderPaymentMethods = async (reorderedMethods: PaymentMethod[]) => {
     if (!user?.id) {
-      toast({ title: "Error", description: "Sesión no válida", variant: "destructive" });
+      toast.error("Error", { description: "Sesión no válida" });
       return;
     }
     const userRoles = user.roles?.length ? user.roles : (user.role ? [user.role] : []);
     if (!userRoles.includes('Administrador')) {
-      toast({ title: "Permiso denegado", description: "Solo los Administradores pueden reordenar los métodos de pago", variant: "destructive" });
+      toast.error("Permiso denegado", { description: "Solo los Administradores pueden reordenar los métodos de pago" });
       return;
     }
 
@@ -152,16 +126,12 @@ export function usePaymentMethods() {
       const { error } = await staff.rpc('reorder_payment_methods', { p_ids: ids });
       if (error) throw error;
 
-      toast({ title: "Éxito", description: "Orden actualizado correctamente" });
+      toast.success("Éxito", { description: "Orden actualizado correctamente" });
       await fetchPaymentMethods();
     } catch (error: any) {
       console.error('Error reordering payment methods:', error);
       setPaymentMethods(previous);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar el orden",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo actualizar el orden" });
       throw error;
     }
   };
@@ -183,19 +153,12 @@ export function usePaymentMethods() {
 
       await supabase.from('payment_methods').insert(defaultMethods);
 
-      toast({
-        title: "Éxito",
-        description: "Métodos de pago restaurados a valores por defecto"
-      });
+      toast.success("Éxito", { description: "Métodos de pago restaurados a valores por defecto" });
 
       await fetchPaymentMethods();
     } catch (error: any) {
       console.error('Error restoring defaults:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudieron restaurar los valores por defecto",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudieron restaurar los valores por defecto" });
       throw error;
     }
   };

@@ -27,10 +27,10 @@ import { useWarehouses } from '@/hooks/useWarehouses';
 import { useRawMaterials } from '@/hooks/useRawMaterials';
 import { useUOM } from '@/hooks/useUOM';
 import { usePurchaseOrders } from '@/hooks/usePurchaseOrders';
-import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MaterialSearchAutocomplete } from '@/components/inventory/MaterialSearchAutocomplete';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from "sonner";
 
 interface PresentationOption {
   id: string;
@@ -57,7 +57,6 @@ export default function PurchaseOrderForm() {
   const { id: editId } = useParams<{ id: string }>();
   const isEditMode = !!editId;
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { suppliers, loading: loadingSuppliers } = useSuppliers();
   const { warehouses, loading: loadingWarehouses } = useWarehouses();
   const { materials, loading: loadingMaterials } = useRawMaterials();
@@ -95,7 +94,7 @@ export default function PurchaseOrderForm() {
           }))
         );
       } else {
-        toast({ title: 'Error', description: 'No se encontró la orden', variant: 'destructive' });
+        toast.error('Error', { description: 'No se encontró la orden' });
         navigate('/pos/inventario/compras');
       }
       setLoadingOrder(false);
@@ -225,11 +224,11 @@ export default function PurchaseOrderForm() {
 
   const validateBasicInfo = () => {
     if (!supplierId) {
-      toast({ title: 'Error', description: 'Selecciona un proveedor', variant: 'destructive' });
+      toast.error('Error', { description: 'Selecciona un proveedor' });
       return false;
     }
     if (!warehouseId) {
-      toast({ title: 'Error', description: 'Selecciona un almacén', variant: 'destructive' });
+      toast.error('Error', { description: 'Selecciona un almacén' });
       return false;
     }
     return true;
@@ -259,7 +258,7 @@ export default function PurchaseOrderForm() {
       const orderId = await createOrder(getOrderData(validItems));
       setSavingDraft(false);
       if (orderId) {
-        toast({ title: 'Borrador guardado' });
+        toast.success('Borrador guardado');
         navigate(`/pos/inventario/compras/${orderId}`);
       }
     }
@@ -268,12 +267,12 @@ export default function PurchaseOrderForm() {
   const handleSubmit = async () => {
     if (!validateBasicInfo()) return;
     if (items.length === 0) {
-      toast({ title: 'Error', description: 'Agrega al menos un item', variant: 'destructive' });
+      toast.error('Error', { description: 'Agrega al menos un item' });
       return;
     }
     const invalidItems = items.filter(i => !i.raw_material_id || !i.uom_id || i.qty <= 0);
     if (invalidItems.length > 0) {
-      toast({ title: 'Error', description: 'Completa todos los items correctamente', variant: 'destructive' });
+      toast.error('Error', { description: 'Completa todos los items correctamente' });
       return;
     }
 

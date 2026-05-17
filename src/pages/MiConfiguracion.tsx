@@ -16,6 +16,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { APP_VERSION, APP_BUILD_DATE, APP_NAME, CHANGELOG } from '@/config/version';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { toast } from "sonner";
 
 export default function MiConfiguracion() {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -62,19 +63,12 @@ export default function MiConfiguracion() {
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
 
-      toast({
-        title: "Actualización en progreso",
-        description: "Recargando la aplicación...",
-      });
+      toast.success("Actualización en progreso", { description: "Recargando la aplicación..." });
       setTimeout(() => window.location.reload(), 500);
     } catch (error) {
       console.error('Error forzando actualización:', error);
       setIsUpdating(false);
-      toast({
-        title: "Error",
-        description: "No se pudo forzar la actualización. Intenta recargar manualmente.",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "No se pudo forzar la actualización. Intenta recargar manualmente." });
     }
   };
 

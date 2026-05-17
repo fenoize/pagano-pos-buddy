@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Address } from '@/types';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from "sonner";
 
 export interface AddressFormData {
   alias: string;
@@ -17,7 +17,6 @@ export interface AddressFormData {
 
 export function useCustomerAddresses() {
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const { user } = useAuth();
 
   const canManageAddresses = user?.role === 'Administrador' || user?.role === 'Cajero';
@@ -65,11 +64,7 @@ export function useCustomerAddresses() {
 
   const createAddress = async (customerId: string, addressData: AddressFormData): Promise<Address | null> => {
     if (!canManageAddresses) {
-      toast({
-        title: "Error",
-        description: "No tienes permisos para gestionar direcciones",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No tienes permisos para gestionar direcciones" });
       return null;
     }
 
@@ -102,19 +97,12 @@ export function useCustomerAddresses() {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Dirección creada correctamente",
-      });
+      toast.success("Éxito", { description: "Dirección creada correctamente" });
 
       return data;
     } catch (error) {
       console.error('Error creating address:', error);
-      toast({
-        title: "Error",
-        description: "Error al crear la dirección",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al crear la dirección" });
       return null;
     } finally {
       setLoading(false);
@@ -123,11 +111,7 @@ export function useCustomerAddresses() {
 
   const updateAddress = async (addressId: string, addressData: Partial<AddressFormData>): Promise<Address | null> => {
     if (!canManageAddresses) {
-      toast({
-        title: "Error",
-        description: "No tienes permisos para gestionar direcciones",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No tienes permisos para gestionar direcciones" });
       return null;
     }
 
@@ -155,11 +139,7 @@ export function useCustomerAddresses() {
       if (addressData.is_default === false && currentAddress.is_default) {
         const addresses = await getCustomerAddresses(currentAddress.customer_id);
         if (addresses.length === 1) {
-          toast({
-            title: "Error",
-            description: "Debe haber al menos una dirección principal por cliente",
-            variant: "destructive"
-          });
+          toast.error("Error", { description: "Debe haber al menos una dirección principal por cliente" });
           return null;
         }
       }
@@ -186,19 +166,12 @@ export function useCustomerAddresses() {
         }
       }
 
-      toast({
-        title: "Éxito",
-        description: "Dirección actualizada correctamente",
-      });
+      toast.success("Éxito", { description: "Dirección actualizada correctamente" });
 
       return data;
     } catch (error) {
       console.error('Error updating address:', error);
-      toast({
-        title: "Error",
-        description: "Error al actualizar la dirección",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al actualizar la dirección" });
       return null;
     } finally {
       setLoading(false);
@@ -207,11 +180,7 @@ export function useCustomerAddresses() {
 
   const deleteAddress = async (addressId: string): Promise<boolean> => {
     if (!canManageAddresses) {
-      toast({
-        title: "Error",
-        description: "No tienes permisos para gestionar direcciones",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No tienes permisos para gestionar direcciones" });
       return false;
     }
 
@@ -230,11 +199,7 @@ export function useCustomerAddresses() {
       const addresses = await getCustomerAddresses(addressToDelete.customer_id);
       
       if (addresses.length === 1) {
-        toast({
-          title: "Error",
-          description: "No se puede eliminar la única dirección del cliente",
-          variant: "destructive"
-        });
+        toast.error("Error", { description: "No se puede eliminar la única dirección del cliente" });
         return false;
       }
 
@@ -256,19 +221,12 @@ export function useCustomerAddresses() {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Dirección eliminada correctamente",
-      });
+      toast.success("Éxito", { description: "Dirección eliminada correctamente" });
 
       return true;
     } catch (error) {
       console.error('Error deleting address:', error);
-      toast({
-        title: "Error",
-        description: "Error al eliminar la dirección",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al eliminar la dirección" });
       return false;
     } finally {
       setLoading(false);
@@ -277,11 +235,7 @@ export function useCustomerAddresses() {
 
   const setDefaultAddress = async (addressId: string): Promise<boolean> => {
     if (!canManageAddresses) {
-      toast({
-        title: "Error",
-        description: "No tienes permisos para gestionar direcciones",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No tienes permisos para gestionar direcciones" });
       return false;
     }
 
@@ -311,19 +265,12 @@ export function useCustomerAddresses() {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Dirección principal actualizada",
-      });
+      toast.success("Éxito", { description: "Dirección principal actualizada" });
 
       return true;
     } catch (error) {
       console.error('Error setting default address:', error);
-      toast({
-        title: "Error",
-        description: "Error al cambiar la dirección principal",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "Error al cambiar la dirección principal" });
       return false;
     } finally {
       setLoading(false);

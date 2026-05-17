@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import type { MaterialPurchasePresentation } from '@/types/purchaseRequests';
+import { toast } from "sonner";
 
 export function usePurchasePresentations(rawMaterialId?: string | null) {
   const [presentations, setPresentations] = useState<MaterialPurchasePresentation[]>([]);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
   const fetchPresentations = useCallback(async () => {
     setLoading(true);
     try {
@@ -61,12 +59,12 @@ export function usePurchasePresentations(rawMaterialId?: string | null) {
           is_default: data.is_default || false,
         });
       if (error) throw error;
-      toast({ title: 'Presentación creada' });
+      toast.success('Presentación creada');
       await fetchPresentations();
       return true;
     } catch (error: any) {
       console.error('Error creating presentation:', error);
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast.error('Error', { description: error.message });
       return false;
     }
   };
@@ -87,12 +85,12 @@ export function usePurchasePresentations(rawMaterialId?: string | null) {
         .update(data)
         .eq('id', id);
       if (error) throw error;
-      toast({ title: 'Presentación actualizada' });
+      toast.success('Presentación actualizada');
       await fetchPresentations();
       return true;
     } catch (error: any) {
       console.error('Error updating presentation:', error);
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast.error('Error', { description: error.message });
       return false;
     }
   };

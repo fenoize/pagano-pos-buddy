@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RawMaterial } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export const useRawMaterials = () => {
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const fetchMaterials = async () => {
     try {
       setLoading(true);
@@ -23,11 +20,7 @@ export const useRawMaterials = () => {
       setMaterials(data || []);
     } catch (error) {
       console.error('Error fetching raw materials:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las materias primas',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar las materias primas' });
     } finally {
       setLoading(false);
     }
@@ -46,20 +39,13 @@ export const useRawMaterials = () => {
 
       if (error) throw error;
       
-      toast({
-        title: 'Éxito',
-        description: 'Materia prima creada correctamente',
-      });
+      toast.success('Éxito', { description: 'Materia prima creada correctamente' });
       
       await fetchMaterials();
       return { success: true, data };
     } catch (error: any) {
       console.error('Error creating material:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo crear la materia prima',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo crear la materia prima' });
       return { success: false, error };
     }
   };
@@ -73,20 +59,13 @@ export const useRawMaterials = () => {
 
       if (error) throw error;
       
-      toast({
-        title: 'Éxito',
-        description: 'Materia prima actualizada',
-      });
+      toast.success('Éxito', { description: 'Materia prima actualizada' });
       
       await fetchMaterials();
       return { success: true };
     } catch (error: any) {
       console.error('Error updating material:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar la materia prima',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo actualizar la materia prima' });
       return { success: false, error };
     }
   };
@@ -101,20 +80,13 @@ export const useRawMaterials = () => {
 
       if (error) throw error;
       
-      toast({
-        title: 'Éxito',
-        description: 'Materia prima desactivada',
-      });
+      toast.success('Éxito', { description: 'Materia prima desactivada' });
       
       await fetchMaterials();
       return { success: true };
     } catch (error: any) {
       console.error('Error deleting material:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo desactivar la materia prima',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo desactivar la materia prima' });
       return { success: false, error };
     }
   };

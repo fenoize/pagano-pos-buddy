@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Order, OrderStatus } from '@/types';
-import { useToast } from '@/hooks/use-toast';
 import { useKDSHistory } from '@/hooks/useKDSHistory';
 import { triggerOrderStatusNotification } from '@/lib/notificationTriggers';
 import { useBranchContext } from '@/contexts/BranchContext';
+import { toast } from "sonner";
 
 export function useKitchenOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
-  const { toast } = useToast();
   const { addToHistory, isInHistory, removeFromHistory } = useKDSHistory();
   const { activeBranch } = useBranchContext();
   const activeBranchId = activeBranch?.id || null;
@@ -74,11 +73,7 @@ export function useKitchenOrders() {
             }
           } catch (error) {
             console.error('[KDS] Error handling realtime event:', error);
-            toast({
-              title: "Error de sincronización",
-              description: "Hubo un problema al actualizar los pedidos. Intenta refrescar.",
-              variant: "destructive"
-            });
+            toast.error("Error de sincronización", { description: "Hubo un problema al actualizar los pedidos. Intenta refrescar." });
           }
         }
       )
@@ -87,11 +82,7 @@ export function useKitchenOrders() {
         
         if (status === 'CHANNEL_ERROR') {
           console.error('[KDS] Channel error, attempting to reconnect...');
-          toast({
-            title: "Error de conexión",
-            description: "Reconectando en tiempo real...",
-            variant: "destructive"
-          });
+          toast.error("Error de conexión", { description: "Reconectando en tiempo real..." });
         } else if (status === 'SUBSCRIBED') {
           console.log('[KDS] Successfully subscribed to realtime updates');
         }
@@ -168,11 +159,7 @@ export function useKitchenOrders() {
       setOrders(filtered);
     } catch (error) {
       console.error('[KDS] Error fetching orders:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los pedidos",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar los pedidos" });
     } finally {
       setLoading(false);
     }

@@ -28,6 +28,7 @@ import { useStockBalances } from "@/hooks/useStockBalances";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 const ADJUSTMENT_REASONS = [
   { value: "stock_inicial", label: "Stock Inicial" },
@@ -70,21 +71,13 @@ export default function StockAdjustments() {
     e.preventDefault();
     
     if (!selectedMaterialId || !quantity || !reason || !selectedWarehouseId || !user?.id) {
-      toast({
-        title: "Error",
-        description: "Completa todos los campos requeridos",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "Completa todos los campos requeridos" });
       return;
     }
 
     const numQuantity = parseFloat(quantity);
     if (isNaN(numQuantity) || numQuantity <= 0) {
-      toast({
-        title: "Error",
-        description: "La cantidad debe ser un número positivo",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: "La cantidad debe ser un número positivo" });
       return;
     }
 
@@ -110,10 +103,7 @@ export default function StockAdjustments() {
     );
 
     if (result.success) {
-      toast({
-        title: "Ajuste registrado",
-        description: "El stock ha sido actualizado correctamente",
-      });
+      toast.success("Ajuste registrado", { description: "El stock ha sido actualizado correctamente" });
       // Reset form
       setSelectedMaterialId("");
       setQuantity("");
@@ -122,11 +112,7 @@ export default function StockAdjustments() {
       fetchBalances();
       fetchStats();
     } else {
-      toast({
-        title: "Error",
-        description: result.error || "No se pudo registrar el ajuste",
-        variant: "destructive",
-      });
+      toast.error("Error", { description: result.error || "No se pudo registrar el ajuste" });
     }
   };
 

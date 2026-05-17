@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 export type POStatus = 'draft' | 'approved' | 'sent' | 'partial' | 'received' | 'cancelled' | 'rejected';
 
 export interface PurchaseOrderItem {
@@ -77,8 +76,6 @@ export interface CreatePurchaseOrderData {
 export function usePurchaseOrders() {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
@@ -88,11 +85,7 @@ export function usePurchaseOrders() {
       setOrders((data || []) as unknown as PurchaseOrder[]);
     } catch (error) {
       console.error('Error fetching purchase orders:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las órdenes de compra',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar las órdenes de compra' });
     } finally {
       setLoading(false);
     }
@@ -108,11 +101,7 @@ export function usePurchaseOrders() {
       return data as unknown as PurchaseOrder;
     } catch (error) {
       console.error('Error fetching order:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo cargar la orden de compra',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudo cargar la orden de compra' });
       return null;
     }
   };
@@ -194,11 +183,7 @@ export function usePurchaseOrders() {
       return order.id;
     } catch (error: any) {
       console.error('Error creating order:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo crear la orden',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo crear la orden' });
       return null;
     }
   };
@@ -245,11 +230,7 @@ export function usePurchaseOrders() {
       return true;
     } catch (error: any) {
       console.error('Error updating status:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar el estado',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo actualizar el estado' });
       return false;
     }
   };
@@ -271,22 +252,15 @@ export function usePurchaseOrders() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Recepción registrada',
-        description: ingressToInventory 
+      toast.success('Recepción registrada', { description: ingressToInventory 
           ? 'Items recibidos e ingresados al inventario' 
-          : 'Items recibidos (pendiente ingreso a inventario)',
-      });
+          : 'Items recibidos (pendiente ingreso a inventario)' });
 
       await fetchOrders();
       return true;
     } catch (error: any) {
       console.error('Error receiving items:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo registrar la recepción',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo registrar la recepción' });
       return false;
     }
   };
@@ -315,20 +289,13 @@ export function usePurchaseOrders() {
 
       if (orderError) throw orderError;
 
-      toast({
-        title: 'Orden eliminada',
-        description: 'La orden de compra ha sido eliminada',
-      });
+      toast.success('Orden eliminada', { description: 'La orden de compra ha sido eliminada' });
 
       await fetchOrders();
       return true;
     } catch (error: any) {
       console.error('Error deleting order:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo eliminar la orden',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message || 'No se pudo eliminar la orden' });
       return false;
     }
   };
@@ -382,12 +349,12 @@ export function usePurchaseOrders() {
         if (itemsError) throw itemsError;
       }
 
-      toast({ title: 'Orden actualizada', description: 'Los cambios se guardaron correctamente' });
+      toast.success('Orden actualizada', { description: 'Los cambios se guardaron correctamente' });
       await fetchOrders();
       return true;
     } catch (error: any) {
       console.error('Error updating order:', error);
-      toast({ title: 'Error', description: error.message || 'No se pudo actualizar la orden', variant: 'destructive' });
+      toast.error('Error', { description: error.message || 'No se pudo actualizar la orden' });
       return false;
     }
   };

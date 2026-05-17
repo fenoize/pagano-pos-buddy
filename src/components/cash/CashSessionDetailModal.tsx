@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
 import { useCashSession } from "@/hooks/useCashSession";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -26,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+import { toast } from "sonner";
   Select,
   SelectContent,
   SelectItem,
@@ -71,7 +71,6 @@ export function CashSessionDetailModal({
     deleteCashMovement,
     addCashMovementToClosedSession
   } = useCashSession();
-  const { toast } = useToast();
   const { user } = useAuthContext();
 
   const [detailData, setDetailData] = useState(null);
@@ -96,11 +95,7 @@ export function CashSessionDetailModal({
       setEditedClosingCash(data?.session?.closing_cash || 0);
     } catch (error) {
       console.error('Error loading session detail:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo cargar el detalle del cierre",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo cargar el detalle del cierre" });
     } finally {
       setLoading(false);
     }
@@ -110,16 +105,9 @@ export function CashSessionDetailModal({
     setIsUpdatingObservaciones(true);
     try {
       await updateSessionObservaciones(sessionId, observaciones);
-      toast({
-        title: "Observaciones actualizadas",
-        description: "Las observaciones se guardaron correctamente"
-      });
+      toast.success("Observaciones actualizadas", { description: "Las observaciones se guardaron correctamente" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudieron guardar las observaciones",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron guardar las observaciones" });
     } finally {
       setIsUpdatingObservaciones(false);
     }
@@ -204,16 +192,9 @@ export function CashSessionDetailModal({
       await updateClosingCash(sessionId, editedClosingCash);
       setIsEditingClosure(false);
       await loadDetailData(); // Reload data
-      toast({
-        title: "Efectivo final actualizado",
-        description: "El cierre de caja se actualizó correctamente"
-      });
+      toast.success("Efectivo final actualizado", { description: "El cierre de caja se actualizó correctamente" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el efectivo final",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo actualizar el efectivo final" });
     }
   };
 
@@ -238,16 +219,9 @@ export function CashSessionDetailModal({
       setEditingMovementId(null);
       await loadDetailData();
       
-      toast({
-        title: "Movimiento actualizado",
-        description: "El movimiento de caja se actualizó correctamente"
-      });
+      toast.success("Movimiento actualizado", { description: "El movimiento de caja se actualizó correctamente" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el movimiento",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo actualizar el movimiento" });
     }
   };
 
@@ -266,26 +240,15 @@ export function CashSessionDetailModal({
       setDeletingMovementId(null);
       await loadDetailData();
       
-      toast({
-        title: "Movimiento eliminado",
-        description: "El movimiento de caja se eliminó correctamente"
-      });
+      toast.success("Movimiento eliminado", { description: "El movimiento de caja se eliminó correctamente" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el movimiento",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo eliminar el movimiento" });
     }
   };
 
   const handleAddMovement = async () => {
     if (!newMovementAmount || newMovementAmount <= 0) {
-      toast({
-        title: "Error",
-        description: "El monto debe ser mayor a cero",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "El monto debe ser mayor a cero" });
       return;
     }
 
@@ -303,16 +266,9 @@ export function CashSessionDetailModal({
       setNewMovementNote('');
       await loadDetailData();
       
-      toast({
-        title: "Movimiento agregado",
-        description: "El nuevo movimiento se agregó correctamente"
-      });
+      toast.success("Movimiento agregado", { description: "El nuevo movimiento se agregó correctamente" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo agregar el movimiento",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo agregar el movimiento" });
     }
   };
 

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Award, Edit, Trash2, Plus, Trophy, Medal, Star, Zap, Crown, Target, Gift } from 'lucide-react';
+import { toast } from "sonner";
 
 interface Badge {
   id: string;
@@ -49,8 +49,6 @@ export function BadgesConfig() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreateMode, setIsCreateMode] = useState(false);
   const [badgeToDelete, setBadgeToDelete] = useState<Badge | null>(null);
-  const { toast } = useToast();
-
   useEffect(() => {
     loadBadges();
   }, []);
@@ -65,11 +63,7 @@ export function BadgesConfig() {
       if (error) throw error;
       setBadges(data || []);
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las insignias',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'No se pudieron cargar las insignias' });
     } finally {
       setLoading(false);
     }
@@ -91,11 +85,7 @@ export function BadgesConfig() {
         description: `Insignia ${!badge.is_active ? 'activada' : 'desactivada'}`,
       });
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message });
     }
   };
 
@@ -125,20 +115,12 @@ export function BadgesConfig() {
 
     // Validación
     if (!editingBadge.name.trim()) {
-      toast({
-        title: 'Error',
-        description: 'El nombre es obligatorio',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'El nombre es obligatorio' });
       return;
     }
 
     if (isCreateMode && !editingBadge.code.trim()) {
-      toast({
-        title: 'Error',
-        description: 'El código es obligatorio',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: 'El código es obligatorio' });
       return;
     }
 
@@ -173,10 +155,7 @@ export function BadgesConfig() {
         if (error) throw error;
 
         setBadges([...badges, data]);
-        toast({
-          title: 'Creado',
-          description: 'Insignia creada correctamente',
-        });
+        toast.success('Creado', { description: 'Insignia creada correctamente' });
       } else {
         const { error } = await supabase
           .from('customer_badges')
@@ -192,20 +171,13 @@ export function BadgesConfig() {
         if (error) throw error;
 
         setBadges(badges.map(b => b.id === editingBadge.id ? editingBadge : b));
-        toast({
-          title: 'Guardado',
-          description: 'Insignia actualizada correctamente',
-        });
+        toast.success('Guardado', { description: 'Insignia actualizada correctamente' });
       }
 
       setIsDialogOpen(false);
       setEditingBadge(null);
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -225,16 +197,9 @@ export function BadgesConfig() {
       setBadges(badges.filter(b => b.id !== badgeToDelete.id));
       setBadgeToDelete(null);
 
-      toast({
-        title: 'Eliminado',
-        description: 'Insignia eliminada correctamente',
-      });
+      toast.success('Eliminado', { description: 'Insignia eliminada correctamente' });
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message });
     }
   };
 

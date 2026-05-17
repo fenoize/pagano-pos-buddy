@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, Grip, Star } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { usePOSConfig } from '@/hooks/usePOSConfig';
 import {
   DndContext,
@@ -28,6 +27,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -153,7 +153,6 @@ export function CategoryConfig() {
     show_in_pos: true,
     show_in_app: true
   });
-  const { toast } = useToast();
   const { config, updateGridColumns, updateShowVariantStock } = usePOSConfig();
 
   const sensors = useSensors(
@@ -178,11 +177,7 @@ export function CategoryConfig() {
       setCategories(data || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las categorías",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron cargar las categorías" });
     }
   };
 
@@ -198,10 +193,7 @@ export function CategoryConfig() {
 
         if (error) throw error;
         
-        toast({
-          title: "Éxito",
-          description: "Categoría actualizada correctamente"
-        });
+        toast.success("Éxito", { description: "Categoría actualizada correctamente" });
       } else {
         const { error } = await supabase
           .from('categories')
@@ -209,10 +201,7 @@ export function CategoryConfig() {
 
         if (error) throw error;
         
-        toast({
-          title: "Éxito",
-          description: "Categoría creada correctamente"
-        });
+        toast.success("Éxito", { description: "Categoría creada correctamente" });
       }
 
       setIsDialogOpen(false);
@@ -220,11 +209,7 @@ export function CategoryConfig() {
       resetForm();
       fetchCategories();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo guardar la categoría",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo guardar la categoría" });
     }
   };
 
@@ -242,16 +227,9 @@ export function CategoryConfig() {
       if (error) throw error;
       
       fetchCategories();
-      toast({
-        title: "Éxito",
-        description: "Categoría eliminada correctamente"
-      });
+      toast.success("Éxito", { description: "Categoría eliminada correctamente" });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo eliminar la categoría",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo eliminar la categoría" });
     }
   };
 
@@ -276,11 +254,7 @@ export function CategoryConfig() {
         description: `Categoría ${!category.active ? 'activada' : 'desactivada'} correctamente`
       });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar la categoría",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo actualizar la categoría" });
     }
   };
 
@@ -301,16 +275,9 @@ export function CategoryConfig() {
       if (error) throw error;
       
       fetchCategories();
-      toast({
-        title: "Éxito",
-        description: "Categoría predeterminada actualizada"
-      });
+      toast.success("Éxito", { description: "Categoría predeterminada actualizada" });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar la categoría predeterminada",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "No se pudo actualizar la categoría predeterminada" });
     }
   };
 
@@ -339,17 +306,10 @@ export function CategoryConfig() {
           .eq('id', update.id);
       }
 
-      toast({
-        title: "Éxito",
-        description: "Orden de categorías actualizado"
-      });
+      toast.success("Éxito", { description: "Orden de categorías actualizado" });
     } catch (error: any) {
       console.error('Error updating category order:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el orden",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudo actualizar el orden" });
       fetchCategories(); // Revert on error
     }
   };

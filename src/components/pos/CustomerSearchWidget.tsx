@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, User, Coins } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import RunasCalculator from './RunasCalculator';
+import { toast } from "sonner";
 
 interface CustomerSearchWidgetProps {
   customer: Partial<Customer>;
@@ -31,8 +31,6 @@ export default function CustomerSearchWidget({
   const [isSearching, setIsSearching] = useState(false);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [runaRewardValue, setRunaRewardValue] = useState(600); // Valor de CANJE de 1 runa
-  const { toast } = useToast();
-
   useEffect(() => {
     if (searchTerm.length >= 3) {
       searchCustomers();
@@ -67,11 +65,7 @@ export default function CustomerSearchWidget({
       setSearchResults(data || []);
     } catch (error) {
       console.error('Error searching customers:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron buscar clientes",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: "No se pudieron buscar clientes" });
     } finally {
       setIsSearching(false);
     }

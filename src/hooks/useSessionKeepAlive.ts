@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import { toast } from '@/hooks/use-toast';
-
+import { toast } from "sonner";
 // Configuración para navegador web (4 horas de sesión)
 const WEB_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutos
 const WEB_AUTO_REFRESH_THRESHOLD = 60 * 60 * 1000; // 1 hora - renovar automáticamente
@@ -24,11 +24,7 @@ export function useSessionKeepAlive() {
   const handleForceLogout = useCallback(() => {
     setShowExpiryModal(false);
     clearStaffStorage();
-    toast({
-      title: "Sesión cerrada",
-      description: "Tu sesión ha sido cerrada.",
-      variant: "destructive",
-    });
+    toast.error("Sesión cerrada", { description: "Tu sesión ha sido cerrada." });
     setTimeout(() => {
       window.location.href = '/pos/login';
     }, 1000);
@@ -58,10 +54,7 @@ export function useSessionKeepAlive() {
       localStorage.setItem(STORAGE_KEYS.STAFF_TOKEN, newToken);
 
       if (!silent) {
-        toast({
-          title: "Sesión renovada",
-          description: "Tu sesión ha sido extendida exitosamente.",
-        });
+        toast.success("Sesión renovada", { description: "Tu sesión ha sido extendida exitosamente." });
       }
 
       console.log('Token renovado' + (silent ? ' automáticamente' : ''), ', expira:', refreshData[0].expires_at);

@@ -7,12 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
 import { Award, Save, Loader2, Plus, Pencil, Trash2, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import type { Json } from '@/integrations/supabase/types';
+import { toast } from "sonner";
 
 interface Level {
   id: string;
@@ -49,8 +49,6 @@ export default function NivelesManagement() {
   const [editingLevel, setEditingLevel] = useState<Level | null>(null);
   const [deletingLevel, setDeletingLevel] = useState<Level | null>(null);
   const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
   const [formData, setFormData] = useState({
     level_code: '',
     level_name: '',
@@ -79,11 +77,7 @@ export default function NivelesManagement() {
       if (error) throw error;
       setLevels((data || []) as Level[]);
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -169,11 +163,7 @@ export default function NivelesManagement() {
       setDialogOpen(false);
       loadLevels();
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -200,11 +190,7 @@ export default function NivelesManagement() {
       setDeletingLevel(null);
       loadLevels();
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: error.message });
     } finally {
       setSaving(false);
     }

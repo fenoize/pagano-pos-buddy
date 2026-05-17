@@ -23,11 +23,11 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FinanceExpense } from '@/types/finance';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 import { formatDateShort } from '@/lib/dateUtils';
 import { Badge } from '@/components/ui/badge';
 import * as XLSX from 'xlsx';
 import { BranchFilter } from '@/components/branches/BranchFilter';
+import { toast } from "sonner";
 
 const EXPENSE_TYPES = ['Variable', 'Fijo', 'Inversión', 'Otro'];
 
@@ -38,7 +38,6 @@ export default function FinanceExpenses() {
   const { expenses, loading: loadingExpenses, createExpense, updateExpense, deleteExpense } = useFinanceExpenses();
   const { accounts } = useFinanceAccounts();
   const { activeRecurringExpenses } = useRecurringExpenses();
-  const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<FinanceExpense | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -239,19 +238,11 @@ export default function FinanceExpenses() {
     // Validaciones de documentación
     if (includeDocumentation) {
       if (!formData.document_type) {
-        toast({
-          title: 'Error',
-          description: 'Selecciona un tipo de documento',
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: 'Selecciona un tipo de documento' });
         return;
       }
       if (!formData.document_number) {
-        toast({
-          title: 'Error',
-          description: 'Ingresa el número de documento',
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: 'Ingresa el número de documento' });
         return;
       }
     }
@@ -298,11 +289,7 @@ export default function FinanceExpenses() {
 
   const handleExportToExcel = () => {
     if (filteredExpenses.length === 0) {
-      toast({
-        title: 'No hay datos',
-        description: 'No hay egresos para exportar en este mes',
-        variant: 'destructive',
-      });
+      toast.error('No hay datos', { description: 'No hay egresos para exportar en este mes' });
       return;
     }
 
