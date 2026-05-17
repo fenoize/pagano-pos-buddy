@@ -71,6 +71,11 @@ export default function CustomerOrderSuccess() {
   const isPaidWithRunas = orderDetails.payment_method === 'runas';
   const runasUsed = isPaidWithRunas ? Math.ceil((orderDetails.payment_runas || 0) / runaRedemptionValue) : 0;
 
+  const hasDiscount = (orderDetails.discount || 0) > 0;
+  const runasEarned = !isPaidWithRunas && !hasDiscount ? Math.floor(orderDetails.total / 5000) : 0;
+  const pointsEarned = Math.floor(orderDetails.total / 100);
+  const showRewards = orderDetails.customer_id && (runasEarned > 0 || pointsEarned > 0);
+
   return (
     <div className="customer-app min-h-screen pb-20 bg-background">
       <div className="max-w-screen-xl mx-auto p-4 space-y-6">
@@ -84,6 +89,34 @@ export default function CustomerOrderSuccess() {
             Tu pedido ha sido recibido y está siendo preparado
           </p>
         </div>
+
+        {/* Rewards Block */}
+        {showRewards && (
+          <Card className="bg-slate-900/60 border-primary/20">
+            <CardContent className="pt-6">
+              <h3 className="text-center font-semibold text-primary mb-4 text-sm uppercase tracking-wider">
+                Recompensas ganadas en esta compra
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                {runasEarned > 0 && (
+                  <div className="flex flex-col items-center p-3 bg-background/40 rounded-lg border border-primary/10">
+                    <Coins className="h-6 w-6 text-primary mb-1" />
+                    <span className="text-xl font-bold text-primary">+{formatRunas(runasEarned)}</span>
+                    <span className="text-xs text-muted-foreground">Runas</span>
+                  </div>
+                )}
+                {pointsEarned > 0 && (
+                  <div className="flex flex-col items-center p-3 bg-background/40 rounded-lg border border-yellow-500/10">
+                    <Star className="h-6 w-6 text-yellow-400 mb-1" />
+                    <span className="text-xl font-bold text-yellow-400">+{formatRunas(pointsEarned)}</span>
+                    <span className="text-xs text-muted-foreground">Puntos</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
 
         {/* Order Details */}
         <Card>
