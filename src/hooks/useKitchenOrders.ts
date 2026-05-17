@@ -140,7 +140,6 @@ export function useKitchenOrders() {
         .neq('status', 'PendienteAceptacion' as any)
         .neq('status', 'Entregado')
         .neq('status', 'Cancelado')
-        .neq('payment_method', 'pendiente' as any)
         .order('created_at', { ascending: true });
 
       if (activeBranchId) {
@@ -262,11 +261,9 @@ export function useKitchenOrders() {
           return prev.filter(order => order.id !== orderId);
         }
 
-        // Si el pedido tiene pago pendiente, ocultarlo del KDS hasta que se cobre
-        if ((orderWithItems as any).payment_method === 'pendiente') {
-          console.log(`[KDS] Order #${orderWithItems.order_number} has pending payment, hiding from KDS`);
-          return prev.filter(order => order.id !== orderId);
-        }
+        // NOTA: payment_method='pendiente' (POS pendiente de pago) SÍ se muestra en KDS.
+        // Solo se ocultan los status PendientePago/PendienteAceptacion (pedidos de la app cliente
+        // esperando pago MP o aceptación del cajero), que ya se filtran arriba por status.
         
         // Si es un pedido delivery y está "Listo" o "En camino", ocultarlo del KDS
         if (shouldHideDeliveryOrder(orderWithItems)) {
