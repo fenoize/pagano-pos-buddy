@@ -49,8 +49,8 @@ export default function NewSale() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
   const [editingItemIndex, setEditingItemIndex] = useState<number | undefined>(undefined);
-  const [runaValue, setRunaValue] = useState(10000); // Valor para ganar 1 runa (acumulación)
-  const [runaRewardValue, setRunaRewardValue] = useState(1300); // Valor de cada runa al canjear
+  const [runaValue, setRunaValue] = useState(5000); // Valor para ganar 1 runa (acumulación)
+  const [runaRewardValue, setRunaRewardValue] = useState(300); // Valor de cada runa al canjear
   const [usedRunas, setUsedRunas] = useState(0);
   const [appliedCoupons, setAppliedCoupons] = useState<CouponApplication[]>([]);
   const [manualDiscount, setManualDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number; amount: number } | null>(null);
