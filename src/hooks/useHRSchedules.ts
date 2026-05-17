@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { withStaffContext } from '@/lib/dbContext';
 import { getStaffUserId } from '@/lib/staffSession';
-import { toast } from '@/hooks/use-toast';
 import type { HRSchedule, HRScheduleFormData, HRSchedulePositionFormData } from '@/types/hr';
 import { toast } from "sonner";
 
@@ -93,10 +92,7 @@ export function useHRSchedules(options?: UseHRSchedulesOptions) {
         result = newSchedule as unknown as HRSchedule;
       });
 
-      toast({
-        title: 'Horario creado',
-        description: `Se creó el horario "${data.name}"`
-      });
+      toast.success('Horario creado', { description: `Se creó el horario "${data.name}"` });
 
       await fetchSchedules();
       return result;

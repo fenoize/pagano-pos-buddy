@@ -420,11 +420,7 @@ export default function PaymentModal({
       
       // Validar que el cliente tenga suficientes runas
       if (runasNum > (customer.cantidad_runas || 0)) {
-        toast({
-          title: "Error",
-          description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles`,
-          variant: "destructive"
-        });
+        toast.error("Error", { description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles` });
         return;
       }
       
@@ -432,11 +428,7 @@ export default function PaymentModal({
       const runasValue = runasNum * runaRewardValue;
       const remainingBalance = getRemainingBalance();
       if (runasValue < remainingBalance) {
-        toast({
-          title: "Error",
-          description: `Se necesitan al menos ${Math.ceil(remainingBalance / runaRewardValue)} runas para cubrir el saldo restante`,
-          variant: "destructive"
-        });
+        toast.error("Error", { description: `Se necesitan al menos ${Math.ceil(remainingBalance / runaRewardValue)} runas para cubrir el saldo restante` });
         return;
       }
     }
@@ -460,10 +452,7 @@ export default function PaymentModal({
     setCurrentReceiptNumber('');
     setCurrentOperationNumber('');
     setCurrentRunas('');
-    toast({
-      title: "Pago agregado",
-      description: `${methodConfig?.display_name || currentMethod} agregado a la lista`
-    });
+    toast.success("Pago agregado", { description: `${methodConfig?.display_name || currentMethod} agregado a la lista` });
   };
 
   const handleRemovePayment = (index: number) => {
@@ -517,22 +506,14 @@ export default function PaymentModal({
         }
         
         if (runasNum > (customer.cantidad_runas || 0)) {
-          toast({
-            title: "Error",
-            description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles`,
-            variant: "destructive"
-          });
+          toast.error("Error", { description: `El cliente solo tiene ${customer.cantidad_runas || 0} runas disponibles` });
           setIsSubmitting(false);
           return;
         }
         
         const runasValue = runasNum * runaRewardValue;
         if (runasValue < total) {
-          toast({
-            title: "Error",
-            description: `Se necesitan al menos ${Math.ceil(total / runaRewardValue)} runas para cubrir el total`,
-            variant: "destructive"
-          });
+          toast.error("Error", { description: `Se necesitan al menos ${Math.ceil(total / runaRewardValue)} runas para cubrir el total` });
           setIsSubmitting(false);
           return;
         }

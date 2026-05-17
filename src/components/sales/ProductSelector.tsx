@@ -76,11 +76,7 @@ export function ProductSelector({ isOpen, onClose, onProductSelected }: ProductS
     setAddedCount(prev => prev + 1);
     
     // Show success toast
-    toast({
-      title: "Producto agregado",
-      description: `${product.name}${size !== 'unico' ? ` (${size}, ${priceKind === 'combo' ? 'Combo' : 'Solo'})` : ''}`,
-      duration: 2000,
-    });
+    toast.success("Producto agregado", { description: `${product.name}${size !== 'unico' ? ` (${size}, ${priceKind === 'combo' ? 'Combo' : 'Solo'})` : ''}`, duration: 2000 });
   };
 
   // Check if product has combo/only prices with sizes

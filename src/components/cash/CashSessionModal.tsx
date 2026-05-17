@@ -108,40 +108,26 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
             return;
           }
           if (!activeBranch.cash_account_id) {
-            toast({
-              title: 'Caja no configurada',
-              description: `El local "${activeBranch.name}" no tiene caja registradora asignada. Configúrala en Configuración → Locales.`,
-              variant: 'destructive',
-            });
+            toast.error('Caja no configurada', { description: `El local "${activeBranch.name}" no tiene caja registradora asignada. Configúrala en Configuración → Locales.` });
             setLoading(false);
             return;
           }
           await openSession(amountValue, acceptAppOrders, activeBranch.id);
-          toast({
-            title: "Turno abierto",
-            description: `Turno iniciado en ${activeBranch.name} con ${formatCurrency(amountValue)} en caja.${acceptAppOrders ? ' Recibiendo pedidos desde app.' : ''}`
-          });
+          toast.success("Turno abierto", { description: `Turno iniciado en ${activeBranch.name} con ${formatCurrency(amountValue)} en caja.${acceptAppOrders ? ' Recibiendo pedidos desde app.' : ''}` });
           break;
         
         case 'close':
           try {
             await closeSession(amountValue, note);
             
-            toast({
-              title: "✅ Turno cerrado",
-              description: "El turno ha sido cerrado correctamente."
-            });
+            toast.success("✅ Turno cerrado", { description: "El turno ha sido cerrado correctamente." });
             
             setAmount('');
             setNote('');
             onClose();
           } catch (error: any) {
             console.error('Error cerrando turno:', error);
-            toast({
-              title: "❌ Error al cerrar turno",
-              description: error.message || "No se pudo cerrar el turno. Intenta nuevamente.",
-              variant: "destructive"
-            });
+            toast.error("❌ Error al cerrar turno", { description: error.message || "No se pudo cerrar el turno. Intenta nuevamente." });
             setLoading(false);
             return;
           }
@@ -150,11 +136,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
         case 'movement':
           // Validar campos obligatorios
           if (!note.trim()) {
-            toast({
-              title: "Error",
-              description: "El concepto es obligatorio.",
-              variant: "destructive"
-            });
+            toast.error("Error", { description: "El concepto es obligatorio." });
             setLoading(false);
             return;
           }
@@ -162,21 +144,13 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
           // Validaciones específicas para egresos
           if (movementType === 'egreso') {
             if (!selectedCategory) {
-              toast({
-                title: "Error",
-                description: "Selecciona una categoría para el egreso.",
-                variant: "destructive"
-              });
+              toast.error("Error", { description: "Selecciona una categoría para el egreso." });
               setLoading(false);
               return;
             }
             
             if (!selectedAccountId && cashAccounts.length > 0) {
-              toast({
-                title: "Error",
-                description: "Selecciona una cuenta contable para el egreso.",
-                variant: "destructive"
-              });
+              toast.error("Error", { description: "Selecciona una cuenta contable para el egreso." });
               setLoading(false);
               return;
             }
@@ -185,20 +159,12 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
           // Validaciones específicas para transferencias
           if (movementType === 'transferencia') {
             if (!transferFromId || !transferToId) {
-              toast({
-                title: "Error",
-                description: "Selecciona la cuenta origen y la cuenta destino.",
-                variant: "destructive"
-              });
+              toast.error("Error", { description: "Selecciona la cuenta origen y la cuenta destino." });
               setLoading(false);
               return;
             }
             if (transferFromId === transferToId) {
-              toast({
-                title: "Error",
-                description: "La cuenta origen y la cuenta destino deben ser distintas.",
-                variant: "destructive"
-              });
+              toast.error("Error", { description: "La cuenta origen y la cuenta destino deben ser distintas." });
               setLoading(false);
               return;
             }
@@ -212,10 +178,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
 
             const fromName = transferAccounts.find(a => a.id === transferFromId)?.name || 'origen';
             const toName = transferAccounts.find(a => a.id === transferToId)?.name || 'destino';
-            toast({
-              title: "Transferencia registrada",
-              description: `${formatCurrency(amountValue)} de ${fromName} → ${toName}.`
-            });
+            toast.success("Transferencia registrada", { description: `${formatCurrency(amountValue)} de ${fromName} → ${toName}.` });
             break;
           }
 
@@ -228,12 +191,9 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
             movementType === 'egreso' // Siempre sincronizar egresos a finanzas
           );
           
-          toast({
-            title: "Movimiento registrado",
-            description: `${movementType === 'ingreso' ? 'Ingreso' : 'Egreso'} de ${formatCurrency(amountValue)} registrado.${
+          toast.success("Movimiento registrado", { description: `${movementType === 'ingreso' ? 'Ingreso' : 'Egreso'} de ${formatCurrency(amountValue)} registrado.${
               movementType === 'egreso' ? ' Sincronizado a Finanzas.' : ''
-            }`
-          });
+            }` });
           break;
       }
 
@@ -242,11 +202,7 @@ export function CashSessionModal({ isOpen, onClose, type, sessionSummary }: Cash
       onClose();
     } catch (error: any) {
       console.error('Error in cash session operation:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Ocurrió un error inesperado.",
-        variant: "destructive"
-      });
+      toast.error("Error", { description: error.message || "Ocurrió un error inesperado." });
     } finally {
       setLoading(false);
     }

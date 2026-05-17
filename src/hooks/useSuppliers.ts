@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { Supplier } from '@/types/supplier';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 import { toast } from "sonner";

@@ -204,10 +204,7 @@ export function useCustomerOrders() {
 
       if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: `Pedido duplicado como #${data.order_number}`,
-      });
+      toast.success("Éxito", { description: `Pedido duplicado como #${data.order_number}` });
 
       return {
         ...data,

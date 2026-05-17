@@ -19,7 +19,6 @@ import {
 import { useUOM } from '@/hooks/useUOM';
 import { supabase } from '@/integrations/supabase/client';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
-import { toast } from '@/hooks/use-toast';
 import { toast } from "sonner";
 interface QuickCreateMaterialModalProps {
   open: boolean;

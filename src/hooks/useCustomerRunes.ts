@@ -298,10 +298,7 @@ export function useCustomerRunes() {
 
       const newSaldo = result.new_balance ?? 0;
 
-      toast({
-        title: "Éxito",
-        description: `Ajuste de ${adjustmentData.runas > 0 ? '+' : ''}${adjustmentData.runas} runas realizado. Nuevo saldo: ${newSaldo}`,
-      });
+      toast.success("Éxito", { description: `Ajuste de ${adjustmentData.runas > 0 ? '+' : ''}${adjustmentData.runas} runas realizado. Nuevo saldo: ${newSaldo}` });
 
       return {
         id: result.transaction_id,

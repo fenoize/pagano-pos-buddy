@@ -89,11 +89,7 @@ export const useInventory = () => {
       });
 
       if (error) {
-        toast({
-          title: 'Error',
-          description: `Error al procesar recepción: ${error.message}`,
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: `Error al procesar recepción: ${error.message}` });
         return { success: false, error: error.message };
       }
 
@@ -130,11 +126,7 @@ export const useInventory = () => {
       });
 
       if (error) {
-        toast({
-          title: 'Error',
-          description: `Error al procesar ajuste: ${error.message}`,
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: `Error al procesar ajuste: ${error.message}` });
         return { success: false, error: error.message };
       }
 
@@ -177,11 +169,7 @@ export const useInventory = () => {
       });
 
       if (error) {
-        toast({
-          title: 'Error',
-          description: `Error al procesar transferencia: ${error.message}`,
-          variant: 'destructive',
-        });
+        toast.error('Error', { description: `Error al procesar transferencia: ${error.message}` });
         return { success: false, error: error.message };
       }
 

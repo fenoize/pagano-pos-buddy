@@ -251,10 +251,7 @@ export default function StockManagement() {
         }
       }
 
-      toast({
-        title: 'Stock actualizado',
-        description: `Se actualizaron ${changedItems.length} items correctamente`,
-      });
+      toast.success('Stock actualizado', { description: `Se actualizaron ${changedItems.length} items correctamente` });
 
       setShowConfirmDialog(false);
       fetchStockData(); // Refresh data

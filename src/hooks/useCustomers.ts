@@ -505,7 +505,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       link.click();
       document.body.removeChild(link);
 
-      toast({ title: "Éxito", description: `${data.length} clientes exportados a CSV` });
+      toast.success("Éxito", { description: `${data.length} clientes exportados a CSV` });
     } catch (error) {
       console.error('Error exporting customers:', error);
       toast.error("Error", { description: "Error al exportar clientes" });
@@ -564,7 +564,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       });
 
       doc.save(`clientes_${new Date().toISOString().split('T')[0]}.pdf`);
-      toast({ title: "Éxito", description: `${data.length} clientes exportados a PDF` });
+      toast.success("Éxito", { description: `${data.length} clientes exportados a PDF` });
     } catch (error) {
       console.error('Error exporting PDF:', error);
       toast.error("Error", { description: "Error al exportar PDF" });

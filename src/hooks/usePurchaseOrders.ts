@@ -174,10 +174,7 @@ export function usePurchaseOrders() {
 
       if (itemsError) throw itemsError;
 
-      toast({
-        title: 'Orden creada',
-        description: `Orden ${order.po_number} creada correctamente`,
-      });
+      toast.success('Orden creada', { description: `Orden ${order.po_number} creada correctamente` });
 
       await fetchOrders();
       return order.id;
@@ -221,10 +218,7 @@ export function usePurchaseOrders() {
         rejected: 'Rechazada',
       };
 
-      toast({
-        title: 'Estado actualizado',
-        description: `Orden marcada como "${statusLabels[newStatus]}"`,
-      });
+      toast.success('Estado actualizado', { description: `Orden marcada como "${statusLabels[newStatus]}"` });
 
       await fetchOrders();
       return true;

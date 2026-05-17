@@ -148,10 +148,7 @@ export function NivelesContent() {
 
         if (error) throw error;
 
-        toast({
-          title: 'Nivel actualizado',
-          description: `${levelData.level_name} ha sido actualizado correctamente.`,
-        });
+        toast.success('Nivel actualizado', { description: `${levelData.level_name} ha sido actualizado correctamente.` });
       } else {
         const { error } = await supabase
           .from('customer_level_definitions')
@@ -159,10 +156,7 @@ export function NivelesContent() {
 
         if (error) throw error;
 
-        toast({
-          title: 'Nivel creado',
-          description: `${levelData.level_name} ha sido creado correctamente.`,
-        });
+        toast.success('Nivel creado', { description: `${levelData.level_name} ha sido creado correctamente.` });
       }
 
       setDialogOpen(false);
@@ -186,10 +180,7 @@ export function NivelesContent() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Nivel eliminado',
-        description: `${deletingLevel.level_name} ha sido eliminado.`,
-      });
+      toast.success('Nivel eliminado', { description: `${deletingLevel.level_name} ha sido eliminado.` });
 
       setDeleteDialogOpen(false);
       setDeletingLevel(null);

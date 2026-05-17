@@ -273,10 +273,7 @@ export default function NewSale() {
           : item
       ));
       
-      toast({
-        title: "Item actualizado",
-        description: `${selectedProduct.name} actualizado en el carrito`
-      });
+      toast.success("Item actualizado", { description: `${selectedProduct.name} actualizado en el carrito` });
     } else {
       // Add new item
       const newItem: OrderItem = {
@@ -302,10 +299,7 @@ export default function NewSale() {
 
       setCartItems(prev => [...prev, newItem]);
       
-      toast({
-        title: "Producto agregado",
-        description: `${selectedProduct.name} agregado al carrito`
-      });
+      toast.success("Producto agregado", { description: `${selectedProduct.name} agregado al carrito` });
     }
 
     setShowCustomizationModal(false);
@@ -772,10 +766,7 @@ export default function NewSale() {
           
           if (newBadges.length > 0) {
             console.log(`✨ Nuevas insignias otorgadas: ${newBadges.map(b => b.badgeCode).join(', ')}`);
-            toast({
-              title: '🏆 ¡Nueva insignia!',
-              description: `El cliente ha ganado ${newBadges.length} insignia(s) nueva(s)`,
-            });
+            toast.success('🏆 ¡Nueva insignia!', { description: `El cliente ha ganado ${newBadges.length} insignia(s) nueva(s)` });
           }
         } catch (badgeError) {
           console.error('Error otorgando insignias:', badgeError);
@@ -786,10 +777,7 @@ export default function NewSale() {
           const campaignResults = await evaluateCampaignsForOrder(customerId, fullOrderData.id);
           if (campaignResults.length > 0) {
             const totalRunas = campaignResults.reduce((sum, r) => sum + r.runas, 0);
-            toast({
-              title: '🎯 ¡Campaña completada!',
-              description: `El cliente ganó ${totalRunas} runa(s) por campaña(s)`,
-            });
+            toast.success('🎯 ¡Campaña completada!', { description: `El cliente ganó ${totalRunas} runa(s) por campaña(s)` });
           }
         } catch (campaignError) {
           console.error('Error evaluando campañas:', campaignError);
@@ -801,10 +789,7 @@ export default function NewSale() {
           if (pointsResult && pointsResult.points > 0) {
             console.log(`⭐ ${pointsResult.points} puntos acumulados, saldo: ${pointsResult.new_balance}`);
             if (pointsResult.leveled_up) {
-              toast({
-                title: '🎉 ¡Subió de nivel!',
-                description: `El cliente alcanzó el nivel ${pointsResult.new_level}`,
-              });
+              toast.success('🎉 ¡Subió de nivel!', { description: `El cliente alcanzó el nivel ${pointsResult.new_level}` });
             }
           }
         } catch (pointsError) {
@@ -844,11 +829,7 @@ export default function NewSale() {
         console.error('Error al descontar inventario (no crítico):', inventoryError);
       }
 
-      toast({
-        title: "¡Pedido creado!",
-        description: `Pedido #${fullOrderData.order_number} enviado a cocina exitosamente`,
-        duration: 5000
-      });
+      toast.success("¡Pedido creado!", { description: `Pedido #${fullOrderData.order_number} enviado a cocina exitosamente`, duration: 5000 });
 
     } catch (error) {
       console.error('Error processing order:', error);

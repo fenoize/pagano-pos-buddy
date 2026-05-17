@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Coupon } from '@/types';
-import { toast } from '@/hooks/use-toast';
 import { toast } from "sonner";
 export const useCoupons = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -161,10 +160,7 @@ export const useCoupons = () => {
         allowed_tags,
       });
 
-      toast({
-        title: 'Cupón creado',
-        description: `El cupón ${coupon.code} ha sido creado exitosamente.`,
-      });
+      toast.success('Cupón creado', { description: `El cupón ${coupon.code} ha sido creado exitosamente.` });
 
       await fetchCoupons();
       return coupon;

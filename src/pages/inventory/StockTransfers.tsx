@@ -135,11 +135,7 @@ export default function StockTransfers() {
     }
     
     if (availableStock && qty > availableStock.quantity) {
-      toast({
-        title: 'Error',
-        description: `Stock insuficiente. Disponible: ${availableStock.quantity} ${availableStock.uom_abbreviation}`,
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: `Stock insuficiente. Disponible: ${availableStock.quantity} ${availableStock.uom_abbreviation}` });
       return;
     }
     

@@ -137,10 +137,7 @@ export function useRunaSubscriptions(customerId?: string) {
         return false;
       }
 
-      toast({
-        title: "Éxito",
-        description: `Suscripción ${type === 'monthly' ? 'mensual' : type === 'weekly' ? 'semanal' : 'de cumpleaños'} creada`,
-      });
+      toast.success("Éxito", { description: `Suscripción ${type === 'monthly' ? 'mensual' : type === 'weekly' ? 'semanal' : 'de cumpleaños'} creada` });
 
       await fetchSubscriptions();
       return true;

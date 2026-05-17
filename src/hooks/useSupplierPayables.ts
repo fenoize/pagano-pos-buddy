@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { toast } from "sonner";
 export interface SupplierPayable {
   id: string;
@@ -127,12 +126,9 @@ export function useSupplierPayables(supplierId?: string) {
 
       if (error) throw error;
 
-      toast({
-        title: 'Pago registrado',
-        description: isPaidInFull 
+      toast.success('Pago registrado', { description: isPaidInFull 
           ? 'La cuenta ha sido saldada completamente'
-          : `Se registró un pago de $${amount.toLocaleString('es-CL')}`,
-      });
+          : `Se registró un pago de $${amount.toLocaleString('es-CL')}` });
 
       await fetchPayables();
       return true;

@@ -20,7 +20,6 @@ import { useCoupons } from '@/hooks/useCoupons';
 import { useCouponStats, CouponApplicationDetail } from '@/hooks/useCouponStats';
 import { useCustomerTags } from '@/hooks/useCustomerTags';
 import { Coupon, CouponType, Category, DeliveryMode } from '@/types';
-import { toast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';

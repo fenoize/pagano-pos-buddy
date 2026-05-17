@@ -249,10 +249,7 @@ export function CategoryConfig() {
       if (error) throw error;
       
       fetchCategories();
-      toast({
-        title: "Éxito",
-        description: `Categoría ${!category.active ? 'activada' : 'desactivada'} correctamente`
-      });
+      toast.success("Éxito", { description: `Categoría ${!category.active ? 'activada' : 'desactivada'} correctamente` });
     } catch (error: any) {
       toast.error("Error", { description: error.message || "No se pudo actualizar la categoría" });
     }

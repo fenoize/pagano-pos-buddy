@@ -56,10 +56,7 @@ export function usePOSConfig() {
       if (error) throw error;
       
       setConfig(prev => ({ ...prev, gridColumns: columns }));
-      toast({
-        title: "Éxito",
-        description: `Configuración actualizada: ${columns} columnas`
-      });
+      toast.success("Éxito", { description: `Configuración actualizada: ${columns} columnas` });
     } catch (error: any) {
       console.error('Error updating POS config:', error);
       toast.error("Error", { description: error.message || "No se pudo actualizar la configuración" });

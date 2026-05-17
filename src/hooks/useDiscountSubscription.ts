@@ -128,7 +128,7 @@ export function useDiscountSubscription(customerId?: string) {
         return false;
       }
 
-      toast({ title: "Éxito", description: `Descuento del ${data.discountPercent}% creado` });
+      toast.success("Éxito", { description: `Descuento del ${data.discountPercent}% creado` });
       await fetchSubscription();
       return true;
     } catch (error) {

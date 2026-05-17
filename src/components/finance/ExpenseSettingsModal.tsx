@@ -50,10 +50,7 @@ export function ExpenseSettingsModal({
     setLocalCategories(updated);
     onCategoriesChange(updated);
     setNewCategory('');
-    toast({
-      title: 'Categoría agregada',
-      description: `La categoría "${newCategory.trim()}" se agregó correctamente`,
-    });
+    toast.success('Categoría agregada', { description: `La categoría "${newCategory.trim()}" se agregó correctamente` });
   };
 
   const deleteCategory = (index: number) => {
@@ -63,10 +60,7 @@ export function ExpenseSettingsModal({
     const updated = localCategories.filter((_, i) => i !== index);
     setLocalCategories(updated);
     onCategoriesChange(updated);
-    toast({
-      title: 'Categoría eliminada',
-      description: `La categoría "${categoryToDelete}" se eliminó correctamente`,
-    });
+    toast.success('Categoría eliminada', { description: `La categoría "${categoryToDelete}" se eliminó correctamente` });
   };
 
   const updateCategory = (index: number, newName: string) => {
@@ -90,10 +84,7 @@ export function ExpenseSettingsModal({
     setLocalMethods(updated);
     onPaymentMethodsChange(updated);
     setNewMethod('');
-    toast({
-      title: 'Método agregado',
-      description: `El método "${newMethod.trim()}" se agregó correctamente`,
-    });
+    toast.success('Método agregado', { description: `El método "${newMethod.trim()}" se agregó correctamente` });
   };
 
   const deletePaymentMethod = (index: number) => {
@@ -103,10 +94,7 @@ export function ExpenseSettingsModal({
     const updated = localMethods.filter((_, i) => i !== index);
     setLocalMethods(updated);
     onPaymentMethodsChange(updated);
-    toast({
-      title: 'Método eliminado',
-      description: `El método "${methodToDelete}" se eliminó correctamente`,
-    });
+    toast.success('Método eliminado', { description: `El método "${methodToDelete}" se eliminó correctamente` });
   };
 
   const updatePaymentMethod = (index: number, newName: string) => {

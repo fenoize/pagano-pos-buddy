@@ -80,10 +80,7 @@ export function BadgesConfig() {
 
       setBadges(badges.map(b => b.id === badge.id ? { ...b, is_active: !b.is_active } : b));
       
-      toast({
-        title: 'Actualizado',
-        description: `Insignia ${!badge.is_active ? 'activada' : 'desactivada'}`,
-      });
+      toast.success('Actualizado', { description: `Insignia ${!badge.is_active ? 'activada' : 'desactivada'}` });
     } catch (error: any) {
       toast.error('Error', { description: error.message });
     }

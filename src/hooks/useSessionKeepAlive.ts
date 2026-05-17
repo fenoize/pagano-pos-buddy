@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
-import { toast } from '@/hooks/use-toast';
 import { toast } from "sonner";
 // Configuración para navegador web (4 horas de sesión)
 const WEB_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutos

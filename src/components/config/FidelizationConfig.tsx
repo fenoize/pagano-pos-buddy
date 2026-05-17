@@ -143,10 +143,7 @@ export function FidelizationConfig() {
 
       const result = data as { processed_count?: number; expired_count?: number } | null;
       
-      toast({
-        title: "Runas procesadas",
-        description: `Se procesaron ${result?.processed_count || 0} suscripciones. ${result?.expired_count || 0} expiraron.`,
-      });
+      toast.success("Runas procesadas", { description: `Se procesaron ${result?.processed_count || 0} suscripciones. ${result?.expired_count || 0} expiraron.` });
 
       // Recargar datos
       await loadPendingSubscriptions();

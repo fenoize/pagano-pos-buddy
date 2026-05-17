@@ -50,10 +50,7 @@ export function useFinanceExpenseCategories() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Categoría creada',
-        description: `La categoría "${name}" se creó correctamente`,
-      });
+      toast.success('Categoría creada', { description: `La categoría "${name}" se creó correctamente` });
       await fetchCategories();
       return true;
     } catch (error: any) {

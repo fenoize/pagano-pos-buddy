@@ -165,7 +165,7 @@ export default function CustomerLevelsBadges({ customerId }: CustomerLevelsBadge
         .eq('id', customerId);
       if (updateError) throw updateError;
 
-      toast({ title: 'Puntos actualizados', description: `${pointsMode === 'add' ? '+' : '-'}${pointsAmount} puntos` });
+      toast.success('Puntos actualizados', { description: `${pointsMode === 'add' ? '+' : '-'}${pointsAmount} puntos` });
       setIsPointsModalOpen(false);
       setPointsAmount(0);
       setPointsMotivo('');
@@ -198,7 +198,7 @@ export default function CustomerLevelsBadges({ customerId }: CustomerLevelsBadge
         description: `Nivel forzado a: ${def.level_name}`,
       });
 
-      toast({ title: 'Nivel actualizado', description: `Cliente asignado a nivel ${def.level_name}` });
+      toast.success('Nivel actualizado', { description: `Cliente asignado a nivel ${def.level_name}` });
       setIsLevelModalOpen(false);
       loadData();
     } catch (error: any) {

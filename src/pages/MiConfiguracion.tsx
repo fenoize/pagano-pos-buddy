@@ -13,7 +13,6 @@ import {
   Code2,
   Palette
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import { APP_VERSION, APP_BUILD_DATE, APP_NAME, CHANGELOG } from '@/config/version';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { toast } from "sonner";

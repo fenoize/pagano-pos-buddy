@@ -59,10 +59,7 @@ export function useComunas() {
 
       if (createError) throw createError;
 
-      toast({
-        title: "Comuna creada",
-        description: `Comuna "${comunaData.name}" creada exitosamente`
-      });
+      toast.success("Comuna creada", { description: `Comuna "${comunaData.name}" creada exitosamente` });
 
       await fetchComunas();
       return data ? (data as any as Comuna) : null;
@@ -151,10 +148,7 @@ export function useComunas() {
 
       if (updateError) throw updateError;
 
-      toast({
-        title: "Estado actualizado",
-        description: `Comuna ${isActive ? 'activada' : 'desactivada'} exitosamente`
-      });
+      toast.success("Estado actualizado", { description: `Comuna ${isActive ? 'activada' : 'desactivada'} exitosamente` });
 
       await fetchComunas();
       return true;

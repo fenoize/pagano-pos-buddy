@@ -103,10 +103,7 @@ export default function Users() {
   const handleToggleStatus = async (user: User) => {
     try {
       await toggleUserStatus(user.id, !user.active);
-      toast({
-        title: user.active ? "Usuario desactivado" : "Usuario activado",
-        description: `El usuario ha sido ${user.active ? 'desactivado' : 'activado'} correctamente.`
-      });
+      toast.success(user.active ? "Usuario desactivado" : "Usuario activado", { description: `El usuario ha sido ${user.active ? 'desactivado' : 'activado'} correctamente.` });
       fetchUsers();
     } catch (error) {
       toast.error("Error", { description: "No se pudo cambiar el estado del usuario." });
@@ -123,10 +120,7 @@ export default function Users() {
     setPasswordLoading(true);
     try {
       await updateUserPassword(passwordModalUser.id, password);
-      toast({
-        title: "Contraseña actualizada",
-        description: `Nueva contraseña aplicada para ${passwordModalUser.username}`
-      });
+      toast.success("Contraseña actualizada", { description: `Nueva contraseña aplicada para ${passwordModalUser.username}` });
       setPasswordModalUser(null);
     } catch (error) {
       toast.error("Error", { description: "No se pudo actualizar la contraseña." });

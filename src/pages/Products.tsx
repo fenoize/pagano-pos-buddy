@@ -132,10 +132,7 @@ export default function Products() {
       if (error) throw error;
       
       fetchProducts();
-      toast({
-        title: "Éxito",
-        description: `Producto ${!product.active ? 'activado' : 'desactivado'}`
-      });
+      toast.success("Éxito", { description: `Producto ${!product.active ? 'activado' : 'desactivado'}` });
     } catch (error) {
       toast.error("Error", { description: "No se pudo actualizar el producto" });
     }

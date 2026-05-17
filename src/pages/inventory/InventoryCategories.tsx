@@ -166,10 +166,7 @@ export default function InventoryCategories() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Categoría eliminada',
-        description: `Se removió la categoría "${categoryToDelete.name}" de las materias primas`,
-      });
+      toast.success('Categoría eliminada', { description: `Se removió la categoría "${categoryToDelete.name}" de las materias primas` });
 
       setShowDeleteDialog(false);
       setCategoryToDelete(null);
@@ -196,10 +193,7 @@ export default function InventoryCategories() {
 
         if (error) throw error;
 
-        toast({
-          title: 'Categoría actualizada',
-          description: `Se actualizó "${editingCategory.name}" a "${formData.name.trim()}"`,
-        });
+        toast.success('Categoría actualizada', { description: `Se actualizó "${editingCategory.name}" a "${formData.name.trim()}"` });
       } else {
         // Check if category already exists
         if (categories.some(c => c.name.toLowerCase() === formData.name.trim().toLowerCase())) {
@@ -207,10 +201,7 @@ export default function InventoryCategories() {
           return;
         }
 
-        toast({
-          title: 'Categoría creada',
-          description: `La categoría "${formData.name.trim()}" está disponible para asignar a materias primas`,
-        });
+        toast.success('Categoría creada', { description: `La categoría "${formData.name.trim()}" está disponible para asignar a materias primas` });
       }
 
       setShowForm(false);

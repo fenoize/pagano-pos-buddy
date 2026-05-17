@@ -159,10 +159,7 @@ export default function Categorias() {
 
         if (error) throw error;
 
-        toast({
-          title: "Categoría desactivada",
-          description: `La categoría tiene ${productsCount} producto(s) asociado(s) y ha sido desactivada. Los productos no se mostrarán en el POS.`,
-        });
+        toast.success("Categoría desactivada", { description: `La categoría tiene ${productsCount} producto(s) asociado(s) y ha sido desactivada. Los productos no se mostrarán en el POS.` });
       } else {
         // Eliminar completamente
         const { error } = await supabase

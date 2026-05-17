@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FinanceAccount } from '@/types/finance';
-import { toast } from '@/hooks/use-toast';
 import { toast } from "sonner";
 export function useFinanceAccounts() {
   const [accounts, setAccounts] = useState<FinanceAccount[]>([]);
