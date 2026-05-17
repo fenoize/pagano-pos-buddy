@@ -242,7 +242,6 @@ const App = () => (
           <CustomerAuthProvider>
             <CartProvider>
               <TooltipProvider>
-                <Toaster />
                 <Sonner />
                 <BrowserRouter>
                 <SEOHead />
