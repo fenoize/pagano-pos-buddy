@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, ShoppingBag, Home, Coins } from 'lucide-react';
+import { CheckCircle2, ShoppingBag, Home, Coins, Star } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatRunas } from '@/lib/utils';
