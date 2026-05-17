@@ -26,7 +26,6 @@ import { useRawMaterials } from "@/hooks/useRawMaterials";
 import { useInventory } from "@/hooks/useInventory";
 import { useStockBalances } from "@/hooks/useStockBalances";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
