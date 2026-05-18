@@ -904,14 +904,19 @@ export default function NewSale() {
                   </div>
 
                   <Cart
-                  items={cartItems}
-                  onUpdateQuantity={updateItemQuantity}
-                  onRemoveItem={removeItem}
-                  onEditItem={handleEditItem}
-                  subtotal={subtotal}
-                  discount={totalDiscount}
-                  deliveryFee={deliveryFee}
-                  onCheckout={() => {
+                    items={cartItems}
+                    onUpdateQuantity={updateItemQuantity}
+                    onRemoveItem={removeItem}
+                    onEditItem={handleEditItem}
+                    subtotal={subtotal}
+                    discount={totalDiscount}
+                    deliveryFee={deliveryFee}
+                    appliedCoupons={appliedCoupons}
+                    manualDiscount={manualDiscount}
+                    usedRunas={usedRunas}
+                    runaRewardValue={runaRewardValue}
+                    subscriptionDiscountAmount={subscriptionDiscountAmount}
+                    onCheckout={() => {
                       if (cartItems.length === 0) {
                         toast.error("Error", { description: "Agrega productos al carrito" });
                         return;
@@ -922,7 +927,7 @@ export default function NewSale() {
                       }
                       setCurrentStep(2);
                     }}
-                />
+                  />
                 </div>
               </ScrollArea>
             </div>
