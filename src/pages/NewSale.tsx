@@ -1041,6 +1041,12 @@ export default function NewSale() {
     }
   };
 
+  const saleActiveStep = showPaymentModal ? 3 : (isCustomerModalOpen || !customer.id) ? 1 : 2;
+  const saleCompletedSteps = [
+    ...(customer.id && !isCustomerModalOpen ? [1] : []),
+    ...(showPaymentModal ? [2] : [])
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
