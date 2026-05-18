@@ -1049,10 +1049,50 @@ export default function NewSale() {
 
   return (
     <div className="space-y-6">
+      {/* Sticky Sale Flow Stepper */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border py-1.5">
+        <div className="flex items-center justify-center max-w-md mx-auto">
+          {[
+            { label: 'Cliente', number: 1 },
+            { label: 'Productos', number: 2 },
+            { label: 'Pago', number: 3 },
+          ].map((step, index, arr) => {
+            const isActive = saleActiveStep === step.number;
+            const isCompleted = saleCompletedSteps.includes(step.number);
+            return (
+              <React.Fragment key={step.number}>
+                <div className="flex flex-col items-center gap-1 min-w-[60px]">
+                  <div className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
+                    isActive && "bg-primary text-primary-foreground",
+                    isCompleted && !isActive && "bg-muted text-muted-foreground",
+                    !isActive && !isCompleted && "bg-muted/40 text-muted-foreground/50"
+                  )}>
+                    {isCompleted ? <Check className="w-3 h-3" /> : step.number}
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-medium transition-colors leading-none",
+                    isActive && "text-primary",
+                    isCompleted && !isActive && "text-muted-foreground",
+                    !isActive && !isCompleted && "text-muted-foreground/40"
+                  )}>
+                    {step.label}
+                  </span>
+                </div>
+                {index < arr.length - 1 && (
+                  <div className={cn(
+                    "h-px flex-1 mx-2 self-start mt-3 transition-colors",
+                    saleCompletedSteps.includes(step.number) ? "bg-primary/50" : "bg-border"
+                  )} />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-end">
-        
-        {/* Step Navigation */}
         <div className="flex items-center gap-2">
           {/* Botón de Últimas Órdenes */}
           <Button 
@@ -1073,18 +1113,6 @@ export default function NewSale() {
               Anterior
             </Button>
           )}
-          
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className={`px-2 py-1 rounded ${currentStep >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-              1
-            </span>
-            <span className={`px-2 py-1 rounded ${currentStep >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-              2
-            </span>
-            <span className={`px-2 py-1 rounded ${currentStep >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-              3
-            </span>
-          </div>
         </div>
       </div>
 
