@@ -16,6 +16,12 @@ interface CartProps {
   subtotal: number;
   discount: number;
   deliveryFee: number;
+  // Discount breakdown (display only)
+  appliedCoupons?: Array<{ coupon_id: string; discount_products: number; discount_delivery?: number; code?: string }>;
+  manualDiscount?: { type: 'percentage' | 'fixed'; value: number; amount: number } | null;
+  usedRunas?: number;
+  runaRewardValue?: number;
+  subscriptionDiscountAmount?: number;
 }
 
 // Componente interno para cada item del carrito
@@ -197,7 +203,7 @@ function CartItemCard({
   );
 }
 
-export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem, onCheckout, subtotal, discount, deliveryFee }: CartProps) {
+export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem, onCheckout, subtotal, discount, deliveryFee, appliedCoupons = [], manualDiscount = null, usedRunas = 0, runaRewardValue = 0, subscriptionDiscountAmount = 0 }: CartProps) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -211,6 +217,35 @@ export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem
   };
 
   const total = subtotal - discount + deliveryFee;
+
+  // Build discount lines for display
+  const discountLines: { label: string; amount: number }[] = [];
+
+  for (const coupon of appliedCoupons) {
+    const couponTotal = (Number(coupon.discount_products) || 0) + (Number(coupon.discount_delivery) || 0);
+    if (couponTotal > 0) {
+      discountLines.push({
+        label: `Descuento cupón ${coupon.code || ''}`.trim(),
+        amount: couponTotal,
+      });
+    }
+  }
+
+  if (manualDiscount && manualDiscount.amount > 0) {
+    const label = manualDiscount.type === 'percentage'
+      ? `Descuento manual ${manualDiscount.value}%`
+      : 'Descuento manual';
+    discountLines.push({ label, amount: manualDiscount.amount });
+  }
+
+  const runasDiscount = usedRunas * runaRewardValue;
+  if (runasDiscount > 0) {
+    discountLines.push({ label: 'Pago con Runas', amount: runasDiscount });
+  }
+
+  if (subscriptionDiscountAmount > 0) {
+    discountLines.push({ label: 'Descuento suscripción', amount: subscriptionDiscountAmount });
+  }
 
   return (
     <Card className="sticky top-4">
