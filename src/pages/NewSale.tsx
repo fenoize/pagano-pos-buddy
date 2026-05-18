@@ -19,7 +19,7 @@ import PaymentModal from '@/components/pos/PaymentModal';
 import RunasCalculator from '@/components/pos/RunasCalculator';
 import { CouponManager } from '@/components/pos/CouponManager';
 import { CouponModal } from '@/components/pos/CouponModal';
-import { ArrowLeft, ArrowRight, User, Ticket, History, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, User, Ticket, History, AlertTriangle, Check } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
 import { usePOSConfig } from '@/hooks/usePOSConfig';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
@@ -31,6 +31,7 @@ import { RecentOrdersModal } from '@/components/sales/RecentOrdersModal';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { CashSessionModal } from '@/components/cash/CashSessionModal';
 import { toast } from "sonner";
+import { cn } from '@/lib/utils';
 
 export default function NewSale() {
   const [currentStep, setCurrentStep] = useState(1);
