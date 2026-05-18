@@ -288,12 +288,12 @@ export default function Cart({ items, onUpdateQuantity, onRemoveItem, onEditItem
                 <span>Subtotal:</span>
                 <span className="currency">{formatPrice(subtotal)}</span>
               </div>
-              {discount > 0 && (
-                <div className="flex justify-between text-sm text-green-600">
-                  <span>Descuentos:</span>
-                  <span className="currency">-{formatPrice(discount)}</span>
+              {discountLines.map((line, idx) => (
+                <div key={idx} className="flex justify-between text-sm text-muted-foreground">
+                  <span>{line.label}</span>
+                  <span className="currency">-{formatPrice(line.amount)}</span>
                 </div>
-              )}
+              ))}
               {deliveryFee > 0 && (
                 <div className="flex justify-between text-sm">
                   <span>Delivery:</span>
