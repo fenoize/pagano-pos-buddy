@@ -92,30 +92,30 @@ export default function CustomerOrderSuccess() {
 
         {/* Rewards Block */}
         {showRewards && (
-          <Card className="bg-slate-900/60 border-primary/20">
-            <CardContent className="pt-6">
-              <h3 className="text-center font-semibold text-primary mb-4 text-sm uppercase tracking-wider">
-                Recompensas ganadas en esta compra
+          <Card className="bg-slate-900/80 border-2 border-primary/40 shadow-[0_0_20px_-5px_hsl(var(--primary)/0.3)]">
+            <CardContent className="pt-6 space-y-3">
+              <h3 className="text-center font-semibold text-amber-400 text-sm uppercase tracking-wider">
+                Recompensas ganadas
               </h3>
-              <div className="grid grid-cols-2 gap-4">
-                {runasEarned > 0 && (
-                  <div className="flex flex-col items-center p-3 bg-background/40 rounded-lg border border-primary/10">
-                    <Coins className="h-6 w-6 text-primary mb-1" />
-                    <span className="text-xl font-bold text-primary">+{formatRunas(runasEarned)}</span>
-                    <span className="text-xs text-muted-foreground">Runas</span>
-                  </div>
-                )}
-                {pointsEarned > 0 && (
-                  <div className="flex flex-col items-center p-3 bg-background/40 rounded-lg border border-yellow-500/10">
-                    <Star className="h-6 w-6 text-yellow-400 mb-1" />
-                    <span className="text-xl font-bold text-yellow-400">+{formatRunas(pointsEarned)}</span>
-                    <span className="text-xs text-muted-foreground">Puntos</span>
-                  </div>
-                )}
+              {runasEarned > 0 && (
+                <div className="flex items-center justify-center gap-2 text-center">
+                  <Coins className="h-5 w-5 text-primary" />
+                  <p className="text-base">
+                    <span className="font-bold text-primary">¡Ganaste {formatRunas(runasEarned)} Runas!</span>
+                    <span className="text-slate-300"> Ahora tienes {formatRunas((orderDetails.customers?.cantidad_runas || 0))} totales.</span>
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center justify-center gap-2 text-center">
+                <Star className="h-5 w-5 text-amber-400" />
+                <p className="text-base font-semibold text-amber-400">
+                  +{formatRunas(pointsEarned)} Puntos acumulados
+                </p>
               </div>
             </CardContent>
           </Card>
         )}
+
 
 
         {/* Order Details */}
