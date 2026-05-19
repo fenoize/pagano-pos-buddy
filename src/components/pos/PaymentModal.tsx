@@ -1017,6 +1017,45 @@ export default function PaymentModal({
                 </div>
               )}
 
+              {!['efectivo', 'pos', 'transferencia', 'aplicacion', 'runas', 'pendiente', 'colacion', 'canje'].includes(currentMethod) && (
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor={`amount-${currentMethod}`}>Monto {getCurrentMethodConfig()?.display_name || currentMethod}</Label>
+                    <Input
+                      id={`amount-${currentMethod}`}
+                      type="number"
+                      placeholder="$0"
+                      value={currentAmount}
+                      onChange={(e) => setCurrentAmount(e.target.value)}
+                    />
+                  </div>
+                  {getCurrentMethodConfig()?.requires_receipt && (
+                    <div>
+                      <Label htmlFor={`receipt-${currentMethod}`}>N° de boleta</Label>
+                      <Input
+                        id={`receipt-${currentMethod}`}
+                        placeholder="Número de boleta"
+                        value={currentReceiptNumber}
+                        onChange={(e) => setCurrentReceiptNumber(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  {getCurrentMethodConfig()?.requires_operation_number && (
+                    <div>
+                      <Label htmlFor={`operation-${currentMethod}`}>N° de operación</Label>
+                      <Input
+                        id={`operation-${currentMethod}`}
+                        placeholder="Número de operación"
+                        value={currentOperationNumber}
+                        onChange={(e) => setCurrentOperationNumber(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+
+
               {currentMethod === 'runas' && (
                 <div className="space-y-3">
                   <div className="p-3 bg-primary/5 rounded-lg space-y-2">
