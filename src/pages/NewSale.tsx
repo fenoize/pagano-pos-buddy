@@ -1046,78 +1046,63 @@ export default function NewSale() {
     }
   };
 
-  const saleActiveStep = showPaymentModal ? 3 : (isCustomerModalOpen || !customer.id) ? 1 : 2;
-  const saleCompletedSteps = [
-    ...(customer.id && !isCustomerModalOpen ? [1] : []),
-    ...(showPaymentModal ? [2] : [])
-  ];
+  const saleActiveStep = showPaymentModal ? 3 : !customer.id ? 1 : 2;
 
   return (
     <div className="space-y-6">
-      {/* Sticky Sale Flow Stepper */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border py-1.5">
-        <div className="flex items-center justify-center max-w-md mx-auto">
+      {/* Header with inline stepper */}
+      <div className="flex items-center">
+        <div className="flex-1" />
+        
+        {/* Compact Stepper - hidden on mobile */}
+        <div className="hidden md:flex items-center gap-1.5">
           {[
-            { label: 'Cliente', number: 1 },
-            { label: 'Productos', number: 2 },
-            { label: 'Pago', number: 3 },
-          ].map((step, index, arr) => {
-            const isActive = saleActiveStep === step.number;
-            const isCompleted = saleCompletedSteps.includes(step.number);
+            { label: 'Cliente', step: 1 },
+            { label: 'Productos', step: 2 },
+            { label: 'Pago', step: 3 },
+          ].map((item, index, arr) => {
+            const isActive = saleActiveStep === item.step;
             return (
-              <React.Fragment key={step.number}>
-                <div className="flex flex-col items-center gap-1 min-w-[60px]">
-                  <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
-                    isActive && "bg-primary text-primary-foreground",
-                    isCompleted && !isActive && "bg-muted text-muted-foreground",
-                    !isActive && !isCompleted && "bg-muted/40 text-muted-foreground/50"
-                  )}>
-                    {isCompleted ? <Check className="w-3 h-3" /> : step.number}
-                  </div>
-                  <span className={cn(
-                    "text-[10px] font-medium transition-colors leading-none",
-                    isActive && "text-primary",
-                    isCompleted && !isActive && "text-muted-foreground",
-                    !isActive && !isCompleted && "text-muted-foreground/40"
-                  )}>
-                    {step.label}
-                  </span>
-                </div>
+              <React.Fragment key={item.label}>
+                <span
+                  className={cn(
+                    "text-xs font-medium rounded-full px-3 py-1 transition-colors",
+                    isActive ? "text-white" : "text-muted-foreground"
+                  )}
+                  style={isActive ? { backgroundColor: '#cc2525' } : undefined}
+                >
+                  {item.label}
+                </span>
                 {index < arr.length - 1 && (
-                  <div className={cn(
-                    "h-px flex-1 mx-2 self-start mt-3 transition-colors",
-                    saleCompletedSteps.includes(step.number) ? "bg-primary/50" : "bg-border"
-                  )} />
+                  <span className="text-muted-foreground text-[11px]">→</span>
                 )}
               </React.Fragment>
             );
           })}
         </div>
-      </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-end">
-        <div className="flex items-center gap-2">
-          {/* Botón de Últimas Órdenes */}
-          <Button 
-            variant="outline" 
-            className="gap-2"
-            onClick={() => setShowRecentOrders(true)}
-          >
-            <History className="w-4 h-4" />
-            <span className="hidden sm:inline">Últimas Órdenes</span>
-          </Button>
-          
-          {currentStep > 1 && (
-            <Button
-              variant="outline"
-              onClick={() => setCurrentStep(currentStep - 1)}
+        <div className="flex-1 flex justify-end">
+          <div className="flex items-center gap-2">
+            {/* Botón de Últimas Órdenes */}
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => setShowRecentOrders(true)}
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Anterior
+              <History className="w-4 h-4" />
+              <span className="hidden sm:inline">Últimas Órdenes</span>
             </Button>
-          )}
+            
+            {currentStep > 1 && (
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(currentStep - 1)}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Anterior
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
