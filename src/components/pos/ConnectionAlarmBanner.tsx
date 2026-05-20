@@ -35,7 +35,7 @@ export function ConnectionAlarmBanner() {
         }}
       >
         <span style={{ fontSize: 18 }}>
-          ⚠ CONEXIÓN PERDIDA — Los pedidos no están llegando al sistema.
+          ⚠ SIN CONEXIÓN CON EL SISTEMA — Los pedidos de clientes pueden no estar llegando.
         </span>
         <button
           onClick={dismissAlarm}
