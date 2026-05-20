@@ -8042,6 +8042,14 @@ export type Database = {
             }
             Returns: Json
           }
+      notify_admin_disconnection: {
+        Args: {
+          branch_name: string
+          cashier_name: string
+          disconnected_at: string
+        }
+        Returns: undefined
+      }
       process_auto_runas: { Args: never; Returns: Json }
       process_purchase_receipt: {
         Args: {
