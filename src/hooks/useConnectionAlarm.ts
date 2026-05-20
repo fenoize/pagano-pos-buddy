@@ -5,7 +5,8 @@ import { useCashSession } from '@/hooks/useCashSession';
 import { useBranchContext } from '@/contexts/BranchContext';
 
 /**
- * Detecta pérdida de conexión en el POS cuando hay sesión de caja abierta.
+ * Detecta pérdida de conexión del canal de pedidos entrantes.
+ * - Monitorea el canal Realtime existente que entrega 'orders' (no crea uno nuevo).
  * - Reproduce alarma con Web Audio API hasta que el usuario reconecte.
  * - Notifica a administradores vía RPC (OneSignal push) una sola vez.
  */
@@ -23,7 +24,6 @@ export function useConnectionAlarm() {
   const userInteractedRef = useRef(false);
   const notifiedRef = useRef(false);
   const wasDisconnectedRef = useRef(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const isCustomerRoute = useCallback(() => {
     if (typeof window === 'undefined') return false;
@@ -33,11 +33,11 @@ export function useConnectionAlarm() {
 
   const isEligible = !!user?.id && !!currentSession && !isCustomerRoute();
 
-  // Track first user interaction (autoplay policy)
+  // First user interaction (autoplay policy)
   useEffect(() => {
     const markInteracted = () => { userInteractedRef.current = true; };
-    document.addEventListener('click', markInteracted, { once: false });
-    document.addEventListener('keydown', markInteracted, { once: false });
+    document.addEventListener('click', markInteracted);
+    document.addEventListener('keydown', markInteracted);
     return () => {
       document.removeEventListener('click', markInteracted);
       document.removeEventListener('keydown', markInteracted);
@@ -80,8 +80,7 @@ export function useConnectionAlarm() {
       osc.start();
       oscRef.current = osc;
 
-      // Pattern: 880Hz 0.3s ON, silence 0.1s, 1200Hz 0.3s ON, silence 0.3s
-      const sequence: Array<{ freq: number; gain: number; dur: number }> = [
+      const sequence = [
         { freq: 880, gain: 1.0, dur: 300 },
         { freq: 880, gain: 0.0, dur: 100 },
         { freq: 1200, gain: 1.0, dur: 300 },
@@ -102,6 +101,29 @@ export function useConnectionAlarm() {
     }
   }, []);
 
+  /**
+   * Busca el canal Realtime que entrega pedidos.
+   * El topic de Supabase tiene formato 'realtime:<channelName>'.
+   */
+  const findOrdersChannel = useCallback(() => {
+    try {
+      const channels = supabase.getChannels();
+      return channels.find((ch) => {
+        const topic = (ch as any).topic?.toLowerCase?.() ?? '';
+        return topic.includes('order'); // matches 'incoming-orders', 'orders', etc.
+      });
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  const isOrdersChannelHealthy = useCallback(() => {
+    const ch = findOrdersChannel();
+    if (!ch) return false;
+    const state = (ch as any).state;
+    return state === 'joined';
+  }, [findOrdersChannel]);
+
   const triggerDisconnect = useCallback(() => {
     if (!isEligible) return;
     if (wasDisconnectedRef.current) return;
@@ -111,7 +133,6 @@ export function useConnectionAlarm() {
 
     if (!notifiedRef.current) {
       notifiedRef.current = true;
-      // Fire and forget
       supabase
         .rpc('notify_admin_disconnection' as any, {
           branch_name: activeBranch?.name ?? 'Desconocida',
@@ -140,21 +161,15 @@ export function useConnectionAlarm() {
     }
   }, [stopAlarm]);
 
-  // Browser online/offline
+  // Browser online/offline (sin cambios)
   useEffect(() => {
     if (!isEligible) return;
 
     const onOffline = () => triggerDisconnect();
     const onOnline = () => handleReconnect();
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible' && wasDisconnectedRef.current) {
-        window.location.reload();
-      }
-    };
 
     window.addEventListener('offline', onOffline);
     window.addEventListener('online', onOnline);
-    document.addEventListener('visibilitychange', onVisibility);
 
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
       triggerDisconnect();
@@ -163,31 +178,40 @@ export function useConnectionAlarm() {
     return () => {
       window.removeEventListener('offline', onOffline);
       window.removeEventListener('online', onOnline);
-      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [isEligible, triggerDisconnect, handleReconnect]);
 
-  // Supabase channel health check
+  // Visibilidad de pestaña + chequeo periódico del canal de pedidos
   useEffect(() => {
     if (!isEligible) return;
 
-    const ch = supabase.channel('connection-alarm-heartbeat');
-    channelRef.current = ch;
-    ch.subscribe((status) => {
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      // Pequeño delay para permitir que Realtime intente re-suscribirse
+      window.setTimeout(() => {
+        if (!isOrdersChannelHealthy()) {
+          triggerDisconnect();
+        }
+      }, 1500);
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+
+    // Health check periódico cada 30s mientras la pestaña esté visible
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      if (!isOrdersChannelHealthy()) {
         triggerDisconnect();
-      } else if (status === 'SUBSCRIBED') {
-        handleReconnect();
       }
-    });
+    }, 30000);
 
     return () => {
-      try { supabase.removeChannel(ch); } catch {}
-      channelRef.current = null;
+      document.removeEventListener('visibilitychange', onVisibility);
+      clearInterval(interval);
     };
-  }, [isEligible, triggerDisconnect, handleReconnect]);
+  }, [isEligible, isOrdersChannelHealthy, triggerDisconnect]);
 
-  // Cleanup on unmount or no longer eligible
+  // Limpieza si deja de ser elegible
   useEffect(() => {
     if (!isEligible && wasDisconnectedRef.current) {
       wasDisconnectedRef.current = false;
