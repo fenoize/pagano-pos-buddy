@@ -203,6 +203,9 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
               </div>
             </header>
              
+             {/* Alarma de conexión perdida - solo staff con sesión de caja abierta */}
+             <ConnectionAlarmBanner />
+
              {/* Banner de pedidos entrantes - solo visible si hay sesión con accept_app_orders */}
              <IncomingOrderBanner />
              
