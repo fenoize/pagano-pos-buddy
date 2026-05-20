@@ -24,6 +24,7 @@ import { POSThemeProvider } from "@/components/theme/POSThemeProvider";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { StaffPushBanner } from "@/components/notifications/StaffPushBanner";
 import { IncomingOrderBanner } from "@/components/pos/IncomingOrderBanner";
+import { ConnectionAlarmBanner } from "@/components/pos/ConnectionAlarmBanner";
 import { BranchProvider } from "@/contexts/BranchContext";
 import { BranchSelectorModal } from "@/components/branches/BranchSelectorModal";
 import { BranchIndicator } from "@/components/branches/BranchIndicator";
@@ -202,6 +203,9 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
               </div>
             </header>
              
+             {/* Alarma de conexión perdida - solo staff con sesión de caja abierta */}
+             <ConnectionAlarmBanner />
+
              {/* Banner de pedidos entrantes - solo visible si hay sesión con accept_app_orders */}
              <IncomingOrderBanner />
              
