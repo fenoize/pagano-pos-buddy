@@ -28,6 +28,9 @@ export interface OrderEditData {
   delivery_person_id?: string | null;
   customer_id?: string;
   nombre_resumen?: string;
+  cash_given?: number;
+  receipt_number?: string;
+  operation_number?: string;
 }
 
 export interface OrderEditAction {
