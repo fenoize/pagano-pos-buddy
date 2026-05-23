@@ -315,7 +315,10 @@ export const useDeliveryOrders = () => {
       };
 
       if (methodLower === 'efectivo') {
-        paymentFields.payment_efectivo = cashGiven || total;
+        // El campo payment_efectivo debe reflejar SOLO el ingreso real para caja.
+        // `cashGiven` puede ser mayor al total (ej. cliente paga con billete grande):
+        // la diferencia es vuelto que se devuelve y NO debe sumar a la caja.
+        paymentFields.payment_efectivo = Math.min(cashGiven ?? total, total);
       } else if (['mp', 'mercadopago', 'transferencia'].includes(methodLower)) {
         paymentFields.payment_mp = total;
       } else if (methodLower === 'pos') {
