@@ -4713,6 +4713,7 @@ export type Database = {
       orders: {
         Row: {
           branch_id: string
+          cash_given: number | null
           cash_session_id: string | null
           combo_data: Json | null
           coupon_code: string | null
@@ -4742,6 +4743,7 @@ export type Database = {
           items: Json
           nombre_resumen: string | null
           notes: string | null
+          operation_number: string | null
           order_number: number
           payment_aplicacion: number | null
           payment_efectivo: number | null
@@ -4751,6 +4753,7 @@ export type Database = {
           payment_runas: number | null
           payment_status: string | null
           pickup_mode: string | null
+          receipt_number: string | null
           source: string | null
           status: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
@@ -4759,6 +4762,7 @@ export type Database = {
         }
         Insert: {
           branch_id: string
+          cash_given?: number | null
           cash_session_id?: string | null
           combo_data?: Json | null
           coupon_code?: string | null
@@ -4788,6 +4792,7 @@ export type Database = {
           items: Json
           nombre_resumen?: string | null
           notes?: string | null
+          operation_number?: string | null
           order_number?: number
           payment_aplicacion?: number | null
           payment_efectivo?: number | null
@@ -4797,6 +4802,7 @@ export type Database = {
           payment_runas?: number | null
           payment_status?: string | null
           pickup_mode?: string | null
+          receipt_number?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
@@ -4805,6 +4811,7 @@ export type Database = {
         }
         Update: {
           branch_id?: string
+          cash_given?: number | null
           cash_session_id?: string | null
           combo_data?: Json | null
           coupon_code?: string | null
@@ -4834,6 +4841,7 @@ export type Database = {
           items?: Json
           nombre_resumen?: string | null
           notes?: string | null
+          operation_number?: string | null
           order_number?: number
           payment_aplicacion?: number | null
           payment_efectivo?: number | null
@@ -4843,6 +4851,7 @@ export type Database = {
           payment_runas?: number | null
           payment_status?: string | null
           pickup_mode?: string | null
+          receipt_number?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal?: number
