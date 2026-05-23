@@ -532,6 +532,7 @@ export default function PaymentModal({
             : (methodConfig?.requires_change 
                 ? Math.min(amount, total) 
                 : amount),
+          cashGiven: currentMethod === 'efectivo' ? amount : undefined,
           receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
           operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
           runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
