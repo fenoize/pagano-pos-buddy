@@ -129,11 +129,16 @@ const initGlobalSubscription = () => {
          payment_status: 'paid',
          payment_method: paymentData.method.toLowerCase() as any
        };
- 
+
+       // Persistir comprobantes/operación
+       if (paymentData.receiptNumber) updates.receipt_number = paymentData.receiptNumber;
+       if (paymentData.operationNumber) updates.operation_number = paymentData.operationNumber;
+
        // Actualizar el campo de pago correspondiente
        switch (paymentData.method.toLowerCase()) {
          case 'efectivo':
            updates.payment_efectivo = paymentData.amount;
+           updates.cash_given = paymentData.amount;
            break;
          case 'pos':
            updates.payment_pos = paymentData.amount;
