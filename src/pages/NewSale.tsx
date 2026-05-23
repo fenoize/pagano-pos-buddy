@@ -550,6 +550,14 @@ export default function NewSale() {
       const isPendingPayment = paymentMethod === 'pendiente';
       const paymentStatus = isPendingPayment ? 'unpaid' : 'paid';
 
+      // Capturar comprobantes y efectivo entregado
+      const cashGivenTotal = paymentData.payments.reduce(
+        (sum, p) => sum + (p.methodName === 'efectivo' ? (p.cashGiven ?? p.amount) : 0),
+        0
+      );
+      const receiptNumber = paymentData.payments.find(p => p.receiptNumber)?.receiptNumber || null;
+      const operationNumber = paymentData.payments.find(p => p.operationNumber)?.operationNumber || null;
+
       const orderData = {
         customer_id: customerId,
         created_by_user_id: validUserId,
@@ -569,6 +577,9 @@ export default function NewSale() {
         payment_runas: isPendingPayment ? 0 : totals.runas,
         payment_method: paymentMethod,
         payment_status: paymentStatus,
+        cash_given: isPendingPayment ? 0 : cashGivenTotal,
+        receipt_number: isPendingPayment ? null : receiptNumber,
+        operation_number: isPendingPayment ? null : operationNumber,
         status: 'Pendiente' as const,
         notes: paymentData.notes || null,
         // Delivery snapshot fields
