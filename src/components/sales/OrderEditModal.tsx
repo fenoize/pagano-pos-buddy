@@ -273,7 +273,10 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         delivery_reference: order.delivery_reference || '',
         delivery_person_id: order.delivery_person_id || null,
         customer_id: order.customer_id || undefined,
-        nombre_resumen: order.nombre_resumen || ''
+        nombre_resumen: order.nombre_resumen || '',
+        cash_given: (order as any).cash_given || 0,
+        receipt_number: (order as any).receipt_number || '',
+        operation_number: (order as any).operation_number || ''
       });
       setRunasEditadas(order.payment_runas || 0);
       setCustomerSearch('');
@@ -1147,6 +1150,39 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                         )}
                       </div>
                     )}
+
+                    {/* Comprobantes y efectivo entregado (editable) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t">
+                      <div className="space-y-2">
+                        <Label htmlFor="cash_given">Con cuánto pagó (efectivo)</Label>
+                        <Input
+                          id="cash_given"
+                          type="number"
+                          min="0"
+                          value={editData?.cash_given ?? 0}
+                          onChange={(e) => setEditData(prev => prev ? { ...prev, cash_given: parseInt(e.target.value) || 0 } : null)}
+                          placeholder="$0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="receipt_number">N° de boleta</Label>
+                        <Input
+                          id="receipt_number"
+                          value={editData?.receipt_number || ''}
+                          onChange={(e) => setEditData(prev => prev ? { ...prev, receipt_number: e.target.value } : null)}
+                          placeholder="—"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="operation_number">N° de operación / comprobante</Label>
+                        <Input
+                          id="operation_number"
+                          value={editData?.operation_number || ''}
+                          onChange={(e) => setEditData(prev => prev ? { ...prev, operation_number: e.target.value } : null)}
+                          placeholder="—"
+                        />
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <div className="space-y-2">
@@ -1190,6 +1226,45 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                       <span>Total:</span>
                       <span>{formatCurrency(order.total)}</span>
                     </div>
+
+                    {/* Comprobantes y efectivo entregado (vista) */}
+                    {(() => {
+                      const cashGiven = Number((order as any).cash_given) || 0;
+                      const receipt = (order as any).receipt_number as string | null;
+                      const operation = (order as any).operation_number as string | null;
+                      const change = cashGiven > order.total ? cashGiven - order.total : 0;
+                      if (!cashGiven && !receipt && !operation) return null;
+                      return (
+                        <div className="border-t pt-2 mt-2 space-y-1 text-sm">
+                          {cashGiven > 0 && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Con cuánto pagó:</span>
+                                <span className="font-medium">{formatCurrency(cashGiven)}</span>
+                              </div>
+                              {change > 0 && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Vuelto:</span>
+                                  <span className="font-medium">{formatCurrency(change)}</span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {receipt && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">N° boleta:</span>
+                              <span className="font-medium">{receipt}</span>
+                            </div>
+                          )}
+                          {operation && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">N° operación:</span>
+                              <span className="font-medium">{operation}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </CardContent>

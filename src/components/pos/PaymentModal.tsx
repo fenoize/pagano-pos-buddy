@@ -45,6 +45,7 @@ interface SinglePayment {
   methodName: string; // internal name (e.g. 'efectivo', 'colacion')
   countsAsRealSale: boolean;
   amount: number;
+  cashGiven?: number; // monto físico entregado por el cliente (efectivo, antes del cap por total)
   receiptNumber?: string;
   operationNumber?: string;
   runas?: number;
@@ -442,6 +443,7 @@ export default function PaymentModal({
         : (methodConfig?.requires_change 
             ? Math.min(amount, getRemainingBalance()) 
             : amount),
+      cashGiven: currentMethod === 'efectivo' ? amount : undefined,
       receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
       operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
       runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
@@ -530,6 +532,7 @@ export default function PaymentModal({
             : (methodConfig?.requires_change 
                 ? Math.min(amount, total) 
                 : amount),
+          cashGiven: currentMethod === 'efectivo' ? amount : undefined,
           receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
           operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
           runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,

@@ -28,6 +28,9 @@ export interface OrderEditData {
   delivery_person_id?: string | null;
   customer_id?: string;
   nombre_resumen?: string;
+  cash_given?: number;
+  receipt_number?: string;
+  operation_number?: string;
 }
 
 export interface OrderEditAction {
@@ -284,6 +287,9 @@ export function useOrderEdit() {
           delivery_person_name: deliveryPersonName,
           customer_id: editData.customer_id !== undefined ? (editData.customer_id || null) : orderData.customer_id,
           nombre_resumen: editData.nombre_resumen !== undefined ? editData.nombre_resumen : orderData.nombre_resumen,
+          cash_given: editData.cash_given !== undefined ? editData.cash_given : orderData.cash_given,
+          receipt_number: editData.receipt_number !== undefined ? (editData.receipt_number || null) : orderData.receipt_number,
+          operation_number: editData.operation_number !== undefined ? (editData.operation_number || null) : orderData.operation_number,
           updated_at: new Date().toISOString()
         })
         .eq('id', orderId)
