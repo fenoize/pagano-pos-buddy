@@ -1150,6 +1150,39 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                         )}
                       </div>
                     )}
+
+                    {/* Comprobantes y efectivo entregado (editable) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t">
+                      <div className="space-y-2">
+                        <Label htmlFor="cash_given">Con cuánto pagó (efectivo)</Label>
+                        <Input
+                          id="cash_given"
+                          type="number"
+                          min="0"
+                          value={editData?.cash_given ?? 0}
+                          onChange={(e) => setEditData(prev => prev ? { ...prev, cash_given: parseInt(e.target.value) || 0 } : null)}
+                          placeholder="$0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="receipt_number">N° de boleta</Label>
+                        <Input
+                          id="receipt_number"
+                          value={editData?.receipt_number || ''}
+                          onChange={(e) => setEditData(prev => prev ? { ...prev, receipt_number: e.target.value } : null)}
+                          placeholder="—"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="operation_number">N° de operación / comprobante</Label>
+                        <Input
+                          id="operation_number"
+                          value={editData?.operation_number || ''}
+                          onChange={(e) => setEditData(prev => prev ? { ...prev, operation_number: e.target.value } : null)}
+                          placeholder="—"
+                        />
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <div className="space-y-2">
