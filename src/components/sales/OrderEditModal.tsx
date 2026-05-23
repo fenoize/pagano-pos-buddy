@@ -1226,6 +1226,45 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                       <span>Total:</span>
                       <span>{formatCurrency(order.total)}</span>
                     </div>
+
+                    {/* Comprobantes y efectivo entregado (vista) */}
+                    {(() => {
+                      const cashGiven = Number((order as any).cash_given) || 0;
+                      const receipt = (order as any).receipt_number as string | null;
+                      const operation = (order as any).operation_number as string | null;
+                      const change = cashGiven > order.total ? cashGiven - order.total : 0;
+                      if (!cashGiven && !receipt && !operation) return null;
+                      return (
+                        <div className="border-t pt-2 mt-2 space-y-1 text-sm">
+                          {cashGiven > 0 && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Con cuánto pagó:</span>
+                                <span className="font-medium">{formatCurrency(cashGiven)}</span>
+                              </div>
+                              {change > 0 && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Vuelto:</span>
+                                  <span className="font-medium">{formatCurrency(change)}</span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {receipt && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">N° boleta:</span>
+                              <span className="font-medium">{receipt}</span>
+                            </div>
+                          )}
+                          {operation && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">N° operación:</span>
+                              <span className="font-medium">{operation}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </CardContent>
