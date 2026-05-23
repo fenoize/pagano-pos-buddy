@@ -273,7 +273,10 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         delivery_reference: order.delivery_reference || '',
         delivery_person_id: order.delivery_person_id || null,
         customer_id: order.customer_id || undefined,
-        nombre_resumen: order.nombre_resumen || ''
+        nombre_resumen: order.nombre_resumen || '',
+        cash_given: (order as any).cash_given || 0,
+        receipt_number: (order as any).receipt_number || '',
+        operation_number: (order as any).operation_number || ''
       });
       setRunasEditadas(order.payment_runas || 0);
       setCustomerSearch('');
