@@ -45,6 +45,7 @@ interface SinglePayment {
   methodName: string; // internal name (e.g. 'efectivo', 'colacion')
   countsAsRealSale: boolean;
   amount: number;
+  cashGiven?: number; // monto físico entregado por el cliente (efectivo, antes del cap por total)
   receiptNumber?: string;
   operationNumber?: string;
   runas?: number;
