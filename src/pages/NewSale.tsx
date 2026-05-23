@@ -432,6 +432,7 @@ export default function NewSale() {
         methodName: string;
         countsAsRealSale: boolean;
         amount: number;
+        cashGiven?: number;
         receiptNumber?: string;
         operationNumber?: string;
         runas?: number;
