@@ -319,6 +319,7 @@ export const useDeliveryOrders = () => {
         // `cashGiven` puede ser mayor al total (ej. cliente paga con billete grande):
         // la diferencia es vuelto que se devuelve y NO debe sumar a la caja.
         paymentFields.payment_efectivo = Math.min(cashGiven ?? total, total);
+        paymentFields.cash_given = cashGiven ?? total;
       } else if (['mp', 'mercadopago', 'transferencia'].includes(methodLower)) {
         paymentFields.payment_mp = total;
       } else if (methodLower === 'pos') {
