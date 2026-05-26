@@ -68,12 +68,10 @@
    const [deliveryPersons, setDeliveryPersons] = useState<DeliveryPerson[]>([]);
    const { currentSession } = useCashSession();
    const { settings: deliverySettings } = useDeliverySettings();
-   const { user } = useAuthContext();
-   const prevOrderCountRef = useRef(0);
-   const [newOrderArrived, setNewOrderArrived] = useState(false);
- 
-   const canAcceptAppOrders = currentSession?.accept_app_orders === true;
-   const deliveryAssignmentMode = deliverySettings?.assignment_mode || 'pool';
+  const { user } = useAuthContext();
+
+  const canAcceptAppOrders = currentSession?.accept_app_orders === true;
+  const deliveryAssignmentMode = deliverySettings?.assignment_mode || 'pool';
  
    // Fetch delivery persons for assignment
    const fetchDeliveryPersons = useCallback(async () => {
