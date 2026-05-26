@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Store, Smartphone } from 'lucide-react';
+import { Store, Smartphone, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OrderSourceBadgeProps {
@@ -25,6 +25,20 @@ export function OrderSourceBadge({ source, iconOnly = false, className }: OrderS
     );
   }
 
+  if (source === 'web') {
+    return (
+      <Badge
+        className={cn(
+          'gap-1 bg-emerald-600 text-white hover:bg-emerald-600 dark:bg-emerald-500',
+          className
+        )}
+      >
+        <Globe className="h-3 w-3" />
+        {!iconOnly && <span>Web</span>}
+      </Badge>
+    );
+  }
+
   if (source === 'customer_app') {
     return (
       <Badge
@@ -34,7 +48,7 @@ export function OrderSourceBadge({ source, iconOnly = false, className }: OrderS
         )}
       >
         <Smartphone className="h-3 w-3" />
-        {!iconOnly && <span>App / Web</span>}
+        {!iconOnly && <span>App</span>}
       </Badge>
     );
   }
