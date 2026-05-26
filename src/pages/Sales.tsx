@@ -704,6 +704,7 @@ export default function Sales() {
                   <TableHead className="w-[80px]">N° Orden</TableHead>
                   <TableHead>Fecha/Hora</TableHead>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>Canal</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Método Pago</TableHead>
