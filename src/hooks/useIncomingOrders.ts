@@ -1,4 +1,4 @@
- import { useState, useEffect, useCallback, useRef } from 'react';
+ import { useState, useEffect, useCallback } from 'react';
  import { supabase } from '@/integrations/supabase/client';
  import { Order, User, OrderItem } from '@/types';
  import { useCashSession } from './useCashSession';
@@ -68,12 +68,10 @@
    const [deliveryPersons, setDeliveryPersons] = useState<DeliveryPerson[]>([]);
    const { currentSession } = useCashSession();
    const { settings: deliverySettings } = useDeliverySettings();
-   const { user } = useAuthContext();
-   const prevOrderCountRef = useRef(0);
-   const [newOrderArrived, setNewOrderArrived] = useState(false);
- 
-   const canAcceptAppOrders = currentSession?.accept_app_orders === true;
-   const deliveryAssignmentMode = deliverySettings?.assignment_mode || 'pool';
+  const { user } = useAuthContext();
+
+  const canAcceptAppOrders = currentSession?.accept_app_orders === true;
+  const deliveryAssignmentMode = deliverySettings?.assignment_mode || 'pool';
  
    // Fetch delivery persons for assignment
    const fetchDeliveryPersons = useCallback(async () => {
@@ -125,13 +123,7 @@
          customer: order.customer || undefined
        }));
        
-       // Check if new order arrived
-       if (newOrders.length > prevOrderCountRef.current && prevOrderCountRef.current > 0) {
-         setNewOrderArrived(true);
-       }
-       prevOrderCountRef.current = newOrders.length;
-       
-       setOrders(newOrders);
+        setOrders(newOrders);
      } catch (error) {
        console.error('Error fetching pending orders:', error);
      } finally {
@@ -219,10 +211,11 @@
      }
    }, [currentSession, user, orders, deliveryPersons, deliveryAssignmentMode, fetchPendingOrders]);
  
-   // Clear new order flag
-   const clearNewOrderFlag = useCallback(() => {
-     setNewOrderArrived(false);
-   }, []);
+    // Derived flag: true whenever there are pending orders
+    const newOrderArrived = orders.length > 0;
+    const clearNewOrderFlag = useCallback(() => {
+      // No-op: presence in orders array is the source of truth
+    }, []);
  
    // Initial fetch
    useEffect(() => {

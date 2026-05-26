@@ -1,4 +1,4 @@
- import { useState } from 'react';
+ import { useEffect, useRef, useState } from 'react';
  import { Package, Truck, Bell, Volume2, VolumeX, ChevronDown, ChevronUp } from 'lucide-react';
  import { Button } from '@/components/ui/button';
  import { Badge } from '@/components/ui/badge';
@@ -21,25 +21,45 @@
      clearNewOrderFlag
    } = useIncomingOrders();
  
-   const [selectedOrder, setSelectedOrder] = useState<IncomingOrder | null>(null);
-   const [modalOpen, setModalOpen] = useState(false);
-   const [soundEnabled, setSoundEnabled] = useState(true);
-   const [collapsed, setCollapsed] = useState(false);
- 
-   // Don't render if no active session or no orders
-   if (!canAcceptAppOrders || orders.length === 0) {
-     return null;
-   }
- 
-   const handleViewDetails = (order: IncomingOrder) => {
-     setSelectedOrder(order);
-     setModalOpen(true);
-   };
- 
-   const handleCloseModal = () => {
-     setModalOpen(false);
-     setSelectedOrder(null);
-   };
+  const [selectedOrder, setSelectedOrder] = useState<IncomingOrder | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
+  // Track how many orders the cashier has already dismissed (minimized).
+  // Auto-open the modal only when orders.length exceeds this threshold,
+  // so minimizing keeps the modal closed until a NEW pending order arrives.
+  const dismissedCountRef = useRef(0);
+
+  // Clamp dismissed count if orders were accepted/decreased
+  if (dismissedCountRef.current > orders.length) {
+    dismissedCountRef.current = orders.length;
+  }
+
+  // Auto-open modal whenever there are more pending orders than dismissed
+  useEffect(() => {
+    if (!canAcceptAppOrders) return;
+    if (orders.length > dismissedCountRef.current && !modalOpen) {
+      setSelectedOrder(orders[0]);
+      setModalOpen(true);
+    }
+  }, [orders, canAcceptAppOrders, modalOpen]);
+
+  // Don't render if no active session or no orders
+  if (!canAcceptAppOrders || orders.length === 0) {
+    return null;
+  }
+
+  const handleViewDetails = (order: IncomingOrder) => {
+    setSelectedOrder(order);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedOrder(null);
+    // Remember current pending count so we don't immediately reopen
+    dismissedCountRef.current = orders.length;
+  };
  
    const handleQuickAccept = async (order: IncomingOrder) => {
      // Quick accept only for pickup orders or delivery in pool mode
