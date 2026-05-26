@@ -731,6 +731,10 @@ export default function Sales() {
                       </TableCell>
                       <TableCell>{getCustomerInfo(order)}</TableCell>
                       <TableCell>
+                        <OrderSourceBadge source={(order as any).source} iconOnly className="md:hidden" />
+                        <OrderSourceBadge source={(order as any).source} className="hidden md:inline-flex" />
+                      </TableCell>
+                      <TableCell>
                         <OrderStatusDropdown
                           orderId={order.id}
                           currentStatus={order.status}
