@@ -36,9 +36,9 @@
    const isDelivery = order.fulfillment === 'delivery';
    const requiresDeliveryPerson = isDelivery && deliveryAssignmentMode === 'assigned';
    
-   const customerName = order.customer?.nombres 
-     ? `${order.customer.nombres} ${order.customer.apellidos || ''}`.trim()
-     : order.customer?.name || 'Cliente';
+  const customerName = order.customer?.nombres 
+    ? `${order.customer.nombres} ${order.customer.apellidos || ''}`.trim()
+    : order.customer?.name || order.nombre_resumen || 'Cliente';
  
    const handleAccept = async () => {
      const success = await onAccept(

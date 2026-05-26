@@ -4721,6 +4721,8 @@ export type Database = {
           created_at: string | null
           created_by_user_id: string | null
           customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
           delivery_address: string | null
           delivery_assigned_at: string | null
           delivery_comuna: string | null
@@ -4770,6 +4772,8 @@ export type Database = {
           created_at?: string | null
           created_by_user_id?: string | null
           customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           delivery_address?: string | null
           delivery_assigned_at?: string | null
           delivery_comuna?: string | null
@@ -4819,6 +4823,8 @@ export type Database = {
           created_at?: string | null
           created_by_user_id?: string | null
           customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           delivery_address?: string | null
           delivery_assigned_at?: string | null
           delivery_comuna?: string | null
