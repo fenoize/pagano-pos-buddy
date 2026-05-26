@@ -123,13 +123,7 @@
          customer: order.customer || undefined
        }));
        
-       // Check if new order arrived
-       if (newOrders.length > prevOrderCountRef.current && prevOrderCountRef.current > 0) {
-         setNewOrderArrived(true);
-       }
-       prevOrderCountRef.current = newOrders.length;
-       
-       setOrders(newOrders);
+        setOrders(newOrders);
      } catch (error) {
        console.error('Error fetching pending orders:', error);
      } finally {
