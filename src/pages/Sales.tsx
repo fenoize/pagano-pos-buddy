@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarIcon, Search, Eye, Download, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { OrderEditModal } from '@/components/sales/OrderEditModal';
+import { OrderSourceBadge } from '@/components/sales/OrderSourceBadge';
 import { OrderStatusDropdown } from '@/components/sales/OrderStatusDropdown';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
