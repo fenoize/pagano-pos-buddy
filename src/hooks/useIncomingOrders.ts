@@ -211,10 +211,11 @@
      }
    }, [currentSession, user, orders, deliveryPersons, deliveryAssignmentMode, fetchPendingOrders]);
  
-   // Clear new order flag
-   const clearNewOrderFlag = useCallback(() => {
-     setNewOrderArrived(false);
-   }, []);
+    // Derived flag: true whenever there are pending orders
+    const newOrderArrived = orders.length > 0;
+    const clearNewOrderFlag = useCallback(() => {
+      // No-op: presence in orders array is the source of truth
+    }, []);
  
    // Initial fetch
    useEffect(() => {
