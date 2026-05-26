@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { OrderSourceBadge } from '@/components/sales/OrderSourceBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -523,6 +524,10 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">Estado:</Label>
                     <Badge variant="secondary">{order.status}</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Origen:</Label>
+                    <div><OrderSourceBadge source={(order as any).source} /></div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">Tipo de Entrega:</Label>

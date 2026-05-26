@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarIcon, Search, Eye, Download, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { OrderEditModal } from '@/components/sales/OrderEditModal';
+import { OrderSourceBadge } from '@/components/sales/OrderSourceBadge';
 import { OrderStatusDropdown } from '@/components/sales/OrderStatusDropdown';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
@@ -95,7 +96,7 @@ export default function Sales() {
       // El usuario puede usar filtros si necesita datos más antiguos
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, customer_id, status, total, payment_method, fulfillment, created_at, updated_at, nombre_resumen, notes, branch_id')
+        .select('id, order_number, customer_id, status, total, payment_method, fulfillment, created_at, updated_at, nombre_resumen, notes, branch_id, source')
         .order('created_at', { ascending: false })
         .limit(200);
 
@@ -703,6 +704,7 @@ export default function Sales() {
                   <TableHead className="w-[80px]">N° Orden</TableHead>
                   <TableHead>Fecha/Hora</TableHead>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>Canal</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Método Pago</TableHead>
@@ -713,7 +715,7 @@ export default function Sales() {
               <TableBody>
                 {paginatedOrders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No se encontraron ventas con los filtros aplicados
                     </TableCell>
                   </TableRow>
@@ -728,6 +730,10 @@ export default function Sales() {
                         </div>
                       </TableCell>
                       <TableCell>{getCustomerInfo(order)}</TableCell>
+                      <TableCell>
+                        <OrderSourceBadge source={(order as any).source} iconOnly className="md:hidden" />
+                        <OrderSourceBadge source={(order as any).source} className="hidden md:inline-flex" />
+                      </TableCell>
                       <TableCell>
                         <OrderStatusDropdown
                           orderId={order.id}
