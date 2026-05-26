@@ -1,4 +1,4 @@
- import { useState } from 'react';
+ import { useEffect, useRef, useState } from 'react';
  import { Package, Truck, Bell, Volume2, VolumeX, ChevronDown, ChevronUp } from 'lucide-react';
  import { Button } from '@/components/ui/button';
  import { Badge } from '@/components/ui/badge';
