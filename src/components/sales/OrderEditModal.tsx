@@ -526,6 +526,10 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                     <Badge variant="secondary">{order.status}</Badge>
                   </div>
                   <div className="space-y-2">
+                    <Label className="text-muted-foreground">Origen:</Label>
+                    <div><OrderSourceBadge source={(order as any).source} /></div>
+                  </div>
+                  <div className="space-y-2">
                     <Label className="text-muted-foreground">Tipo de Entrega:</Label>
                     {isEditMode ? (
                       <Select
