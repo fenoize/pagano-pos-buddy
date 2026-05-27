@@ -99,7 +99,15 @@ export function CashSessionTopBar() {
       // para evitar loop de sincronización
       setAcceptAppOrders(checked);
       updateCurrentSessionLocally({ accept_app_orders: checked });
-      
+
+      // Fire-and-forget: notificar a WordPress sin bloquear el flujo del cajero
+      supabase.functions
+        .invoke('notify-wordpress-store-status', { body: { open: checked } })
+        .then(({ error: fnError }) => {
+          if (fnError) console.error('[StoreSync] Error al llamar Edge Function:', fnError);
+        })
+        .catch((err) => console.error('[StoreSync] Error de red:', err));
+
       toast.success(checked ? "✅ Recibiendo pedidos desde app" : "⏸️ App pausada", { description: checked 
           ? "Los clientes pueden hacer pedidos desde la app"
           : "Los pedidos desde la app están pausados temporalmente" });
