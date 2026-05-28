@@ -39,10 +39,18 @@ const DAYS = [
   { key: 'sun', label: 'Domingo' },
 ];
 
+type DayHours = { open: string; close: string; closed: boolean; closes_next_day?: boolean };
+
 const DEFAULT_HOURS = DAYS.reduce((acc, d) => {
-  acc[d.key] = { open: '10:00', close: '23:00', closed: false };
+  acc[d.key] = { open: '10:00', close: '23:00', closed: false, closes_next_day: false };
   return acc;
-}, {} as Record<string, { open: string; close: string; closed: boolean }>);
+}, {} as Record<string, DayHours>);
+
+// "HH:MM" → minutes
+const toMin = (s: string) => {
+  const [h, m] = (s || '00:00').split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
 
 export function BranchFormDialog({ open, onOpenChange, branch }: Props) {
   const { create, update } = useBranches();
@@ -120,6 +128,14 @@ export function BranchFormDialog({ open, onOpenChange, branch }: Props) {
         cashAccountId = newAcc.id;
       }
 
+      // Recalcular closes_next_day por día (close < open → cruza medianoche)
+      const normalizedHours = Object.fromEntries(
+        Object.entries(form.opening_hours).map(([k, h]) => [
+          k,
+          { ...h, closes_next_day: !h.closed && toMin(h.close) < toMin(h.open) },
+        ])
+      );
+
       const payload = {
         name: form.name.trim(),
         address: form.address.trim() || null,
@@ -128,7 +144,7 @@ export function BranchFormDialog({ open, onOpenChange, branch }: Props) {
         is_default: form.is_default,
         accepts_online_orders: form.accepts_online_orders,
         cash_account_id: cashAccountId,
-        opening_hours: form.opening_hours,
+        opening_hours: normalizedHours,
       };
 
       if (branch) {
@@ -274,6 +290,11 @@ export function BranchFormDialog({ open, onOpenChange, branch }: Props) {
                         }))
                       }
                     />
+                    {!h.closed && toMin(h.close) < toMin(h.open) && (
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        +1 día
+                      </span>
+                    )}
                   </div>
                 );
               })}
