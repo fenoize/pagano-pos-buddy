@@ -39,10 +39,18 @@ const DAYS = [
   { key: 'sun', label: 'Domingo' },
 ];
 
+type DayHours = { open: string; close: string; closed: boolean; closes_next_day?: boolean };
+
 const DEFAULT_HOURS = DAYS.reduce((acc, d) => {
-  acc[d.key] = { open: '10:00', close: '23:00', closed: false };
+  acc[d.key] = { open: '10:00', close: '23:00', closed: false, closes_next_day: false };
   return acc;
-}, {} as Record<string, { open: string; close: string; closed: boolean }>);
+}, {} as Record<string, DayHours>);
+
+// "HH:MM" → minutes
+const toMin = (s: string) => {
+  const [h, m] = (s || '00:00').split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
 
 export function BranchFormDialog({ open, onOpenChange, branch }: Props) {
   const { create, update } = useBranches();
