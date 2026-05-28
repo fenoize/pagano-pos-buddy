@@ -70,6 +70,7 @@ export function CampaignFormModal({ open, onOpenChange, campaign, onSubmit, load
       setCategoryIds(c.category_ids || []);
       setMinQuantity(c.min_quantity || 1);
       setMinAmount(c.min_amount || 0);
+      setMultiplier(c.multiplier || 2);
     } else {
       setTitle('');
       setDescription('');
@@ -84,6 +85,7 @@ export function CampaignFormModal({ open, onOpenChange, campaign, onSubmit, load
       setCategoryIds([]);
       setMinQuantity(1);
       setMinAmount(0);
+      setMultiplier(2);
     }
   }, [campaign, open]);
 
