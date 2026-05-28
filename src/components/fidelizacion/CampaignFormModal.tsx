@@ -24,6 +24,7 @@ const CAMPAIGN_TYPE_LABELS: Record<string, string> = {
   product_purchase: 'Compra de productos',
   accumulated_spend: 'Monto acumulado',
   first_purchase: 'Primera compra',
+  runas_multiplier: '✕ Multiplicador de Runas',
 };
 
 export function CampaignFormModal({ open, onOpenChange, campaign, onSubmit, loading }: CampaignFormModalProps) {
