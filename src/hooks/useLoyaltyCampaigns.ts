@@ -7,7 +7,7 @@ export interface LoyaltyCampaign {
   id: string;
   title: string;
   description: string | null;
-  campaign_type: 'registration' | 'product_purchase' | 'accumulated_spend' | 'first_purchase';
+  campaign_type: 'registration' | 'product_purchase' | 'accumulated_spend' | 'first_purchase' | 'runas_multiplier';
   is_active: boolean;
   starts_at: string;
   ends_at: string;
