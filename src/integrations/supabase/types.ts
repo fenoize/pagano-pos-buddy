@@ -8314,6 +8314,7 @@ export type Database = {
         | "product_purchase"
         | "accumulated_spend"
         | "first_purchase"
+        | "runas_multiplier"
       order_status:
         | "PendientePago"
         | "PendienteAceptacion"
@@ -8510,6 +8511,7 @@ export const Constants = {
         "product_purchase",
         "accumulated_spend",
         "first_purchase",
+        "runas_multiplier",
       ],
       order_status: [
         "PendientePago",

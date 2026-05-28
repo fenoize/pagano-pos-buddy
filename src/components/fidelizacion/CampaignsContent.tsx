@@ -17,6 +17,7 @@ const TYPE_LABELS: Record<string, string> = {
   product_purchase: 'Compra productos',
   accumulated_spend: 'Monto acumulado',
   first_purchase: 'Primera compra',
+  runas_multiplier: 'Multiplicador',
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -24,6 +25,7 @@ const TYPE_COLORS: Record<string, string> = {
   product_purchase: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   accumulated_spend: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   first_purchase: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  runas_multiplier: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
 };
 
 function getCampaignStatus(c: LoyaltyCampaign): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } {
@@ -112,7 +114,11 @@ export function CampaignsContent() {
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Star className="h-3.5 w-3.5" />
-                      <span>{campaign.reward_runas} runas</span>
+                      <span>
+                        {campaign.campaign_type === 'runas_multiplier'
+                          ? `x${campaign.conditions?.multiplier || 2} RUNAS`
+                          : `${campaign.reward_runas} runas`}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />
