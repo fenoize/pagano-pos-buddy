@@ -100,6 +100,8 @@ export function CampaignFormModal({ open, onOpenChange, campaign, onSubmit, load
       };
     } else if (campaignType === 'accumulated_spend') {
       conditions = { min_amount: minAmount };
+    } else if (campaignType === 'runas_multiplier') {
+      conditions = { multiplier };
     }
 
     onSubmit({
@@ -109,7 +111,7 @@ export function CampaignFormModal({ open, onOpenChange, campaign, onSubmit, load
       is_active: isActive,
       starts_at: new Date(startsAt).toISOString(),
       ends_at: new Date(endsAt).toISOString(),
-      reward_runas: rewardRunas,
+      reward_runas: campaignType === 'runas_multiplier' ? 0 : rewardRunas,
       conditions,
       max_claims: maxClaims ? parseInt(maxClaims) : null,
       one_per_customer: onePerCustomer,
