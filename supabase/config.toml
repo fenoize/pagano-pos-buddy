@@ -38,3 +38,10 @@ verify_jwt = false
 
 [functions.admin-manage-customer-auth]
 verify_jwt = false
+
+[functions.notify-wordpress-store-status]
+verify_jwt = false
+
+[functions.schedule-checker]
+verify_jwt = false
+
