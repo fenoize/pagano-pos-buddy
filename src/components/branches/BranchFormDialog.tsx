@@ -290,6 +290,11 @@ export function BranchFormDialog({ open, onOpenChange, branch }: Props) {
                         }))
                       }
                     />
+                    {!h.closed && toMin(h.close) < toMin(h.open) && (
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        +1 día
+                      </span>
+                    )}
                   </div>
                 );
               })}
