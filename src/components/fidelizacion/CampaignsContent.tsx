@@ -114,7 +114,11 @@ export function CampaignsContent() {
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Star className="h-3.5 w-3.5" />
-                      <span>{campaign.reward_runas} runas</span>
+                      <span>
+                        {campaign.campaign_type === 'runas_multiplier'
+                          ? `x${campaign.conditions?.multiplier || 2} RUNAS`
+                          : `${campaign.reward_runas} runas`}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />
