@@ -128,6 +128,14 @@ export function BranchFormDialog({ open, onOpenChange, branch }: Props) {
         cashAccountId = newAcc.id;
       }
 
+      // Recalcular closes_next_day por día (close < open → cruza medianoche)
+      const normalizedHours = Object.fromEntries(
+        Object.entries(form.opening_hours).map(([k, h]) => [
+          k,
+          { ...h, closes_next_day: !h.closed && toMin(h.close) < toMin(h.open) },
+        ])
+      );
+
       const payload = {
         name: form.name.trim(),
         address: form.address.trim() || null,
@@ -136,7 +144,7 @@ export function BranchFormDialog({ open, onOpenChange, branch }: Props) {
         is_default: form.is_default,
         accepts_online_orders: form.accepts_online_orders,
         cash_account_id: cashAccountId,
-        opening_hours: form.opening_hours,
+        opening_hours: normalizedHours,
       };
 
       if (branch) {
