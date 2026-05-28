@@ -1,0 +1,1 @@
+ALTER TYPE public.loyalty_campaign_type ADD VALUE IF NOT EXISTS 'runas_multiplier';
