@@ -159,10 +159,25 @@ export function CampaignFormModal({ open, onOpenChange, campaign, onSubmit, load
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Runas a otorgar</Label>
-              <Input type="number" min={1} value={rewardRunas} onChange={e => setRewardRunas(parseInt(e.target.value) || 1)} required />
-            </div>
+            {campaignType === 'runas_multiplier' ? (
+              <div className="space-y-2">
+                <Label>Multiplicador</Label>
+                <Select value={String(multiplier)} onValueChange={v => setMultiplier(parseInt(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2">x2 — El doble de runas</SelectItem>
+                    <SelectItem value="3">x3 — El triple de runas</SelectItem>
+                    <SelectItem value="4">x4 — Cuádruple de runas</SelectItem>
+                    <SelectItem value="5">x5 — Quíntuple de runas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Runas a otorgar</Label>
+                <Input type="number" min={1} value={rewardRunas} onChange={e => setRewardRunas(parseInt(e.target.value) || 1)} required />
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Máx. claims (vacío = ilimitado)</Label>
               <Input type="number" min={1} value={maxClaims} onChange={e => setMaxClaims(e.target.value)} placeholder="Ilimitado" />
