@@ -405,26 +405,30 @@ export default function Sales() {
   const getCustomerInfo = (order: Order) => {
     // Si el cliente está registrado, mostrar nombre clickeable
     if (order.customer_id) {
-      const customer = customers.find(c => c.id === order.customer_id);
+      // Buscar primero en el join inline (siempre vigente), luego en la lista cargada
+      const inlineCustomer = (order as any).customer as Customer | undefined;
+      const listedCustomer = customers.find(c => c.id === order.customer_id);
+      const customer = inlineCustomer || listedCustomer;
       if (customer) {
         const customerName = getFullCustomerName(customer);
-        return (
-          <button
-            className="text-primary hover:underline text-left"
-            onClick={() => {
-              // TODO: Implementar modal de información de cliente
-              console.log('Ver cliente:', customer.id);
-            }}
-          >
-            {customerName}
-          </button>
-        );
+        if (customerName) {
+          return (
+            <button
+              className="text-primary hover:underline text-left"
+              onClick={() => {
+                console.log('Ver cliente:', customer.id);
+              }}
+            >
+              {customerName}
+            </button>
+          );
+        }
       }
     }
-    
-    // Si no está registrado, usar nombre_resumen
-    const guestName = order.nombre_resumen || 'Cliente';
-    
+
+    // Si no está registrado o no se pudo resolver el nombre, usar nombre_resumen
+    const guestName = (order.nombre_resumen || '').trim() || 'Cliente';
+
     return (
       <span className="text-muted-foreground">
         {guestName}
