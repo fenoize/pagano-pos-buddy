@@ -332,16 +332,18 @@ export default function Sales() {
   const exportToCSV = () => {
     const csvData = filteredOrders.map(order => {
       let customerName = 'Cliente';
-      
-      // Si el cliente está registrado
+
       if (order.customer_id) {
-        const customer = customers.find(c => c.id === order.customer_id);
+        const inlineCustomer = (order as any).customer as Customer | undefined;
+        const listedCustomer = customers.find(c => c.id === order.customer_id);
+        const customer = inlineCustomer || listedCustomer;
         if (customer) {
-          customerName = getFullCustomerName(customer);
+          customerName = getFullCustomerName(customer) || customerName;
+        } else {
+          customerName = (order.nombre_resumen || '').trim() || customerName;
         }
       } else {
-        // Si no está registrado, usar nombre_resumen
-        customerName = order.nombre_resumen || 'Cliente';
+        customerName = (order.nombre_resumen || '').trim() || customerName;
       }
       
       return {
