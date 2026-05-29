@@ -74,6 +74,9 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
           *,
           customer:customers(
             name,
+            apellido,
+            nombres,
+            apellidos,
             phone
           )
         `)
