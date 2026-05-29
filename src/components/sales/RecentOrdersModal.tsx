@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Order } from '@/types';
+import { getOrderDisplayName } from '@/lib/orderDisplay';
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,9 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
           *,
           customer:customers(
             name,
+            apellido,
+            nombres,
+            apellidos,
             phone
           )
         `)
@@ -152,7 +156,7 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
           ) : (
             <Accordion type="single" collapsible className="space-y-2">
               {orders.map((order) => {
-                const customerName = order.customer?.name || order.nombre_resumen || 'Cliente sin nombre';
+                const customerName = getOrderDisplayName(order, undefined, 'Cliente sin nombre');
                 const customerPhone = order.customer?.phone || '';
 
                 return (

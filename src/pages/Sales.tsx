@@ -96,7 +96,7 @@ export default function Sales() {
       // El usuario puede usar filtros si necesita datos más antiguos
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, customer_id, status, total, payment_method, fulfillment, created_at, updated_at, nombre_resumen, notes, branch_id, source')
+        .select('id, order_number, customer_id, status, total, payment_method, fulfillment, created_at, updated_at, nombre_resumen, notes, branch_id, source, customer:customers(id, name, apellido, nombres, apellidos, phone, rut)')
         .order('created_at', { ascending: false })
         .limit(200);
 
@@ -298,12 +298,14 @@ export default function Sales() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(order => {
-        const customer = customers.find(c => c.id === order.customer_id);
+        const inlineCustomer = (order as any).customer as Customer | undefined;
+        const listedCustomer = customers.find(c => c.id === order.customer_id);
+        const customer = inlineCustomer || listedCustomer;
         const customerName = customer ? getFullCustomerName(customer).toLowerCase() : '';
         const guestName = (order.nombre_resumen || '').toLowerCase();
         const orderNumber = order.order_number.toString();
-        
-        return orderNumber.includes(query) || 
+
+        return orderNumber.includes(query) ||
                customerName.includes(query) ||
                guestName.includes(query) ||
                order.status.toLowerCase().includes(query);
@@ -330,16 +332,18 @@ export default function Sales() {
   const exportToCSV = () => {
     const csvData = filteredOrders.map(order => {
       let customerName = 'Cliente';
-      
-      // Si el cliente está registrado
+
       if (order.customer_id) {
-        const customer = customers.find(c => c.id === order.customer_id);
+        const inlineCustomer = (order as any).customer as Customer | undefined;
+        const listedCustomer = customers.find(c => c.id === order.customer_id);
+        const customer = inlineCustomer || listedCustomer;
         if (customer) {
-          customerName = getFullCustomerName(customer);
+          customerName = getFullCustomerName(customer) || customerName;
+        } else {
+          customerName = (order.nombre_resumen || '').trim() || customerName;
         }
       } else {
-        // Si no está registrado, usar nombre_resumen
-        customerName = order.nombre_resumen || 'Cliente';
+        customerName = (order.nombre_resumen || '').trim() || customerName;
       }
       
       return {
@@ -405,26 +409,30 @@ export default function Sales() {
   const getCustomerInfo = (order: Order) => {
     // Si el cliente está registrado, mostrar nombre clickeable
     if (order.customer_id) {
-      const customer = customers.find(c => c.id === order.customer_id);
+      // Buscar primero en el join inline (siempre vigente), luego en la lista cargada
+      const inlineCustomer = (order as any).customer as Customer | undefined;
+      const listedCustomer = customers.find(c => c.id === order.customer_id);
+      const customer = inlineCustomer || listedCustomer;
       if (customer) {
         const customerName = getFullCustomerName(customer);
-        return (
-          <button
-            className="text-primary hover:underline text-left"
-            onClick={() => {
-              // TODO: Implementar modal de información de cliente
-              console.log('Ver cliente:', customer.id);
-            }}
-          >
-            {customerName}
-          </button>
-        );
+        if (customerName) {
+          return (
+            <button
+              className="text-primary hover:underline text-left"
+              onClick={() => {
+                console.log('Ver cliente:', customer.id);
+              }}
+            >
+              {customerName}
+            </button>
+          );
+        }
       }
     }
-    
-    // Si no está registrado, usar nombre_resumen
-    const guestName = order.nombre_resumen || 'Cliente';
-    
+
+    // Si no está registrado o no se pudo resolver el nombre, usar nombre_resumen
+    const guestName = (order.nombre_resumen || '').trim() || 'Cliente';
+
     return (
       <span className="text-muted-foreground">
         {guestName}

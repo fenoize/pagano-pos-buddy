@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2, UtensilsCrossed, ShoppingBag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getOrderDisplayName } from '@/lib/orderDisplay';
 
 interface KDSConfig {
   timeGreen: number;
@@ -148,24 +149,23 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
 
       <CardContent className={`space-y-3 ${compact ? 'px-3 py-2' : 'space-y-4'}`}>
         {/* Customer Info */}
-        {(order.customer || order.nombre_resumen) && (
-          <div className={`flex items-center gap-2 text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
-            <User className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
-            {order.customer ? (
-              <>
-                <span>{order.customer.name} {order.customer.apellido}</span>
-                {order.customer.phone && (
-                  <>
-                    <Phone className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
-                    <span>{order.customer.phone}</span>
-                  </>
-                )}
-              </>
-            ) : (
-              <span>{order.nombre_resumen}</span>
-            )}
-          </div>
-        )}
+        {(order.customer || order.nombre_resumen) && (() => {
+          const displayName = getOrderDisplayName(order);
+          const phone = order.customer?.phone;
+          if (!displayName && !phone) return null;
+          return (
+            <div className={`flex items-center gap-2 text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
+              <User className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
+              <span className="font-medium text-foreground">{displayName}</span>
+              {phone && (
+                <>
+                  <Phone className={`${compact ? 'w-3 h-3' : 'w-3 h-3'}`} />
+                  <span>{phone}</span>
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Items */}
         <div className={compact ? "space-y-1.5" : "space-y-2"}>

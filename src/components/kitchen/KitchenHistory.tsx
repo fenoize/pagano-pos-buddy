@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { Order, OrderItem } from '@/types';
+import { getOrderDisplayName } from '@/lib/orderDisplay';
 
 interface KitchenHistoryProps {
   open: boolean;
@@ -61,10 +62,7 @@ export function KitchenHistory({ open, onOpenChange }: KitchenHistoryProps) {
   };
 
   const getCustomerName = (order: Order) => {
-    if (order.customer) {
-      return `${order.customer.nombres || order.customer.name || ''} ${order.customer.apellidos || order.customer.apellido || ''}`.trim() || 'Cliente';
-    }
-    return order.nombre_resumen || 'Cliente';
+    return getOrderDisplayName(order);
   };
 
   const renderOrderCard = (order: Order) => (
