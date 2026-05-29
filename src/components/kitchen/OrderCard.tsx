@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2, UtensilsCrossed, ShoppingBag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getOrderDisplayName } from '@/lib/orderDisplay';
 
 interface KDSConfig {
   timeGreen: number;
