@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { Order, OrderItem } from '@/types';
+import { getOrderDisplayName } from '@/lib/orderDisplay';
 
 interface KitchenHistoryProps {
   open: boolean;
