@@ -298,12 +298,14 @@ export default function Sales() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(order => {
-        const customer = customers.find(c => c.id === order.customer_id);
+        const inlineCustomer = (order as any).customer as Customer | undefined;
+        const listedCustomer = customers.find(c => c.id === order.customer_id);
+        const customer = inlineCustomer || listedCustomer;
         const customerName = customer ? getFullCustomerName(customer).toLowerCase() : '';
         const guestName = (order.nombre_resumen || '').toLowerCase();
         const orderNumber = order.order_number.toString();
-        
-        return orderNumber.includes(query) || 
+
+        return orderNumber.includes(query) ||
                customerName.includes(query) ||
                guestName.includes(query) ||
                order.status.toLowerCase().includes(query);
