@@ -3,12 +3,26 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.0";
- export const APP_BUILD_DATE = "2026-04-28";
+ export const APP_VERSION = "1.5.1";
+ export const APP_BUILD_DATE = "2026-05-29";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.5.1",
+     date: "2026-05-29",
+     changes: [
+       "Badges de canal de venta diferenciados: Tienda (POS), Web y App del cliente",
+       "Nuevo tipo de campaña de Fidelización: Multiplicador de Runas (x2, x3, x4, x5)",
+       "Automatización de 'Pedidos online' según horario de apertura/cierre del local",
+       "Soporte de horarios que cruzan medianoche en la configuración de Locales",
+       "Notificación automática (push y correo) a admins si abre la hora sin caja iniciada",
+       "Sincronización automática del estado de la tienda con el sitio WordPress",
+       "Los nombres reales de clientes registrados ahora se muestran en KDS, Ventas y Últimas Órdenes",
+       "Mejoras de estabilidad y correcciones menores"
+     ]
+   },
    {
      version: "1.5.0",
      date: "2026-04-28",
