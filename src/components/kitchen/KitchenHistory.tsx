@@ -61,10 +61,7 @@ export function KitchenHistory({ open, onOpenChange }: KitchenHistoryProps) {
   };
 
   const getCustomerName = (order: Order) => {
-    if (order.customer) {
-      return `${order.customer.nombres || order.customer.name || ''} ${order.customer.apellidos || order.customer.apellido || ''}`.trim() || 'Cliente';
-    }
-    return order.nombre_resumen || 'Cliente';
+    return getOrderDisplayName(order);
   };
 
   const renderOrderCard = (order: Order) => (
