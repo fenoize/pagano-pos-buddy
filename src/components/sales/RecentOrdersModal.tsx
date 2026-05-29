@@ -156,7 +156,7 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
           ) : (
             <Accordion type="single" collapsible className="space-y-2">
               {orders.map((order) => {
-                const customerName = order.customer?.name || order.nombre_resumen || 'Cliente sin nombre';
+                const customerName = getOrderDisplayName(order, undefined, 'Cliente sin nombre');
                 const customerPhone = order.customer?.phone || '';
 
                 return (
