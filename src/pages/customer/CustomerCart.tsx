@@ -255,6 +255,17 @@ export default function CustomerCart() {
           </CardContent>
         </Card>
       </div>
+      <AllianceBenefitModal
+        open={showBenefitModal}
+        onOpenChange={setShowBenefitModal}
+        coupon={autoCoupon?.coupon ?? null}
+        estimatedDiscount={
+          autoCoupon
+            ? (autoCoupon.application.discount_products || 0) + (autoCoupon.application.discount_delivery || 0)
+            : 0
+        }
+        freeDelivery={freeDelivery}
+      />
       <CustomerBottomNav />
     </div>
   );
