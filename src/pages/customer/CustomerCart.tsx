@@ -83,6 +83,32 @@ export default function CustomerCart() {
         {/* Store Status Banner */}
         <StoreStatusBanner onStatusChange={setCanOrder} />
 
+        {/* Alliance Benefit Banner */}
+        {hasAny && (
+          <button
+            type="button"
+            onClick={() => setShowBenefitModal(true)}
+            className="w-full text-left rounded-lg border-2 border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5 p-4 flex items-center gap-3 hover:from-primary/15 hover:to-primary/10 transition-colors"
+          >
+            <div className="rounded-full bg-primary/20 p-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold">¡Tienes un descuento disponible!</p>
+              <p className="text-sm text-muted-foreground">
+                {autoCoupon
+                  ? `Cupón "${autoCoupon.coupon.code}" — ahorra ${formatCurrency((autoCoupon.application.discount_products || 0) + (autoCoupon.application.discount_delivery || 0))}`
+                  : freeDelivery
+                    ? 'Envío gratis por alianza'
+                    : 'Beneficios por alianza'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Toca para ver los detalles</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </button>
+        )}
+
+
         {/* Cart Items */}
         <div className="space-y-3">
           {items.map((item) => (
