@@ -30,7 +30,7 @@ export const useCustomerAllianceBenefits = ({
   deliveryFee = 0,
   enabled = true,
 }: Args) => {
-  const { autoCoupon } = useAllianceAutoCoupon({
+  const { autoCoupon, allianceCoupons } = useAllianceAutoCoupon({
     customerId,
     cartItems,
     subtotal,
