@@ -74,9 +74,9 @@ export function AllianceBenefitModal({ open, onOpenChange, coupon, estimatedDisc
                       Ahorro estimado: {formatCurrency(estimatedDiscount)}
                     </p>
                   )}
-                  {coupon.min_order_amount > 0 && (
+                  {coupon.min_spend && coupon.min_spend > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Pedido mínimo: {formatCurrency(coupon.min_order_amount)}
+                      Pedido mínimo: {formatCurrency(coupon.min_spend)}
                     </p>
                   )}
                 </div>
