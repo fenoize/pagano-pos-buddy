@@ -29,6 +29,7 @@ import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubs
 import { Coupon, CouponApplication } from '@/types';
 import { loadCartCoupon, saveCartCoupon, clearCartCoupon } from '@/lib/cartCouponStorage';
 import { useAllianceAutoCoupon } from '@/hooks/useAllianceAutoCoupon';
+import { isAllianceCouponEnabled, isAllianceFreeDeliveryEnabled } from '@/lib/allianceBenefitPrefs';
 
 interface CustomerAddress {
   id: string;
