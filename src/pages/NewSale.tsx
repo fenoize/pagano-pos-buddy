@@ -1261,6 +1261,29 @@ export default function NewSale() {
         onCustomerChange={setCustomer}
       />
 
+      {/* Alliance Benefits Modal */}
+      <POSCustomerBenefitsModal
+        open={isBenefitsModalOpen}
+        onOpenChange={setIsBenefitsModalOpen}
+        coupon={allianceAutoCoupon?.coupon ?? null}
+        estimatedDiscount={
+          allianceAutoCoupon
+            ? (allianceAutoCoupon.application.discount_products || 0) + (allianceAutoCoupon.application.discount_delivery || 0)
+            : 0
+        }
+        freeDelivery={allianceFreeDelivery}
+        onChange={() => {
+          // If cashier just disabled the auto-applied coupon, remove it
+          if (allianceAutoCoupon && !isPosAllianceCouponEnabled(allianceAutoCoupon.coupon.id)) {
+            setAppliedCoupons(prev => prev.filter(c => c.coupon_id !== allianceAutoCoupon.coupon.id));
+            if (autoAppliedAllianceCouponId === allianceAutoCoupon.coupon.id) {
+              setAutoAppliedAllianceCouponId(null);
+            }
+          }
+        }}
+      />
+
+
       {/* Recent Orders Modal */}
       <RecentOrdersModal
         isOpen={showRecentOrders}
