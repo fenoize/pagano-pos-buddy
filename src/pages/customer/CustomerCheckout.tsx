@@ -386,6 +386,17 @@ export default function CustomerCheckout() {
         {/* Store Status Banner */}
         <StoreStatusBanner onStatusChange={setCanOrder} />
 
+        {/* Alliance benefit reminder when toggled off */}
+        {autoCoupon && !isAllianceCouponEnabled(autoCoupon.coupon.id) && (
+          <Alert className="border-amber-500/40 bg-amber-500/10">
+            <AlertCircle className="h-4 w-4 text-amber-400" />
+            <AlertDescription className="text-amber-100">
+              Tienes el cupón <strong>{autoCoupon.coupon.code}</strong> desactivado. Actívalo desde el carrito para aprovechar tu descuento de alianza.
+            </AlertDescription>
+          </Alert>
+        )}
+
+
         {/* Subscription Discount Banner */}
         {subscriptionDiscount > 0 && (
           <Alert className="border-emerald-500/30 bg-emerald-500/10">
