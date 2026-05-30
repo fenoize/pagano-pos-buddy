@@ -971,6 +971,20 @@ export default function NewSale() {
                     </Button>
                   </div>
 
+                  {customer.id && hasAllianceBenefits && (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start gap-2 border-primary/40 bg-primary/5 hover:bg-primary/10"
+                      onClick={() => setIsBenefitsModalOpen(true)}
+                    >
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      <span className="truncate">Beneficios disponibles por alianza</span>
+                      <span className="ml-auto text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-semibold">
+                        Ver
+                      </span>
+                    </Button>
+                  )}
+
                   <Cart
                     items={cartItems}
                     onUpdateQuantity={updateItemQuantity}
