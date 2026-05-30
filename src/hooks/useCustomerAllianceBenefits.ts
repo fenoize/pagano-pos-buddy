@@ -59,6 +59,7 @@ export const useCustomerAllianceBenefits = ({
     : false;
 
   const hasAny = Boolean(autoCoupon) || Boolean(freeDelivery);
+  const hasAnyAvailable = allianceCoupons.length > 0 || Boolean(freeDelivery);
 
-  return { autoCoupon, freeDelivery, freeDeliveryEligible, hasAny };
+  return { autoCoupon, allianceCoupons, freeDelivery, freeDeliveryEligible, hasAny, hasAnyAvailable };
 };
