@@ -19,7 +19,10 @@ import PaymentModal from '@/components/pos/PaymentModal';
 import RunasCalculator from '@/components/pos/RunasCalculator';
 import { CouponManager } from '@/components/pos/CouponManager';
 import { CouponModal } from '@/components/pos/CouponModal';
-import { ArrowLeft, ArrowRight, User, Ticket, History, AlertTriangle } from 'lucide-react';
+import { POSCustomerBenefitsModal } from '@/components/pos/POSCustomerBenefitsModal';
+import { useCustomerAllianceBenefits } from '@/hooks/useCustomerAllianceBenefits';
+import { isPosAllianceCouponEnabled } from '@/lib/allianceBenefitPrefs';
+import { ArrowLeft, ArrowRight, User, Ticket, History, AlertTriangle, Sparkles } from 'lucide-react';
 import { useInventory } from '@/hooks/useInventory';
 import { usePOSConfig } from '@/hooks/usePOSConfig';
 import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubscription';
@@ -57,6 +60,9 @@ export default function NewSale() {
   const [manualDiscount, setManualDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number; amount: number } | null>(null);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isBenefitsModalOpen, setIsBenefitsModalOpen] = useState(false);
+  const [autoAppliedAllianceCouponId, setAutoAppliedAllianceCouponId] = useState<string | null>(null);
+  const lastAdvisedCustomerRef = useRef<string | null>(null);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [showRecentOrders, setShowRecentOrders] = useState(false);
   const [showNoSessionAlert, setShowNoSessionAlert] = useState(false);
@@ -85,6 +91,55 @@ export default function NewSale() {
     const itemTotal = (item.basePrice + extrasTotal) * item.quantity;
     return sum + itemTotal;
   }, 0);
+
+  // Alliance benefits detection (notifies cashier + auto-applies coupon)
+  const {
+    autoCoupon: allianceAutoCoupon,
+    freeDelivery: allianceFreeDelivery,
+    hasAnyAvailable: hasAllianceBenefits,
+  } = useCustomerAllianceBenefits({
+    customerId: customer?.id,
+    cartItems: cartItems as any,
+    subtotal,
+    deliveryFee,
+    enabled: Boolean(customer?.id),
+  });
+
+  // Toast cashier when a customer with alliance benefits is loaded
+  useEffect(() => {
+    if (!customer?.id) {
+      lastAdvisedCustomerRef.current = null;
+      return;
+    }
+    if (!hasAllianceBenefits) return;
+    if (lastAdvisedCustomerRef.current === customer.id) return;
+    lastAdvisedCustomerRef.current = customer.id;
+    toast.info('Este cliente tiene beneficios por alianza', {
+      description: 'Toca "Beneficios" para ver y activar/desactivar.',
+      duration: 8000,
+      action: { label: 'Ver', onClick: () => setIsBenefitsModalOpen(true) },
+    });
+  }, [customer?.id, hasAllianceBenefits]);
+
+  // Auto-apply alliance coupon to POS cart (cashier no longer types the code)
+  useEffect(() => {
+    if (!customer?.id || !allianceAutoCoupon) return;
+    const couponId = allianceAutoCoupon.coupon.id;
+    if (!isPosAllianceCouponEnabled(couponId)) return;
+    if (appliedCoupons.some(c => c.coupon_id === couponId)) return;
+    setAppliedCoupons(prev => [...prev, allianceAutoCoupon.application]);
+    setAutoAppliedAllianceCouponId(couponId);
+    toast.success(`Cupón alianza aplicado: ${allianceAutoCoupon.coupon.code}`);
+  }, [customer?.id, allianceAutoCoupon, appliedCoupons]);
+
+  // Remove auto-applied alliance coupon when customer is cleared/changed
+  useEffect(() => {
+    if (!autoAppliedAllianceCouponId) return;
+    if (!customer?.id) {
+      setAppliedCoupons(prev => prev.filter(c => c.coupon_id !== autoAppliedAllianceCouponId));
+      setAutoAppliedAllianceCouponId(null);
+    }
+  }, [customer?.id, autoAppliedAllianceCouponId]);
 
   // Calculate subscription discount with rules
   const calculateSubscriptionDiscount = () => {
@@ -916,6 +971,20 @@ export default function NewSale() {
                     </Button>
                   </div>
 
+                  {customer.id && hasAllianceBenefits && (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start gap-2 border-primary/40 bg-primary/5 hover:bg-primary/10"
+                      onClick={() => setIsBenefitsModalOpen(true)}
+                    >
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      <span className="truncate">Beneficios disponibles por alianza</span>
+                      <span className="ml-auto text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-semibold">
+                        Ver
+                      </span>
+                    </Button>
+                  )}
+
                   <Cart
                     items={cartItems}
                     onUpdateQuantity={updateItemQuantity}
@@ -1191,6 +1260,29 @@ export default function NewSale() {
         customer={customer}
         onCustomerChange={setCustomer}
       />
+
+      {/* Alliance Benefits Modal */}
+      <POSCustomerBenefitsModal
+        open={isBenefitsModalOpen}
+        onOpenChange={setIsBenefitsModalOpen}
+        coupon={allianceAutoCoupon?.coupon ?? null}
+        estimatedDiscount={
+          allianceAutoCoupon
+            ? (allianceAutoCoupon.application.discount_products || 0) + (allianceAutoCoupon.application.discount_delivery || 0)
+            : 0
+        }
+        freeDelivery={allianceFreeDelivery}
+        onChange={() => {
+          // If cashier just disabled the auto-applied coupon, remove it
+          if (allianceAutoCoupon && !isPosAllianceCouponEnabled(allianceAutoCoupon.coupon.id)) {
+            setAppliedCoupons(prev => prev.filter(c => c.coupon_id !== allianceAutoCoupon.coupon.id));
+            if (autoAppliedAllianceCouponId === allianceAutoCoupon.coupon.id) {
+              setAutoAppliedAllianceCouponId(null);
+            }
+          }
+        }}
+      />
+
 
       {/* Recent Orders Modal */}
       <RecentOrdersModal

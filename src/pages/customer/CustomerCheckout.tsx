@@ -29,6 +29,7 @@ import { useCustomerDiscountSubscription } from '@/hooks/useCustomerDiscountSubs
 import { Coupon, CouponApplication } from '@/types';
 import { loadCartCoupon, saveCartCoupon, clearCartCoupon } from '@/lib/cartCouponStorage';
 import { useAllianceAutoCoupon } from '@/hooks/useAllianceAutoCoupon';
+import { isAllianceCouponEnabled, isAllianceFreeDeliveryEnabled } from '@/lib/allianceBenefitPrefs';
 
 interface CustomerAddress {
   id: string;
@@ -200,7 +201,7 @@ export default function CustomerCheckout() {
 
   useEffect(() => {
     if (appliedCoupon) return;
-    if (autoCoupon) {
+    if (autoCoupon && isAllianceCouponEnabled(autoCoupon.coupon.id)) {
       setAppliedCoupon(autoCoupon.coupon);
       setCouponApplication(autoCoupon.application);
       saveCartCoupon(autoCoupon.coupon, autoCoupon.application);
@@ -213,6 +214,7 @@ export default function CustomerCheckout() {
     : '';
   const allianceFreeDeliveryApplies = (() => {
     if (fulfillmentType !== 'delivery' || deliveryFee <= 0 || !allianceFreeDeliveryBenefit) return false;
+    if (!isAllianceFreeDeliveryEnabled(allianceFreeDeliveryBenefit.benefitId)) return false;
     if (!isAllianceFreeDeliveryEligible(allianceFreeDeliveryBenefit, subtotal)) return false;
     if (allianceFreeDeliveryBenefit.freeFirstOrder) return true;
     const selectedNormalized = normalizeAllianceAddress(selectedDeliveryAddressText);
@@ -383,6 +385,17 @@ export default function CustomerCheckout() {
 
         {/* Store Status Banner */}
         <StoreStatusBanner onStatusChange={setCanOrder} />
+
+        {/* Alliance benefit reminder when toggled off */}
+        {autoCoupon && !isAllianceCouponEnabled(autoCoupon.coupon.id) && (
+          <Alert className="border-amber-500/40 bg-amber-500/10">
+            <AlertCircle className="h-4 w-4 text-amber-400" />
+            <AlertDescription className="text-amber-100">
+              Tienes el cupón <strong>{autoCoupon.coupon.code}</strong> desactivado. Actívalo desde el carrito para aprovechar tu descuento de alianza.
+            </AlertDescription>
+          </Alert>
+        )}
+
 
         {/* Subscription Discount Banner */}
         {subscriptionDiscount > 0 && (

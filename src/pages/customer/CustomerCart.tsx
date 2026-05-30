@@ -4,12 +4,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, Trash2, Plus, Minus, Flame, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, Flame, ArrowRight, Sparkles, ChevronRight } from 'lucide-react';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { CustomerCouponInput } from '@/components/customer/CustomerCouponInput';
+import { AllianceBenefitModal } from '@/components/customer/AllianceBenefitModal';
 import { useCart } from '@/contexts/CartContext';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
+import { useCustomerAllianceBenefits } from '@/hooks/useCustomerAllianceBenefits';
 import { formatCurrency } from '@/lib/utils';
 import { CouponApplication, Coupon } from '@/types';
 import { loadCartCoupon, saveCartCoupon } from '@/lib/cartCouponStorage';
@@ -22,6 +24,15 @@ export default function CustomerCart() {
   const stored = loadCartCoupon();
   const [couponApplication, setCouponApplication] = useState<CouponApplication | null>(stored?.application ?? null);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(stored?.coupon ?? null);
+  const [showBenefitModal, setShowBenefitModal] = useState(false);
+
+  const { autoCoupon, freeDelivery, hasAny } = useCustomerAllianceBenefits({
+    customerId: customer?.id,
+    cartItems: items,
+    subtotal,
+    deliveryFee: 0,
+    enabled: items.length > 0,
+  });
 
   const couponDiscountProducts = couponApplication?.discount_products || 0;
   const totalAfterCoupon = Math.max(0, subtotal - couponDiscountProducts);
@@ -71,6 +82,32 @@ export default function CustomerCart() {
 
         {/* Store Status Banner */}
         <StoreStatusBanner onStatusChange={setCanOrder} />
+
+        {/* Alliance Benefit Banner */}
+        {hasAny && (
+          <button
+            type="button"
+            onClick={() => setShowBenefitModal(true)}
+            className="w-full text-left rounded-lg border-2 border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5 p-4 flex items-center gap-3 hover:from-primary/15 hover:to-primary/10 transition-colors"
+          >
+            <div className="rounded-full bg-primary/20 p-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold">¡Tienes un descuento disponible!</p>
+              <p className="text-sm text-muted-foreground">
+                {autoCoupon
+                  ? `Cupón "${autoCoupon.coupon.code}" — ahorra ${formatCurrency((autoCoupon.application.discount_products || 0) + (autoCoupon.application.discount_delivery || 0))}`
+                  : freeDelivery
+                    ? 'Envío gratis por alianza'
+                    : 'Beneficios por alianza'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Toca para ver los detalles</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </button>
+        )}
+
 
         {/* Cart Items */}
         <div className="space-y-3">
@@ -218,6 +255,17 @@ export default function CustomerCart() {
           </CardContent>
         </Card>
       </div>
+      <AllianceBenefitModal
+        open={showBenefitModal}
+        onOpenChange={setShowBenefitModal}
+        coupon={autoCoupon?.coupon ?? null}
+        estimatedDiscount={
+          autoCoupon
+            ? (autoCoupon.application.discount_products || 0) + (autoCoupon.application.discount_delivery || 0)
+            : 0
+        }
+        freeDelivery={freeDelivery}
+      />
       <CustomerBottomNav />
     </div>
   );
