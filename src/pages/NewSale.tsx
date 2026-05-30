@@ -92,6 +92,55 @@ export default function NewSale() {
     return sum + itemTotal;
   }, 0);
 
+  // Alliance benefits detection (notifies cashier + auto-applies coupon)
+  const {
+    autoCoupon: allianceAutoCoupon,
+    freeDelivery: allianceFreeDelivery,
+    hasAnyAvailable: hasAllianceBenefits,
+  } = useCustomerAllianceBenefits({
+    customerId: customer?.id,
+    cartItems: cartItems as any,
+    subtotal,
+    deliveryFee,
+    enabled: Boolean(customer?.id),
+  });
+
+  // Toast cashier when a customer with alliance benefits is loaded
+  useEffect(() => {
+    if (!customer?.id) {
+      lastAdvisedCustomerRef.current = null;
+      return;
+    }
+    if (!hasAllianceBenefits) return;
+    if (lastAdvisedCustomerRef.current === customer.id) return;
+    lastAdvisedCustomerRef.current = customer.id;
+    toast.info('Este cliente tiene beneficios por alianza', {
+      description: 'Toca "Beneficios" para ver y activar/desactivar.',
+      duration: 8000,
+      action: { label: 'Ver', onClick: () => setIsBenefitsModalOpen(true) },
+    });
+  }, [customer?.id, hasAllianceBenefits]);
+
+  // Auto-apply alliance coupon to POS cart (cashier no longer types the code)
+  useEffect(() => {
+    if (!customer?.id || !allianceAutoCoupon) return;
+    const couponId = allianceAutoCoupon.coupon.id;
+    if (!isPosAllianceCouponEnabled(couponId)) return;
+    if (appliedCoupons.some(c => c.coupon_id === couponId)) return;
+    setAppliedCoupons(prev => [...prev, allianceAutoCoupon.application]);
+    setAutoAppliedAllianceCouponId(couponId);
+    toast.success(`Cupón alianza aplicado: ${allianceAutoCoupon.coupon.code}`);
+  }, [customer?.id, allianceAutoCoupon, appliedCoupons]);
+
+  // Remove auto-applied alliance coupon when customer is cleared/changed
+  useEffect(() => {
+    if (!autoAppliedAllianceCouponId) return;
+    if (!customer?.id) {
+      setAppliedCoupons(prev => prev.filter(c => c.coupon_id !== autoAppliedAllianceCouponId));
+      setAutoAppliedAllianceCouponId(null);
+    }
+  }, [customer?.id, autoAppliedAllianceCouponId]);
+
   // Calculate subscription discount with rules
   const calculateSubscriptionDiscount = () => {
     if (subscriptionDiscountPercent <= 0 || !subscriptionRules) return { products: 0, delivery: 0 };
