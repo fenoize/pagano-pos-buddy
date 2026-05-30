@@ -60,6 +60,9 @@ export default function NewSale() {
   const [manualDiscount, setManualDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number; amount: number } | null>(null);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isBenefitsModalOpen, setIsBenefitsModalOpen] = useState(false);
+  const [autoAppliedAllianceCouponId, setAutoAppliedAllianceCouponId] = useState<string | null>(null);
+  const lastAdvisedCustomerRef = useRef<string | null>(null);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [showRecentOrders, setShowRecentOrders] = useState(false);
   const [showNoSessionAlert, setShowNoSessionAlert] = useState(false);
