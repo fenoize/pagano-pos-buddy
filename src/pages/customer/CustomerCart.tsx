@@ -33,6 +33,8 @@ export default function CustomerCart() {
     deliveryFee: 0,
     enabled: items.length > 0,
   });
+
+  const couponDiscountProducts = couponApplication?.discount_products || 0;
   const totalAfterCoupon = Math.max(0, subtotal - couponDiscountProducts);
 
   const handleCouponApplied = (application: CouponApplication | null, coupon: Coupon | null) => {
