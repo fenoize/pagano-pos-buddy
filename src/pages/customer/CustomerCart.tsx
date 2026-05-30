@@ -24,8 +24,15 @@ export default function CustomerCart() {
   const stored = loadCartCoupon();
   const [couponApplication, setCouponApplication] = useState<CouponApplication | null>(stored?.application ?? null);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(stored?.coupon ?? null);
+  const [showBenefitModal, setShowBenefitModal] = useState(false);
 
-  const couponDiscountProducts = couponApplication?.discount_products || 0;
+  const { autoCoupon, freeDelivery, hasAny } = useCustomerAllianceBenefits({
+    customerId: customer?.id,
+    cartItems: items,
+    subtotal,
+    deliveryFee: 0,
+    enabled: items.length > 0,
+  });
   const totalAfterCoupon = Math.max(0, subtotal - couponDiscountProducts);
 
   const handleCouponApplied = (application: CouponApplication | null, coupon: Coupon | null) => {
