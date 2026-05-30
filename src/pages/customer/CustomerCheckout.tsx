@@ -214,6 +214,7 @@ export default function CustomerCheckout() {
     : '';
   const allianceFreeDeliveryApplies = (() => {
     if (fulfillmentType !== 'delivery' || deliveryFee <= 0 || !allianceFreeDeliveryBenefit) return false;
+    if (!isAllianceFreeDeliveryEnabled(allianceFreeDeliveryBenefit.benefitId)) return false;
     if (!isAllianceFreeDeliveryEligible(allianceFreeDeliveryBenefit, subtotal)) return false;
     if (allianceFreeDeliveryBenefit.freeFirstOrder) return true;
     const selectedNormalized = normalizeAllianceAddress(selectedDeliveryAddressText);
