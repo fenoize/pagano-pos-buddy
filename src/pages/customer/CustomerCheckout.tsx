@@ -201,7 +201,7 @@ export default function CustomerCheckout() {
 
   useEffect(() => {
     if (appliedCoupon) return;
-    if (autoCoupon) {
+    if (autoCoupon && isAllianceCouponEnabled(autoCoupon.coupon.id)) {
       setAppliedCoupon(autoCoupon.coupon);
       setCouponApplication(autoCoupon.application);
       saveCartCoupon(autoCoupon.coupon, autoCoupon.application);
