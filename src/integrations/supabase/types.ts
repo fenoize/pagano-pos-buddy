@@ -8337,6 +8337,8 @@ export type Database = {
         | "transferencia"
         | "colacion"
         | "canje"
+        | "pluxee"
+        | "edenred"
       po_status:
         | "draft"
         | "sent"
@@ -8536,6 +8538,8 @@ export const Constants = {
         "transferencia",
         "colacion",
         "canje",
+        "pluxee",
+        "edenred",
       ],
       po_status: [
         "draft",
