@@ -6,7 +6,7 @@ export type FulfillmentType = 'retiro' | 'delivery';
 
 export type PickupMode = 'servir' | 'llevar' | null;
 
-export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'aplicacion' | 'runas' | 'mixto' | 'pendiente' | 'transferencia' | 'colacion' | 'canje';
+export type PaymentMethod = 'efectivo' | 'mp' | 'pos' | 'aplicacion' | 'runas' | 'mixto' | 'pendiente' | 'transferencia' | 'colacion' | 'canje' | 'pluxee' | 'edenred';
 
 export type PaymentStatus = 'paid' | 'unpaid' | 'partial';
 
