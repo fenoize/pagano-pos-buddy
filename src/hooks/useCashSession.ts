@@ -347,7 +347,7 @@ export function useCashSession() {
 
       console.log('Looking for orders between:', sessionStart, 'and', sessionEnd);
 
-      const { data: orders, error: ordersError } = await supabase
+      let ordersQuery = supabase
         .from('orders')
         .select(`
           *,
@@ -360,8 +360,14 @@ export function useCashSession() {
         `)
         .gte('created_at', sessionStart)
         .lte('created_at', sessionEnd)
-        .eq('status', 'Entregado')
+        .neq('status', 'Cancelado')
         .order('created_at');
+
+      if (session.branch_id) {
+        ordersQuery = ordersQuery.eq('branch_id', session.branch_id);
+      }
+
+      const { data: orders, error: ordersError } = await ordersQuery;
 
       if (ordersError) {
         console.error('Orders error:', ordersError);
