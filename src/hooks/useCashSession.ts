@@ -298,7 +298,7 @@ export function useCashSession() {
         .from('cash_sessions')
         .select('*')
         .eq('id', sessionToQuery)
-        .single();
+        .maybeSingle();
 
       if (sessionError) {
         console.error('Session error:', sessionError);
