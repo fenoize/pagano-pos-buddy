@@ -38,9 +38,9 @@ export function useCashSession() {
         .is('closed_at', null)
         .order('opened_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+      if (error) {
         throw error;
       }
 
