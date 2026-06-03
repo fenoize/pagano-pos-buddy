@@ -66,7 +66,7 @@ export function useCashSession() {
         .select('*')
         .eq('user_id', user.id)
         .is('closed_at', null)
-        .single();
+        .maybeSingle();
 
       if (existingSession) {
         throw new Error('Ya existe una sesión de caja abierta');
