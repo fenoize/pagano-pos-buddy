@@ -63,8 +63,10 @@ interface CashSessionWithUser extends CashSession {
 export function CashSessionReport() {
   const { user } = useAuthContext();
   const isAdmin = user?.role === 'Administrador';
-  const { getSessionSummary } = useCashSession();
-  
+  const cashSessionApi = useCashSession();
+  const getSessionSummaryRef = React.useRef(cashSessionApi.getSessionSummary);
+  getSessionSummaryRef.current = cashSessionApi.getSessionSummary;
+
   const [sessions, setSessions] = useState<CashSessionWithUser[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<CashSessionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
