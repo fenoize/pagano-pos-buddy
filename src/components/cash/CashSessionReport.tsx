@@ -111,7 +111,7 @@ export function CashSessionReport() {
           }
 
           try {
-            const summaryData = await getSessionSummary(session.id);
+            const summaryData = await getSessionSummaryRef.current(session.id);
             const detailOrders = summaryData?.orders || [];
             const totalSales = summaryData?.summary?.totalSalesReal
               ?? detailOrders.reduce((sum: number, order: any) => sum + getOrderRealRevenue(order, nonRealMethods), 0);
