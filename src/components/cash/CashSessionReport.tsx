@@ -63,8 +63,10 @@ interface CashSessionWithUser extends CashSession {
 export function CashSessionReport() {
   const { user } = useAuthContext();
   const isAdmin = user?.role === 'Administrador';
-  const { getSessionSummary } = useCashSession();
-  
+  const cashSessionApi = useCashSession();
+  const getSessionSummaryRef = React.useRef(cashSessionApi.getSessionSummary);
+  getSessionSummaryRef.current = cashSessionApi.getSessionSummary;
+
   const [sessions, setSessions] = useState<CashSessionWithUser[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<CashSessionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +111,7 @@ export function CashSessionReport() {
           }
 
           try {
-            const summaryData = await getSessionSummary(session.id);
+            const summaryData = await getSessionSummaryRef.current(session.id);
             const detailOrders = summaryData?.orders || [];
             const totalSales = summaryData?.summary?.totalSalesReal
               ?? detailOrders.reduce((sum: number, order: any) => sum + getOrderRealRevenue(order, nonRealMethods), 0);
@@ -155,7 +157,7 @@ export function CashSessionReport() {
     } finally {
       setLoading(false);
     }
-  }, [getSessionSummary, toast]);
+  }, []);
 
   useEffect(() => {
     loadData();
