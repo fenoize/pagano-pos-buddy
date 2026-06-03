@@ -305,6 +305,11 @@ export function useCashSession() {
         throw sessionError;
       }
 
+      if (!session) {
+        console.warn('No session found for ID:', sessionToQuery);
+        return null;
+      }
+
       console.log('Session found:', session);
 
       // Get cash movements (incluye join con cuentas para resolver transferencias)
