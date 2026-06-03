@@ -157,7 +157,7 @@ export function CashSessionReport() {
     } finally {
       setLoading(false);
     }
-  }, [getSessionSummary, toast]);
+  }, []);
 
   useEffect(() => {
     loadData();
