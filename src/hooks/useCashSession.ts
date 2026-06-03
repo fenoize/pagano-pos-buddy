@@ -38,9 +38,9 @@ export function useCashSession() {
         .is('closed_at', null)
         .order('opened_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+      if (error) {
         throw error;
       }
 
@@ -66,7 +66,7 @@ export function useCashSession() {
         .select('*')
         .eq('user_id', user.id)
         .is('closed_at', null)
-        .single();
+        .maybeSingle();
 
       if (existingSession) {
         throw new Error('Ya existe una sesión de caja abierta');
@@ -298,11 +298,16 @@ export function useCashSession() {
         .from('cash_sessions')
         .select('*')
         .eq('id', sessionToQuery)
-        .single();
+        .maybeSingle();
 
       if (sessionError) {
         console.error('Session error:', sessionError);
         throw sessionError;
+      }
+
+      if (!session) {
+        console.warn('No session found for ID:', sessionToQuery);
+        return null;
       }
 
       console.log('Session found:', session);
@@ -342,7 +347,7 @@ export function useCashSession() {
 
       console.log('Looking for orders between:', sessionStart, 'and', sessionEnd);
 
-      const { data: orders, error: ordersError } = await supabase
+      let ordersQuery = supabase
         .from('orders')
         .select(`
           *,
@@ -355,8 +360,14 @@ export function useCashSession() {
         `)
         .gte('created_at', sessionStart)
         .lte('created_at', sessionEnd)
-        .eq('status', 'Entregado')
+        .neq('status', 'Cancelado')
         .order('created_at');
+
+      if (session.branch_id) {
+        ordersQuery = ordersQuery.eq('branch_id', session.branch_id);
+      }
+
+      const { data: orders, error: ordersError } = await ordersQuery;
 
       if (ordersError) {
         console.error('Orders error:', ordersError);

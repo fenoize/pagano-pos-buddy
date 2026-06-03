@@ -559,7 +559,7 @@ export default function NewSale() {
           .is('closed_at', null)
           .order('opened_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
         
         activeCashSessionId = activeSession?.id || null;
       } catch (sessionError) {

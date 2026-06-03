@@ -382,7 +382,7 @@ export default function QRReaderPage() {
           .select('id')
           .eq('id', parsed.id)
           .is('closed_at', null)
-          .single()
+          .maybeSingle()
           .then(({ data }) => {
             if (data) setSession(parsed);
             else localStorage.removeItem(STORAGE_KEYS.QR_READER_SESSION);
