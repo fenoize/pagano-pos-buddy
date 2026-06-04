@@ -60,12 +60,21 @@ interface CashSessionWithUser extends CashSession {
   };
 }
 
+// Module-level caches: persist across component remounts / route changes.
+// Summaries for closed sessions are immutable, so cache forever by session id.
+const sessionSummaryCache = new Map<string, CashSessionWithUser['summary']>();
+// Cache the paginated sessions list keyed by filters + page + pageSize.
+type PageCacheEntry = { sessions: CashSessionWithUser[]; totalCount: number; ts: number };
+const pageCache = new Map<string, PageCacheEntry>();
+const PAGE_CACHE_TTL_MS = 60_000; // 60s freshness for the listing itself
+
 export function CashSessionReport() {
   const { user } = useAuthContext();
   const isAdmin = user?.role === 'Administrador';
   const cashSessionApi = useCashSession();
   const getSessionSummaryRef = React.useRef(cashSessionApi.getSessionSummary);
   getSessionSummaryRef.current = cashSessionApi.getSessionSummary;
+
 
   const [sessions, setSessions] = useState<CashSessionWithUser[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<CashSessionWithUser[]>([]);
