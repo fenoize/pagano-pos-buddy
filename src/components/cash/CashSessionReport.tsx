@@ -451,7 +451,10 @@ export function CashSessionReport() {
             <div>
               <CardTitle>Turnos de Caja</CardTitle>
               <CardDescription>
-                {filteredSessions.length} de {sessions.length} turnos
+                {totalCount === 0
+                  ? 'Sin turnos'
+                  : `Mostrando ${rangeStart}-${rangeEnd} de ${totalCount} turnos`}
+                {searchTerm && ` · filtro búsqueda: ${filteredSessions.length} en esta página`}
               </CardDescription>
             </div>
             <Button onClick={exportToCSV} disabled={loading || filteredSessions.length === 0}>
