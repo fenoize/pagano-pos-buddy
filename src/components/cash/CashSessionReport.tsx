@@ -60,12 +60,21 @@ interface CashSessionWithUser extends CashSession {
   };
 }
 
+// Module-level caches: persist across component remounts / route changes.
+// Summaries for closed sessions are immutable, so cache forever by session id.
+const sessionSummaryCache = new Map<string, CashSessionWithUser['summary']>();
+// Cache the paginated sessions list keyed by filters + page + pageSize.
+type PageCacheEntry = { sessions: CashSessionWithUser[]; totalCount: number; ts: number };
+const pageCache = new Map<string, PageCacheEntry>();
+const PAGE_CACHE_TTL_MS = 60_000; // 60s freshness for the listing itself
+
 export function CashSessionReport() {
   const { user } = useAuthContext();
   const isAdmin = user?.role === 'Administrador';
   const cashSessionApi = useCashSession();
   const getSessionSummaryRef = React.useRef(cashSessionApi.getSessionSummary);
   getSessionSummaryRef.current = cashSessionApi.getSessionSummary;
+
 
   const [sessions, setSessions] = useState<CashSessionWithUser[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<CashSessionWithUser[]>([]);
@@ -104,6 +113,21 @@ export function CashSessionReport() {
   }, [filters.dateFrom, filters.dateTo, filters.userId, filters.status, pageSize]);
 
   const loadData = useCallback(async () => {
+    const cacheKey = JSON.stringify({
+      page, pageSize,
+      df: filters.dateFrom, dt: filters.dateTo,
+      uid: filters.userId, st: filters.status,
+    });
+
+    // Serve cached page instantly if fresh
+    const cached = pageCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < PAGE_CACHE_TTL_MS) {
+      setSessions(cached.sessions);
+      setTotalCount(cached.totalCount);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const from = (page - 1) * pageSize;
@@ -148,13 +172,34 @@ export function CashSessionReport() {
         );
       }
 
+      // Split into already-cached vs needs-fetch (closed sessions are immutable)
+      const list = (sessionsData || []) as any[];
+      const needsFetch: any[] = [];
+      const prelim: CashSessionWithUser[] = list.map((session: any) => {
+        if (!session.closed_at) {
+          return { ...session, user: userMap.get(session.user_id) };
+        }
+        const cachedSummary = sessionSummaryCache.get(session.id);
+        if (cachedSummary) {
+          return { ...session, user: userMap.get(session.user_id), summary: cachedSummary };
+        }
+        needsFetch.push(session);
+        return { ...session, user: userMap.get(session.user_id) };
+      });
+
+      // Render what we have immediately for snappier perceived perf
+      setSessions(prelim);
+      setLoading(false);
+
+      if (needsFetch.length === 0) {
+        pageCache.set(cacheKey, { sessions: prelim, totalCount: count || 0, ts: Date.now() });
+        return;
+      }
+
       const nonRealMethods = await getNonRealSaleMethods();
 
-      const sessionsWithSummary = await Promise.all(
-        (sessionsData || []).map(async (session: any) => {
-          if (!session.closed_at) {
-            return { ...session, user: userMap.get(session.user_id) };
-          }
+      const fetched = await Promise.all(
+        needsFetch.map(async (session: any) => {
           try {
             const summaryData = await getSessionSummaryRef.current(session.id);
             const detailOrders = summaryData?.orders || [];
@@ -163,40 +208,43 @@ export function CashSessionReport() {
             const grossSales = detailOrders.reduce((sum: number, order: any) => sum + (order.subtotal || 0), 0);
             const totalDiscounts = detailOrders.reduce((sum: number, order: any) => sum + (order.discount || 0), 0);
 
-            return {
-              ...session,
-              user: userMap.get(session.user_id),
-              summary: {
-                totalSales,
-                grossSales,
-                totalDiscounts,
-                totalCash: summaryData?.summary?.totalCash || 0,
-                totalMP: summaryData?.summary?.totalMP || 0,
-                totalPOS: summaryData?.summary?.totalPOS || 0,
-                totalAplicacion: summaryData?.summary?.totalAplicacion || 0,
-                totalRunas: summaryData?.summary?.totalRunasAmount || 0,
-                ingresos: summaryData?.summary?.ingresos || 0,
-                egresos: summaryData?.summary?.egresos || 0,
-                expectedCash: summaryData?.summary?.expectedCash || 0,
-                difference: summaryData?.summary?.difference || 0,
-              }
+            const summary = {
+              totalSales,
+              grossSales,
+              totalDiscounts,
+              totalCash: summaryData?.summary?.totalCash || 0,
+              totalMP: summaryData?.summary?.totalMP || 0,
+              totalPOS: summaryData?.summary?.totalPOS || 0,
+              totalAplicacion: summaryData?.summary?.totalAplicacion || 0,
+              totalRunas: summaryData?.summary?.totalRunasAmount || 0,
+              ingresos: summaryData?.summary?.ingresos || 0,
+              egresos: summaryData?.summary?.egresos || 0,
+              expectedCash: summaryData?.summary?.expectedCash || 0,
+              difference: summaryData?.summary?.difference || 0,
             };
+            sessionSummaryCache.set(session.id, summary);
+            return { id: session.id, summary };
           } catch (error) {
             console.error('Error calculating session summary:', error);
-            return { ...session, user: userMap.get(session.user_id) };
+            return { id: session.id, summary: undefined };
           }
         })
       );
 
-      setSessions(sessionsWithSummary as CashSessionWithUser[]);
+      const summaryById = new Map(fetched.map(f => [f.id, f.summary]));
+      const merged = prelim.map(s =>
+        summaryById.has(s.id) ? { ...s, summary: summaryById.get(s.id) || s.summary } : s
+      );
+      setSessions(merged);
+      pageCache.set(cacheKey, { sessions: merged, totalCount: count || 0, ts: Date.now() });
     } catch (error) {
       console.error('Error loading sessions:', error);
       toast.error("Error", { description: "No se pudieron cargar los turnos." });
-    } finally {
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pageSize, filters.dateFrom, filters.dateTo, filters.userId, filters.status]);
+
 
   useEffect(() => {
     loadData();
