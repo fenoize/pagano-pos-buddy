@@ -79,37 +79,82 @@ export function CashSessionReport() {
     status: 'all', // 'all', 'open', 'closed'
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data: sessionsData, error: sessionsError } = await supabase
-        .from('cash_sessions')
-        .select('*')
-        .order('opened_at', { ascending: false });
 
-      if (sessionsError) throw sessionsError;
+  // Server-side pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
-      const { data: usersData, error: usersError } = await supabase
+  // Load active users (small list) once
+  useEffect(() => {
+    (async () => {
+      const { data: usersData } = await supabase
         .from('users')
         .select('id, username, role, active, created_at, updated_at, can_do_delivery')
         .eq('active', true)
         .in('role', ['Administrador', 'Cajero'])
         .order('username');
+      setUsers((usersData || []).map((u: any) => ({ ...u, role: mapDatabaseRoleToApp(u.role) })));
+    })();
+  }, []);
 
-      if (usersError) throw usersError;
+  // Reset to first page whenever filters or page size change
+  useEffect(() => {
+    setPage(1);
+  }, [filters.dateFrom, filters.dateTo, filters.userId, filters.status, pageSize]);
 
-      const userMap = new Map(usersData?.map(user => [user.id, user]) || []);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      let query = supabase
+        .from('cash_sessions')
+        .select('*', { count: 'exact' })
+        .order('opened_at', { ascending: false });
+
+      if (filters.dateFrom) {
+        query = query.gte('opened_at', new Date(filters.dateFrom).toISOString());
+      }
+      if (filters.dateTo) {
+        query = query.lte('opened_at', new Date(filters.dateTo + 'T23:59:59').toISOString());
+      }
+      if (filters.userId !== 'all') {
+        query = query.eq('user_id', filters.userId);
+      }
+      if (filters.status === 'open') {
+        query = query.is('closed_at', null);
+      } else if (filters.status === 'closed') {
+        query = query.not('closed_at', 'is', null);
+      }
+
+      const { data: sessionsData, error: sessionsError, count } = await query.range(from, to);
+      if (sessionsError) throw sessionsError;
+      setTotalCount(count || 0);
+
+      // Resolve users referenced by this page (backfill any missing)
+      const userMap = new Map<string, User>(users.map(u => [u.id, u]));
+      const missingIds = Array.from(new Set((sessionsData || [])
+        .map((s: any) => s.user_id)
+        .filter((id: string) => id && !userMap.has(id))));
+      if (missingIds.length > 0) {
+        const { data: extraUsers } = await supabase
+          .from('users')
+          .select('id, username, role, active, created_at, updated_at, can_do_delivery')
+          .in('id', missingIds);
+        (extraUsers || []).forEach((u: any) =>
+          userMap.set(u.id, { ...u, role: mapDatabaseRoleToApp(u.role) } as User)
+        );
+      }
+
       const nonRealMethods = await getNonRealSaleMethods();
 
       const sessionsWithSummary = await Promise.all(
-        (sessionsData || []).map(async (session) => {
+        (sessionsData || []).map(async (session: any) => {
           if (!session.closed_at) {
-            return {
-              ...session,
-              user: userMap.get(session.user_id)
-            };
+            return { ...session, user: userMap.get(session.user_id) };
           }
-
           try {
             const summaryData = await getSessionSummaryRef.current(session.id);
             const detailOrders = summaryData?.orders || [];
@@ -138,70 +183,53 @@ export function CashSessionReport() {
             };
           } catch (error) {
             console.error('Error calculating session summary:', error);
-            return {
-              ...session,
-              user: userMap.get(session.user_id)
-            };
+            return { ...session, user: userMap.get(session.user_id) };
           }
         })
       );
 
       setSessions(sessionsWithSummary as CashSessionWithUser[]);
-      setUsers(usersData?.map(user => ({
-        ...user,
-        role: mapDatabaseRoleToApp(user.role)
-      })) || []);
     } catch (error) {
       console.error('Error loading sessions:', error);
       toast.error("Error", { description: "No se pudieron cargar los turnos." });
     } finally {
       setLoading(false);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize, filters.dateFrom, filters.dateTo, filters.userId, filters.status]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
+  // Apply username search on the current page only (other filters are server-side)
   useEffect(() => {
-    applyFilters();
-  }, [sessions, filters, searchTerm]);
-
-  const applyFilters = () => {
-    let filtered = [...sessions];
-
-    // Filter by date range
-    if (filters.dateFrom) {
-      filtered = filtered.filter(session => 
-        new Date(session.opened_at) >= new Date(filters.dateFrom)
-      );
+    if (!searchTerm) {
+      setFilteredSessions(sessions);
+    } else {
+      const term = searchTerm.toLowerCase();
+      setFilteredSessions(sessions.filter(s => s.user?.username.toLowerCase().includes(term)));
     }
-    if (filters.dateTo) {
-      filtered = filtered.filter(session => 
-        new Date(session.opened_at) <= new Date(filters.dateTo + 'T23:59:59')
-      );
-    }
+  }, [sessions, searchTerm]);
 
-    // Filter by user
-    if (filters.userId !== 'all') {
-      filtered = filtered.filter(session => session.user_id === filters.userId);
-    }
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const rangeStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize, totalCount);
 
-    // Filter by status
-    if (filters.status === 'open') {
-      filtered = filtered.filter(session => !session.closed_at);
-    } else if (filters.status === 'closed') {
-      filtered = filtered.filter(session => session.closed_at);
+  const getPageNumbers = (): (number | 'ellipsis')[] => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+      return pages;
     }
-
-    // Filter by search term (username)
-    if (searchTerm) {
-      filtered = filtered.filter(session => 
-        session.user?.username.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredSessions(filtered);
+    pages.push(1);
+    if (page > 3) pages.push('ellipsis');
+    const start = Math.max(2, page - 1);
+    const end = Math.min(totalPages - 1, page + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (page < totalPages - 2) pages.push('ellipsis');
+    pages.push(totalPages);
+    return pages;
   };
 
   const exportToCSV = async () => {
@@ -423,7 +451,10 @@ export function CashSessionReport() {
             <div>
               <CardTitle>Turnos de Caja</CardTitle>
               <CardDescription>
-                {filteredSessions.length} de {sessions.length} turnos
+                {totalCount === 0
+                  ? 'Sin turnos'
+                  : `Mostrando ${rangeStart}-${rangeEnd} de ${totalCount} turnos`}
+                {searchTerm && ` · filtro búsqueda: ${filteredSessions.length} en esta página`}
               </CardDescription>
             </div>
             <Button onClick={exportToCSV} disabled={loading || filteredSessions.length === 0}>
@@ -544,6 +575,61 @@ export function CashSessionReport() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Filas por página:</span>
+              <Select
+                value={pageSize.toString()}
+                onValueChange={(v) => setPageSize(parseInt(v))}
+              >
+                <SelectTrigger className="w-[90px] h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1 || loading}
+              >
+                Anterior
+              </Button>
+              {getPageNumbers().map((p, idx) =>
+                p === 'ellipsis' ? (
+                  <span key={`e-${idx}`} className="px-2 text-muted-foreground">…</span>
+                ) : (
+                  <Button
+                    key={p}
+                    variant={p === page ? 'default' : 'outline'}
+                    size="sm"
+                    className="w-9"
+                    onClick={() => setPage(p)}
+                    disabled={loading}
+                  >
+                    {p}
+                  </Button>
+                )
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages || loading}
+              >
+                Siguiente
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
