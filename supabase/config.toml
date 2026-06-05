@@ -45,3 +45,7 @@ verify_jwt = false
 [functions.schedule-checker]
 verify_jwt = false
 
+[functions.send-cash-session-close-email]
+verify_jwt = false
+
+
