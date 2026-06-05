@@ -92,7 +92,12 @@ export function CashSessionReport() {
   });
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Server-side pagination
+  // Deep-link support: /pos/cierres-diarios?session=<uuid>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkSessionId = searchParams.get('session');
+  const [deepLinkOpen, setDeepLinkOpen] = useState(false);
+  const [deepLinkSession, setDeepLinkSession] = useState<CashSessionWithUser | null>(null);
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
