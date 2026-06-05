@@ -25,12 +25,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { CashSession, User, AppRole } from '@/types';
 import { CashSessionDetailButton } from './CashSessionDetailButton';
+import { CashSessionDetailModal } from './CashSessionDetailModal';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { ForceCloseSessionModal } from './ForceCloseSessionModal';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { getNonRealSaleMethods, getOrderRealRevenue } from '@/lib/paymentMethodUtils';
 import { useCashSession } from '@/hooks/useCashSession';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from "sonner";
+
 
 // Map old database role names to new app role names
 const mapDatabaseRoleToApp = (dbRole: string): AppRole => {
