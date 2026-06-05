@@ -743,9 +743,23 @@ export function CashSessionReport() {
         session={forceCloseSession}
         onSuccess={loadData}
       />
+
+      {/* Deep-link detail modal (opened via ?session=<uuid>) */}
+      {deepLinkSession && (
+        <CashSessionDetailModal
+          isOpen={deepLinkOpen}
+          onClose={() => {
+            setDeepLinkOpen(false);
+            setDeepLinkSession(null);
+          }}
+          sessionId={deepLinkSession.id}
+          sessionData={deepLinkSession}
+        />
+      )}
     </div>
   );
 }
+
 
 function AdminSalesSummary({ sessions }: { sessions: CashSessionWithUser[] }) {
   const totals = useMemo(() => {
