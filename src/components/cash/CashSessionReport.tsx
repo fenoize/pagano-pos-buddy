@@ -268,6 +268,52 @@ export function CashSessionReport() {
     }
   }, [sessions, searchTerm]);
 
+  // Deep-link: when ?session=<uuid> is present, load that session and open its detail modal.
+  useEffect(() => {
+    if (!deepLinkSessionId || deepLinkOpen) return;
+    let cancelled = false;
+    (async () => {
+      // Try current page first
+      const local = sessions.find(s => s.id === deepLinkSessionId);
+      if (local) {
+        if (cancelled) return;
+        setDeepLinkSession(local);
+        setDeepLinkOpen(true);
+        return;
+      }
+      // Fallback: fetch the session directly
+      const { data, error } = await supabase
+        .from('cash_sessions')
+        .select('*')
+        .eq('id', deepLinkSessionId)
+        .maybeSingle();
+      if (cancelled || error || !data) return;
+      let userObj: User | undefined;
+      if (data.user_id) {
+        const { data: u } = await supabase
+          .from('users')
+          .select('id, username, role, active, created_at, updated_at, can_do_delivery')
+          .eq('id', data.user_id)
+          .maybeSingle();
+        if (u) userObj = { ...u, role: mapDatabaseRoleToApp(u.role) } as User;
+      }
+      if (cancelled) return;
+      setDeepLinkSession({ ...(data as any), user: userObj });
+      setDeepLinkOpen(true);
+    })();
+    return () => { cancelled = true; };
+  }, [deepLinkSessionId, deepLinkOpen, sessions]);
+
+  // Strip the ?session= param from the URL once the modal is open.
+  useEffect(() => {
+    if (deepLinkOpen && searchParams.get('session')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('session');
+      setSearchParams(next, { replace: true });
+    }
+  }, [deepLinkOpen, searchParams, setSearchParams]);
+
+
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const rangeStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const rangeEnd = Math.min(page * pageSize, totalCount);
