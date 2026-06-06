@@ -80,10 +80,13 @@ export default function Sales() {
     const startDate = searchParams.get('startDate');
     
     if (activeShiftId && startDate) {
+      setIsActiveShiftView(true);
       setFilters({
         startDate: new Date(startDate)
       });
       setShowFilters(true);
+    } else {
+      setIsActiveShiftView(false);
     }
   }, [searchParams]);
 
