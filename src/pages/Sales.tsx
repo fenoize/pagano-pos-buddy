@@ -57,6 +57,7 @@ export default function Sales() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [isActiveShiftView, setIsActiveShiftView] = useState(false);
   
   // Filter states
   const [filters, setFilters] = useState<SalesFilters>({});
@@ -79,10 +80,13 @@ export default function Sales() {
     const startDate = searchParams.get('startDate');
     
     if (activeShiftId && startDate) {
+      setIsActiveShiftView(true);
       setFilters({
         startDate: new Date(startDate)
       });
       setShowFilters(true);
+    } else {
+      setIsActiveShiftView(false);
     }
   }, [searchParams]);
 
@@ -310,6 +314,13 @@ export default function Sales() {
                guestName.includes(query) ||
                order.status.toLowerCase().includes(query);
       });
+    }
+
+    // When viewing active shift details, exclude cancelled and pending payment orders
+    if (isActiveShiftView) {
+      filtered = filtered.filter(order => 
+        order.status !== 'Cancelado' && order.status !== 'PendientePago'
+      );
     }
 
     setFilteredOrders(filtered);
@@ -698,7 +709,7 @@ export default function Sales() {
           Mostrando {startIndex + 1}-{Math.min(endIndex, filteredOrders.length)} de {filteredOrders.length} ventas
         </span>
         <span>
-          Total: {formatPrice(filteredOrders.filter(o => o.status !== 'Cancelado').reduce((sum, order) => sum + order.total, 0))}
+          Total: {formatPrice(filteredOrders.filter(o => o.status !== 'Cancelado' && o.status !== 'PendientePago').reduce((sum, order) => sum + order.total, 0))}
         </span>
       </div>
 

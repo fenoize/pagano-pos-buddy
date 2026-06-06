@@ -180,7 +180,7 @@ function DefaultDashboard() {
       if (productError) throw productError;
 
       const completedOrders = orders?.filter(order => 
-        order.status !== 'Cancelado'
+        order.status === 'Entregado'
       ) || [];
 
       const pendingOrders = orders?.filter(order => 
