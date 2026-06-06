@@ -8193,6 +8193,10 @@ export type Database = {
         Args: { p_code: string; p_email: string; p_new_password: string }
         Returns: Json
       }
+      send_session_close_email: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
       set_customer_context: {
         Args: { p_account_id: string; p_customer_id: string }
         Returns: undefined
