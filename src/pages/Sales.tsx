@@ -319,7 +319,7 @@ export default function Sales() {
     // When viewing active shift details, exclude cancelled and pending payment orders
     if (isActiveShiftView) {
       filtered = filtered.filter(order => 
-        order.status !== 'Cancelado' && order.status !== 'Pendiente de pago'
+        order.status !== 'Cancelado' && order.status !== 'PendientePago'
       );
     }
 
