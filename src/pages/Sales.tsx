@@ -709,7 +709,7 @@ export default function Sales() {
           Mostrando {startIndex + 1}-{Math.min(endIndex, filteredOrders.length)} de {filteredOrders.length} ventas
         </span>
         <span>
-          Total: {formatPrice(filteredOrders.filter(o => o.status !== 'Cancelado').reduce((sum, order) => sum + order.total, 0))}
+          Total: {formatPrice(filteredOrders.filter(o => o.status !== 'Cancelado' && o.status !== 'PendientePago').reduce((sum, order) => sum + order.total, 0))}
         </span>
       </div>
 
