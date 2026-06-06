@@ -316,6 +316,13 @@ export default function Sales() {
       });
     }
 
+    // When viewing active shift details, exclude cancelled and pending payment orders
+    if (isActiveShiftView) {
+      filtered = filtered.filter(order => 
+        order.status !== 'Cancelado' && order.status !== 'Pendiente de pago'
+      );
+    }
+
     setFilteredOrders(filtered);
     // Reset to page 1 when filters change
     setCurrentPage(1);
