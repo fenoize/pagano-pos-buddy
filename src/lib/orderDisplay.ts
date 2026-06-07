@@ -1,11 +1,18 @@
 /**
  * Helpers to obtain the display name of an order's customer.
- * Always prefer the registered customer's real name over the legacy
- * `nombre_resumen` snapshot, since the snapshot is frequently empty
- * or set to the generic literal "Cliente".
+ *
+ * Resolution priority:
+ *   1. If the order has a `customer_id` → resolve the name from the joined
+ *      `customers` row (COALESCE of nombres+apellidos, or legacy name+apellido).
+ *      Optionally fall back to a provided customers list if the inline join
+ *      did not return data.
+ *   2. If the order does NOT have a `customer_id` → use the free-text
+ *      `nombre_resumen` snapshot typed by the cashier.
+ *   3. Otherwise → return the fallback label (default: "Sin cliente").
  */
 
 type AnyCustomer = {
+  id?: string | null;
   nombres?: string | null;
   apellidos?: string | null;
   name?: string | null;
@@ -26,28 +33,28 @@ type AnyOrder = {
   nombre_resumen?: string | null;
 };
 
-/**
- * Returns the best display name for an order.
- * Priority: joined customer (nombres/apellidos → name/apellido)
- *        → fallback list (same priority)
- *        → nombre_resumen snapshot
- *        → "Cliente"
- */
 export function getOrderDisplayName(
   order: AnyOrder,
   customersList?: AnyCustomer[],
-  fallback: string = 'Cliente',
+  fallback: string = 'Sin cliente',
 ): string {
-  const fromInline = getCustomerFullName(order?.customer);
-  if (fromInline) return fromInline;
+  // 1. Registered customer (customer_id present)
+  if (order?.customer_id) {
+    const fromInline = getCustomerFullName(order?.customer);
+    if (fromInline) return fromInline;
 
-  if (order?.customer_id && customersList?.length) {
-    const found = customersList.find((c: any) => c && c.id === order.customer_id);
-    const fromList = getCustomerFullName(found);
-    if (fromList) return fromList;
+    if (customersList?.length) {
+      const found = customersList.find((c: any) => c && c.id === order.customer_id);
+      const fromList = getCustomerFullName(found);
+      if (fromList) return fromList;
+    }
+    // customer_id exists but no resolvable name → fall through to snapshot/fallback
   }
 
+  // 2. Free-text name typed by the cashier
   const snapshot = (order?.nombre_resumen || '').trim();
   if (snapshot && snapshot.toLowerCase() !== 'cliente') return snapshot;
-  return snapshot || fallback;
+
+  // 3. Nothing usable
+  return fallback;
 }
