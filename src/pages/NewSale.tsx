@@ -841,18 +841,44 @@ export default function NewSale() {
         }
       }
 
+      // Helper to log failed post-order events
+      const logFailedPostOrderEvent = async (eventType: string, error: unknown) => {
+        try {
+          await supabase.from('failed_post_order_events').insert({
+            order_id: fullOrderData.id,
+            customer_id: customerId,
+            event_type: eventType,
+            error_message: error instanceof Error ? error.message : String(error),
+            payload: {
+              total: orderSnapshot.total,
+              payment_method: paymentMethod,
+              discount: orderSnapshot.totalDiscount,
+              fulfillment: orderSnapshot.fulfillment,
+              delivery_fee: orderSnapshot.deliveryFee,
+              runas_used: totals.runas,
+              items_count: cartItems.length,
+              payments: paymentData.payments.map((p) => ({ method: p.method, amount: p.amount })),
+              user_id: orderSnapshot.userId,
+            },
+          });
+        } catch (logError) {
+          console.error(`[PostOrder] Failed to log ${eventType} failure:`, logError);
+        }
+      };
+
       // Check and award badges
       if (customerId) {
         try {
           const badgeResults = await checkAndAwardBadges(customerId, fullOrderData.id);
-          const newBadges = badgeResults.filter(r => r.awarded);
-          
+          const newBadges = badgeResults.filter((r) => r.awarded);
+
           if (newBadges.length > 0) {
-            console.log(`✨ Nuevas insignias otorgadas: ${newBadges.map(b => b.badgeCode).join(', ')}`);
+            console.log(`✨ Nuevas insignias otorgadas: ${newBadges.map((b) => b.badgeCode).join(', ')}`);
             toast.success('🏆 ¡Nueva insignia!', { description: `El cliente ha ganado ${newBadges.length} insignia(s) nueva(s)` });
           }
         } catch (badgeError) {
           console.error('Error otorgando insignias:', badgeError);
+          await logFailedPostOrderEvent('award_badges', badgeError);
         }
 
         // Evaluate loyalty campaigns
@@ -864,6 +890,7 @@ export default function NewSale() {
           }
         } catch (campaignError) {
           console.error('Error evaluando campañas:', campaignError);
+          await logFailedPostOrderEvent('evaluate_campaigns', campaignError);
         }
 
         // Accrue points (1 pt per $100 real spend) and evaluate level-up
@@ -877,6 +904,7 @@ export default function NewSale() {
           }
         } catch (pointsError) {
           console.error('Error acumulando puntos:', pointsError);
+          await logFailedPostOrderEvent('accrue_runas', pointsError);
         }
       }
 
