@@ -729,7 +729,7 @@ export default function NewSale() {
         }
       }
 
-      // Load runas configuration
+      // Load runas configuration (todos los valores vienen de la tabla config, ningún hardcode)
       const { data: runaConfigData } = await supabase
         .from('config')
         .select('key, value')
@@ -738,13 +738,23 @@ export default function NewSale() {
           'runa_reward_value',
           'runas_exclude_if_paid_with_runas',
           'runas_exclude_if_discounted',
-          'runas_min_eligible_amount'
+          'runas_min_eligible_amount',
+          'min_purchase_for_runas',
+          'max_runas_per_order'
         ]);
 
       const runaConfig = runaConfigData?.reduce((acc, item) => {
         acc[item.key] = item.value;
         return acc;
       }, {} as Record<string, any>) || {};
+
+      const runaValueCfg = Number(runaConfig.runa_value) || orderSnapshot.runaValue;
+      const minPurchaseCfg = Number(
+        runaConfig.min_purchase_for_runas ?? runaConfig.runas_min_eligible_amount ?? 0
+      );
+      const maxRunasPerOrderCfg = runaConfig.max_runas_per_order != null
+        ? Number(runaConfig.max_runas_per_order)
+        : null;
 
       // Handle runas transactions with business rules
       if (customerId && (totals.runas > 0 || orderSnapshot.total > 0)) {
@@ -762,7 +772,7 @@ export default function NewSale() {
           });
         }
 
-        // Accumulation transaction (WITH BUSINESS RULES)
+        // Accumulation transaction (WITH BUSINESS RULES from config)
         let canEarnRunas = true;
         let reason = '';
         
@@ -778,9 +788,8 @@ export default function NewSale() {
           reason = 'Descuento aplicado';
         }
         
-        // Rule 3: Minimum eligible amount
-        const eligibleAmount = orderSnapshot.total;
-        if (eligibleAmount < (runaConfig.runas_min_eligible_amount || 0)) {
+        // Rule 3: Minimum purchase amount
+        if (orderSnapshot.total < minPurchaseCfg) {
           canEarnRunas = false;
           reason = 'Monto insuficiente';
         }
@@ -788,7 +797,12 @@ export default function NewSale() {
         if (canEarnRunas) {
           const runasDiscountAmount = totals.runas * orderSnapshot.runaRewardValue;
           const earnableAmount = orderSnapshot.total - runasDiscountAmount;
-          const runasEarned = Math.floor(earnableAmount / orderSnapshot.runaValue);
+          let runasEarned = runaValueCfg > 0 ? Math.floor(earnableAmount / runaValueCfg) : 0;
+
+          // Rule 4: Cap por máximo de runas por orden
+          if (maxRunasPerOrderCfg != null && runasEarned > maxRunasPerOrderCfg) {
+            runasEarned = maxRunasPerOrderCfg;
+          }
           
           if (runasEarned > 0) {
             transactions.push({
