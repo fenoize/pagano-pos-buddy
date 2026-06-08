@@ -3,10 +3,42 @@ import { Order, OrderStatus } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2, UtensilsCrossed, ShoppingBag } from 'lucide-react';
+import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2, UtensilsCrossed, ShoppingBag, Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getOrderDisplayName } from '@/lib/orderDisplay';
+
+function ExtraChip({ quantity, label }: { quantity: number; label: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-md"
+      style={{
+        backgroundColor: '#1a2800',
+        border: '1px solid #3a5a10',
+        borderRadius: '6px',
+        padding: '2px 6px 2px 4px',
+        color: '#8fdb40',
+        fontSize: '12px',
+        fontWeight: 500,
+      }}
+    >
+      <Plus size={11} strokeWidth={2.5} style={{ color: '#8fdb40' }} />
+      <span
+        style={{
+          backgroundColor: '#3a5a10',
+          color: '#b4e86a',
+          borderRadius: '3px',
+          padding: '0 4px',
+          fontSize: '11px',
+          fontWeight: 600,
+        }}
+      >
+        x{quantity}
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
 
 interface KDSConfig {
   timeGreen: number;
@@ -217,10 +249,14 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
                               : Object.values(comboItem.extras).filter((e: any) => e);
                             
                             return extrasArray.length > 0 && (
-                              <div className="ml-2 text-muted-foreground">
-                                Extras: {extrasArray.map((extra: any) => 
-                                  `${extra.quantity || 1}x ${extra.label || extra.name}`
-                                ).join(', ')}
+                              <div className="ml-2 flex flex-wrap gap-[5px] pl-2 mt-1">
+                                {extrasArray.map((extra: any, ei: number) => (
+                                  <ExtraChip
+                                    key={ei}
+                                    quantity={extra.quantity || 1}
+                                    label={extra.label || extra.name}
+                                  />
+                                ))}
                               </div>
                             );
                           })()}
@@ -237,10 +273,14 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
 
                   {/* Regular Extras (for non-combo items) */}
                   {!item.is_combo_item && item.extras && item.extras.length > 0 && (
-                    <div className={`text-muted-foreground mt-1 ${compact ? 'text-sm' : 'text-sm'}`}>
-                      Extras: {item.extras.map(extra => 
-                        `${extra.quantity || 1}x ${extra.label}`
-                      ).join(', ')}
+                    <div className="flex flex-wrap gap-[5px] pl-2 mt-1">
+                      {item.extras.map((extra, ei) => (
+                        <ExtraChip
+                          key={ei}
+                          quantity={extra.quantity || 1}
+                          label={extra.label}
+                        />
+                      ))}
                     </div>
                   )}
 
@@ -266,64 +306,41 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
           ))}
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons — optimistic UI: no loading spinner, card updates instantly */}
         <div className={`flex gap-2 ${compact ? 'gap-1' : 'gap-2'}`}>
           {canPause && (
             <Button
               variant="outline"
-              size={compact ? "sm" : "sm"}
+              size="sm"
               onClick={() => onStatusChange(order.id, 'En pausa')}
-              disabled={isUpdating}
             >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                  <span className={compact ? 'text-xs' : ''}>Pausando...</span>
-                </>
-              ) : (
-                <span className={compact ? 'text-xs' : ''}>Pausar</span>
-              )}
+              <span className={compact ? 'text-xs' : ''}>Pausar</span>
             </Button>
           )}
-          
+
           {canResume && (
             <Button
               variant="default"
-              size={compact ? "sm" : "sm"}
+              size="sm"
               onClick={() => onStatusChange(order.id, 'En preparación')}
-              disabled={isUpdating}
             >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                  <span className={compact ? 'text-xs' : ''}>Reanudando...</span>
-                </>
-              ) : (
-                <span className={compact ? 'text-xs' : ''}>Reanudar</span>
-              )}
+              <span className={compact ? 'text-xs' : ''}>Reanudar</span>
             </Button>
           )}
 
           {nextStatus && (
             <Button
               variant="default"
-              size={compact ? "sm" : "sm"}
+              size="sm"
               onClick={() => onStatusChange(order.id, nextStatus)}
               className="flex-1"
-              disabled={isUpdating}
+              style={{ paddingTop: '12px', paddingBottom: '12px' }}
             >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                  <span className={compact ? 'text-xs' : ''}>Procesando...</span>
-                </>
-              ) : (
-                <span className={compact ? 'text-xs' : ''}>
-                  {nextStatus === 'En preparación' && 'Iniciar'}
-                  {nextStatus === 'Listo' && 'Marcar Listo'}
-                  {nextStatus === 'Entregado' && 'Entregar'}
-                </span>
-              )}
+              <span className={compact ? 'text-xs' : ''}>
+                {nextStatus === 'En preparación' && 'Iniciar'}
+                {nextStatus === 'Listo' && 'Marcar Listo'}
+                {nextStatus === 'Entregado' && 'Entregar'}
+              </span>
             </Button>
           )}
         </div>
