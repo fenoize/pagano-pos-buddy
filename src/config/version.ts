@@ -3,12 +3,25 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.1";
- export const APP_BUILD_DATE = "2026-05-29";
+ export const APP_VERSION = "1.5.2";
+ export const APP_BUILD_DATE = "2026-06-08";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.5.2",
+     date: "2026-06-08",
+     changes: [
+       "Las órdenes CANCELADAS y PENDIENTE DE PAGO ya no se consideran en el detalle de Ventas durante un turno abierto",
+       "La acreditación de runas ahora respeta las restricciones configuradas: sin runas si hay descuento o si se pagó con runas",
+       "Agregado manejo de errores con log en tabla failed_post_order_events para acreditación de puntos, insignias y campañas",
+       "Corrección: los nombres reales de clientes registrados se muestran correctamente en KDS, Ventas y Últimas Órdenes",
+       "Filtro de Últimas Órdenes ahora usa el opened_at del turno activo en vez de la medianoche, evitando pérdida de pedidos al cruzar días",
+       "Nuevo diseño de chips para extras en tarjetas de KDS y mejora de usabilidad en botones de cambio de estado",
+       "Corrección del falso positivo del modal 'Sin Conexión': ahora con debounce de 5 segundos y auto-cierre al reconectar"
+     ]
+   },
    {
      version: "1.5.1",
      date: "2026-05-29",
