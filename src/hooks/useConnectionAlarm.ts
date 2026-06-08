@@ -119,10 +119,18 @@ export function useConnectionAlarm() {
 
   const isOrdersChannelHealthy = useCallback(() => {
     const ch = findOrdersChannel();
-    if (!ch) return false;
+    // Si aún no existe el canal, considerarlo sano (puede estar inicializándose)
+    if (!ch) return true;
     const state = (ch as any).state;
-    return state === 'joined';
+    // 'joined' = SUBSCRIBED. Estados transitorios (joining/connecting/errored)
+    // NO se consideran desconexión — son parte del ciclo normal de reconexión.
+    // Solo 'closed' sostenido indica desconexión real.
+    return state !== 'closed';
   }, [findOrdersChannel]);
+
+  // Debounce: tiempo que el canal debe estar no-saludable antes de alarmar
+  const unhealthySinceRef = useRef<number | null>(null);
+  const UNHEALTHY_DEBOUNCE_MS = 5000;
 
   const triggerDisconnect = useCallback(() => {
     if (!isEligible) return;
@@ -181,35 +189,56 @@ export function useConnectionAlarm() {
     };
   }, [isEligible, triggerDisconnect, handleReconnect]);
 
-  // Visibilidad de pestaña + chequeo periódico del canal de pedidos
+  // Visibilidad de pestaña + chequeo periódico del canal de pedidos.
+  // Aplica debounce: solo dispara si el canal está no-saludable de forma sostenida.
+  // Auto-dismiss si ya estaba marcado como desconectado y vuelve a sano.
   useEffect(() => {
     if (!isEligible) return;
 
+    const evaluate = () => {
+      const healthy = isOrdersChannelHealthy();
+      const onlineOk = typeof navigator === 'undefined' || navigator.onLine !== false;
+
+      if (healthy && onlineOk) {
+        unhealthySinceRef.current = null;
+        // Auto-dismiss: si veníamos en estado desconectado y ya volvió, cerrar modal
+        if (wasDisconnectedRef.current) {
+          handleReconnect();
+        }
+        return;
+      }
+
+      // No saludable: arrancar/continuar ventana de debounce
+      if (unhealthySinceRef.current === null) {
+        unhealthySinceRef.current = Date.now();
+        return;
+      }
+      const elapsed = Date.now() - unhealthySinceRef.current;
+      if (elapsed >= UNHEALTHY_DEBOUNCE_MS) {
+        triggerDisconnect();
+      }
+    };
+
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') return;
-      // Pequeño delay para permitir que Realtime intente re-suscribirse
-      window.setTimeout(() => {
-        if (!isOrdersChannelHealthy()) {
-          triggerDisconnect();
-        }
-      }, 1500);
+      // Reset debounce al volver visible y re-evaluar tras delay de reconexión
+      unhealthySinceRef.current = null;
+      window.setTimeout(evaluate, 2000);
     };
 
     document.addEventListener('visibilitychange', onVisibility);
 
-    // Health check periódico cada 30s mientras la pestaña esté visible
+    // Chequeo cada 2s para que el debounce sea responsivo
     const interval = window.setInterval(() => {
       if (document.visibilityState !== 'visible') return;
-      if (!isOrdersChannelHealthy()) {
-        triggerDisconnect();
-      }
-    }, 30000);
+      evaluate();
+    }, 2000);
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       clearInterval(interval);
     };
-  }, [isEligible, isOrdersChannelHealthy, triggerDisconnect]);
+  }, [isEligible, isOrdersChannelHealthy, triggerDisconnect, handleReconnect]);
 
   // Limpieza si deja de ser elegible
   useEffect(() => {
