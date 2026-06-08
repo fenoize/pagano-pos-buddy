@@ -306,64 +306,41 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
           ))}
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons — optimistic UI: no loading spinner, card updates instantly */}
         <div className={`flex gap-2 ${compact ? 'gap-1' : 'gap-2'}`}>
           {canPause && (
             <Button
               variant="outline"
-              size={compact ? "sm" : "sm"}
+              size="sm"
               onClick={() => onStatusChange(order.id, 'En pausa')}
-              disabled={isUpdating}
             >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                  <span className={compact ? 'text-xs' : ''}>Pausando...</span>
-                </>
-              ) : (
-                <span className={compact ? 'text-xs' : ''}>Pausar</span>
-              )}
+              <span className={compact ? 'text-xs' : ''}>Pausar</span>
             </Button>
           )}
-          
+
           {canResume && (
             <Button
               variant="default"
-              size={compact ? "sm" : "sm"}
+              size="sm"
               onClick={() => onStatusChange(order.id, 'En preparación')}
-              disabled={isUpdating}
             >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                  <span className={compact ? 'text-xs' : ''}>Reanudando...</span>
-                </>
-              ) : (
-                <span className={compact ? 'text-xs' : ''}>Reanudar</span>
-              )}
+              <span className={compact ? 'text-xs' : ''}>Reanudar</span>
             </Button>
           )}
 
           {nextStatus && (
             <Button
               variant="default"
-              size={compact ? "sm" : "sm"}
+              size="sm"
               onClick={() => onStatusChange(order.id, nextStatus)}
               className="flex-1"
-              disabled={isUpdating}
+              style={{ paddingTop: '12px', paddingBottom: '12px' }}
             >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                  <span className={compact ? 'text-xs' : ''}>Procesando...</span>
-                </>
-              ) : (
-                <span className={compact ? 'text-xs' : ''}>
-                  {nextStatus === 'En preparación' && 'Iniciar'}
-                  {nextStatus === 'Listo' && 'Marcar Listo'}
-                  {nextStatus === 'Entregado' && 'Entregar'}
-                </span>
-              )}
+              <span className={compact ? 'text-xs' : ''}>
+                {nextStatus === 'En preparación' && 'Iniciar'}
+                {nextStatus === 'Listo' && 'Marcar Listo'}
+                {nextStatus === 'Entregado' && 'Entregar'}
+              </span>
             </Button>
           )}
         </div>
