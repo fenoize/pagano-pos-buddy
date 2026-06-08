@@ -64,9 +64,28 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
   const fetchRecentOrders = async () => {
     setLoading(true);
     try {
-      // Obtener inicio del día actual
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
+      // Determinar el inicio del rango: sesión de caja activa del local actual,
+      // o fallback a las últimas 24h si no hay sesión activa.
+      const branchId = typeof window !== 'undefined'
+        ? localStorage.getItem('paganos_active_branch_id')
+        : null;
+
+      let sessionQuery = supabase
+        .from('cash_sessions')
+        .select('opened_at')
+        .is('closed_at', null)
+        .order('opened_at', { ascending: false })
+        .limit(1);
+
+      if (branchId) {
+        sessionQuery = sessionQuery.eq('branch_id', branchId);
+      }
+
+      const { data: activeSession } = await sessionQuery.maybeSingle();
+
+      const fromDate = activeSession?.opened_at
+        ? new Date(activeSession.opened_at)
+        : new Date(Date.now() - 24 * 60 * 60 * 1000);
 
       const { data, error } = await supabase
         .from('orders')
@@ -80,7 +99,7 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
             phone
           )
         `)
-        .gte('created_at', startOfDay.toISOString())
+        .gte('created_at', fromDate.toISOString())
         .order('created_at', { ascending: false })
         .limit(30);
 
