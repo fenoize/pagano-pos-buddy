@@ -3,10 +3,42 @@ import { Order, OrderStatus } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2, UtensilsCrossed, ShoppingBag } from 'lucide-react';
+import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2, UtensilsCrossed, ShoppingBag, Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getOrderDisplayName } from '@/lib/orderDisplay';
+
+function ExtraChip({ quantity, label }: { quantity: number; label: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-md"
+      style={{
+        backgroundColor: '#1a2800',
+        border: '1px solid #3a5a10',
+        borderRadius: '6px',
+        padding: '2px 6px 2px 4px',
+        color: '#8fdb40',
+        fontSize: '12px',
+        fontWeight: 500,
+      }}
+    >
+      <Plus size={11} strokeWidth={2.5} style={{ color: '#8fdb40' }} />
+      <span
+        style={{
+          backgroundColor: '#3a5a10',
+          color: '#b4e86a',
+          borderRadius: '3px',
+          padding: '0 4px',
+          fontSize: '11px',
+          fontWeight: 600,
+        }}
+      >
+        x{quantity}
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
 
 interface KDSConfig {
   timeGreen: number;
