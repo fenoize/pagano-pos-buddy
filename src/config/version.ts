@@ -3,8 +3,8 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.1";
- export const APP_BUILD_DATE = "2026-05-29";
+ export const APP_VERSION = "1.5.2";
+ export const APP_BUILD_DATE = "2026-06-08";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
