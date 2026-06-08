@@ -217,10 +217,14 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
                               : Object.values(comboItem.extras).filter((e: any) => e);
                             
                             return extrasArray.length > 0 && (
-                              <div className="ml-2 text-muted-foreground">
-                                Extras: {extrasArray.map((extra: any) => 
-                                  `${extra.quantity || 1}x ${extra.label || extra.name}`
-                                ).join(', ')}
+                              <div className="ml-2 flex flex-wrap gap-[5px] pl-2 mt-1">
+                                {extrasArray.map((extra: any, ei: number) => (
+                                  <ExtraChip
+                                    key={ei}
+                                    quantity={extra.quantity || 1}
+                                    label={extra.label || extra.name}
+                                  />
+                                ))}
                               </div>
                             );
                           })()}
@@ -237,10 +241,14 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
 
                   {/* Regular Extras (for non-combo items) */}
                   {!item.is_combo_item && item.extras && item.extras.length > 0 && (
-                    <div className={`text-muted-foreground mt-1 ${compact ? 'text-sm' : 'text-sm'}`}>
-                      Extras: {item.extras.map(extra => 
-                        `${extra.quantity || 1}x ${extra.label}`
-                      ).join(', ')}
+                    <div className="flex flex-wrap gap-[5px] pl-2 mt-1">
+                      {item.extras.map((extra, ei) => (
+                        <ExtraChip
+                          key={ei}
+                          quantity={extra.quantity || 1}
+                          label={extra.label}
+                        />
+                      ))}
                     </div>
                   )}
 
