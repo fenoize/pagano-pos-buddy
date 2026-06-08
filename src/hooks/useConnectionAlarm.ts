@@ -119,10 +119,18 @@ export function useConnectionAlarm() {
 
   const isOrdersChannelHealthy = useCallback(() => {
     const ch = findOrdersChannel();
-    if (!ch) return false;
+    // Si aún no existe el canal, considerarlo sano (puede estar inicializándose)
+    if (!ch) return true;
     const state = (ch as any).state;
-    return state === 'joined';
+    // 'joined' = SUBSCRIBED. Estados transitorios (joining/connecting/errored)
+    // NO se consideran desconexión — son parte del ciclo normal de reconexión.
+    // Solo 'closed' sostenido indica desconexión real.
+    return state !== 'closed';
   }, [findOrdersChannel]);
+
+  // Debounce: tiempo que el canal debe estar no-saludable antes de alarmar
+  const unhealthySinceRef = useRef<number | null>(null);
+  const UNHEALTHY_DEBOUNCE_MS = 5000;
 
   const triggerDisconnect = useCallback(() => {
     if (!isEligible) return;
