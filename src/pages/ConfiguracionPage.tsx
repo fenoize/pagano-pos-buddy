@@ -81,6 +81,10 @@ export default function ConfiguracionPage() {
             <Layers className="w-4 h-4" />
             <span>Grupos de Variantes</span>
           </TabsTrigger>
+          <TabsTrigger value="sales-channels" className="w-full justify-start gap-3 px-4 py-2.5">
+            <Radio className="w-4 h-4" />
+            <span>Canales de Venta</span>
+          </TabsTrigger>
           <TabsTrigger value="general" className="w-full justify-start gap-3 px-4 py-2.5">
             <Settings className="w-4 h-4" />
             <span>General</span>
