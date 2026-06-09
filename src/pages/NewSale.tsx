@@ -46,6 +46,7 @@ export default function NewSale() {
   const [customer, setCustomer] = useState<Partial<Customer>>({});
   const [orderName, setOrderName] = useState('');
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
+  const [salesChannelSlug, setSalesChannelSlug] = useState<string>('local');
   const [pickupMode, setPickupMode] = useState<PickupMode | undefined>(undefined);
   const pickupModeRef = useRef<PickupMode | undefined>(undefined);
   const [deliveryFee, setDeliveryFee] = useState(0);
