@@ -1113,7 +1113,50 @@ export default function NewSale() {
                 </div>
               </CardContent>
             </Card>
-            
+
+            {salesChannels.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Canal de Venta</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Select value={salesChannelSlug} onValueChange={setSalesChannelSlug}>
+                      <SelectTrigger className="w-full sm:w-72">
+                        <SelectValue placeholder="Seleccionar canal" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        {salesChannels.map((c) => (
+                          <SelectItem key={c.id} value={c.slug}>
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="inline-block h-3 w-3 rounded-full border"
+                                style={{ backgroundColor: c.color ?? '#999' }}
+                              />
+                              {c.name}
+                              {c.type === 'delivery_app' && (
+                                <span className="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400 font-semibold ml-1">
+                                  App
+                                </span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedSalesChannel?.type === 'delivery_app' && (
+                      <Badge
+                        className="text-white"
+                        style={{ backgroundColor: selectedSalesChannel.color ?? '#f59e0b' }}
+                      >
+                        Pedido externo · {selectedSalesChannel.name}
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <FulfillmentStep
               fulfillment={fulfillment}
               pickupMode={pickupMode}
