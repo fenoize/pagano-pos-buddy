@@ -157,6 +157,10 @@ export default function ConfiguracionPage() {
             <VariantGroupsConfig />
           </TabsContent>
 
+          <TabsContent value="sales-channels" className="mt-0 space-y-6">
+            <SalesChannelsConfig />
+          </TabsContent>
+
           <TabsContent value="general" className="mt-0 space-y-6">
             <CategoryConfig />
           </TabsContent>
