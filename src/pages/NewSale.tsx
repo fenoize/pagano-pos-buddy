@@ -653,6 +653,8 @@ export default function NewSale() {
         operation_number: isPendingPayment ? null : operationNumber,
         status: 'Pendiente' as const,
         notes: paymentData.notes || null,
+        sales_channel_slug: orderSnapshot.salesChannelSlug || 'local',
+        source: channelSlugToLegacySource(orderSnapshot.salesChannelSlug),
         // Delivery snapshot fields
         ...(orderSnapshot.fulfillment === 'delivery' && orderSnapshot.deliveryData && {
           delivery_zone_id: orderSnapshot.deliveryData.zone?.id,
