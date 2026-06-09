@@ -460,6 +460,7 @@ export default function NewSale() {
       usedRunas,
       runaValue,
       runaRewardValue,
+      salesChannelSlug,
       userId: user.id
     };
 
