@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Settings, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart, TruckIcon, Puzzle, Bell, Terminal, Layers } from 'lucide-react';
+import { Settings, MapPin, CreditCard, Tag, Smartphone, Shield, ShoppingCart, TruckIcon, Puzzle, Bell, Terminal, Layers, Radio } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DeliveryZoneManagement } from '@/components/delivery/DeliveryZoneManagement';
 import { DeliveryConfig } from '@/components/config/DeliveryConfig';
@@ -16,6 +16,7 @@ import { IntegrationsConfig } from '@/components/config/IntegrationsConfig';
 import { NotificationsGlobalConfig } from '@/components/config/NotificationsGlobalConfig';
 import { SystemLogConfig } from '@/components/config/SystemLogConfig';
 import VariantGroupsConfig from '@/components/config/VariantGroupsConfig';
+import SalesChannelsConfig from '@/components/config/SalesChannelsConfig';
 
 export default function ConfiguracionPage() {
   const { user } = useAuthContext();

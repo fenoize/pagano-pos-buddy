@@ -1,15 +1,55 @@
 import { Badge } from '@/components/ui/badge';
-import { Store, Smartphone, Globe } from 'lucide-react';
+import { Store, Smartphone, Globe, Bike, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSalesChannels } from '@/hooks/useSalesChannels';
 
 interface OrderSourceBadgeProps {
   source?: string | null;
+  /** Optional dynamic channel slug from orders.sales_channel_slug — preferred when present */
+  channelSlug?: string | null;
   /** If true, only the icon is shown (used on mobile to save space) */
   iconOnly?: boolean;
   className?: string;
 }
 
-export function OrderSourceBadge({ source, iconOnly = false, className }: OrderSourceBadgeProps) {
+function pickIcon(type?: string) {
+  switch (type) {
+    case 'delivery_app':
+      return Bike;
+    case 'web':
+      return Globe;
+    case 'phone':
+      return Phone;
+    case 'local':
+    default:
+      return Store;
+  }
+}
+
+export function OrderSourceBadge({
+  source,
+  channelSlug,
+  iconOnly = false,
+  className,
+}: OrderSourceBadgeProps) {
+  const { channels } = useSalesChannels();
+  const channel = channelSlug ? channels.find((c) => c.slug === channelSlug) : undefined;
+
+  if (channel) {
+    const Icon = pickIcon(channel.type);
+    const color = channel.color ?? '#475569';
+    return (
+      <Badge
+        className={cn('gap-1 text-white hover:opacity-90', className)}
+        style={{ backgroundColor: color }}
+      >
+        <Icon className="h-3 w-3" />
+        {!iconOnly && <span>{channel.name}</span>}
+      </Badge>
+    );
+  }
+
+  // Legacy fallback based on the free-text `source` column
   if (source === 'pos') {
     return (
       <Badge
