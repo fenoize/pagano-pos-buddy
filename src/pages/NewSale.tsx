@@ -85,6 +85,17 @@ export default function NewSale() {
   const { deductInventoryFromOrder } = useInventory();
   const { config: posConfig } = usePOSConfig();
   const { discountPercent: subscriptionDiscountPercent, rules: subscriptionRules } = useCustomerDiscountSubscription(customer?.id as string | undefined);
+  const { channels: salesChannels } = useSalesChannels({ onlyActive: true });
+  const selectedSalesChannel = salesChannels.find((c) => c.slug === salesChannelSlug);
+
+  // Default channel selection once channels load
+  useEffect(() => {
+    if (salesChannels.length === 0) return;
+    if (!salesChannels.find((c) => c.slug === salesChannelSlug)) {
+      const fallback = salesChannels.find((c) => c.slug === 'local') ?? salesChannels[0];
+      if (fallback) setSalesChannelSlug(fallback.slug);
+    }
+  }, [salesChannels, salesChannelSlug]);
 
   // Listen for remote QR scans from smartphone
   const handleRemoteCustomer = useCallback((c: Customer) => setCustomer(c), []);
