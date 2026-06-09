@@ -3,12 +3,23 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.2";
- export const APP_BUILD_DATE = "2026-06-08";
+ export const APP_VERSION = "1.5.3";
+ export const APP_BUILD_DATE = "2026-06-09";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.5.3",
+     date: "2026-06-09",
+     changes: [
+       "Nuevo sistema dinámico de Canales de Venta gestionable desde Configuración (Local, App Paganos, Rappi, Uber Eats, PedidosYa, Teléfono y más)",
+       "Selector de canal en Nueva Venta con indicador visual para apps de delivery",
+       "Panel de administración con activar/desactivar, edición de color y nombre, y protección de canales con órdenes asociadas",
+       "Estructura preparada para futuras integraciones con apps externas (flag y configuración por canal)",
+       "Badge de origen de la orden ahora usa el color y nombre del canal configurado"
+     ]
+   },
    {
      version: "1.5.2",
      date: "2026-06-08",
