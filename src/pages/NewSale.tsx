@@ -478,6 +478,7 @@ export default function NewSale() {
     setDeliveryData(null);
     setAppliedCoupons([]);
     setManualDiscount(null);
+    setSalesChannelSlug('local');
     setCurrentStep(1);
 
     // Mostrar feedback inicial
