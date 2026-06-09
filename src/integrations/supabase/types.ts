@@ -4845,6 +4845,7 @@ export type Database = {
           payment_status: string | null
           pickup_mode: string | null
           receipt_number: string | null
+          sales_channel_slug: string | null
           source: string | null
           status: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
@@ -4896,6 +4897,7 @@ export type Database = {
           payment_status?: string | null
           pickup_mode?: string | null
           receipt_number?: string | null
+          sales_channel_slug?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal: number
@@ -4947,6 +4949,7 @@ export type Database = {
           payment_status?: string | null
           pickup_mode?: string | null
           receipt_number?: string | null
+          sales_channel_slug?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           subtotal?: number
@@ -6376,6 +6379,51 @@ export type Database = {
           },
         ]
       }
+      sales_channels: {
+        Row: {
+          active: boolean
+          color: string | null
+          created_at: string
+          icon_url: string | null
+          id: string
+          integration_config: Json | null
+          integration_enabled: boolean
+          name: string
+          position: number
+          slug: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          color?: string | null
+          created_at?: string
+          icon_url?: string | null
+          id?: string
+          integration_config?: Json | null
+          integration_enabled?: boolean
+          name: string
+          position?: number
+          slug: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          color?: string | null
+          created_at?: string
+          icon_url?: string | null
+          id?: string
+          integration_config?: Json | null
+          integration_enabled?: boolean
+          name?: string
+          position?: number
+          slug?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       staff_notifications: {
         Row: {
           body: string
@@ -7584,6 +7632,10 @@ export type Database = {
         }[]
       }
       auto_cancel_stale_pending_payment_orders: { Args: never; Returns: number }
+      can_delete_sales_channel: {
+        Args: { channel_slug: string }
+        Returns: boolean
+      }
       check_and_award_badge: {
         Args: { p_badge_code: string; p_customer_id: string }
         Returns: boolean

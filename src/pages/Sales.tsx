@@ -750,8 +750,8 @@ export default function Sales() {
                       </TableCell>
                       <TableCell>{getCustomerInfo(order)}</TableCell>
                       <TableCell>
-                        <OrderSourceBadge source={(order as any).source} iconOnly className="md:hidden" />
-                        <OrderSourceBadge source={(order as any).source} className="hidden md:inline-flex" />
+                        <OrderSourceBadge source={(order as any).source} channelSlug={(order as any).sales_channel_slug} iconOnly className="md:hidden" />
+                        <OrderSourceBadge source={(order as any).source} channelSlug={(order as any).sales_channel_slug} className="hidden md:inline-flex" />
                       </TableCell>
                       <TableCell>
                         <OrderStatusDropdown

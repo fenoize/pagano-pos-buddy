@@ -527,7 +527,7 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                   </div>
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">Origen:</Label>
-                    <div><OrderSourceBadge source={(order as any).source} /></div>
+                    <div><OrderSourceBadge source={(order as any).source} channelSlug={(order as any).sales_channel_slug} /></div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">Tipo de Entrega:</Label>

@@ -35,6 +35,9 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { CashSessionModal } from '@/components/cash/CashSessionModal';
 import { toast } from "sonner";
 import { cn } from '@/lib/utils';
+import { useSalesChannels, channelSlugToLegacySource } from '@/hooks/useSalesChannels';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 export default function NewSale() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -43,6 +46,7 @@ export default function NewSale() {
   const [customer, setCustomer] = useState<Partial<Customer>>({});
   const [orderName, setOrderName] = useState('');
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
+  const [salesChannelSlug, setSalesChannelSlug] = useState<string>('local');
   const [pickupMode, setPickupMode] = useState<PickupMode | undefined>(undefined);
   const pickupModeRef = useRef<PickupMode | undefined>(undefined);
   const [deliveryFee, setDeliveryFee] = useState(0);
@@ -81,6 +85,17 @@ export default function NewSale() {
   const { deductInventoryFromOrder } = useInventory();
   const { config: posConfig } = usePOSConfig();
   const { discountPercent: subscriptionDiscountPercent, rules: subscriptionRules } = useCustomerDiscountSubscription(customer?.id as string | undefined);
+  const { channels: salesChannels } = useSalesChannels({ onlyActive: true });
+  const selectedSalesChannel = salesChannels.find((c) => c.slug === salesChannelSlug);
+
+  // Default channel selection once channels load
+  useEffect(() => {
+    if (salesChannels.length === 0) return;
+    if (!salesChannels.find((c) => c.slug === salesChannelSlug)) {
+      const fallback = salesChannels.find((c) => c.slug === 'local') ?? salesChannels[0];
+      if (fallback) setSalesChannelSlug(fallback.slug);
+    }
+  }, [salesChannels, salesChannelSlug]);
 
   // Listen for remote QR scans from smartphone
   const handleRemoteCustomer = useCallback((c: Customer) => setCustomer(c), []);
@@ -445,6 +460,7 @@ export default function NewSale() {
       usedRunas,
       runaValue,
       runaRewardValue,
+      salesChannelSlug,
       userId: user.id
     };
 
@@ -462,6 +478,7 @@ export default function NewSale() {
     setDeliveryData(null);
     setAppliedCoupons([]);
     setManualDiscount(null);
+    setSalesChannelSlug('local');
     setCurrentStep(1);
 
     // Mostrar feedback inicial
@@ -637,6 +654,8 @@ export default function NewSale() {
         operation_number: isPendingPayment ? null : operationNumber,
         status: 'Pendiente' as const,
         notes: paymentData.notes || null,
+        sales_channel_slug: orderSnapshot.salesChannelSlug || 'local',
+        source: channelSlugToLegacySource(orderSnapshot.salesChannelSlug),
         // Delivery snapshot fields
         ...(orderSnapshot.fulfillment === 'delivery' && orderSnapshot.deliveryData && {
           delivery_zone_id: orderSnapshot.deliveryData.zone?.id,
@@ -1095,7 +1114,50 @@ export default function NewSale() {
                 </div>
               </CardContent>
             </Card>
-            
+
+            {salesChannels.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Canal de Venta</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Select value={salesChannelSlug} onValueChange={setSalesChannelSlug}>
+                      <SelectTrigger className="w-full sm:w-72">
+                        <SelectValue placeholder="Seleccionar canal" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        {salesChannels.map((c) => (
+                          <SelectItem key={c.id} value={c.slug}>
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="inline-block h-3 w-3 rounded-full border"
+                                style={{ backgroundColor: c.color ?? '#999' }}
+                              />
+                              {c.name}
+                              {c.type === 'delivery_app' && (
+                                <span className="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400 font-semibold ml-1">
+                                  App
+                                </span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedSalesChannel?.type === 'delivery_app' && (
+                      <Badge
+                        className="text-white"
+                        style={{ backgroundColor: selectedSalesChannel.color ?? '#f59e0b' }}
+                      >
+                        Pedido externo · {selectedSalesChannel.name}
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <FulfillmentStep
               fulfillment={fulfillment}
               pickupMode={pickupMode}
