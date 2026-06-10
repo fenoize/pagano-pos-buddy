@@ -672,6 +672,12 @@ export default function PaymentModal({
     if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
       return false;
     }
+
+    if (currentMethod === 'aplicacion') {
+      if (!selectedAppChannel) return false;
+      if (!externalOrderId.trim()) return false;
+    }
+
     
     if (currentMethod === 'runas') {
       const runasNum = parseFloat(currentRunas) || 0;
