@@ -171,6 +171,17 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
             {order.fulfillment === 'retiro' && !order.pickup_mode && (
               <Package className={`text-muted-foreground ${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
             )}
+            {(order as any).sales_channel_slug && (() => {
+              const slug = (order as any).sales_channel_slug as string;
+              const ch = channels.find((c) => c.slug === slug);
+              if (!ch || ch.type !== 'delivery_app') return null;
+              return (
+                <OrderSourceBadge
+                  channelSlug={slug}
+                  externalOrderId={(order as any).external_order_id}
+                />
+              );
+            })()}
           </div>
           <Badge 
             variant={getStatusColor(order.status)}
