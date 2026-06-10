@@ -568,6 +568,20 @@ export default function PaymentModal({
         }
       }
       
+      // Validación para aplicacion sub-flow
+      if (currentMethod === 'aplicacion') {
+        if (!selectedAppChannel) {
+          toast.error("Error", { description: "Selecciona la app de delivery" });
+          setIsSubmitting(false);
+          return;
+        }
+        if (!externalOrderId.trim()) {
+          toast.error("Error", { description: "Ingresa el N° de pedido de la app" });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Crear el pago actual (si no es pendiente que ya se creó arriba)
       if (currentMethod !== 'pendiente') {
         const currentPayment: SinglePayment = {
@@ -578,11 +592,13 @@ export default function PaymentModal({
             ? 0 
             : (methodConfig?.requires_change 
                 ? Math.min(amount, total) 
-                : amount),
+                : currentMethod === 'aplicacion' ? total : amount),
           cashGiven: currentMethod === 'efectivo' ? amount : undefined,
           receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
           operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
           runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
+          salesChannelSlug: currentMethod === 'aplicacion' ? selectedAppChannel?.slug : undefined,
+          externalOrderId: currentMethod === 'aplicacion' ? externalOrderId.trim() : undefined,
         };
         
         finalPayments = [currentPayment];
