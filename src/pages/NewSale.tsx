@@ -630,6 +630,14 @@ export default function NewSale() {
       const receiptNumber = paymentData.payments.find(p => p.receiptNumber)?.receiptNumber || null;
       const operationNumber = paymentData.payments.find(p => p.operationNumber)?.operationNumber || null;
 
+      // Datos del sub-flujo de Aplicación (Rappi/UberEats/PedidosYa)
+      const appPayment = paymentData.payments.find(
+        (p: any) => p.methodName === 'aplicacion' && p.salesChannelSlug
+      ) as any;
+      const effectiveChannelSlug: string =
+        appPayment?.salesChannelSlug || orderSnapshot.salesChannelSlug || 'local';
+      const effectiveExternalOrderId: string | null = appPayment?.externalOrderId || null;
+
       const orderData = {
         customer_id: customerId,
         created_by_user_id: validUserId,
@@ -654,8 +662,9 @@ export default function NewSale() {
         operation_number: isPendingPayment ? null : operationNumber,
         status: 'Pendiente' as const,
         notes: paymentData.notes || null,
-        sales_channel_slug: orderSnapshot.salesChannelSlug || 'local',
-        source: channelSlugToLegacySource(orderSnapshot.salesChannelSlug),
+        sales_channel_slug: effectiveChannelSlug,
+        source: channelSlugToLegacySource(effectiveChannelSlug),
+        external_order_id: effectiveExternalOrderId,
         // Delivery snapshot fields
         ...(orderSnapshot.fulfillment === 'delivery' && orderSnapshot.deliveryData && {
           delivery_zone_id: orderSnapshot.deliveryData.zone?.id,

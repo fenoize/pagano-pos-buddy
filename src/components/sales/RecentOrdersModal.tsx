@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { RefreshCw, Loader2, Banknote, CreditCard, Smartphone, Coins } from 'lucide-react';
 import { format } from 'date-fns';
+import { OrderSourceBadge } from '@/components/sales/OrderSourceBadge';
 
 interface RecentOrdersModalProps {
   isOpen: boolean;
@@ -194,6 +195,11 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
                           </div>
                         </div>
                         <div className="flex items-center gap-3 mr-2">
+                          <OrderSourceBadge
+                            source={(order as any).source}
+                            channelSlug={(order as any).sales_channel_slug}
+                            externalOrderId={(order as any).external_order_id}
+                          />
                           <Badge variant="outline" className={getStatusColor(order.status)}>
                             {order.status}
                           </Badge>

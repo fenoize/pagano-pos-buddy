@@ -7,6 +7,8 @@ interface OrderSourceBadgeProps {
   source?: string | null;
   /** Optional dynamic channel slug from orders.sales_channel_slug — preferred when present */
   channelSlug?: string | null;
+  /** Optional external order id (delivery app) — appended in muted text after the badge */
+  externalOrderId?: string | null;
   /** If true, only the icon is shown (used on mobile to save space) */
   iconOnly?: boolean;
   className?: string;
@@ -29,6 +31,7 @@ function pickIcon(type?: string) {
 export function OrderSourceBadge({
   source,
   channelSlug,
+  externalOrderId,
   iconOnly = false,
   className,
 }: OrderSourceBadgeProps) {
@@ -39,13 +42,18 @@ export function OrderSourceBadge({
     const Icon = pickIcon(channel.type);
     const color = channel.color ?? '#475569';
     return (
-      <Badge
-        className={cn('gap-1 text-white hover:opacity-90', className)}
-        style={{ backgroundColor: color }}
-      >
-        <Icon className="h-3 w-3" />
-        {!iconOnly && <span>{channel.name}</span>}
-      </Badge>
+      <span className={cn('inline-flex items-center gap-1.5', className)}>
+        <Badge
+          className="gap-1 text-white hover:opacity-90"
+          style={{ backgroundColor: color }}
+        >
+          <Icon className="h-3 w-3" />
+          {!iconOnly && <span>{channel.name}</span>}
+        </Badge>
+        {externalOrderId && !iconOnly && (
+          <span className="text-xs font-mono text-muted-foreground">#{externalOrderId}</span>
+        )}
+      </span>
     );
   }
 
@@ -99,3 +107,4 @@ export function OrderSourceBadge({
     </Badge>
   );
 }
+

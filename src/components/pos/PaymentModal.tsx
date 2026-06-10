@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Customer, OrderItem, FulfillmentType, PaymentMethod } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { DeliveryData } from './FulfillmentStep';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { CouponApplication } from '@/types';
 import { PaymentMethod as ConfiguredPaymentMethod } from '@/hooks/usePaymentMethods';
+import { useSalesChannels, type SalesChannel } from '@/hooks/useSalesChannels';
 import { toast } from "sonner";
 
 interface PaymentModalProps {
@@ -49,6 +50,10 @@ interface SinglePayment {
   receiptNumber?: string;
   operationNumber?: string;
   runas?: number;
+  /** When method is 'aplicacion', slug of the delivery app channel selected (rappi, uber_eats, pedidos_ya) */
+  salesChannelSlug?: string;
+  /** External order id assigned by the delivery app */
+  externalOrderId?: string;
 }
 
 interface PaymentData {
@@ -212,6 +217,15 @@ export default function PaymentModal({
   const [runaRewardValue, setRunaRewardValue] = useState(1300);
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sub-flow for "Aplicación" payment method (delivery apps)
+  const { channels: allChannels } = useSalesChannels({ onlyActive: true });
+  const deliveryAppChannels = allChannels.filter((c) => c.type === 'delivery_app');
+  const [selectedAppChannel, setSelectedAppChannel] = useState<SalesChannel | null>(null);
+  const [externalOrderId, setExternalOrderId] = useState('');
+  const appInputRef = useRef<HTMLInputElement>(null);
+  const isAppFlow = currentMethod === 'aplicacion' && !!selectedAppChannel;
+
   useEffect(() => {
     if (isOpen) {
       fetchConfig();
@@ -229,6 +243,8 @@ export default function PaymentModal({
       setCurrentRunas('');
       setNotes('');
       setIsSubmitting(false);
+      setSelectedAppChannel(null);
+      setExternalOrderId('');
       
       // Set default payment method
       if (paymentMethods.length > 0) {
@@ -242,6 +258,23 @@ export default function PaymentModal({
       setIsSubmitting(false);
     }
   }, [isOpen]);
+
+  // When switching away from "aplicacion", clear the app sub-state
+  useEffect(() => {
+    if (currentMethod !== 'aplicacion') {
+      setSelectedAppChannel(null);
+      setExternalOrderId('');
+    }
+  }, [currentMethod]);
+
+  // When an app is picked, lock amount to total and focus the input
+  useEffect(() => {
+    if (selectedAppChannel) {
+      setCurrentAmount(total.toString());
+      const t = setTimeout(() => appInputRef.current?.focus(), 60);
+      return () => clearTimeout(t);
+    }
+  }, [selectedAppChannel, total]);
 
   // Auto-llenar campos al cambiar método de pago
   useEffect(() => {
@@ -434,6 +467,18 @@ export default function PaymentModal({
       }
     }
 
+    // For aplicacion sub-flow, require the channel + external order id
+    if (currentMethod === 'aplicacion') {
+      if (!selectedAppChannel) {
+        toast.error("Error", { description: "Selecciona la app de delivery" });
+        return;
+      }
+      if (!externalOrderId.trim()) {
+        toast.error("Error", { description: "Ingresa el N° de pedido de la app" });
+        return;
+      }
+    }
+
     const newPayment: SinglePayment = {
       method: methodConfig?.display_name || currentMethod,
       methodName: methodConfig?.name || currentMethod,
@@ -447,6 +492,8 @@ export default function PaymentModal({
       receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
       operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
       runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
+      salesChannelSlug: currentMethod === 'aplicacion' ? selectedAppChannel?.slug : undefined,
+      externalOrderId: currentMethod === 'aplicacion' ? externalOrderId.trim() : undefined,
     };
 
     setPayments([...payments, newPayment]);
@@ -521,6 +568,20 @@ export default function PaymentModal({
         }
       }
       
+      // Validación para aplicacion sub-flow
+      if (currentMethod === 'aplicacion') {
+        if (!selectedAppChannel) {
+          toast.error("Error", { description: "Selecciona la app de delivery" });
+          setIsSubmitting(false);
+          return;
+        }
+        if (!externalOrderId.trim()) {
+          toast.error("Error", { description: "Ingresa el N° de pedido de la app" });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Crear el pago actual (si no es pendiente que ya se creó arriba)
       if (currentMethod !== 'pendiente') {
         const currentPayment: SinglePayment = {
@@ -531,11 +592,13 @@ export default function PaymentModal({
             ? 0 
             : (methodConfig?.requires_change 
                 ? Math.min(amount, total) 
-                : amount),
+                : currentMethod === 'aplicacion' ? total : amount),
           cashGiven: currentMethod === 'efectivo' ? amount : undefined,
           receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
           operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
           runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
+          salesChannelSlug: currentMethod === 'aplicacion' ? selectedAppChannel?.slug : undefined,
+          externalOrderId: currentMethod === 'aplicacion' ? externalOrderId.trim() : undefined,
         };
         
         finalPayments = [currentPayment];
@@ -609,6 +672,12 @@ export default function PaymentModal({
     if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
       return false;
     }
+
+    if (currentMethod === 'aplicacion') {
+      if (!selectedAppChannel) return false;
+      if (!externalOrderId.trim()) return false;
+    }
+
     
     if (currentMethod === 'runas') {
       const runasNum = parseFloat(currentRunas) || 0;
@@ -869,20 +938,28 @@ export default function PaymentModal({
               <CardTitle className="text-base">Agregar método de pago</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                {paymentMethods.map((method) => (
-                  <Button
-                    key={method.id}
-                    type="button"
-                    variant={currentMethod === method.name ? 'default' : 'outline'}
-                    className="h-16 flex flex-col gap-2"
-                    onClick={() => setCurrentMethod(method.name)}
-                  >
-                    {getMethodIcon(method.display_name)}
-                    <span>{method.display_name}</span>
-                  </Button>
-                ))}
-              </div>
+              {!isAppFlow && (
+                <div className="grid grid-cols-2 gap-2">
+                  {paymentMethods.map((method) => {
+                    const isApp = method.name === 'aplicacion';
+                    const noApps = isApp && deliveryAppChannels.length === 0;
+                    return (
+                      <Button
+                        key={method.id}
+                        type="button"
+                        variant={currentMethod === method.name ? 'default' : 'outline'}
+                        className="h-16 flex flex-col gap-2"
+                        onClick={() => setCurrentMethod(method.name)}
+                        disabled={noApps}
+                        title={noApps ? 'No hay apps de delivery configuradas' : undefined}
+                      >
+                        {getMethodIcon(method.display_name)}
+                        <span>{method.display_name}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Payment Details based on selected method */}
               {currentMethod === 'efectivo' && (
@@ -998,25 +1075,79 @@ export default function PaymentModal({
 
               {currentMethod === 'aplicacion' && (
                 <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="aplicacion">Monto aplicación</Label>
-                    <Input
-                      id="aplicacion"
-                      type="number"
-                      placeholder="$0"
-                      value={currentAmount}
-                      onChange={(e) => setCurrentAmount(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="operationNumberApp">N° de pedido (Uber/PedidosYa)</Label>
-                    <Input
-                      id="operationNumberApp"
-                      placeholder="Número de pedido"
-                      value={currentOperationNumber}
-                      onChange={(e) => setCurrentOperationNumber(e.target.value)}
-                    />
-                  </div>
+                  {!selectedAppChannel ? (
+                    <div>
+                      <Label>Selecciona la app</Label>
+                      {deliveryAppChannels.length === 0 ? (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          No hay apps de delivery configuradas. Crea una en Configuración → Canales de Venta.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                          {deliveryAppChannels.map((ch) => (
+                            <Button
+                              key={ch.id}
+                              type="button"
+                              variant="outline"
+                              className="h-16 flex flex-col gap-1 border-2 hover:opacity-90"
+                              style={{
+                                borderColor: ch.color || undefined,
+                                color: ch.color || undefined,
+                              }}
+                              onClick={() => setSelectedAppChannel(ch)}
+                            >
+                              <Bike className="w-5 h-5" />
+                              <span className="text-xs font-semibold">{ch.name}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div
+                        className="flex items-center justify-between p-2 rounded-md border-2"
+                        style={{ borderColor: selectedAppChannel.color || undefined }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Bike className="w-4 h-4" style={{ color: selectedAppChannel.color || undefined }} />
+                          <span className="font-semibold">{selectedAppChannel.name}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedAppChannel(null);
+                            setExternalOrderId('');
+                          }}
+                        >
+                          Cambiar app
+                        </Button>
+                      </div>
+                      <div>
+                        <Label htmlFor="external-order-id">
+                          N° de pedido {selectedAppChannel.name}
+                        </Label>
+                        <Input
+                          ref={appInputRef}
+                          id="external-order-id"
+                          autoFocus
+                          inputMode="text"
+                          placeholder={`Ej: ${selectedAppChannel.slug.toUpperCase().replace(/_/g, '-')}-12345`}
+                          value={externalOrderId}
+                          onChange={(e) =>
+                            setExternalOrderId(
+                              e.target.value.replace(/[^A-Za-z0-9\-_ ]/g, '').slice(0, 40)
+                            )
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          El pedido ya fue pagado por el cliente en la app. No se cobra dinero en caja.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1112,16 +1243,18 @@ export default function PaymentModal({
                 </div>
               )}
 
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                onClick={handleAddPayment}
-                disabled={!currentAmount && !currentRunas && currentMethod !== 'pendiente'}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {payments.length > 0 ? 'Agregar otro método de pago' : 'Agregar método de pago (para pago mixto)'}
-              </Button>
+              {!isAppFlow && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  onClick={handleAddPayment}
+                  disabled={!currentAmount && !currentRunas && currentMethod !== 'pendiente'}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {payments.length > 0 ? 'Agregar otro método de pago' : 'Agregar método de pago (para pago mixto)'}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -1171,7 +1304,7 @@ export default function PaymentModal({
             disabled={!isValidPayment() || isSubmitting}
             className="flex-1"
           >
-            {isSubmitting ? 'Procesando...' : (payments.length === 0 ? 'Confirmar Pago' : `Confirmar Pago Mixto (${payments.length} métodos)`)}
+            {isSubmitting ? 'Procesando...' : isAppFlow ? 'Confirmar pedido' : (payments.length === 0 ? 'Confirmar Pago' : `Confirmar Pago Mixto (${payments.length} métodos)`)}
           </Button>
         </div>
       </DialogContent>

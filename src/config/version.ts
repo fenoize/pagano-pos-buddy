@@ -3,12 +3,22 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.3";
- export const APP_BUILD_DATE = "2026-06-09";
+ export const APP_VERSION = "1.5.4";
+ export const APP_BUILD_DATE = "2026-06-10";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.5.4",
+     date: "2026-06-10",
+     changes: [
+       "Nuevo sub-flujo en el botón 'Aplicación' del modal de pago: selección de app (Rappi / Uber Eats / PedidosYa) y captura del N° de pedido externo",
+       "Las órdenes provenientes de apps de delivery se guardan con sales_channel_slug y external_order_id correctos",
+       "Tarjetas de KDS, Últimas Órdenes e historial muestran badge de la app (con su color) y el N° de pedido externo cuando corresponde",
+       "Nueva columna orders.external_order_id para trazabilidad de pedidos provenientes de apps externas"
+     ]
+   },
    {
      version: "1.5.3",
      date: "2026-06-09",

@@ -7,6 +7,8 @@ import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2, UtensilsCr
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getOrderDisplayName } from '@/lib/orderDisplay';
+import { OrderSourceBadge } from '@/components/sales/OrderSourceBadge';
+import { useSalesChannels } from '@/hooks/useSalesChannels';
 
 function ExtraChip({ quantity, label }: { quantity: number; label: string }) {
   return (
@@ -59,6 +61,7 @@ interface OrderCardProps {
 
 export function OrderCard({ order, config, onStatusChange, compact = false, isUpdating = false }: OrderCardProps) {
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
+  const { channels } = useSalesChannels();
 
   useEffect(() => {
     const updateElapsedTime = () => {
@@ -169,6 +172,17 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
             {order.fulfillment === 'retiro' && !order.pickup_mode && (
               <Package className={`text-muted-foreground ${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
             )}
+            {(order as any).sales_channel_slug && (() => {
+              const slug = (order as any).sales_channel_slug as string;
+              const ch = channels.find((c) => c.slug === slug);
+              if (!ch || ch.type !== 'delivery_app') return null;
+              return (
+                <OrderSourceBadge
+                  channelSlug={slug}
+                  externalOrderId={(order as any).external_order_id}
+                />
+              );
+            })()}
           </div>
           <Badge 
             variant={getStatusColor(order.status)}
