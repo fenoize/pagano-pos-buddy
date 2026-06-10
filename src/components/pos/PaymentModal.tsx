@@ -938,20 +938,28 @@ export default function PaymentModal({
               <CardTitle className="text-base">Agregar método de pago</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                {paymentMethods.map((method) => (
-                  <Button
-                    key={method.id}
-                    type="button"
-                    variant={currentMethod === method.name ? 'default' : 'outline'}
-                    className="h-16 flex flex-col gap-2"
-                    onClick={() => setCurrentMethod(method.name)}
-                  >
-                    {getMethodIcon(method.display_name)}
-                    <span>{method.display_name}</span>
-                  </Button>
-                ))}
-              </div>
+              {!isAppFlow && (
+                <div className="grid grid-cols-2 gap-2">
+                  {paymentMethods.map((method) => {
+                    const isApp = method.name === 'aplicacion';
+                    const noApps = isApp && deliveryAppChannels.length === 0;
+                    return (
+                      <Button
+                        key={method.id}
+                        type="button"
+                        variant={currentMethod === method.name ? 'default' : 'outline'}
+                        className="h-16 flex flex-col gap-2"
+                        onClick={() => setCurrentMethod(method.name)}
+                        disabled={noApps}
+                        title={noApps ? 'No hay apps de delivery configuradas' : undefined}
+                      >
+                        {getMethodIcon(method.display_name)}
+                        <span>{method.display_name}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Payment Details based on selected method */}
               {currentMethod === 'efectivo' && (
