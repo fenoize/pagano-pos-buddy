@@ -61,6 +61,7 @@ interface OrderCardProps {
 
 export function OrderCard({ order, config, onStatusChange, compact = false, isUpdating = false }: OrderCardProps) {
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
+  const { channels } = useSalesChannels();
 
   useEffect(() => {
     const updateElapsedTime = () => {
