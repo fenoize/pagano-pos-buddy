@@ -243,6 +243,8 @@ export default function PaymentModal({
       setCurrentRunas('');
       setNotes('');
       setIsSubmitting(false);
+      setSelectedAppChannel(null);
+      setExternalOrderId('');
       
       // Set default payment method
       if (paymentMethods.length > 0) {
@@ -256,6 +258,23 @@ export default function PaymentModal({
       setIsSubmitting(false);
     }
   }, [isOpen]);
+
+  // When switching away from "aplicacion", clear the app sub-state
+  useEffect(() => {
+    if (currentMethod !== 'aplicacion') {
+      setSelectedAppChannel(null);
+      setExternalOrderId('');
+    }
+  }, [currentMethod]);
+
+  // When an app is picked, lock amount to total and focus the input
+  useEffect(() => {
+    if (selectedAppChannel) {
+      setCurrentAmount(total.toString());
+      const t = setTimeout(() => appInputRef.current?.focus(), 60);
+      return () => clearTimeout(t);
+    }
+  }, [selectedAppChannel, total]);
 
   // Auto-llenar campos al cambiar método de pago
   useEffect(() => {
