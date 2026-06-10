@@ -4829,6 +4829,7 @@ export type Database = {
           delivery_zone_id: string | null
           delivery_zone_name: string | null
           discount: number | null
+          external_order_id: string | null
           fulfillment: Database["public"]["Enums"]["fulfillment_type"]
           id: string
           items: Json
@@ -4881,6 +4882,7 @@ export type Database = {
           delivery_zone_id?: string | null
           delivery_zone_name?: string | null
           discount?: number | null
+          external_order_id?: string | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
           items: Json
@@ -4933,6 +4935,7 @@ export type Database = {
           delivery_zone_id?: string | null
           delivery_zone_name?: string | null
           discount?: number | null
+          external_order_id?: string | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
           items?: Json

@@ -1,90 +1,66 @@
-# Plan: Canales de Venta dinámicos
+# Plan: Sub-flujo "Aplicación" en modal de pago
 
-## Contexto actual
-- `orders` tiene una columna `source` (text libre) con valores hardcodeados: `pos`, `web`, `customer_app`. El badge en Sales (`OrderSourceBadge`) los renderiza con un switch en código.
-- No hay selector de canal en Nueva Venta — el `source` se asigna implícito según dónde se crea la orden.
-- No existe tabla de canales ni panel de gestión.
+## 1. Base de datos
 
-## 1. Migración de base de datos
+Migración que añade a `orders`:
+- `external_order_id text` (nullable) — N° de pedido asignado por la app externa (Rappi/Uber/PedidosYa).
+- Índice simple `idx_orders_external_order_id` para búsquedas/duplicados.
 
-Crear `public.sales_channels`:
-- `id uuid PK default gen_random_uuid()`
-- `name text not null`
-- `slug text not null unique`
-- `type text not null check (type in ('local','delivery_app','web','phone'))`
-- `color text` (hex, ej. `#3b82f6`)
-- `icon_url text`
-- `active boolean not null default true`
-- `integration_enabled boolean not null default false`
-- `integration_config jsonb` (nullable; reservado para credenciales)
-- `position int not null default 0`
-- `created_at timestamptz not null default now()`
-- `updated_at timestamptz not null default now()` + trigger
+No se cambia el enum `payment_method` (ya tiene `aplicacion`). No se tocan grants ni RLS (la tabla ya está configurada).
 
-GRANTs + RLS:
-- `GRANT SELECT` a `anon, authenticated` (lectura pública del catálogo activo).
-- `GRANT INSERT/UPDATE/DELETE` a `authenticated`; `ALL` a `service_role`.
-- Policies: SELECT abierto a authenticated; INSERT/UPDATE/DELETE restringido a rol `Administrador` vía `has_role(auth.uid(),'Administrador')` (usando patrón existente en otras tablas de config).
+## 2. Modal de pago — Nueva venta (`src/components/pos/PaymentModal.tsx`)
 
-Seed inicial (insertados en la misma migración):
-- Local (`local`, type `local`, position 1)
-- App Paganos (`app`, `web`, 2)
-- Rappi (`rappi`, `delivery_app`, 3)
-- Uber Eats (`uber_eats`, `delivery_app`, 4)
-- PedidosYa (`pedidos_ya`, `delivery_app`, 5)
-- Teléfono (`phone`, `phone`, 6)
+Estado nuevo:
+- `selectedAppChannel: SalesChannel | null`
+- `externalOrderId: string`
+- `appInputRef` para autofocus.
 
-Cambios a `orders`:
-- Añadir columna `sales_channel_slug text` (nullable, sin FK por ser slug; índice simple).
-- No tocar la columna `source` existente para no romper Sales/EditModal — se seguirá escribiendo en paralelo durante esta versión, mapeando `local→pos`, `app→customer_app`, resto→`web`. (No se renombra `source` en este plan).
+Comportamiento al seleccionar el método "Aplicación":
+- **Paso 1**: en lugar de sumar el monto al instante, mostrar dentro del modal un sub-panel con los canales activos `type = 'delivery_app'` (vienen de `useSalesChannels({ onlyActive: true })`). Cada chip usa `channel.color` de borde/fondo y muestra el `name`.
+- **Paso 2**: al elegir un canal, aparece un `Input` "Nº de pedido [Nombre]" con `autoFocus`, `inputMode="text"`, `pattern="[A-Za-z0-9\-]+"` y sanitización en `onChange` (regex `/[^A-Za-z0-9-]/g`). Botón "Cambiar app" para volver al paso 1.
+- **Paso 3**: mientras haya app seleccionada:
+  - Ocultar los demás botones de método de pago y los campos de monto recibido / vuelto / pagos mixtos.
+  - El monto de la línea "aplicacion" se fija automáticamente en `total`.
+  - El botón principal pasa a decir "Confirmar pedido" (en vez de "Cobrar"); deshabilitado si `externalOrderId.trim() === ''`.
+- Al confirmar, el modal devuelve además `{ salesChannelSlug, externalOrderId }` en su payload `onConfirm`.
 
-Función para borrado seguro:
-- RPC `can_delete_sales_channel(channel_slug text) returns boolean` que retorna `false` si existen `orders.sales_channel_slug = slug`. El UI consulta esto antes de permitir eliminar; si hay órdenes, solo permite desactivar.
+Si el usuario deselecciona "Aplicación" o cambia a otro método, se limpia `selectedAppChannel` y `externalOrderId`, y reaparece el flujo normal.
 
-## 2. Hook y tipos
+## 3. Persistencia en `NewSale.tsx`
 
-Nuevo archivo `src/hooks/useSalesChannels.ts`:
-- `useSalesChannels({ onlyActive?: boolean })` con react-query: lista ordenada por `position`.
-- Mutaciones: `createChannel`, `updateChannel`, `toggleActive`, `deleteChannel` (chequea RPC antes).
-- Tipo `SalesChannel` agregado en `src/types/index.ts`.
+En el handler de confirmación de venta:
+- Cuando el pago incluye "aplicacion" con sub-canal, sobrescribir:
+  - `sales_channel_slug = selectedAppChannel.slug`
+  - `external_order_id = externalOrderId.trim()`
+  - `payment_method = 'aplicacion'`
+- No alterar el cálculo de totales/vuelto/mixtos del resto de métodos.
+- Validación de respaldo: si `payment_aplicacion > 0` y el canal elegido por el usuario en el selector general de canal es de tipo `delivery_app`, exigir `external_order_id`.
 
-## 3. Panel de gestión (Configuración)
+`CollectPaymentModal.tsx` (cobrar pendientes) recibe el mismo sub-flujo: cuando se elige "Aplicación", pedir canal + `external_order_id`, persistirlos al actualizar la orden (`updates.sales_channel_slug`, `updates.external_order_id`). Esto mantiene consistencia para pedidos que se dejaron "pendiente" y se cobran después como app.
 
-Nuevo archivo `src/components/config/SalesChannelsConfig.tsx`:
-- Tabla con columnas: nombre, slug, tipo (badge), color (swatch), estado (Switch active), integración (badge "Integración activa" si `integration_enabled`).
-- Botón "Nuevo canal" → Dialog con formulario: nombre, slug (autogenerado desde nombre, editable), tipo (Select con las 4 opciones), color (input color).
-- Botón editar (icono lápiz h-9 w-9): permite editar nombre, color, posición.
-- Botón eliminar (icono trash h-9 w-9): si `can_delete_sales_channel = false`, deshabilitado con tooltip "Tiene órdenes asociadas — desactívalo".
-- Para canales `type = 'delivery_app'`: sección colapsable (`Collapsible` shadcn) "Configuración de integración" con mensaje "Integración disponible próximamente" y switch `integration_enabled` deshabilitado.
-- Cumple memoria `mem://ui/estandar-controles-accion-gestion` (h-9 w-9, Switch para toggles).
+## 4. Visualización en órdenes (KDS / Últimas Órdenes / Historial)
 
-Registrar la pestaña en `src/pages/ConfiguracionPage.tsx`:
-- Nuevo `TabsTrigger value="sales-channels"` con icono `Radio` o `Megaphone` (lucide), label "Canales de Venta".
-- Nuevo `TabsContent` que renderiza `<SalesChannelsConfig />`.
+`src/components/kitchen/OrderCard.tsx`, `src/components/sales/RecentOrdersModal.tsx`, `src/components/sales/OrderEditModal.tsx` y `src/pages/Sales.tsx`:
+- Si `order.sales_channel_slug` existe y el canal correspondiente tiene `type === 'delivery_app'`:
+  - Renderizar un badge con `channel.name` y `channel.color` (background + texto contrastante) **junto al** badge de tipo de entrega actual ("LLEVAR"/"DELIVERY"). No reemplaza; complementa.
+  - Si la orden tiene `external_order_id`, mostrarlo como texto pequeño debajo del badge: `#RAP-48291`.
+- Para canales no delivery_app o sin slug, comportamiento actual sin cambios.
 
-## 4. Selector en Nueva Venta
+Reutilizar `OrderSourceBadge` extendiéndolo con una variante "delivery_app" que pinte con `channel.color` cuando aplica; los demás casos siguen igual.
 
-En `src/pages/NewSale.tsx`:
-- Cargar `useSalesChannels({ onlyActive: true })`.
-- Nuevo campo en el formulario de venta: Select "Canal de venta" con default = canal `local` (o el de menor `position`).
-- Render: muestra nombre + chip de color; los de `type = 'delivery_app'` con borde/badge distintivo (variante `outline` + color del canal + label "App").
-- Al confirmar la orden, persistir:
-  - `sales_channel_slug` = slug del canal seleccionado.
-  - `source` (legacy) = mapeo: `local→pos`, `app→customer_app`, demás→`web`.
+## 5. Versión
 
-## 5. Compatibilidad de visualización
+Bump `src/config/version.ts` a `1.5.4` con changelog: "Sub-flujo Aplicación (Rappi/Uber/PedidosYa) con N° de pedido externo y badge de canal en órdenes".
 
-`OrderSourceBadge` se extiende:
-- Acepta opcional `channelSlug` y `channels` (o consulta `useSalesChannels` con cache global).
-- Si la orden tiene `sales_channel_slug`, renderiza con el `name` + `color` del canal (badge con `style={{ backgroundColor: color }}`).
-- Si no, fallback al comportamiento actual basado en `source`.
-- Sales.tsx y OrderEditModal.tsx pasan `channelSlug={(order as any).sales_channel_slug}`.
+## Fuera de alcance
+- Integraciones reales con APIs de Rappi/Uber/PedidosYa.
+- Cambios al flujo de Efectivo, POS, MercadoPago, Transferencia, Runas, etc.
+- Cambios en reportes de caja (la app sigue contabilizándose vía `payment_aplicacion` como hoy).
 
-## 6. Versionado
+## Detalles técnicos
 
-Actualizar `src/config/version.ts` a `1.5.3` con entrada de changelog listando: nueva tabla `sales_channels`, panel de gestión, selector dinámico, estructura preparada para integraciones futuras.
-
-## Fuera de alcance (explícito)
-- No se implementa ninguna integración real (Rappi/UberEats/PedidosYa). `integration_config` queda vacío y `integration_enabled` no se puede activar desde la UI todavía.
-- No se renombra ni se elimina la columna legacy `orders.source`; se mantiene en paralelo.
-- No se modifica el flujo de creación de órdenes de la app del cliente ni de pedidos web (siguen escribiendo `source` como hoy; futura PR los hará escribir `sales_channel_slug = 'app'` / `'web'`).
+- Sanitización del input: `value.replace(/[^A-Za-z0-9\-_ ]/g, '').slice(0, 40)`.
+- Autofocus con `useEffect` al cambiar `selectedAppChannel`.
+- Carga de canales: `useSalesChannels({ onlyActive: true })`, filtrar `type === 'delivery_app'`. Si la lista está vacía, deshabilitar el botón "Aplicación" con tooltip "No hay apps configuradas".
+- Tipos: extender `SaleConfirmPayload` (o equivalente que use `NewSale`) con `salesChannelSlug?: string` y `externalOrderId?: string`.
+- En `types/index.ts`/`integrations/supabase/types.ts`: el nuevo campo `external_order_id` quedará reflejado tras la migración (no se edita manualmente).
