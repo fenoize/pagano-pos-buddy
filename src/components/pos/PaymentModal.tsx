@@ -467,6 +467,18 @@ export default function PaymentModal({
       }
     }
 
+    // For aplicacion sub-flow, require the channel + external order id
+    if (currentMethod === 'aplicacion') {
+      if (!selectedAppChannel) {
+        toast.error("Error", { description: "Selecciona la app de delivery" });
+        return;
+      }
+      if (!externalOrderId.trim()) {
+        toast.error("Error", { description: "Ingresa el N° de pedido de la app" });
+        return;
+      }
+    }
+
     const newPayment: SinglePayment = {
       method: methodConfig?.display_name || currentMethod,
       methodName: methodConfig?.name || currentMethod,
@@ -480,6 +492,8 @@ export default function PaymentModal({
       receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
       operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
       runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
+      salesChannelSlug: currentMethod === 'aplicacion' ? selectedAppChannel?.slug : undefined,
+      externalOrderId: currentMethod === 'aplicacion' ? externalOrderId.trim() : undefined,
     };
 
     setPayments([...payments, newPayment]);
