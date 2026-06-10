@@ -1075,25 +1075,79 @@ export default function PaymentModal({
 
               {currentMethod === 'aplicacion' && (
                 <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="aplicacion">Monto aplicación</Label>
-                    <Input
-                      id="aplicacion"
-                      type="number"
-                      placeholder="$0"
-                      value={currentAmount}
-                      onChange={(e) => setCurrentAmount(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="operationNumberApp">N° de pedido (Uber/PedidosYa)</Label>
-                    <Input
-                      id="operationNumberApp"
-                      placeholder="Número de pedido"
-                      value={currentOperationNumber}
-                      onChange={(e) => setCurrentOperationNumber(e.target.value)}
-                    />
-                  </div>
+                  {!selectedAppChannel ? (
+                    <div>
+                      <Label>Selecciona la app</Label>
+                      {deliveryAppChannels.length === 0 ? (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          No hay apps de delivery configuradas. Crea una en Configuración → Canales de Venta.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                          {deliveryAppChannels.map((ch) => (
+                            <Button
+                              key={ch.id}
+                              type="button"
+                              variant="outline"
+                              className="h-16 flex flex-col gap-1 border-2 hover:opacity-90"
+                              style={{
+                                borderColor: ch.color || undefined,
+                                color: ch.color || undefined,
+                              }}
+                              onClick={() => setSelectedAppChannel(ch)}
+                            >
+                              <Bike className="w-5 h-5" />
+                              <span className="text-xs font-semibold">{ch.name}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div
+                        className="flex items-center justify-between p-2 rounded-md border-2"
+                        style={{ borderColor: selectedAppChannel.color || undefined }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Bike className="w-4 h-4" style={{ color: selectedAppChannel.color || undefined }} />
+                          <span className="font-semibold">{selectedAppChannel.name}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedAppChannel(null);
+                            setExternalOrderId('');
+                          }}
+                        >
+                          Cambiar app
+                        </Button>
+                      </div>
+                      <div>
+                        <Label htmlFor="external-order-id">
+                          N° de pedido {selectedAppChannel.name}
+                        </Label>
+                        <Input
+                          ref={appInputRef}
+                          id="external-order-id"
+                          autoFocus
+                          inputMode="text"
+                          placeholder={`Ej: ${selectedAppChannel.slug.toUpperCase().replace(/_/g, '-')}-12345`}
+                          value={externalOrderId}
+                          onChange={(e) =>
+                            setExternalOrderId(
+                              e.target.value.replace(/[^A-Za-z0-9\-_ ]/g, '').slice(0, 40)
+                            )
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          El pedido ya fue pagado por el cliente en la app. No se cobra dinero en caja.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
