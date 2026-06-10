@@ -50,6 +50,10 @@ interface SinglePayment {
   receiptNumber?: string;
   operationNumber?: string;
   runas?: number;
+  /** When method is 'aplicacion', slug of the delivery app channel selected (rappi, uber_eats, pedidos_ya) */
+  salesChannelSlug?: string;
+  /** External order id assigned by the delivery app */
+  externalOrderId?: string;
 }
 
 interface PaymentData {
