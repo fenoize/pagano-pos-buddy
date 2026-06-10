@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Customer, OrderItem, FulfillmentType, PaymentMethod } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { DeliveryData } from './FulfillmentStep';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
 import { CouponApplication } from '@/types';
 import { PaymentMethod as ConfiguredPaymentMethod } from '@/hooks/usePaymentMethods';
+import { useSalesChannels, type SalesChannel } from '@/hooks/useSalesChannels';
 import { toast } from "sonner";
 
 interface PaymentModalProps {
