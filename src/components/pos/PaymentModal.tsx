@@ -217,6 +217,15 @@ export default function PaymentModal({
   const [runaRewardValue, setRunaRewardValue] = useState(1300);
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('retiro');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sub-flow for "Aplicación" payment method (delivery apps)
+  const { channels: allChannels } = useSalesChannels({ onlyActive: true });
+  const deliveryAppChannels = allChannels.filter((c) => c.type === 'delivery_app');
+  const [selectedAppChannel, setSelectedAppChannel] = useState<SalesChannel | null>(null);
+  const [externalOrderId, setExternalOrderId] = useState('');
+  const appInputRef = useRef<HTMLInputElement>(null);
+  const isAppFlow = currentMethod === 'aplicacion' && !!selectedAppChannel;
+
   useEffect(() => {
     if (isOpen) {
       fetchConfig();
