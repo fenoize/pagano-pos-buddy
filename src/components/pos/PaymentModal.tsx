@@ -1304,7 +1304,7 @@ export default function PaymentModal({
             disabled={!isValidPayment() || isSubmitting}
             className="flex-1"
           >
-            {isSubmitting ? 'Procesando...' : (payments.length === 0 ? 'Confirmar Pago' : `Confirmar Pago Mixto (${payments.length} métodos)`)}
+            {isSubmitting ? 'Procesando...' : isAppFlow ? 'Confirmar pedido' : (payments.length === 0 ? 'Confirmar Pago' : `Confirmar Pago Mixto (${payments.length} métodos)`)}
           </Button>
         </div>
       </DialogContent>
