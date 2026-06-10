@@ -7,6 +7,8 @@ import { Clock, MapPin, Phone, User, Package, MessageSquare, Loader2, UtensilsCr
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getOrderDisplayName } from '@/lib/orderDisplay';
+import { OrderSourceBadge } from '@/components/sales/OrderSourceBadge';
+import { useSalesChannels } from '@/hooks/useSalesChannels';
 
 function ExtraChip({ quantity, label }: { quantity: number; label: string }) {
   return (
