@@ -1243,16 +1243,18 @@ export default function PaymentModal({
                 </div>
               )}
 
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                onClick={handleAddPayment}
-                disabled={!currentAmount && !currentRunas && currentMethod !== 'pendiente'}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {payments.length > 0 ? 'Agregar otro método de pago' : 'Agregar método de pago (para pago mixto)'}
-              </Button>
+              {!isAppFlow && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  onClick={handleAddPayment}
+                  disabled={!currentAmount && !currentRunas && currentMethod !== 'pendiente'}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {payments.length > 0 ? 'Agregar otro método de pago' : 'Agregar método de pago (para pago mixto)'}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
