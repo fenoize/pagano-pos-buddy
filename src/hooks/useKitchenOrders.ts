@@ -120,6 +120,7 @@ export function useKitchenOrders() {
             cantidad_runas,
             valor_cliente,
             estado_cliente,
+            is_vip,
             created_at,
             updated_at
           )
@@ -184,6 +185,7 @@ export function useKitchenOrders() {
             cantidad_runas,
             valor_cliente,
             estado_cliente,
+            is_vip,
             created_at,
             updated_at
           )

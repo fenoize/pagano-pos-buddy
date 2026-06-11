@@ -148,6 +148,7 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={`font-bold text-primary ${compact ? 'text-lg' : 'text-2xl'}`}>
+              {order.customer?.is_vip && <span className="mr-1">👑</span>}
               #{order.order_number}
             </div>
             {order.fulfillment === 'delivery' && (
