@@ -24,6 +24,7 @@ export interface CustomerFormData {
   fecha_nacimiento?: string;
   estado_cliente?: EstadoCliente;
   motivo_estado?: string;
+  is_vip?: boolean;
 }
 
 interface UseCustomersOptions {
@@ -229,6 +230,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
             fecha_nacimiento: normalized.fecha_nacimiento ?? null,
             estado_cliente: normalized.estado_cliente || 'Activo',
             motivo_estado: normalized.motivo_estado ?? null,
+            is_vip: normalized.is_vip ?? false,
             created_by_user_id: user.id,
             updated_by_user_id: user.id
           })
@@ -310,6 +312,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
             rut: normalized.rut ?? null,
             fecha_nacimiento: normalized.fecha_nacimiento === '' ? null : (normalized.fecha_nacimiento ?? null),
             motivo_estado: normalized.motivo_estado ?? null,
+            is_vip: normalized.is_vip ?? false,
             updated_by_user_id: user.id
           })
           .eq('id', id)
