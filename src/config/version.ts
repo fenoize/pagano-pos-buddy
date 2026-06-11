@@ -3,12 +3,21 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.4";
- export const APP_BUILD_DATE = "2026-06-10";
+ export const APP_VERSION = "1.5.5";
+ export const APP_BUILD_DATE = "2026-06-11";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.5.5",
+     date: "2026-06-11",
+     changes: [
+       "Nuevo campo 'Cliente VIP' en la ficha de clientes: toggle en el panel admin para marcar clientes VIP",
+       "Indicador VIP (corona dorada) visible en el listado de clientes del panel admin",
+       "En el KDS, los pedidos de clientes VIP muestran una corona 👑 justo antes del número de comanda"
+     ]
+   },
    {
      version: "1.5.4",
      date: "2026-06-10",

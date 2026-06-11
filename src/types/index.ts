@@ -202,6 +202,7 @@ export interface Customer {
   ultima_compra?: string;
   cantidad_runas?: number;
   valor_cliente?: number;
+  is_vip?: boolean;
   auth_user_id?: string;
   created_at: string;
   updated_at: string;

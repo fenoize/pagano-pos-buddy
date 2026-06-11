@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useCustomers, CustomerFormData } from '@/hooks/useCustomers';
 import { Customer, EstadoCliente } from '@/types';
 import CustomerFieldsForm, { CustomerFieldsData } from '@/components/shared/CustomerFieldsForm';
+import { Switch } from "@/components/ui/switch";
+import { Crown } from "lucide-react";
 
 interface CustomerFormProps {
   customer?: Customer;
@@ -23,6 +25,7 @@ export default function CustomerForm({ customer, onSuccess }: CustomerFormProps)
   });
   const [estadoCliente, setEstadoCliente] = useState<EstadoCliente>('Activo');
   const [motivoEstado, setMotivoEstado] = useState('');
+  const [isVip, setIsVip] = useState(false);
   const [loading, setLoading] = useState(false);
   
   const { createCustomer, updateCustomer } = useCustomers();
@@ -39,6 +42,7 @@ export default function CustomerForm({ customer, onSuccess }: CustomerFormProps)
       });
       setEstadoCliente(customer.estado_cliente || 'Activo');
       setMotivoEstado(customer.motivo_estado || '');
+      setIsVip(customer.is_vip || false);
     }
   }, [customer]);
 
@@ -55,6 +59,7 @@ export default function CustomerForm({ customer, onSuccess }: CustomerFormProps)
         fecha_nacimiento: fieldsData.fecha_nacimiento || '',
         estado_cliente: estadoCliente,
         motivo_estado: motivoEstado,
+        is_vip: isVip,
       };
 
       let success;
@@ -77,6 +82,7 @@ export default function CustomerForm({ customer, onSuccess }: CustomerFormProps)
           });
           setEstadoCliente('Activo');
           setMotivoEstado('');
+          setIsVip(false);
         }
       }
     } finally {
@@ -138,6 +144,23 @@ export default function CustomerForm({ customer, onSuccess }: CustomerFormProps)
                 />
               </div>
             )}
+
+            {/* VIP Toggle */}
+            <div className="flex items-center justify-between space-y-0 md:col-span-2 p-3 rounded-lg border border-yellow-200 bg-yellow-50/50">
+              <div className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-yellow-600" />
+                <div>
+                  <Label htmlFor="is_vip" className="font-medium">Cliente VIP</Label>
+                  <p className="text-xs text-muted-foreground">Destaca al cliente en el KDS con una corona</p>
+                </div>
+              </div>
+              <Switch
+                id="is_vip"
+                checked={isVip}
+                onCheckedChange={setIsVip}
+                disabled={loading}
+              />
+            </div>
           </div>
 
           {/* Submit Button */}

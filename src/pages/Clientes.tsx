@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Coins, CreditCard, Download, X, Shield, FileText, FileSpreadsheet, Tag } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Coins, CreditCard, Download, X, Shield, FileText, FileSpreadsheet, Tag, Crown } from "lucide-react";
 import { useRunasConfig } from '@/hooks/useRunasConfig';
 import { useCustomerTags } from '@/hooks/useCustomerTags';
 import { Button } from "@/components/ui/button";
@@ -385,9 +385,17 @@ export default function Clientes() {
                     <TableRow key={customer.id}>
                       <TableCell>
                         <div className="space-y-1">
-                          <p className="font-medium">
-                            {customer.nombres || customer.name} {customer.apellidos || customer.apellido}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">
+                              {customer.nombres || customer.name} {customer.apellidos || customer.apellido}
+                            </p>
+                            {customer.is_vip && (
+                              <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 border border-yellow-300">
+                                <Crown className="w-3 h-3 mr-1" />
+                                VIP
+                              </span>
+                            )}
+                          </div>
                           {customer.rut && (
                             <p className="text-sm text-muted-foreground">{customer.rut}</p>
                           )}

@@ -1,0 +1,1 @@
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS is_vip BOOLEAN NOT NULL DEFAULT false;

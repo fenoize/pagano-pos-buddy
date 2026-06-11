@@ -1761,6 +1761,7 @@ export type Database = {
           estado_cliente: Database["public"]["Enums"]["estado_cliente"] | null
           fecha_nacimiento: string | null
           id: string
+          is_vip: boolean
           marketing_consent_date: string | null
           marketing_consent_source: string | null
           marketing_opt_in: boolean
@@ -1789,6 +1790,7 @@ export type Database = {
           estado_cliente?: Database["public"]["Enums"]["estado_cliente"] | null
           fecha_nacimiento?: string | null
           id?: string
+          is_vip?: boolean
           marketing_consent_date?: string | null
           marketing_consent_source?: string | null
           marketing_opt_in?: boolean
@@ -1817,6 +1819,7 @@ export type Database = {
           estado_cliente?: Database["public"]["Enums"]["estado_cliente"] | null
           fecha_nacimiento?: string | null
           id?: string
+          is_vip?: boolean
           marketing_consent_date?: string | null
           marketing_consent_source?: string | null
           marketing_opt_in?: boolean
