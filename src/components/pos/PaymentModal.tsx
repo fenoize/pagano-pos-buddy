@@ -640,6 +640,11 @@ export default function PaymentModal({
   };
 
   const isValidPayment = () => {
+    // Flujo de app de delivery: válido cuando hay canal seleccionado y Nº de pedido
+    if (currentMethod === 'aplicacion' && selectedAppChannel && externalOrderId.trim()) {
+      return true;
+    }
+
     // Si es método pendiente, siempre es válido
     if (currentMethod === 'pendiente') {
       return true;
