@@ -529,8 +529,8 @@ export default function PaymentModal({
           countsAsRealSale: methodConfig?.counts_as_real_sale ?? false,
           amount: 0,
         }];
-      } else if (currentMethod !== 'runas' && amount <= 0) {
-        // Validar método actual
+      } else if (currentMethod !== 'runas' && currentMethod !== 'aplicacion' && amount <= 0) {
+        // Validar método actual (excepto runas y aplicacion que tienen su propia lógica)
         toast.error("Error", { description: "Ingrese un monto válido" });
         setIsSubmitting(false);
         return;
