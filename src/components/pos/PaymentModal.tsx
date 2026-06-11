@@ -529,8 +529,8 @@ export default function PaymentModal({
           countsAsRealSale: methodConfig?.counts_as_real_sale ?? false,
           amount: 0,
         }];
-      } else if (currentMethod !== 'runas' && amount <= 0) {
-        // Validar método actual
+      } else if (currentMethod !== 'runas' && currentMethod !== 'aplicacion' && amount <= 0) {
+        // Validar método actual (excepto runas y aplicacion que tienen su propia lógica)
         toast.error("Error", { description: "Ingrese un monto válido" });
         setIsSubmitting(false);
         return;
@@ -640,6 +640,11 @@ export default function PaymentModal({
   };
 
   const isValidPayment = () => {
+    // Flujo de app de delivery: válido cuando hay canal seleccionado y Nº de pedido
+    if (currentMethod === 'aplicacion' && selectedAppChannel && externalOrderId.trim()) {
+      return true;
+    }
+
     // Si es método pendiente, siempre es válido
     if (currentMethod === 'pendiente') {
       return true;
