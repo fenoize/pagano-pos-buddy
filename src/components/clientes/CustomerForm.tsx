@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useCustomers, CustomerFormData } from '@/hooks/useCustomers';
 import { Customer, EstadoCliente } from '@/types';
 import CustomerFieldsForm, { CustomerFieldsData } from '@/components/shared/CustomerFieldsForm';
+import { Switch } from "@/components/ui/switch";
+import { Crown } from "lucide-react";
 
 interface CustomerFormProps {
   customer?: Customer;
@@ -23,6 +25,7 @@ export default function CustomerForm({ customer, onSuccess }: CustomerFormProps)
   });
   const [estadoCliente, setEstadoCliente] = useState<EstadoCliente>('Activo');
   const [motivoEstado, setMotivoEstado] = useState('');
+  const [isVip, setIsVip] = useState(false);
   const [loading, setLoading] = useState(false);
   
   const { createCustomer, updateCustomer } = useCustomers();
@@ -39,6 +42,7 @@ export default function CustomerForm({ customer, onSuccess }: CustomerFormProps)
       });
       setEstadoCliente(customer.estado_cliente || 'Activo');
       setMotivoEstado(customer.motivo_estado || '');
+      setIsVip(customer.is_vip || false);
     }
   }, [customer]);
 
