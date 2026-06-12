@@ -508,9 +508,13 @@ export default function NewSale() {
         receiptNumber?: string;
         operationNumber?: string;
         runas?: number;
+        salesChannelSlug?: string;
+        externalOrderId?: string;
       }>;
       fulfillment: FulfillmentType;
       notes?: string;
+      salesChannelSlug?: string;
+      externalOrderId?: string;
     }
   ) => {
     try {
