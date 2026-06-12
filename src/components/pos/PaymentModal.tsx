@@ -633,10 +633,17 @@ export default function PaymentModal({
       return;
     }
 
+    // Buscar la fila de pago de aplicación para exponer canal + N° pedido a nivel superior
+    const appRow = finalPayments.find(
+      (p) => p.methodName === 'aplicacion' && !!p.salesChannelSlug
+    );
+
     const paymentData: PaymentData = {
       payments: finalPayments,
       fulfillment: deliveryData?.zone ? 'delivery' : 'retiro',
       notes: notes.trim() || undefined,
+      salesChannelSlug: appRow?.salesChannelSlug,
+      externalOrderId: appRow?.externalOrderId,
     };
     
     try {
