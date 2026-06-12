@@ -634,13 +634,18 @@ export default function NewSale() {
       const receiptNumber = paymentData.payments.find(p => p.receiptNumber)?.receiptNumber || null;
       const operationNumber = paymentData.payments.find(p => p.operationNumber)?.operationNumber || null;
 
-      // Datos del sub-flujo de Aplicación (Rappi/UberEats/PedidosYa)
+      // Datos del sub-flujo de Aplicación (Rappi/UberEats/PedidosYa).
+      // Preferimos los campos a nivel superior de paymentData; caemos al row de pago como respaldo.
       const appPayment = paymentData.payments.find(
         (p: any) => p.methodName === 'aplicacion' && p.salesChannelSlug
       ) as any;
       const effectiveChannelSlug: string =
-        appPayment?.salesChannelSlug || orderSnapshot.salesChannelSlug || 'local';
-      const effectiveExternalOrderId: string | null = appPayment?.externalOrderId || null;
+        paymentData.salesChannelSlug ||
+        appPayment?.salesChannelSlug ||
+        orderSnapshot.salesChannelSlug ||
+        'local';
+      const effectiveExternalOrderId: string | null =
+        paymentData.externalOrderId || appPayment?.externalOrderId || null;
 
       const orderData = {
         customer_id: customerId,
