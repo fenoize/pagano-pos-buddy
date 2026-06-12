@@ -17,6 +17,7 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { useComunas } from '@/hooks/useComunas';
 import { useUsers } from '@/hooks/useUsers';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
+import { useSalesChannels } from '@/hooks/useSalesChannels';
 import { useCustomerRunes } from '@/hooks/useCustomerRunes';
 import { useCashSession } from '@/hooks/useCashSession';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
