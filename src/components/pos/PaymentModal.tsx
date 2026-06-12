@@ -60,6 +60,9 @@ interface PaymentData {
   payments: SinglePayment[];
   fulfillment: FulfillmentType;
   notes?: string;
+  /** Top-level slug for app sub-flow (Rappi/UberEats/PedidosYa) — mirrors the matching SinglePayment */
+  salesChannelSlug?: string;
+  externalOrderId?: string;
 }
 
 function PaymentItemRow({ item, itemTotal, formatPrice }: { item: OrderItem; itemTotal: number; formatPrice: (n: number) => string }) {
@@ -440,7 +443,8 @@ export default function PaymentModal({
       return;
     }
 
-    if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
+    // Para el flujo de aplicación, el N° de pedido cubre el requisito de operación
+    if (methodConfig?.requires_operation_number && currentMethod !== 'aplicacion' && !currentOperationNumber.trim()) {
       toast.error("Error", { description: "Ingrese el número de operación" });
       return;
     }
@@ -490,7 +494,10 @@ export default function PaymentModal({
             : amount),
       cashGiven: currentMethod === 'efectivo' ? amount : undefined,
       receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
-      operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
+      operationNumber:
+        currentMethod === 'aplicacion'
+          ? externalOrderId.trim()
+          : (methodConfig?.requires_operation_number ? currentOperationNumber : undefined),
       runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
       salesChannelSlug: currentMethod === 'aplicacion' ? selectedAppChannel?.slug : undefined,
       externalOrderId: currentMethod === 'aplicacion' ? externalOrderId.trim() : undefined,
@@ -540,7 +547,7 @@ export default function PaymentModal({
         setIsSubmitting(false);
         return;
       }
-      else if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
+      else if (methodConfig?.requires_operation_number && currentMethod !== 'aplicacion' && !currentOperationNumber.trim()) {
         toast.error("Error", { description: "Ingrese el número de operación" });
         setIsSubmitting(false);
         return;
@@ -595,7 +602,10 @@ export default function PaymentModal({
                 : currentMethod === 'aplicacion' ? total : amount),
           cashGiven: currentMethod === 'efectivo' ? amount : undefined,
           receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
-          operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
+          operationNumber:
+            currentMethod === 'aplicacion'
+              ? externalOrderId.trim()
+              : (methodConfig?.requires_operation_number ? currentOperationNumber : undefined),
           runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
           salesChannelSlug: currentMethod === 'aplicacion' ? selectedAppChannel?.slug : undefined,
           externalOrderId: currentMethod === 'aplicacion' ? externalOrderId.trim() : undefined,
@@ -623,10 +633,17 @@ export default function PaymentModal({
       return;
     }
 
+    // Buscar la fila de pago de aplicación para exponer canal + N° pedido a nivel superior
+    const appRow = finalPayments.find(
+      (p) => p.methodName === 'aplicacion' && !!p.salesChannelSlug
+    );
+
     const paymentData: PaymentData = {
       payments: finalPayments,
       fulfillment: deliveryData?.zone ? 'delivery' : 'retiro',
       notes: notes.trim() || undefined,
+      salesChannelSlug: appRow?.salesChannelSlug,
+      externalOrderId: appRow?.externalOrderId,
     };
     
     try {
@@ -674,7 +691,7 @@ export default function PaymentModal({
       return false;
     }
     
-    if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
+    if (methodConfig?.requires_operation_number && currentMethod !== 'aplicacion' && !currentOperationNumber.trim()) {
       return false;
     }
 
