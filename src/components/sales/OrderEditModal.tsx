@@ -17,6 +17,7 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { useComunas } from '@/hooks/useComunas';
 import { useUsers } from '@/hooks/useUsers';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
+import { useSalesChannels } from '@/hooks/useSalesChannels';
 import { useCustomerRunes } from '@/hooks/useCustomerRunes';
 import { useCashSession } from '@/hooks/useCashSession';
 import { formatDeliveryAddress } from '@/lib/deliveryHelpers';
@@ -74,6 +75,11 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const { comunas } = useComunas();
   const { users, fetchUsers } = useUsers();
   const { paymentMethods } = usePaymentMethods();
+  const { channels: salesChannels } = useSalesChannels();
+  const orderChannel = (order as any)?.sales_channel_slug
+    ? salesChannels.find((c) => c.slug === (order as any).sales_channel_slug)
+    : undefined;
+  const isDeliveryAppOrder = orderChannel?.type === 'delivery_app';
   const { getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
   const { checkActiveSession } = useCashSession();
   const { canManageCashSessions } = usePermissions();
@@ -1193,7 +1199,11 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Método:</span>
-                      <span className="capitalize">{order.payment_method}</span>
+                      <span className="capitalize">
+                        {order.payment_method === 'aplicacion' && isDeliveryAppOrder
+                          ? `Aplicación · ${orderChannel?.name}${(order as any).external_order_id ? ` · #${(order as any).external_order_id}` : ''}`
+                          : order.payment_method}
+                      </span>
                     </div>
                     {paymentMethods.map((method) => {
                       const fieldName = `payment_${method.name}` as keyof Order;
@@ -1219,7 +1229,9 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                           <div key={method.id} className="flex justify-between items-center">
                             <span className="text-muted-foreground flex items-center gap-2">
                               <Icon className="w-4 h-4" />
-                              {method.display_name}:
+                              {method.name === 'aplicacion' && isDeliveryAppOrder
+                                ? `${method.display_name} · ${orderChannel?.name}`
+                                : `${method.display_name}`}:
                             </span>
                             <span>{formatCurrency(amount)}</span>
                           </div>
