@@ -75,6 +75,11 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   const { comunas } = useComunas();
   const { users, fetchUsers } = useUsers();
   const { paymentMethods } = usePaymentMethods();
+  const { channels: salesChannels } = useSalesChannels();
+  const orderChannel = (order as any)?.sales_channel_slug
+    ? salesChannels.find((c) => c.slug === (order as any).sales_channel_slug)
+    : undefined;
+  const isDeliveryAppOrder = orderChannel?.type === 'delivery_app';
   const { getCustomerRunasBalance, fetchRunaValue } = useCustomerRunes();
   const { checkActiveSession } = useCashSession();
   const { canManageCashSessions } = usePermissions();
