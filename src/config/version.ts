@@ -3,12 +3,20 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.6";
+ export const APP_VERSION = "1.5.7";
  export const APP_BUILD_DATE = "2026-06-12";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.5.7",
+     date: "2026-06-12",
+     changes: [
+       "Fix backend: la función create_order_with_context ahora persiste sales_channel_slug y external_order_id (antes se descartaban silenciosamente, por lo que pedidos de Rappi/Uber Eats/PedidosYa quedaban como 'web')",
+       "Detalle de venta: cuando el método de pago es 'Aplicación' y el canal es una app de delivery, ahora se muestra el nombre de la app (ej: 'Aplicación · Rappi · #12345') en vez de solo 'Aplicación'"
+     ]
+   },
    {
      version: "1.5.6",
      date: "2026-06-12",
