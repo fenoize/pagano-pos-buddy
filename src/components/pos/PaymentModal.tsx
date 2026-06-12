@@ -681,7 +681,7 @@ export default function PaymentModal({
       return false;
     }
     
-    if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
+    if (methodConfig?.requires_operation_number && currentMethod !== 'aplicacion' && !currentOperationNumber.trim()) {
       return false;
     }
 
