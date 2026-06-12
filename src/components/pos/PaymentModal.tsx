@@ -440,7 +440,8 @@ export default function PaymentModal({
       return;
     }
 
-    if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
+    // Para el flujo de aplicación, el N° de pedido cubre el requisito de operación
+    if (methodConfig?.requires_operation_number && currentMethod !== 'aplicacion' && !currentOperationNumber.trim()) {
       toast.error("Error", { description: "Ingrese el número de operación" });
       return;
     }
