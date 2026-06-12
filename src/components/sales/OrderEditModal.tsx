@@ -1199,7 +1199,11 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Método:</span>
-                      <span className="capitalize">{order.payment_method}</span>
+                      <span className="capitalize">
+                        {order.payment_method === 'aplicacion' && isDeliveryAppOrder
+                          ? `Aplicación · ${orderChannel?.name}${(order as any).external_order_id ? ` · #${(order as any).external_order_id}` : ''}`
+                          : order.payment_method}
+                      </span>
                     </div>
                     {paymentMethods.map((method) => {
                       const fieldName = `payment_${method.name}` as keyof Order;
