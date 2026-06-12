@@ -3,12 +3,20 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.5";
- export const APP_BUILD_DATE = "2026-06-11";
+ export const APP_VERSION = "1.5.6";
+ export const APP_BUILD_DATE = "2026-06-12";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.5.6",
+     date: "2026-06-12",
+     changes: [
+       "Fix: el flujo 'Aplicación' ya no exige un campo extra de 'Nº de operación' — el Nº de pedido de la app cubre ambos requisitos",
+       "Fix: al confirmar un pedido de Rappi/Uber Eats/PedidosYa, sales_channel_slug se persiste con el slug correcto de la app (ya no se sobreescribe con 'web')"
+     ]
+   },
    {
      version: "1.5.5",
      date: "2026-06-11",
