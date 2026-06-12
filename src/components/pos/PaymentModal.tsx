@@ -60,6 +60,9 @@ interface PaymentData {
   payments: SinglePayment[];
   fulfillment: FulfillmentType;
   notes?: string;
+  /** Top-level slug for app sub-flow (Rappi/UberEats/PedidosYa) — mirrors the matching SinglePayment */
+  salesChannelSlug?: string;
+  externalOrderId?: string;
 }
 
 function PaymentItemRow({ item, itemTotal, formatPrice }: { item: OrderItem; itemTotal: number; formatPrice: (n: number) => string }) {
