@@ -544,7 +544,7 @@ export default function PaymentModal({
         setIsSubmitting(false);
         return;
       }
-      else if (methodConfig?.requires_operation_number && !currentOperationNumber.trim()) {
+      else if (methodConfig?.requires_operation_number && currentMethod !== 'aplicacion' && !currentOperationNumber.trim()) {
         toast.error("Error", { description: "Ingrese el número de operación" });
         setIsSubmitting(false);
         return;
