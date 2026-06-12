@@ -1229,7 +1229,9 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
                           <div key={method.id} className="flex justify-between items-center">
                             <span className="text-muted-foreground flex items-center gap-2">
                               <Icon className="w-4 h-4" />
-                              {method.display_name}:
+                              {method.name === 'aplicacion' && isDeliveryAppOrder
+                                ? `${method.display_name} · ${orderChannel?.name}`
+                                : `${method.display_name}`}:
                             </span>
                             <span>{formatCurrency(amount)}</span>
                           </div>
