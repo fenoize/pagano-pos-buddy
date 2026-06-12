@@ -599,7 +599,10 @@ export default function PaymentModal({
                 : currentMethod === 'aplicacion' ? total : amount),
           cashGiven: currentMethod === 'efectivo' ? amount : undefined,
           receiptNumber: methodConfig?.requires_receipt ? currentReceiptNumber : undefined,
-          operationNumber: methodConfig?.requires_operation_number ? currentOperationNumber : undefined,
+          operationNumber:
+            currentMethod === 'aplicacion'
+              ? externalOrderId.trim()
+              : (methodConfig?.requires_operation_number ? currentOperationNumber : undefined),
           runas: currentMethod === 'runas' ? parseFloat(currentRunas) : undefined,
           salesChannelSlug: currentMethod === 'aplicacion' ? selectedAppChannel?.slug : undefined,
           externalOrderId: currentMethod === 'aplicacion' ? externalOrderId.trim() : undefined,
