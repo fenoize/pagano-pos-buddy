@@ -8,6 +8,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
+import { LIAWidget } from "@/components/lia/LIAWidget";
 import { MobileNav } from "@/components/MobileNav";
 import { SEOHead } from "@/components/SEOHead";
 import { CashSessionTopBar } from "@/components/cash/CashSessionTopBar";
