@@ -1,5 +1,9 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-staff-token",
+};
 
 const SYSTEM_PROMPT = `Eres LIA, asistente de datos interna de Paganos Burger.
 Respondes ÚNICAMENTE preguntas sobre los datos, configuraciones y métricas del sistema Paganos. No realizas búsquedas de internet, no respondes preguntas generales, no das consejos fuera del sistema.
@@ -36,53 +40,56 @@ function isSafeSelect(sql: string): boolean {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const auth = req.headers.get("authorization") || "";
+    const headerToken = req.headers.get("x-staff-token") || "";
+    const token = headerToken || (auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "");
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Missing token" }), {
+        status: 401, headers: { ...corsHeaders, "content-type": "application/json" },
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const { data: session } = await supabaseAdmin
+      .from("staff_sessions")
+      .select("user_id, expires_at, is_active")
+      .eq("token", token)
+      .maybeSingle();
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!session || !session.is_active || new Date(session.expires_at) < new Date()) {
+      return new Response(JSON.stringify({ error: "Invalid session" }), {
+        status: 401, headers: { ...corsHeaders, "content-type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub;
 
-    // Verify admin role via user_roles
-    const adminClient = createClient(supabaseUrl, serviceKey);
-    const { data: roles } = await adminClient
+    const { data: roles } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", userId);
-    const isAdmin = (roles || []).some((r: any) => r.role === "Administrador" || r.role === "admin");
+      .eq("user_id", session.user_id);
+
+    const isAdmin = (roles || []).some((r: any) => r.role === "Administrador");
     if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Forbidden: solo administradores" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "Solo administradores" }), {
+        status: 403, headers: { ...corsHeaders, "content-type": "application/json" },
       });
     }
 
     const { question, history = [] } = await req.json();
     if (!question || typeof question !== "string") {
       return new Response(JSON.stringify({ error: "Falta question" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "content-type": "application/json" },
       });
     }
+
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
 
     const messages: any[] = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -123,7 +130,6 @@ Deno.serve(async (req) => {
       return res.json();
     };
 
-    // Agent loop (max 4 iters)
     let convo = messages;
     let finalText = "";
     for (let i = 0; i < 4; i++) {
@@ -146,7 +152,7 @@ Deno.serve(async (req) => {
           if (!isSafeSelect(sql)) {
             toolResult = { error: "No puedo realizar modificaciones a los datos." };
           } else {
-            const { data: rpcData, error: rpcError } = await adminClient.rpc("lia_execute_select", { query_text: sql });
+            const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc("lia_execute_select", { query_text: sql });
             if (rpcError) toolResult = { error: rpcError.message };
             else toolResult = { rows: rpcData };
           }
@@ -162,12 +168,12 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ answer: finalText || "Sin respuesta." }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "content-type": "application/json" },
     });
   } catch (err) {
     console.error("lia-query error:", err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "content-type": "application/json" },
     });
   }
 });
