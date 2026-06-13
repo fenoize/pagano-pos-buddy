@@ -45,5 +45,10 @@ verify_jwt = false
 [functions.schedule-checker]
 verify_jwt = false
 
+[functions.lia-query]
+verify_jwt = false
+
+
+
 
 
