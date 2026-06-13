@@ -8174,6 +8174,7 @@ export type Database = {
       is_staff_admin: { Args: never; Returns: boolean }
       is_staff_user: { Args: { _user_id: string }; Returns: boolean }
       is_user_admin: { Args: { p_user_id: string }; Returns: boolean }
+      lia_execute_select: { Args: { query_text: string }; Returns: Json }
       list_customer_tags_with_counts: {
         Args: never
         Returns: {
