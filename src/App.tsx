@@ -219,6 +219,8 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         {!(isKitchenRoute && isExpanded) && <MobileNav />}
+        <LIAWidget />
+
         
         {/* Push notification permission banner for staff */}
         {showBanner && (
