@@ -100,7 +100,7 @@ export default function Sales() {
       // El usuario puede usar filtros si necesita datos más antiguos
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, customer_id, status, total, payment_method, fulfillment, created_at, updated_at, nombre_resumen, notes, branch_id, source, customer:customers(id, name, apellido, nombres, apellidos, phone, rut)')
+        .select('id, order_number, customer_id, status, total, payment_method, fulfillment, created_at, updated_at, nombre_resumen, notes, branch_id, source, sales_channel_slug, external_order_id, customer:customers(id, name, apellido, nombres, apellidos, phone, rut)')
         .order('created_at', { ascending: false })
         .limit(200);
 
