@@ -42,10 +42,12 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
     password: '',
     roles: ['Cajero'] as AppRole[],
     can_do_delivery: false,
+    can_use_lia: false,
   });
   const [loading, setLoading] = useState(false);
   const { createUser, updateUser } = useUsers();
   const isEditing = !!editingUser;
+  const isAdminSelected = formData.roles.includes('Administrador');
 
   useEffect(() => {
     if (isOpen) {
@@ -57,6 +59,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           password: '',
           roles: editingUser.roles?.length ? editingUser.roles : [editingUser.role],
           can_do_delivery: editingUser.can_do_delivery || false,
+          can_use_lia: editingUser.can_use_lia || false,
         });
       } else {
         setFormData({
@@ -66,6 +69,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           password: '',
           roles: ['Cajero'],
           can_do_delivery: false,
+          can_use_lia: false,
         });
       }
     }
