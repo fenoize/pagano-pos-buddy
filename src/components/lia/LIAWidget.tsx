@@ -21,6 +21,22 @@ export function LIAWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = user?.role === 'Administrador' || user?.roles?.includes('Administrador');
+  const [canUseLia, setCanUseLia] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user?.id || !isAdmin) { setCanUseLia(false); return; }
+      try {
+        const client = getStaffSupabaseClient();
+        const { data } = await client.from('users').select('can_use_lia').eq('id', user.id).maybeSingle();
+        if (!cancelled) setCanUseLia(Boolean((data as any)?.can_use_lia));
+      } catch {
+        if (!cancelled) setCanUseLia(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, isAdmin]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -30,7 +46,7 @@ export function LIAWidget() {
     if (open) setTimeout(() => inputRef.current?.focus(), 100);
   }, [open]);
 
-  if (!isAdmin) return null;
+  if (!isAdmin || !canUseLia) return null;
 
   const send = async () => {
     const q = input.trim();
