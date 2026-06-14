@@ -57,7 +57,7 @@ export function useUsers() {
         // Fetch users
         const { data: usersData, error: usersError } = await supabase
           .from('users')
-          .select('id, username, full_name, email, role, active, can_do_delivery, created_at, updated_at')
+          .select('id, username, full_name, email, role, active, can_do_delivery, can_use_lia, created_at, updated_at')
           .order('created_at', { ascending: false });
 
         if (usersError) throw usersError;
