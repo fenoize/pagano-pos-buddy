@@ -224,6 +224,25 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
             </div>
           </div>
 
+          {isAdminSelected && (
+            <div className="space-y-4 border rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="can_use_lia">Chatear con IA</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Permitir a este administrador usar el asistente LIA
+                  </p>
+                </div>
+                <Switch
+                  id="can_use_lia"
+                  checked={formData.can_use_lia}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, can_use_lia: checked }))}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          )}
+
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancelar</Button>
             <Button type="submit" disabled={loading}>
