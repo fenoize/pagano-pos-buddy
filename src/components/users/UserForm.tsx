@@ -121,6 +121,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           email: formData.email,
           roles: formData.roles,
           can_do_delivery: formData.can_do_delivery,
+          can_use_lia: isAdminSelected ? formData.can_use_lia : false,
         });
         toast.success("Usuario actualizado", { description: "El usuario ha sido actualizado correctamente." });
       } else {
@@ -131,6 +132,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           password: formData.password,
           roles: formData.roles,
           can_do_delivery: formData.can_do_delivery,
+          can_use_lia: isAdminSelected ? formData.can_use_lia : false,
         });
         toast.success("Usuario creado", { description: "El usuario ha sido creado correctamente." });
       }
