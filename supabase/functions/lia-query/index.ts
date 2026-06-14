@@ -84,6 +84,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    const { data: userRow } = await supabaseAdmin
+      .from("users")
+      .select("can_use_lia")
+      .eq("id", session.user_id)
+      .maybeSingle();
+
+    if (!userRow || !(userRow as any).can_use_lia) {
+      return new Response(JSON.stringify({ error: "Tu usuario no tiene habilitado el acceso a LIA" }), {
+        status: 403, headers: { ...corsHeaders, "content-type": "application/json" },
+      });
+    }
+
     const { question, history = [] } = await req.json();
     if (!question || typeof question !== "string") {
       return new Response(JSON.stringify({ error: "Falta question" }), {

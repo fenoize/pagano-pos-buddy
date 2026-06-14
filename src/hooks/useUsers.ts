@@ -57,7 +57,7 @@ export function useUsers() {
         // Fetch users
         const { data: usersData, error: usersError } = await supabase
           .from('users')
-          .select('id, username, full_name, email, role, active, can_do_delivery, created_at, updated_at')
+          .select('id, username, full_name, email, role, active, can_do_delivery, can_use_lia, created_at, updated_at')
           .order('created_at', { ascending: false });
 
         if (usersError) throw usersError;
@@ -115,12 +115,14 @@ export function useUsers() {
     password: string;
     roles: AppRole[];
     can_do_delivery?: boolean;
+    can_use_lia?: boolean;
   }) => {
     return requireAdminContext(async () => {
       const username = userData.username.trim();
       const full_name = userData.full_name.trim();
       const email = userData.email.trim();
       const primaryRole = mapAppRoleToDatabase(userData.roles[0] || 'Cajero');
+      const isAdmin = userData.roles.includes('Administrador');
 
       const { data, error: insertError } = await supabase
         .from('users')
@@ -131,8 +133,9 @@ export function useUsers() {
           pass_hash: 'temp',
           role: primaryRole as any,
           active: true,
-          can_do_delivery: userData.can_do_delivery ?? userData.roles.includes('Reparto')
-        })
+          can_do_delivery: userData.can_do_delivery ?? userData.roles.includes('Reparto'),
+          can_use_lia: isAdmin ? (userData.can_use_lia ?? false) : false,
+        } as any)
         .select()
         .single();
 
@@ -162,6 +165,7 @@ export function useUsers() {
     email?: string;
     roles?: AppRole[];
     can_do_delivery?: boolean;
+    can_use_lia?: boolean;
   }) => {
     return requireAdminContext(async () => {
       const updateData: any = {};
@@ -179,10 +183,15 @@ export function useUsers() {
         updateData.email = v ? v : null;
       }
       if (userData.can_do_delivery !== undefined) updateData.can_do_delivery = userData.can_do_delivery;
+      if (userData.can_use_lia !== undefined) updateData.can_use_lia = userData.can_use_lia;
 
       // Update primary role if roles changed
       if (userData.roles && userData.roles.length > 0) {
         updateData.role = mapAppRoleToDatabase(userData.roles[0]);
+        // If user loses Administrador role, revoke LIA access
+        if (!userData.roles.includes('Administrador')) {
+          updateData.can_use_lia = false;
+        }
         await syncUserRoles(userId, userData.roles, user!.id);
       }
 

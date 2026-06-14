@@ -42,10 +42,12 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
     password: '',
     roles: ['Cajero'] as AppRole[],
     can_do_delivery: false,
+    can_use_lia: false,
   });
   const [loading, setLoading] = useState(false);
   const { createUser, updateUser } = useUsers();
   const isEditing = !!editingUser;
+  const isAdminSelected = formData.roles.includes('Administrador');
 
   useEffect(() => {
     if (isOpen) {
@@ -57,6 +59,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           password: '',
           roles: editingUser.roles?.length ? editingUser.roles : [editingUser.role],
           can_do_delivery: editingUser.can_do_delivery || false,
+          can_use_lia: editingUser.can_use_lia || false,
         });
       } else {
         setFormData({
@@ -66,6 +69,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           password: '',
           roles: ['Cajero'],
           can_do_delivery: false,
+          can_use_lia: false,
         });
       }
     }
@@ -117,6 +121,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           email: formData.email,
           roles: formData.roles,
           can_do_delivery: formData.can_do_delivery,
+          can_use_lia: isAdminSelected ? formData.can_use_lia : false,
         });
         toast.success("Usuario actualizado", { description: "El usuario ha sido actualizado correctamente." });
       } else {
@@ -127,6 +132,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
           password: formData.password,
           roles: formData.roles,
           can_do_delivery: formData.can_do_delivery,
+          can_use_lia: isAdminSelected ? formData.can_use_lia : false,
         });
         toast.success("Usuario creado", { description: "El usuario ha sido creado correctamente." });
       }
@@ -217,6 +223,25 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
               />
             </div>
           </div>
+
+          {isAdminSelected && (
+            <div className="space-y-4 border rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="can_use_lia">Chatear con IA</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Permitir a este administrador usar el asistente LIA
+                  </p>
+                </div>
+                <Switch
+                  id="can_use_lia"
+                  checked={formData.can_use_lia}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, can_use_lia: checked }))}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          )}
 
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancelar</Button>

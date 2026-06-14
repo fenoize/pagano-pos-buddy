@@ -7164,6 +7164,7 @@ export type Database = {
         Row: {
           active: boolean | null
           can_do_delivery: boolean
+          can_use_lia: boolean
           created_at: string | null
           email: string | null
           full_name: string | null
@@ -7176,6 +7177,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           can_do_delivery?: boolean
+          can_use_lia?: boolean
           created_at?: string | null
           email?: string | null
           full_name?: string | null
@@ -7188,6 +7190,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           can_do_delivery?: boolean
+          can_use_lia?: boolean
           created_at?: string | null
           email?: string | null
           full_name?: string | null

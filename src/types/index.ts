@@ -21,6 +21,7 @@ export interface User {
   roles?: AppRole[];
   active: boolean;
   can_do_delivery: boolean;
+  can_use_lia?: boolean;
   created_at: string;
   updated_at: string;
 }
