@@ -165,6 +165,7 @@ export function useUsers() {
     email?: string;
     roles?: AppRole[];
     can_do_delivery?: boolean;
+    can_use_lia?: boolean;
   }) => {
     return requireAdminContext(async () => {
       const updateData: any = {};
@@ -182,10 +183,15 @@ export function useUsers() {
         updateData.email = v ? v : null;
       }
       if (userData.can_do_delivery !== undefined) updateData.can_do_delivery = userData.can_do_delivery;
+      if (userData.can_use_lia !== undefined) updateData.can_use_lia = userData.can_use_lia;
 
       // Update primary role if roles changed
       if (userData.roles && userData.roles.length > 0) {
         updateData.role = mapAppRoleToDatabase(userData.roles[0]);
+        // If user loses Administrador role, revoke LIA access
+        if (!userData.roles.includes('Administrador')) {
+          updateData.can_use_lia = false;
+        }
         await syncUserRoles(userId, userData.roles, user!.id);
       }
 
