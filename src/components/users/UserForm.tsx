@@ -230,7 +230,7 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
                 <div className="space-y-0.5">
                   <Label htmlFor="can_use_lia">Chatear con IA</Label>
                   <p className="text-sm text-muted-foreground">
-                    Permitir a este administrador usar el asistente LIA
+                    Permitir a este administrador usar el asistente ATENEA
                   </p>
                 </div>
                 <Switch
