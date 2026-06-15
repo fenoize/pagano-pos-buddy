@@ -16,7 +16,7 @@ export function LIAWidget() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
-    { role: 'assistant', content: '¡Hola! Soy LIA, tu asistente de datos. Pregúntame sobre ventas, clientes, configuraciones o métricas del sistema.' },
+    { role: 'assistant', content: '¡Hola! Soy ATENEA, tu asistente de datos. Pregúntame sobre ventas, clientes, configuraciones o métricas del sistema.' },
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -84,7 +84,7 @@ export function LIAWidget() {
           onClick={() => setOpen(true)}
           className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center text-white transition-transform hover:scale-110 active:scale-95"
           style={{ background: 'linear-gradient(135deg, #E11D2C, #b81825)' }}
-          aria-label="Abrir LIA"
+          aria-label="Abrir ATENEA"
         >
           <Sparkles className="h-6 w-6" />
         </button>
@@ -105,8 +105,8 @@ export function LIAWidget() {
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div>
-                <div className="font-semibold text-sm">LIA — Asistente Paganos</div>
-                <div className="text-xs text-zinc-400">Pregunta sobre tus datos</div>
+                <div className="font-semibold text-sm">ATENEA — Oráculo Pagano</div>
+                <div className="text-xs text-zinc-400">Consulta el oráculo de datos</div>
               </div>
             </div>
             <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-white p-1">
