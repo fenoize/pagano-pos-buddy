@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -119,12 +120,18 @@ export function LIAWidget() {
                 <div key={i} className={cn("flex", m.role === 'user' ? 'justify-end' : 'justify-start')}>
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words",
-                      m.role === 'user' ? 'text-white' : 'bg-zinc-800 text-zinc-100'
+                      "max-w-[85%] rounded-2xl px-3 py-2 text-sm break-words",
+                      m.role === 'user' ? 'text-white whitespace-pre-wrap' : 'bg-zinc-800 text-zinc-100'
                     )}
                     style={m.role === 'user' ? { background: '#E11D2C' } : undefined}
                   >
-                    {m.content}
+                    {m.role === 'user' ? (
+                      m.content
+                    ) : (
+                      <div className="lia-markdown space-y-2 [&_p]:leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:space-y-1 [&_li]:marker:text-zinc-400 [&_code]:bg-zinc-900 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_a]:underline [&_a]:text-red-400 [&_h1]:text-base [&_h1]:font-bold [&_h2]:text-sm [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-semibold">
+                        <ReactMarkdown>{m.content}</ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
