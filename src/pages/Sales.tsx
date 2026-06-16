@@ -177,15 +177,21 @@ export default function Sales() {
               
               const updatedOrder = payload.new as Order;
               setOrders(prev => prev.map(order => 
-                order.id === updatedOrder.id ? updatedOrder : order
+                order.id === updatedOrder.id
+                  // Preservar el join inline de customer que no viene en el payload realtime
+                  ? ({ ...updatedOrder, customer: (order as any).customer ?? (updatedOrder as any).customer } as Order)
+                  : order
               ));
               console.log(`[Sales] Order updated: #${updatedOrder.order_number}, status: ${updatedOrder.status}`);
               
               // Actualizar selectedOrder si está abierto
               setSelectedOrder(prev => 
-                prev?.id === updatedOrder.id ? updatedOrder : prev
+                prev?.id === updatedOrder.id
+                  ? ({ ...updatedOrder, customer: (prev as any).customer ?? (updatedOrder as any).customer } as Order)
+                  : prev
               );
             } 
+
             else if (payload.eventType === 'DELETE') {
               // Validar que old existe
               if (!payload.old || !payload.old.id) {
