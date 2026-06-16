@@ -92,7 +92,38 @@ export default function Sales() {
 
   useEffect(() => {
     applyFilters();
-  }, [orders, filters, searchQuery]);
+  }, [orders, filters, searchQuery, customers]);
+
+  // Backfill: cargar clientes registrados de pedidos que no estén en la lista
+  // (ej. clientes inactivos, más allá del límite de 500, o nuevos por realtime)
+  useEffect(() => {
+    const missingIds = Array.from(new Set(
+      orders
+        .filter(o => o.customer_id && !(o as any).customer)
+        .map(o => o.customer_id as string)
+        .filter(id => !customers.some(c => c.id === id))
+    ));
+    if (missingIds.length === 0) return;
+
+    (async () => {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, name, nombres, apellido, apellidos, phone, rut')
+        .in('id', missingIds);
+      if (error) {
+        console.error('[Sales] Error backfilling customers:', error);
+        return;
+      }
+      if (data && data.length > 0) {
+        setCustomers(prev => {
+          const map = new Map(prev.map(c => [c.id, c]));
+          data.forEach(c => map.set(c.id, c as Customer));
+          return Array.from(map.values());
+        });
+      }
+    })();
+  }, [orders]);
+
 
   const loadOrders = async () => {
     try {
@@ -177,15 +208,21 @@ export default function Sales() {
               
               const updatedOrder = payload.new as Order;
               setOrders(prev => prev.map(order => 
-                order.id === updatedOrder.id ? updatedOrder : order
+                order.id === updatedOrder.id
+                  // Preservar el join inline de customer que no viene en el payload realtime
+                  ? ({ ...updatedOrder, customer: (order as any).customer ?? (updatedOrder as any).customer } as Order)
+                  : order
               ));
               console.log(`[Sales] Order updated: #${updatedOrder.order_number}, status: ${updatedOrder.status}`);
               
               // Actualizar selectedOrder si está abierto
               setSelectedOrder(prev => 
-                prev?.id === updatedOrder.id ? updatedOrder : prev
+                prev?.id === updatedOrder.id
+                  ? ({ ...updatedOrder, customer: (prev as any).customer ?? (updatedOrder as any).customer } as Order)
+                  : prev
               );
             } 
+
             else if (payload.eventType === 'DELETE') {
               // Validar que old existe
               if (!payload.old || !payload.old.id) {
