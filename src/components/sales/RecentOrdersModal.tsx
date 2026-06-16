@@ -101,8 +101,10 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
           )
         `)
         .gte('created_at', fromDate.toISOString())
+        .neq('status', 'PendientePago')
         .order('created_at', { ascending: false })
         .limit(30);
+
 
       if (error) throw error;
 
