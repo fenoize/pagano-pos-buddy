@@ -35,9 +35,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { CashSessionModal } from '@/components/cash/CashSessionModal';
 import { toast } from "sonner";
 import { cn } from '@/lib/utils';
-import { useSalesChannels, channelSlugToLegacySource } from '@/hooks/useSalesChannels';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { channelSlugToLegacySource } from '@/hooks/useSalesChannels';
 
 export default function NewSale() {
   const [currentStep, setCurrentStep] = useState(1);
