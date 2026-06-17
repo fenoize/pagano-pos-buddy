@@ -948,8 +948,56 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               <>
                   
                   {slot.allow_variant_change !== false ? (
-                    (slot as any).allow_multiple_variants ? (
-                      /* Multi-select mode: checkboxes */
+                    isPerUnitVariantMode(slot) ? (
+                      /* Per-unit selection: one radio grid per unit */
+                      (() => {
+                        const filledCount = (selection.selectedVariants || []).filter(Boolean).length;
+                        const unitLabel = selection.selectedProduct?.name || 'Unidad';
+                        return (
+                          <div className="space-y-3">
+                            <h4 className="font-medium text-sm text-muted-foreground">
+                              Elige variante por unidad • {filledCount} de {slot.quantity} seleccionadas
+                            </h4>
+                            <div className="space-y-3">
+                              {Array.from({ length: slot.quantity }).map((_, unitIdx) => {
+                                const currentForUnit = selection.selectedVariants?.[unitIdx];
+                                return (
+                                  <div key={unitIdx} className="rounded-md border border-border/60 p-2">
+                                    <div className="text-xs font-semibold text-muted-foreground mb-2">
+                                      {unitLabel} {unitIdx + 1} de {slot.quantity}
+                                    </div>
+                                    <div className={`grid gap-2 ${availableVariants.length <= 2 ? 'grid-cols-2' : availableVariants.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-3'}`}>
+                                      {availableVariants.map((variant) => {
+                                        const isSelected = currentForUnit?.id === variant.id;
+                                        return (
+                                          <Card
+                                            key={variant.id}
+                                            className={`cursor-pointer transition-all ${
+                                              isSelected ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-accent/50'
+                                            }`}
+                                            onClick={() => selectVariant(index, variant, unitIdx)}
+                                          >
+                                            <CardContent className="p-2">
+                                              <div className="text-center space-y-1">
+                                                <span className="font-medium text-sm">{variant.variant?.name}</span>
+                                                <div className="text-primary font-semibold text-xs">
+                                                  {formatPrice(variant.price)}
+                                                </div>
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : (slot as any).allow_multiple_variants ? (
+                      /* Multi-select mode (quantity=1): checkboxes */
                       <div className="space-y-3">
                         <h4 className="font-medium text-sm text-muted-foreground">
                           Selecciona variantes (múltiple)
