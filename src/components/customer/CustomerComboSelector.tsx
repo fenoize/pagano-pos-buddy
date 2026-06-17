@@ -373,33 +373,41 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
       total = config.base_price;
       if (!config.included_variants) {
         sels.forEach(sel => {
-          if (sel.selectedVariant) {
-            const allVars = sel.selectedProduct ? variantsMap[sel.selectedProduct.id!] || [] : [];
-            const catVars = allVars.filter(v => v.variant?.category_id === sel.comboSlot.category_id);
-            const defVar = sel.comboSlot.default_variant_id
-              ? catVars.find(v => v.category_variant_id === sel.comboSlot.default_variant_id)
-              : catVars.find(v => v.is_default);
-            if (defVar && sel.selectedVariant.id !== defVar.id) {
-              // Cobra solo el DIFERENCIAL respecto a la variante por defecto
-              const diff = (sel.selectedVariant.price || 0) - (defVar.price || 0);
-              if (diff > 0) {
-                total += diff * sel.quantity;
+          const allVars = sel.selectedProduct ? variantsMap[sel.selectedProduct.id!] || [] : [];
+          const catVars = allVars.filter(v => v.variant?.category_id === sel.comboSlot.category_id);
+          const defVar = sel.comboSlot.default_variant_id
+            ? catVars.find(v => v.category_variant_id === sel.comboSlot.default_variant_id)
+            : catVars.find(v => v.is_default);
+          if (isPerUnitVariantMode(sel.comboSlot) && sel.selectedVariants && sel.selectedVariants.length > 0) {
+            sel.selectedVariants.forEach(v => {
+              if (defVar && v.id !== defVar.id) {
+                const diff = (v.price || 0) - (defVar.price || 0);
+                if (diff > 0) total += diff;
               }
-            }
+            });
+          } else if (sel.selectedVariant && defVar && sel.selectedVariant.id !== defVar.id) {
+            const diff = (sel.selectedVariant.price || 0) - (defVar.price || 0);
+            if (diff > 0) total += diff * sel.quantity;
           }
         });
       }
     } else {
       total = config.base_price;
       sels.forEach(sel => {
-        if ((sel.comboSlot as any).allow_multiple_variants && sel.selectedVariants && sel.selectedVariants.length > 0) {
+        const discount = (1 - (config.combo_discount || 0) / 100);
+        if (isPerUnitVariantMode(sel.comboSlot) && sel.selectedVariants && sel.selectedVariants.length > 0) {
+          // Per-unit mode: array length already equals quantity, don't multiply
           sel.selectedVariants.forEach(v => {
-            total += v.price * (1 - (config.combo_discount || 0) / 100) * sel.quantity;
+            total += v.price * discount;
+          });
+        } else if ((sel.comboSlot as any).allow_multiple_variants && sel.selectedVariants && sel.selectedVariants.length > 0) {
+          sel.selectedVariants.forEach(v => {
+            total += v.price * discount * sel.quantity;
           });
         } else if (sel.selectedVariant) {
-          total += sel.selectedVariant.price * (1 - (config.combo_discount || 0) / 100) * sel.quantity;
+          total += sel.selectedVariant.price * discount * sel.quantity;
         } else if (sel.selectedProduct) {
-          total += getProductBasePrice(sel.selectedProduct) * (1 - (config.combo_discount || 0) / 100) * sel.quantity;
+          total += getProductBasePrice(sel.selectedProduct) * discount * sel.quantity;
         }
       });
     }
