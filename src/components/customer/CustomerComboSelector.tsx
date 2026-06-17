@@ -79,6 +79,9 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     }
   }, [selections, productExtras, comboConfig, productVariantGroups]);
 
+  const isPerUnitVariantMode = (slot: ComboItem | any) =>
+    !!(slot as any)?.allow_multiple_variants && (slot?.quantity || 1) > 1;
+
   const buildDefaultGroupSelections = (groups: VariantGroupWithOptions[] = []) =>
     groups
       .map((group) => {
