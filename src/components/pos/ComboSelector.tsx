@@ -36,6 +36,9 @@ interface ComboItemSelection {
   modifiers?: string[]; // modifier_ids
 }
 
+const isPerUnitVariantMode = (slot: ComboItem | any) =>
+  !!(slot as any)?.allow_multiple_variants && (slot?.quantity || 1) > 1;
+
 const ComboSelector: React.FC<ComboSelectorProps> = ({
   product,
   onComboItemsChange,
