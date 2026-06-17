@@ -596,9 +596,18 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     }
   };
 
-  const selectVariant = (slotIndex: number, variant: ProductVariantOption) => {
+  const selectVariant = (slotIndex: number, variant: ProductVariantOption, unitIndex?: number) => {
     const slot = selections[slotIndex]?.comboSlot;
-    if ((slot as any)?.allow_multiple_variants) {
+    if (isPerUnitVariantMode(slot)) {
+      const current = [...(selections[slotIndex]?.selectedVariants || [])];
+      const idx = typeof unitIndex === 'number' ? unitIndex : 0;
+      while (current.length < (slot?.quantity || 1)) current.push(variant);
+      current[idx] = variant;
+      updateSelection(slotIndex, {
+        selectedVariants: current,
+        selectedVariant: current[0],
+      });
+    } else if ((slot as any)?.allow_multiple_variants) {
       // Multi-select mode: toggle variant in array
       const current = selections[slotIndex]?.selectedVariants || [];
       const exists = current.find(v => v.id === variant.id);
