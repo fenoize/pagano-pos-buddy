@@ -294,9 +294,20 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     updateSelection(slotIndex, { variant_group_selections: nextSelections });
   };
 
-  const selectVariant = (slotIndex: number, variant: ProductVariantOption) => {
+  const selectVariant = (slotIndex: number, variant: ProductVariantOption, unitIndex?: number) => {
     const slot = selections[slotIndex]?.comboSlot;
-    if ((slot as any)?.allow_multiple_variants) {
+    if (isPerUnitVariantMode(slot)) {
+      // Per-unit mode: set the variant for a specific unit index
+      const current = [...(selections[slotIndex]?.selectedVariants || [])];
+      const idx = typeof unitIndex === 'number' ? unitIndex : 0;
+      while (current.length < (slot?.quantity || 1)) current.push(variant);
+      current[idx] = variant;
+      updateSelection(slotIndex, {
+        selectedVariants: current,
+        selectedVariant: current[0],
+      });
+    } else if ((slot as any)?.allow_multiple_variants) {
+      // Legacy multi-select (quantity = 1) — toggle behavior
       const current = selections[slotIndex]?.selectedVariants || [];
       const exists = current.find(v => v.id === variant.id);
       const newVariants = exists
