@@ -507,61 +507,123 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
             )}
 
             {/* Variant selection */}
-            {availableVariants.length > 0 && (slot as any).allow_variant_change !== false && (
-              <div>
-                <div className="mb-1">
-                  <h3 className="text-lg font-bold text-white">
-                    {isProductLocked || availableProducts.length <= 1
-                      ? (selection.selectedProduct?.name || getCategoryName(slot.category_id))
-                      : 'Elige tu opción'}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {(slot as any).allow_multiple_variants
-                      ? 'Opcional • Elegir una o más'
-                      : 'Obligatorio • Elegir 1'}
-                  </p>
-                </div>
-                <div className="gap-0">
-                  {availableVariants.map((variant, idx) => {
-                    const isMulti = (slot as any).allow_multiple_variants;
-                    const isSelected = isMulti
-                      ? (selection.selectedVariants || []).some(v => v.id === variant.id)
-                      : selection.selectedVariant?.id === variant.id;
-                    return (
-                      <div
-                        key={variant.id}
-                        className={`flex items-center justify-between py-4 cursor-pointer ${
-                          idx < availableVariants.length - 1 ? 'border-b border-border/50' : ''
-                        }`}
-                        onClick={() => selectVariant(slotIndex, variant)}
-                      >
-                        <div className="flex-1">
-                          <span className="font-medium text-white">{variant.variant?.name}</span>
-                          {variant.price > 0 && (
-                            <span className="text-sm text-muted-foreground ml-2">
-                              {formatPrice(variant.price)}
-                            </span>
+            {availableVariants.length > 0 && (slot as any).allow_variant_change !== false && (() => {
+              const perUnit = isPerUnitVariantMode(slot);
+              const slotLabel = isProductLocked || availableProducts.length <= 1
+                ? (selection.selectedProduct?.name || getCategoryName(slot.category_id))
+                : 'Elige tu opción';
+
+              if (perUnit) {
+                // Per-unit selection: render one radio grid per unit
+                const units = Array.from({ length: slot.quantity });
+                const filledCount = (selection.selectedVariants || []).filter(Boolean).length;
+                const unitLabel = selection.selectedProduct?.name || getCategoryName(slot.category_id);
+                return (
+                  <div>
+                    <div className="mb-1">
+                      <h3 className="text-lg font-bold text-white">{slotLabel}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Elige una variante para cada unidad • {filledCount} de {slot.quantity} seleccionadas
+                      </p>
+                    </div>
+                    <div className="space-y-4 mt-2">
+                      {units.map((_, unitIdx) => {
+                        const currentForUnit = selection.selectedVariants?.[unitIdx];
+                        return (
+                          <div key={unitIdx} className="rounded-lg border border-border/50 p-3">
+                            <div className="mb-2">
+                              <h4 className="font-semibold text-white">
+                                {unitLabel} {unitIdx + 1} de {slot.quantity}
+                              </h4>
+                            </div>
+                            <div className="gap-0">
+                              {availableVariants.map((variant, idx) => {
+                                const isSelected = currentForUnit?.id === variant.id;
+                                return (
+                                  <div
+                                    key={variant.id}
+                                    className={`flex items-center justify-between py-3 cursor-pointer ${
+                                      idx < availableVariants.length - 1 ? 'border-b border-border/40' : ''
+                                    }`}
+                                    onClick={() => selectVariant(slotIndex, variant, unitIdx)}
+                                  >
+                                    <div className="flex-1">
+                                      <span className="font-medium text-white">{variant.variant?.name}</span>
+                                      {variant.price > 0 && (
+                                        <span className="text-sm text-muted-foreground ml-2">
+                                          {formatPrice(variant.price)}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                      isSelected ? 'border-primary' : 'border-muted-foreground/40'
+                                    }`}>
+                                      {isSelected && <div className="w-3.5 h-3.5 rounded-full bg-primary" />}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div>
+                  <div className="mb-1">
+                    <h3 className="text-lg font-bold text-white">{slotLabel}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {(slot as any).allow_multiple_variants
+                        ? 'Opcional • Elegir una o más'
+                        : 'Obligatorio • Elegir 1'}
+                    </p>
+                  </div>
+                  <div className="gap-0">
+                    {availableVariants.map((variant, idx) => {
+                      const isMulti = (slot as any).allow_multiple_variants;
+                      const isSelected = isMulti
+                        ? (selection.selectedVariants || []).some(v => v.id === variant.id)
+                        : selection.selectedVariant?.id === variant.id;
+                      return (
+                        <div
+                          key={variant.id}
+                          className={`flex items-center justify-between py-4 cursor-pointer ${
+                            idx < availableVariants.length - 1 ? 'border-b border-border/50' : ''
+                          }`}
+                          onClick={() => selectVariant(slotIndex, variant)}
+                        >
+                          <div className="flex-1">
+                            <span className="font-medium text-white">{variant.variant?.name}</span>
+                            {variant.price > 0 && (
+                              <span className="text-sm text-muted-foreground ml-2">
+                                {formatPrice(variant.price)}
+                              </span>
+                            )}
+                          </div>
+                          {isMulti ? (
+                            <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                              isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                            }`}>
+                              {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
+                            </div>
+                          ) : (
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                              isSelected ? 'border-primary' : 'border-muted-foreground/40'
+                            }`}>
+                              {isSelected && <div className="w-3.5 h-3.5 rounded-full bg-primary" />}
+                            </div>
                           )}
                         </div>
-                        {isMulti ? (
-                          <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
-                            isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
-                          }`}>
-                            {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
-                          </div>
-                        ) : (
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            isSelected ? 'border-primary' : 'border-muted-foreground/40'
-                          }`}>
-                            {isSelected && <div className="w-3.5 h-3.5 rounded-full bg-primary" />}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Locked variant display */}
             {availableVariants.length > 0 && (slot as any).allow_variant_change === false && (
