@@ -247,9 +247,20 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
                         <div key={comboIndex} className="mb-1">
                           <span className="font-medium">
                             {comboItem.quantity}x {comboItem.selectedProduct?.name || 'Producto'}
-                            {comboItem.selectedVariants && comboItem.selectedVariants.length > 0
-                              ? ` - ${comboItem.selectedVariants.map((v: any) => v.variant?.name || v.name).join(' + ')}`
-                              : comboItem.selectedVariant?.variant?.name ? ` - ${comboItem.selectedVariant.variant.name}` : ''}
+                            {(() => {
+                              if (comboItem.selectedVariants && comboItem.selectedVariants.length > 0) {
+                                const counts = new Map<string, { name: string; count: number }>();
+                                comboItem.selectedVariants.forEach((v: any) => {
+                                  const name = v?.variant?.name || v?.name || 'Variante';
+                                  const key = v?.id || name;
+                                  const ex = counts.get(key);
+                                  if (ex) ex.count += 1;
+                                  else counts.set(key, { name, count: 1 });
+                                });
+                                return ` - ${Array.from(counts.values()).map(({ name, count }) => `${count}x ${name}`).join(' + ')}`;
+                              }
+                              return comboItem.selectedVariant?.variant?.name ? ` - ${comboItem.selectedVariant.variant.name}` : '';
+                            })()}
                           </span>
                           {/* Variant group option (e.g. Proteína: Pollo) */}
                           {comboItem.variant_group_selections && comboItem.variant_group_selections.length > 0 && (

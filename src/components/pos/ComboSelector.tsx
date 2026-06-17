@@ -36,6 +36,9 @@ interface ComboItemSelection {
   modifiers?: string[]; // modifier_ids
 }
 
+const isPerUnitVariantMode = (slot: ComboItem | any) =>
+  !!(slot as any)?.allow_multiple_variants && (slot?.quantity || 1) > 1;
+
 const ComboSelector: React.FC<ComboSelectorProps> = ({
   product,
   onComboItemsChange,
@@ -195,7 +198,9 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               comboSlot: slot,
               selectedProduct: defaultProduct,
               selectedVariant: defaultVariant,
-              selectedVariants: (slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined,
+              selectedVariants: isPerUnitVariantMode(slot) && defaultVariant
+                ? Array(slot.quantity).fill(defaultVariant)
+                : ((slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined),
               quantity: slot.quantity,
               extras: {},
               modifiers: []
@@ -434,7 +439,9 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           comboSlot: slot,
           selectedProduct: defaultProduct,
           selectedVariant: defaultVariant,
-          selectedVariants: (slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined,
+          selectedVariants: isPerUnitVariantMode(slot) && defaultVariant
+            ? Array(slot.quantity).fill(defaultVariant)
+            : ((slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined),
           quantity: slot.quantity,
           extras: {},
           modifiers: []
@@ -589,9 +596,18 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     }
   };
 
-  const selectVariant = (slotIndex: number, variant: ProductVariantOption) => {
+  const selectVariant = (slotIndex: number, variant: ProductVariantOption, unitIndex?: number) => {
     const slot = selections[slotIndex]?.comboSlot;
-    if ((slot as any)?.allow_multiple_variants) {
+    if (isPerUnitVariantMode(slot)) {
+      const current = [...(selections[slotIndex]?.selectedVariants || [])];
+      const idx = typeof unitIndex === 'number' ? unitIndex : 0;
+      while (current.length < (slot?.quantity || 1)) current.push(variant);
+      current[idx] = variant;
+      updateSelection(slotIndex, {
+        selectedVariants: current,
+        selectedVariant: current[0],
+      });
+    } else if ((slot as any)?.allow_multiple_variants) {
       // Multi-select mode: toggle variant in array
       const current = selections[slotIndex]?.selectedVariants || [];
       const exists = current.find(v => v.id === variant.id);
@@ -620,24 +636,24 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     if (config.pricing_mode === 'fixed') {
       total = config.base_price;
 
-      // Only charge for variant changes if included_variants is false
-      // Cobra solo el DIFERENCIAL respecto a la variante por defecto (no el precio absoluto)
       if (!config.included_variants) {
         selections.forEach((selection) => {
-          if (selection.selectedVariant) {
-            const slot = selection.comboSlot;
-            const allVariants = selection.selectedProduct ? variantsData[selection.selectedProduct.id!] || [] : [];
-            const availableVariants = allVariants.filter((v) => v.variant?.category_id === slot.category_id);
-            const defaultVariant = slot.default_variant_id ?
+          const slot = selection.comboSlot;
+          const allVariants = selection.selectedProduct ? variantsData[selection.selectedProduct.id!] || [] : [];
+          const availableVariants = allVariants.filter((v) => v.variant?.category_id === slot.category_id);
+          const defaultVariant = slot.default_variant_id ?
             availableVariants.find((v) => v.category_variant_id === slot.default_variant_id) :
             availableVariants.find((v) => v.is_default);
-
-            if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
-              const diff = (selection.selectedVariant.price || 0) - (defaultVariant.price || 0);
-              if (diff > 0) {
-                total += diff * selection.quantity;
+          if (isPerUnitVariantMode(slot) && selection.selectedVariants && selection.selectedVariants.length > 0) {
+            selection.selectedVariants.forEach(v => {
+              if (defaultVariant && v.id !== defaultVariant.id) {
+                const diff = (v.price || 0) - (defaultVariant.price || 0);
+                if (diff > 0) total += diff;
               }
-            }
+            });
+          } else if (selection.selectedVariant && defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
+            const diff = (selection.selectedVariant.price || 0) - (defaultVariant.price || 0);
+            if (diff > 0) total += diff * selection.quantity;
           }
         });
       }
@@ -645,19 +661,21 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       total = config.base_price;
 
       selections.forEach((selection) => {
-        // Multi-select: sum all selected variants
-        if ((selection.comboSlot as any).allow_multiple_variants && selection.selectedVariants && selection.selectedVariants.length > 0) {
+        const discount = (1 - (config.combo_discount || 0) / 100);
+        if (isPerUnitVariantMode(selection.comboSlot) && selection.selectedVariants && selection.selectedVariants.length > 0) {
+          // Per-unit: array length equals quantity, don't multiply
           selection.selectedVariants.forEach(v => {
-            const discountedPrice = v.price * (1 - (config.combo_discount || 0) / 100);
-            total += discountedPrice * selection.quantity;
+            total += v.price * discount;
+          });
+        } else if ((selection.comboSlot as any).allow_multiple_variants && selection.selectedVariants && selection.selectedVariants.length > 0) {
+          selection.selectedVariants.forEach(v => {
+            total += v.price * discount * selection.quantity;
           });
         } else if (selection.selectedVariant) {
-          const discountedPrice = selection.selectedVariant.price * (1 - (config.combo_discount || 0) / 100);
-          total += discountedPrice * selection.quantity;
+          total += selection.selectedVariant.price * discount * selection.quantity;
         } else if (selection.selectedProduct) {
           const basePrice = getProductBasePrice(selection.selectedProduct);
-          const discountedPrice = basePrice * (1 - (config.combo_discount || 0) / 100);
-          total += discountedPrice * selection.quantity;
+          total += basePrice * discount * selection.quantity;
         }
       });
     }
@@ -685,46 +703,45 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     if (comboConfig.pricing_mode === 'fixed') {
       total = comboConfig.base_price;
 
-      // Only charge for variant changes if included_variants is false
-      // Cobra solo el DIFERENCIAL respecto a la variante por defecto (no el precio absoluto)
       if (!comboConfig.included_variants) {
         selections.forEach((selection) => {
-          if (selection.selectedVariant) {
-            const slot = selection.comboSlot;
-            const allVariants = selection.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
-            const availableVariants = allVariants.filter((v) => v.variant?.category_id === slot.category_id);
-            const defaultVariant = slot.default_variant_id ?
+          const slot = selection.comboSlot;
+          const allVariants = selection.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
+          const availableVariants = allVariants.filter((v) => v.variant?.category_id === slot.category_id);
+          const defaultVariant = slot.default_variant_id ?
             availableVariants.find((v) => v.category_variant_id === slot.default_variant_id) :
             availableVariants.find((v) => v.is_default);
-
-            if (defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
-              const diff = (selection.selectedVariant.price || 0) - (defaultVariant.price || 0);
-              if (diff > 0) {
-                total += diff * selection.quantity;
+          if (isPerUnitVariantMode(slot) && selection.selectedVariants && selection.selectedVariants.length > 0) {
+            selection.selectedVariants.forEach(v => {
+              if (defaultVariant && v.id !== defaultVariant.id) {
+                const diff = (v.price || 0) - (defaultVariant.price || 0);
+                if (diff > 0) total += diff;
               }
-            }
+            });
+          } else if (selection.selectedVariant && defaultVariant && selection.selectedVariant.id !== defaultVariant.id) {
+            const diff = (selection.selectedVariant.price || 0) - (defaultVariant.price || 0);
+            if (diff > 0) total += diff * selection.quantity;
           }
         });
       }
     } else {
-      // Individual pricing mode
       total = comboConfig.base_price;
 
       selections.forEach((selection) => {
-        // Multi-select: sum all selected variants
-        if ((selection.comboSlot as any).allow_multiple_variants && selection.selectedVariants && selection.selectedVariants.length > 0) {
+        const discount = (1 - (comboConfig.combo_discount || 0) / 100);
+        if (isPerUnitVariantMode(selection.comboSlot) && selection.selectedVariants && selection.selectedVariants.length > 0) {
           selection.selectedVariants.forEach(v => {
-            const discountedPrice = v.price * (1 - (comboConfig.combo_discount || 0) / 100);
-            total += discountedPrice * selection.quantity;
+            total += v.price * discount;
+          });
+        } else if ((selection.comboSlot as any).allow_multiple_variants && selection.selectedVariants && selection.selectedVariants.length > 0) {
+          selection.selectedVariants.forEach(v => {
+            total += v.price * discount * selection.quantity;
           });
         } else if (selection.selectedVariant) {
-          const discountedPrice = selection.selectedVariant.price * (1 - (comboConfig.combo_discount || 0) / 100);
-          total += discountedPrice * selection.quantity;
+          total += selection.selectedVariant.price * discount * selection.quantity;
         } else if (selection.selectedProduct) {
-          // Fallback to legacy pricing if no variants
           const basePrice = getProductBasePrice(selection.selectedProduct);
-          const discountedPrice = basePrice * (1 - (comboConfig.combo_discount || 0) / 100);
-          total += discountedPrice * selection.quantity;
+          total += basePrice * discount * selection.quantity;
         }
       });
     }
@@ -931,8 +948,56 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               <>
                   
                   {slot.allow_variant_change !== false ? (
-                    (slot as any).allow_multiple_variants ? (
-                      /* Multi-select mode: checkboxes */
+                    isPerUnitVariantMode(slot) ? (
+                      /* Per-unit selection: one radio grid per unit */
+                      (() => {
+                        const filledCount = (selection.selectedVariants || []).filter(Boolean).length;
+                        const unitLabel = selection.selectedProduct?.name || 'Unidad';
+                        return (
+                          <div className="space-y-3">
+                            <h4 className="font-medium text-sm text-muted-foreground">
+                              Elige variante por unidad • {filledCount} de {slot.quantity} seleccionadas
+                            </h4>
+                            <div className="space-y-3">
+                              {Array.from({ length: slot.quantity }).map((_, unitIdx) => {
+                                const currentForUnit = selection.selectedVariants?.[unitIdx];
+                                return (
+                                  <div key={unitIdx} className="rounded-md border border-border/60 p-2">
+                                    <div className="text-xs font-semibold text-muted-foreground mb-2">
+                                      {unitLabel} {unitIdx + 1} de {slot.quantity}
+                                    </div>
+                                    <div className={`grid gap-2 ${availableVariants.length <= 2 ? 'grid-cols-2' : availableVariants.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-3'}`}>
+                                      {availableVariants.map((variant) => {
+                                        const isSelected = currentForUnit?.id === variant.id;
+                                        return (
+                                          <Card
+                                            key={variant.id}
+                                            className={`cursor-pointer transition-all ${
+                                              isSelected ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-accent/50'
+                                            }`}
+                                            onClick={() => selectVariant(index, variant, unitIdx)}
+                                          >
+                                            <CardContent className="p-2">
+                                              <div className="text-center space-y-1">
+                                                <span className="font-medium text-sm">{variant.variant?.name}</span>
+                                                <div className="text-primary font-semibold text-xs">
+                                                  {formatPrice(variant.price)}
+                                                </div>
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : (slot as any).allow_multiple_variants ? (
+                      /* Multi-select mode (quantity=1): checkboxes */
                       <div className="space-y-3">
                         <h4 className="font-medium text-sm text-muted-foreground">
                           Selecciona variantes (múltiple)

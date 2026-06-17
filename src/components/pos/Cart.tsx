@@ -116,8 +116,24 @@ function CartItemCard({
                   </div>
                 )}
 
-                {/* Selected Variant */}
-                {selection.selectedVariant && (
+                {/* Selected Variant(s) */}
+                {selection.selectedVariants && selection.selectedVariants.length > 0 ? (
+                  (() => {
+                    const counts = new Map<string, { name: string; count: number }>();
+                    selection.selectedVariants.forEach((v: any) => {
+                      const name = v?.variant?.name || v?.name || 'Variante';
+                      const key = v?.id || name;
+                      const ex = counts.get(key);
+                      if (ex) ex.count += 1;
+                      else counts.set(key, { name, count: 1 });
+                    });
+                    return (
+                      <div className="text-muted-foreground pl-2">
+                        • {Array.from(counts.values()).map(({ name, count }) => `${count}x ${name}`).join(' + ')}
+                      </div>
+                    );
+                  })()
+                ) : selection.selectedVariant && (
                   <div className="text-muted-foreground pl-2">
                     • {selection.selectedVariant.variant?.name || selection.selectedVariant.name || 'Variante'}
                     {selection.selectedVariant.price_adjustment && selection.selectedVariant.price_adjustment !== 0 && (
