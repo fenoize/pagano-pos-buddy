@@ -424,6 +424,7 @@ export default function PurchaseRequestDetail() {
           {/* 2. Direct Purchase Checklist */}
           {request.items && (
             <DirectPurchaseChecklist
+              requestId={request.id}
               items={request.items}
               warehouseId={request.warehouse_id}
               onItemResolved={() => {}}
