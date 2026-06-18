@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,15 +20,32 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { ShoppingBag, Maximize2, X, Loader2 } from 'lucide-react';
+import { ShoppingBag, Maximize2, X, Loader2, GripVertical } from 'lucide-react';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { usePurchasePresentations } from '@/hooks/usePurchasePresentations';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { PurchaseRequestItem } from '@/types/purchaseRequests';
 import { toast } from "sonner";
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Props {
+  requestId?: string;
   items: PurchaseRequestItem[];
   warehouseId?: string;
   onItemResolved?: () => void;
@@ -37,6 +54,7 @@ interface Props {
   resolveItemFn: (itemId: string, data: { procurement_mode: string; actual_supplier_id?: string | null; actual_unit_cost?: number; resolved_by: string; force_resolved?: boolean }) => Promise<boolean>;
   unresolveItemFn: (itemId: string) => Promise<boolean>;
 }
+
 
 interface OptimisticState {
   resolved_at: string | null;
