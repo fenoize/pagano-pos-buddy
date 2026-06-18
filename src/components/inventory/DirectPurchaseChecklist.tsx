@@ -69,15 +69,20 @@ function DirectPurchaseEditModal({
   const [presentationId, setPresentationId] = useState(item.presentation_id || '__none__');
   const [saving, setSaving] = useState(false);
 
+  const unitCostNum = parseFloat(unitCost) || 0;
+  const qtyNum = parseFloat(actualQty) || 0;
+  const totalNum = Math.round(unitCostNum * qtyNum);
+
   const handleSave = async () => {
     if (!user) return;
-    const totalCost = parseFloat(unitCost) || 0;
-    const qty = parseFloat(actualQty) || item.qty;
+    const unitPrice = unitCostNum;
+    const qty = qtyNum || item.qty;
+    const totalCost = Math.round(unitPrice * qty);
     const supplier = supplierId === '__none__' ? null : supplierId;
 
     onOptimisticUpdate(item.id, {
       resolved_at: new Date().toISOString(),
-      actual_unit_cost: totalCost,
+      actual_unit_cost: unitPrice,
       actual_supplier_id: supplier,
     });
     onOpenChange(false);
@@ -86,7 +91,7 @@ function DirectPurchaseEditModal({
     const success = await resolveItemFn(item.id, {
       procurement_mode: 'compra_directa',
       actual_supplier_id: supplier,
-      actual_unit_cost: totalCost,
+      actual_unit_cost: unitPrice,
       resolved_by: user.id,
       force_resolved: true,
     });
