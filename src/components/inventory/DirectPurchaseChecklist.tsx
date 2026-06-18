@@ -180,7 +180,7 @@ function DirectPurchaseEditModal({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground">Total $</Label>
+              <Label className="text-sm text-muted-foreground">Precio unit. $</Label>
               <Input
                 type="number"
                 min="0"
@@ -193,11 +193,12 @@ function DirectPurchaseEditModal({
             </div>
           </div>
 
-          {/* Unit price preview */}
-          {actualQty && unitCost && parseFloat(actualQty) > 0 && parseFloat(unitCost) > 0 && (
-            <p className="text-xs text-muted-foreground text-right">
-              Precio unitario: <span className="font-medium text-foreground">${Math.round(parseFloat(unitCost) / parseFloat(actualQty)).toLocaleString('es-CL')}</span>
-            </p>
+          {/* Total preview - prominente */}
+          {qtyNum > 0 && unitCostNum > 0 && (
+            <div className="flex items-baseline justify-between rounded-lg border bg-muted/40 px-4 py-3">
+              <span className="text-sm font-medium text-muted-foreground">Total</span>
+              <span className="text-2xl font-bold text-foreground">${totalNum.toLocaleString('es-CL')}</span>
+            </div>
           )}
         </div>
 
