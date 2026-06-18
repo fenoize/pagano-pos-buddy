@@ -361,8 +361,19 @@ function DirectPurchaseItemRow({
 
 
 /* ─── Main Checklist ─── */
-export default function DirectPurchaseChecklist({ items, warehouseId, onItemResolved, fullscreen, onToggleFullscreen, resolveItemFn, unresolveItemFn }: Props) {
+export default function DirectPurchaseChecklist({ requestId, items, warehouseId, onItemResolved, fullscreen, onToggleFullscreen, resolveItemFn, unresolveItemFn }: Props) {
   const [optimisticOverrides, setOptimisticOverrides] = useState<Record<string, OptimisticState>>({});
+
+  const storageKey = requestId ? `direct-purchase-order:${requestId}` : null;
+  const [order, setOrder] = useState<string[]>(() => {
+    if (!storageKey) return [];
+    try {
+      const raw = localStorage.getItem(storageKey);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const handleOptimisticUpdate = useCallback((itemId: string, state: OptimisticState) => {
     setOptimisticOverrides(prev => ({ ...prev, [itemId]: state }));
@@ -380,14 +391,64 @@ export default function DirectPurchaseChecklist({ items, warehouseId, onItemReso
   }, [items, optimisticOverrides]);
 
   const directItems = mergedItems.filter(i => i.procurement_mode === 'compra_directa' || (!i.procurement_mode && !i.resolved_at));
-  const resolvedCount = directItems.filter(i => i.resolved_at).length;
-  const progressPercent = directItems.length > 0 ? Math.round((resolvedCount / directItems.length) * 100) : 0;
 
-  const totalSpent = directItems
+  // Apply persisted order; new items go at the end
+  const orderedItems = useMemo(() => {
+    if (order.length === 0) return directItems;
+    const map = new Map(directItems.map(i => [i.id, i]));
+    const result: typeof directItems = [];
+    for (const id of order) {
+      const it = map.get(id);
+      if (it) {
+        result.push(it);
+        map.delete(id);
+      }
+    }
+    // append any new items not yet in order
+    return [...result, ...map.values()];
+  }, [directItems, order]);
+
+  // Initialize / sync order when items appear
+  useEffect(() => {
+    if (!storageKey) return;
+    const currentIds = directItems.map(i => i.id);
+    const known = new Set(order);
+    const missing = currentIds.filter(id => !known.has(id));
+    const stillExisting = order.filter(id => currentIds.includes(id));
+    if (missing.length > 0 || stillExisting.length !== order.length) {
+      const next = [...stillExisting, ...missing];
+      setOrder(next);
+      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignore */ }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [directItems.map(i => i.id).join('|'), storageKey]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedItems.findIndex(i => i.id === active.id);
+    const newIndex = orderedItems.findIndex(i => i.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(orderedItems, oldIndex, newIndex).map(i => i.id);
+    setOrder(next);
+    if (storageKey) {
+      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignore */ }
+    }
+  };
+
+  const resolvedCount = orderedItems.filter(i => i.resolved_at).length;
+  const progressPercent = orderedItems.length > 0 ? Math.round((resolvedCount / orderedItems.length) * 100) : 0;
+
+  const totalSpent = orderedItems
     .filter(i => i.resolved_at && i.actual_unit_cost > 0)
     .reduce((sum, i) => sum + i.actual_unit_cost, 0);
 
-  if (directItems.length === 0) return null;
+  if (orderedItems.length === 0) return null;
 
   const content = (
     <>
@@ -396,7 +457,7 @@ export default function DirectPurchaseChecklist({ items, warehouseId, onItemReso
           <ShoppingBag className="h-4 w-4" />
           Lista de Compra Directa
           <Badge variant="outline" className="ml-auto text-xs">
-            {resolvedCount}/{directItems.length}
+            {resolvedCount}/{orderedItems.length}
           </Badge>
           {onToggleFullscreen && (
             <Button variant="ghost" size="icon" className="h-7 w-7 ml-1" onClick={onToggleFullscreen}>
@@ -414,18 +475,22 @@ export default function DirectPurchaseChecklist({ items, warehouseId, onItemReso
           <Progress value={progressPercent} className="h-2" />
         </div>
 
-        <div className={`space-y-2 ${fullscreen ? 'max-h-[calc(100vh-280px)] overflow-y-auto' : ''}`}>
-          {directItems.map(item => (
-            <DirectPurchaseItemRow
-              key={item.id}
-              item={item}
-              warehouseId={warehouseId}
-              onOptimisticUpdate={handleOptimisticUpdate}
-              resolveItemFn={resolveItemFn}
-              unresolveItemFn={unresolveItemFn}
-            />
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orderedItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+            <div className={`space-y-2 ${fullscreen ? 'max-h-[calc(100vh-280px)] overflow-y-auto' : ''}`}>
+              {orderedItems.map(item => (
+                <DirectPurchaseItemRow
+                  key={item.id}
+                  item={item}
+                  warehouseId={warehouseId}
+                  onOptimisticUpdate={handleOptimisticUpdate}
+                  resolveItemFn={resolveItemFn}
+                  unresolveItemFn={unresolveItemFn}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
 
         {totalSpent > 0 && (
           <div className="flex items-center justify-between pt-2 border-t text-sm font-medium">
@@ -449,3 +514,4 @@ export default function DirectPurchaseChecklist({ items, warehouseId, onItemReso
 
   return <Card>{content}</Card>;
 }
+
