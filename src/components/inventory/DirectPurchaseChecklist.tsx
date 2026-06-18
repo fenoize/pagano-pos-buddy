@@ -69,15 +69,20 @@ function DirectPurchaseEditModal({
   const [presentationId, setPresentationId] = useState(item.presentation_id || '__none__');
   const [saving, setSaving] = useState(false);
 
+  const unitCostNum = parseFloat(unitCost) || 0;
+  const qtyNum = parseFloat(actualQty) || 0;
+  const totalNum = Math.round(unitCostNum * qtyNum);
+
   const handleSave = async () => {
     if (!user) return;
-    const totalCost = parseFloat(unitCost) || 0;
-    const qty = parseFloat(actualQty) || item.qty;
+    const unitPrice = unitCostNum;
+    const qty = qtyNum || item.qty;
+    const totalCost = Math.round(unitPrice * qty);
     const supplier = supplierId === '__none__' ? null : supplierId;
 
     onOptimisticUpdate(item.id, {
       resolved_at: new Date().toISOString(),
-      actual_unit_cost: totalCost,
+      actual_unit_cost: unitPrice,
       actual_supplier_id: supplier,
     });
     onOpenChange(false);
@@ -86,7 +91,7 @@ function DirectPurchaseEditModal({
     const success = await resolveItemFn(item.id, {
       procurement_mode: 'compra_directa',
       actual_supplier_id: supplier,
-      actual_unit_cost: totalCost,
+      actual_unit_cost: unitPrice,
       resolved_by: user.id,
       force_resolved: true,
     });
@@ -175,7 +180,7 @@ function DirectPurchaseEditModal({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground">Total $</Label>
+              <Label className="text-sm text-muted-foreground">Precio unit. $</Label>
               <Input
                 type="number"
                 min="0"
@@ -188,11 +193,12 @@ function DirectPurchaseEditModal({
             </div>
           </div>
 
-          {/* Unit price preview */}
-          {actualQty && unitCost && parseFloat(actualQty) > 0 && parseFloat(unitCost) > 0 && (
-            <p className="text-xs text-muted-foreground text-right">
-              Precio unitario: <span className="font-medium text-foreground">${Math.round(parseFloat(unitCost) / parseFloat(actualQty)).toLocaleString('es-CL')}</span>
-            </p>
+          {/* Total preview - prominente */}
+          {qtyNum > 0 && unitCostNum > 0 && (
+            <div className="flex items-baseline justify-between rounded-lg border bg-muted/40 px-4 py-3">
+              <span className="text-sm font-medium text-muted-foreground">Total</span>
+              <span className="text-2xl font-bold text-foreground">${totalNum.toLocaleString('es-CL')}</span>
+            </div>
           )}
         </div>
 
