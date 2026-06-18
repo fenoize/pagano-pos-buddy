@@ -283,16 +283,42 @@ function DirectPurchaseItemRow({
     }
   };
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   return (
     <>
       <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors cursor-pointer ${
+        ref={setNodeRef}
+        style={style}
+        className={`flex items-center gap-2 px-3 py-3 rounded-lg border transition-colors cursor-pointer ${
           isResolved
             ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800'
             : 'bg-card border-border hover:bg-accent/50'
-        }`}
+        } ${isDragging ? 'opacity-50 shadow-lg ring-2 ring-primary' : ''}`}
         onClick={handleRowClick}
       >
+        <button
+          type="button"
+          className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing px-1 -ml-1"
+          aria-label="Reordenar"
+          onClick={(e) => e.stopPropagation()}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
         <Checkbox
           checked={isResolved}
           onCheckedChange={handleCheckboxChange}
@@ -332,6 +358,7 @@ function DirectPurchaseItemRow({
     </>
   );
 }
+
 
 /* ─── Main Checklist ─── */
 export default function DirectPurchaseChecklist({ items, warehouseId, onItemResolved, fullscreen, onToggleFullscreen, resolveItemFn, unresolveItemFn }: Props) {
