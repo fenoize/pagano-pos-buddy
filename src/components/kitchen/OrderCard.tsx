@@ -145,8 +145,8 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
   return (
     <Card className={`${getCardColor()} ${cardSizeClasses[config.cardSize]} transition-all duration-300 ${cardMinHeight}`}>
       <CardHeader className={compact ? "pb-2 px-3" : "pb-3"}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-start justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
             <div className={`font-bold text-primary ${compact ? 'text-lg' : 'text-2xl'}`}>
               {order.customer?.is_vip && <span className="mr-1">👑</span>}
               #{order.order_number}
@@ -178,16 +178,18 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
               const ch = channels.find((c) => c.slug === slug);
               if (!ch || ch.type !== 'delivery_app') return null;
               return (
-                <OrderSourceBadge
-                  channelSlug={slug}
-                  externalOrderId={(order as any).external_order_id}
-                />
+                <div className="inline-flex flex-wrap max-w-full min-w-0 [&_*]:!whitespace-normal [&_*]:break-all">
+                  <OrderSourceBadge
+                    channelSlug={slug}
+                    externalOrderId={(order as any).external_order_id}
+                  />
+                </div>
               );
             })()}
           </div>
           <Badge 
             variant={getStatusColor(order.status)}
-            className={compact ? "text-xs px-2 py-0.5" : ""}
+            className={`shrink-0 ${compact ? "text-xs px-2 py-0.5" : ""}`}
           >
             {order.status}
           </Badge>
