@@ -124,6 +124,11 @@ Deno.serve(async (req) => {
       },
     }];
 
+    class GatewayError extends Error {
+      status: number;
+      constructor(status: number, msg: string) { super(msg); this.status = status; }
+    }
+
     const callGateway = async (msgs: any[]) => {
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -139,7 +144,7 @@ Deno.serve(async (req) => {
       });
       if (!res.ok) {
         const txt = await res.text();
-        throw new Error(`Gateway ${res.status}: ${txt}`);
+        throw new GatewayError(res.status, txt);
       }
       return res.json();
     };
