@@ -189,8 +189,19 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ answer: finalText || "Sin respuesta." }), {
       headers: { ...corsHeaders, "content-type": "application/json" },
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("lia-query error:", err);
+    const status = err?.status;
+    if (status === 402) {
+      return new Response(JSON.stringify({ answer: "⚠️ Se agotaron los créditos del AI Gateway de Lovable. Pide al administrador del workspace que recargue créditos en Settings → Plans & credits para volver a usar ATENEA." }), {
+        status: 200, headers: { ...corsHeaders, "content-type": "application/json" },
+      });
+    }
+    if (status === 429) {
+      return new Response(JSON.stringify({ answer: "⏳ Demasiadas consultas en este momento. Intenta de nuevo en unos segundos." }), {
+        status: 200, headers: { ...corsHeaders, "content-type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500, headers: { ...corsHeaders, "content-type": "application/json" },
     });
