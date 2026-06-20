@@ -150,6 +150,11 @@ export default function Kitchen() {
           orders={orders}
           soundEnabled={config.soundEnabled}
         />
+
+        <KitchenHistory 
+          open={showHistory}
+          onOpenChange={setShowHistory}
+        />
       </div>
     );
   }
