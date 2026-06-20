@@ -471,8 +471,19 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
 
         const isProductLocked = (slot as any).lock_product && selection.selectedProduct;
 
+        const slotHeading = selection.selectedProduct?.name || getCategoryName(slot.category_id);
+
         return (
-          <div key={slot.id}>
+          <div key={slot.id} className="space-y-3">
+            {/* Slot heading: always show the product name so the customer knows what they are customizing */}
+            <div className="pb-1 border-b border-border/40">
+              <h2 className="text-xl font-bold text-white">{slotHeading}</h2>
+              {selection.selectedProduct?.name && (
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                  {getCategoryName(slot.category_id)}
+                </p>
+              )}
+            </div>
             {/* Product selection (if multiple products and not locked) */}
             {!isProductLocked && availableProducts.length > 1 && (
               <div>
