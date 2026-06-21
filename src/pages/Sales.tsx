@@ -469,9 +469,7 @@ export default function Sales() {
           return (
             <button
               className="text-primary hover:underline text-left"
-              onClick={() => {
-                console.log('Ver cliente:', customer.id);
-              }}
+              onClick={() => setQuickViewCustomerId(customer.id)}
             >
               {customerName}
             </button>
