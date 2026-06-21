@@ -466,7 +466,9 @@ export default function CustomerLogin() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-phone">Teléfono (opcional)</Label>
+                  <Label htmlFor="signup-phone">
+                    Teléfono <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="signup-phone"
                     type="tel"
@@ -475,6 +477,7 @@ export default function CustomerLogin() {
                     onChange={(e) => setSignupPhone(e.target.value)}
                     disabled={loading}
                     className="bg-muted/50"
+                    required
                   />
                 </div>
 
