@@ -57,6 +57,7 @@ export default function Sales() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [quickViewCustomerId, setQuickViewCustomerId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [isActiveShiftView, setIsActiveShiftView] = useState(false);
   
