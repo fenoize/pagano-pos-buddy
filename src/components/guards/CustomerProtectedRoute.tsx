@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { RequirePhoneModal } from "@/components/customer/RequirePhoneModal";
 
 export function CustomerProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useCustomerAuth();
@@ -21,5 +22,10 @@ export function CustomerProtectedRoute({ children }: { children: React.ReactNode
     return <Navigate to="/verify-email" state={{ email: user.email }} replace />;
   }
   
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <RequirePhoneModal />
+    </>
+  );
 }
