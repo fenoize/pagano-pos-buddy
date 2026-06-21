@@ -911,6 +911,12 @@ export default function Sales() {
           />
         )}
       </Dialog>
+
+      <CustomerQuickViewModal
+        customerId={quickViewCustomerId}
+        open={!!quickViewCustomerId}
+        onOpenChange={(open) => { if (!open) setQuickViewCustomerId(null); }}
+      />
     </div>
   );
 }
