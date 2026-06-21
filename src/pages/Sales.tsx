@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarIcon, Search, Eye, Download, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { OrderEditModal } from '@/components/sales/OrderEditModal';
+import { CustomerQuickViewModal } from '@/components/sales/CustomerQuickViewModal';
 import { OrderSourceBadge } from '@/components/sales/OrderSourceBadge';
 import { OrderStatusDropdown } from '@/components/sales/OrderStatusDropdown';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
@@ -56,6 +57,7 @@ export default function Sales() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [quickViewCustomerId, setQuickViewCustomerId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [isActiveShiftView, setIsActiveShiftView] = useState(false);
   
@@ -467,9 +469,7 @@ export default function Sales() {
           return (
             <button
               className="text-primary hover:underline text-left"
-              onClick={() => {
-                console.log('Ver cliente:', customer.id);
-              }}
+              onClick={() => setQuickViewCustomerId(customer.id)}
             >
               {customerName}
             </button>
@@ -911,6 +911,12 @@ export default function Sales() {
           />
         )}
       </Dialog>
+
+      <CustomerQuickViewModal
+        customerId={quickViewCustomerId}
+        open={!!quickViewCustomerId}
+        onOpenChange={(open) => { if (!open) setQuickViewCustomerId(null); }}
+      />
     </div>
   );
 }
