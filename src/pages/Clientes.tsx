@@ -83,6 +83,27 @@ export default function Clientes() {
     setCurrentPage(0);
   }, [searchTerm, filters]);
 
+  // Auto-open customer modal when ?customerId=... is in URL (deep link from Sales)
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const customerId = searchParams.get('customerId');
+    if (!customerId || !canViewCustomers) return;
+    (async () => {
+      const { data } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', customerId)
+        .maybeSingle();
+      if (data) {
+        setSelectedCustomer(data as Customer);
+        setIsCustomerModalOpen(true);
+      }
+      const next = new URLSearchParams(searchParams);
+      next.delete('customerId');
+      setSearchParams(next, { replace: true });
+    })();
+  }, [searchParams, canViewCustomers]);
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
