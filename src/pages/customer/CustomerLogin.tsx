@@ -131,6 +131,13 @@ export default function CustomerLogin() {
       return;
     }
 
+    if (!signupPhone || signupPhone.trim().length < 8) {
+      toast.error('Teléfono requerido', {
+        description: 'Ingresa un número de teléfono válido para continuar',
+      });
+      return;
+    }
+
     if (signupPassword !== signupConfirmPassword) {
       toast.error('Las contraseñas no coinciden', {
         description: 'Por favor verifica que ambas contraseñas sean iguales',
