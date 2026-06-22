@@ -255,12 +255,7 @@ function ThemeProviderWithRoute({ children }: { children: React.ReactNode }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="light"
-        enableSystem
-        disableTransitionOnChange
-      >
+      {/* Theme is controlled by ThemeProviderWithRoute inside BrowserRouter */}
         <AuthProvider>
           <BranchProvider>
           <CustomerAuthProvider>
