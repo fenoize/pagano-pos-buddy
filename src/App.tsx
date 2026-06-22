@@ -2,7 +2,7 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -235,15 +235,27 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function ThemeProviderWithRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const isCustomerRoute = !location.pathname.startsWith('/pos');
+
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem={!isCustomerRoute}
+      forcedTheme={isCustomerRoute ? 'dark' : undefined}
+      disableTransitionOnChange
+    >
+      {children}
+    </ThemeProvider>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="light"
-        enableSystem
-        disableTransitionOnChange
-      >
+      {/* Theme is controlled by ThemeProviderWithRoute inside BrowserRouter */}
         <AuthProvider>
           <BranchProvider>
           <CustomerAuthProvider>
@@ -251,6 +263,7 @@ const App = () => (
               <TooltipProvider>
                 <Sonner />
                 <BrowserRouter>
+                  <ThemeProviderWithRoute>
                 <SEOHead />
                 <Suspense fallback={<LoadingFallback />}>
                   <Routes>
@@ -855,13 +868,14 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>
-            </BrowserRouter>
+                  </ThemeProviderWithRoute>
+                </BrowserRouter>
           </TooltipProvider>
           </CartProvider>
         </CustomerAuthProvider>
         </BranchProvider>
       </AuthProvider>
-      </ThemeProvider>
+      {/* /ThemeProviderWithRoute */}
     </HelmetProvider>
   </QueryClientProvider>
 );
