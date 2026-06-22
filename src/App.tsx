@@ -263,6 +263,7 @@ const App = () => (
               <TooltipProvider>
                 <Sonner />
                 <BrowserRouter>
+                  <ThemeProviderWithRoute>
                 <SEOHead />
                 <Suspense fallback={<LoadingFallback />}>
                   <Routes>
@@ -867,13 +868,14 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>
-            </BrowserRouter>
+                  </ThemeProviderWithRoute>
+                </BrowserRouter>
           </TooltipProvider>
           </CartProvider>
         </CustomerAuthProvider>
         </BranchProvider>
       </AuthProvider>
-      </ThemeProvider>
+      {/* /ThemeProviderWithRoute */}
     </HelmetProvider>
   </QueryClientProvider>
 );
