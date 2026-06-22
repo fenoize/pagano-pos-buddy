@@ -7861,6 +7861,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_alliance_join_offer: {
+        Args: { _customer_id: string; _slug: string }
+        Returns: {
+          alliance_id: string
+          alliance_name: string
+          eligible: boolean
+          reason: string
+        }[]
+      }
       get_current_customer_id: { Args: never; Returns: string }
       get_current_staff_user_from_token: { Args: never; Returns: string }
       get_current_staff_user_id: { Args: never; Returns: string }

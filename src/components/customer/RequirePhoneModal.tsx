@@ -100,12 +100,16 @@ export function RequirePhoneModal() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Phone className="w-5 h-5" />
-            Completa tu teléfono
+            Completa tu información
           </DialogTitle>
           <DialogDescription>
-            Necesitamos tu número para confirmar pedidos y entregas. Es obligatorio para todos los clientes.
+            Queremos darte una mejor experiencia dentro del Clan.
           </DialogDescription>
         </DialogHeader>
+
+        <p className="text-sm text-muted-foreground -mt-2">
+          Agregar tu teléfono nos permite contactarte rápidamente ante cualquier duda, cambio o inconveniente relacionado con tus pedidos.
+        </p>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div className="space-y-2">
@@ -127,15 +131,15 @@ export function RequirePhoneModal() {
 
           <div className="flex gap-2">
             <Button type="button" variant="outline" className="flex-1" onClick={handleSkip} disabled={saving}>
-              Omitir
+              Más tarde
             </Button>
             <Button type="submit" className="flex-1" disabled={saving}>
-              {saving ? 'Guardando…' : 'Guardar'}
+              {saving ? 'Guardando…' : 'Actualizar'}
             </Button>
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            Si lo omites, te lo recordaremos en unos minutos.
+            Tu número será utilizado únicamente para ayudarte con tus pedidos.
           </p>
         </form>
       </DialogContent>
