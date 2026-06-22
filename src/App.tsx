@@ -235,6 +235,23 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function ThemeProviderWithRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const isCustomerRoute = !location.pathname.startsWith('/pos');
+
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem={!isCustomerRoute}
+      forcedTheme={isCustomerRoute ? 'dark' : undefined}
+      disableTransitionOnChange
+    >
+      {children}
+    </ThemeProvider>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
