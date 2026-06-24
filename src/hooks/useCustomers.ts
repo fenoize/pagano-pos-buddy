@@ -636,6 +636,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
     customers,
     loading,
     totalCount,
+    totalRunasSum,
     canManageCustomers,
     canViewCustomers,
     fetchCustomers,
