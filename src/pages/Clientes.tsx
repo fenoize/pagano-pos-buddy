@@ -740,13 +740,13 @@ export default function Clientes() {
           
           {selectedCustomer && (
             <Tabs defaultValue="datos" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
-                <TabsTrigger value="datos" className="text-xs md:text-sm px-1 md:px-3">Datos</TabsTrigger>
-                <TabsTrigger value="direcciones" className="text-xs md:text-sm px-1 md:px-3">Direcciones</TabsTrigger>
-                <TabsTrigger value="runas" className="text-xs md:text-sm px-1 md:px-3">Runas</TabsTrigger>
-                <TabsTrigger value="niveles" className="text-xs md:text-sm px-1 md:px-3">Niveles</TabsTrigger>
-                <TabsTrigger value="suscripciones" className="text-xs md:text-sm px-1 md:px-3">Suscripciones</TabsTrigger>
-                <TabsTrigger value="pedidos" className="text-xs md:text-sm px-1 md:px-3">Pedidos</TabsTrigger>
+              <TabsList className="flex w-full overflow-x-auto md:grid md:grid-cols-6">
+                <TabsTrigger value="datos" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Datos</TabsTrigger>
+                <TabsTrigger value="direcciones" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Direcciones</TabsTrigger>
+                <TabsTrigger value="runas" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Runas</TabsTrigger>
+                <TabsTrigger value="niveles" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Niveles</TabsTrigger>
+                <TabsTrigger value="suscripciones" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Suscripciones</TabsTrigger>
+                <TabsTrigger value="pedidos" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Pedidos</TabsTrigger>
               </TabsList>
               
               <TabsContent value="datos" className="space-y-4">
