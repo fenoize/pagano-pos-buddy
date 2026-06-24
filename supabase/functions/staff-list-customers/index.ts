@@ -6,6 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const SORTABLE_COLUMNS = new Set([
+  'nombres',
+  'email',
+  'cantidad_runas',
+  'valor_cliente',
+  'estado_cliente',
+  'ultima_compra',
+  'created_at',
+]);
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -96,6 +106,9 @@ serve(async (req) => {
     const includeTags = url.searchParams.get("includeTags") === "true";
     const limit = Math.min(Number(url.searchParams.get("limit") || 50), 5000);
     const offset = Math.max(Number(url.searchParams.get("offset") || 0), 0);
+    const sortByParam = url.searchParams.get("sortBy") || "created_at";
+    const sortBy = SORTABLE_COLUMNS.has(sortByParam) ? sortByParam : "created_at";
+    const sortOrder = (url.searchParams.get("sortOrder") || "desc").toLowerCase() === "asc";
 
     // Pre-filter by tag: get customer IDs assigned to that tag
     let tagFilteredIds: string[] | null = null;
@@ -113,7 +126,7 @@ serve(async (req) => {
       }
       tagFilteredIds = (assigns || []).map((a: any) => a.customer_id);
       if (tagFilteredIds.length === 0) {
-        return new Response(JSON.stringify({ data: [], count: 0, limit, offset }), {
+        return new Response(JSON.stringify({ data: [], count: 0, runas_sum: 0, limit, offset }), {
           status: 200,
           headers: { ...corsHeaders, "content-type": "application/json" },
         });
@@ -170,6 +183,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         data: data ? [data] : [], 
         count: data ? 1 : 0, 
+        runas_sum: data?.cantidad_runas || 0,
         limit: 1, 
         offset: 0 
       }), {
@@ -177,6 +191,19 @@ serve(async (req) => {
         headers: { ...corsHeaders, "content-type": "application/json" },
       });
     }
+
+    // Helper to apply shared filters to any query builder
+    const applyFilters = (qb: any) => {
+      if (q) {
+        const searchPattern = `%${q}%`;
+        qb = qb.or(`nombres.ilike.${searchPattern},apellidos.ilike.${searchPattern},name.ilike.${searchPattern},apellido.ilike.${searchPattern},email.ilike.${searchPattern},phone.ilike.${searchPattern},rut.ilike.${searchPattern}`);
+      }
+      if (estado) qb = qb.eq("estado_cliente", estado);
+      if (hasRunas === 'true') qb = qb.gt("cantidad_runas", 0);
+      else if (hasRunas === 'false') qb = qb.eq("cantidad_runas", 0);
+      if (tagFilteredIds) qb = qb.in("id", tagFilteredIds);
+      return qb;
+    };
 
     // 6. Construir query para búsqueda general
     let query = supabaseAdmin
@@ -211,30 +238,33 @@ serve(async (req) => {
           updated_at
         )
       `, { count: "exact" })
-      .order("created_at", { ascending: false })
+      .order(sortBy, { ascending: sortOrder, nullsFirst: false })
       .range(offset, offset + limit - 1);
 
-    // Filtros
-    if (q) {
-      const searchPattern = `%${q}%`;
-      query = query.or(`nombres.ilike.${searchPattern},apellidos.ilike.${searchPattern},name.ilike.${searchPattern},apellido.ilike.${searchPattern},email.ilike.${searchPattern},phone.ilike.${searchPattern},rut.ilike.${searchPattern}`);
-    }
-
-    if (estado) {
-      query = query.eq("estado_cliente", estado);
-    }
-
-    if (hasRunas === 'true') {
-      query = query.gt("cantidad_runas", 0);
-    } else if (hasRunas === 'false') {
-      query = query.eq("cantidad_runas", 0);
-    }
-
-    if (tagFilteredIds) {
-      query = query.in("id", tagFilteredIds);
-    }
+    query = applyFilters(query);
 
     const { data, count, error } = await query;
+
+    if (error) {
+      console.error('[DB] Query error:', error);
+      return new Response(JSON.stringify({ error: "Database error" }), { 
+        status: 500,
+        headers: { ...corsHeaders, "content-type": "application/json" }
+      });
+    }
+
+    // Aggregate sum of cantidad_runas across ALL matching customers (ignore pagination)
+    let runas_sum = 0;
+    {
+      let sumQuery = supabaseAdmin.from("customers").select("cantidad_runas").limit(100000);
+      sumQuery = applyFilters(sumQuery);
+      const { data: sumRows, error: sumErr } = await sumQuery;
+      if (sumErr) {
+        console.warn('[DB] Sum query error:', sumErr);
+      } else {
+        runas_sum = (sumRows || []).reduce((s: number, r: any) => s + (r.cantidad_runas || 0), 0);
+      }
+    }
 
     // Optionally hydrate tags for each customer
     let dataWithTags: any = data;
@@ -252,18 +282,10 @@ serve(async (req) => {
       dataWithTags = data.map((c: any) => ({ ...c, tags: byCustomer[c.id] || [] }));
     }
 
-    if (error) {
-      console.error('[DB] Query error:', error);
-      return new Response(JSON.stringify({ error: "Database error" }), { 
-        status: 500,
-        headers: { ...corsHeaders, "content-type": "application/json" }
-      });
-    }
+    // 7. Log de auditoría
+    console.log(`[AUDIT] User ${userId} accessed customers list (count: ${count}, filters: ${JSON.stringify({ q, estado, hasRunas, sortBy, sortOrder })})`);
 
-    // 6. Log de auditoría
-    console.log(`[AUDIT] User ${userId} accessed customers list (count: ${count}, filters: ${JSON.stringify({ q, estado, hasRunas })})`);
-
-    return new Response(JSON.stringify({ data: dataWithTags, count, limit, offset }), {
+    return new Response(JSON.stringify({ data: dataWithTags, count, runas_sum, limit, offset }), {
       status: 200,
       headers: { ...corsHeaders, "content-type": "application/json" },
     });
