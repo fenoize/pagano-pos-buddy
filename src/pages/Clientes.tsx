@@ -741,12 +741,12 @@ export default function Clientes() {
           {selectedCustomer && (
             <Tabs defaultValue="datos" className="w-full">
               <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
-                <TabsTrigger value="datos">Datos</TabsTrigger>
-                <TabsTrigger value="direcciones">Direcciones</TabsTrigger>
-                <TabsTrigger value="runas">Runas</TabsTrigger>
-                <TabsTrigger value="niveles">Niveles</TabsTrigger>
-                <TabsTrigger value="suscripciones">Suscripciones</TabsTrigger>
-                <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
+                <TabsTrigger value="datos" className="text-xs md:text-sm px-1 md:px-3">Datos</TabsTrigger>
+                <TabsTrigger value="direcciones" className="text-xs md:text-sm px-1 md:px-3">Direcciones</TabsTrigger>
+                <TabsTrigger value="runas" className="text-xs md:text-sm px-1 md:px-3">Runas</TabsTrigger>
+                <TabsTrigger value="niveles" className="text-xs md:text-sm px-1 md:px-3">Niveles</TabsTrigger>
+                <TabsTrigger value="suscripciones" className="text-xs md:text-sm px-1 md:px-3">Suscripciones</TabsTrigger>
+                <TabsTrigger value="pedidos" className="text-xs md:text-sm px-1 md:px-3">Pedidos</TabsTrigger>
               </TabsList>
               
               <TabsContent value="datos" className="space-y-4">
