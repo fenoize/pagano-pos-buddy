@@ -46,6 +46,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const [totalRunasSum, setTotalRunasSum] = useState(0);
   const fetchRequestIdRef = useRef(0);
 
   // Actualiza solo un cliente específico en la lista (útil para refrescar runas sin recargar todo)
