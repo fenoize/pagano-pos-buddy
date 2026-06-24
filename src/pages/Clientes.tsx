@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCustomers, CustomerFilters } from '@/hooks/useCustomers';
+import { useCustomers, CustomerFilters, CustomerSortColumn } from '@/hooks/useCustomers';
 import { Customer, EstadoCliente } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
