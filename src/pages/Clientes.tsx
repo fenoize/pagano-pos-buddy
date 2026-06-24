@@ -404,6 +404,9 @@ export default function Clientes() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
+            <>
+            {/* Desktop table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -553,6 +556,114 @@ export default function Clientes() {
                 )}
               </TableBody>
             </Table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="md:hidden space-y-2">
+              {customers.length === 0 ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">
+                  {searchTerm.length >= 3 || Object.keys(filters).some(key => filters[key as keyof CustomerFilters])
+                    ? 'No se encontraron clientes con los filtros aplicados'
+                    : 'No hay clientes registrados'}
+                </p>
+              ) : (
+                customers.map((customer) => (
+                  <div
+                    key={customer.id}
+                    className="rounded-lg border border-border bg-card p-3 active:bg-accent/40 transition-colors"
+                    onClick={() => handleViewCustomer(customer)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm truncate">
+                            {customer.nombres || customer.name} {customer.apellidos || customer.apellido}
+                          </p>
+                          {customer.is_vip && (
+                            <span className="inline-flex items-center rounded-full bg-yellow-100 px-1.5 py-0.5 text-[10px] font-medium text-yellow-800 border border-yellow-300">
+                              <Crown className="w-2.5 h-2.5 mr-0.5" />
+                              VIP
+                            </span>
+                          )}
+                          <Badge variant={getEstadoBadgeVariant(customer.estado_cliente)} className="text-[10px] px-1.5 py-0">
+                            {customer.estado_cliente || 'Activo'}
+                          </Badge>
+                        </div>
+                        {customer.email && (
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{customer.email}</p>
+                        )}
+                        {customer.phone && (
+                          <p className="text-xs text-muted-foreground truncate">{customer.phone}</p>
+                        )}
+                      </div>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="z-[60]">
+                            <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              Ver Detalles
+                            </DropdownMenuItem>
+                            {canManageCustomers && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleManageAuth(customer)}>
+                                  <Shield className="w-4 h-4 mr-2" />
+                                  Gestionar cuenta
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteCustomer(customer)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Desactivar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteCustomerPermanently(customer)}
+                                  className="text-red-800 bg-red-50 focus:bg-red-100"
+                                >
+                                  <X className="w-4 h-4 mr-2" />
+                                  Eliminar definitivamente
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-center border-t border-border/60 pt-2">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Runas</p>
+                        <p className="text-sm font-semibold">{formatRunas(customer.cantidad_runas || 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Valor</p>
+                        <p className="text-sm font-semibold">{formatPrice(customer.valor_cliente || 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Últ. compra</p>
+                        <p className="text-xs font-medium">
+                          {customer.ultima_compra
+                            ? format(new Date(customer.ultima_compra), 'dd MMM', { locale: es })
+                            : '—'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            </>
+
           )}
         </CardContent>
       </Card>
