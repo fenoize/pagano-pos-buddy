@@ -240,30 +240,30 @@ export default function Clientes() {
         <TabsContent value="lista" className="mt-4 space-y-6">
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
                 <Plus className="w-4 h-4 text-primary" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Clientes</p>
-                <p className="text-xl font-bold">{totalCount}</p>
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Total Clientes</p>
+                <p className="text-lg md:text-xl font-bold">{totalCount}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
                 <Badge className="w-4 h-4 text-green-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Activos</p>
-                <p className="text-xl font-bold">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Activos</p>
+                <p className="text-lg md:text-xl font-bold">
                   {customers.filter(c => c.estado_cliente === 'Activo').length}
                 </p>
               </div>
@@ -272,14 +272,14 @@ export default function Clientes() {
         </Card>
         
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                 <CreditCard className="w-4 h-4 text-blue-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Runas</p>
-                <p className="text-xl font-bold">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Total Runas</p>
+                <p className="text-lg md:text-xl font-bold">
                   {formatRunas(totalRunasSum)}
                 </p>
               </div>
@@ -288,14 +288,14 @@ export default function Clientes() {
         </Card>
         
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
                 <Coins className="w-4 h-4 text-purple-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Valor Runas</p>
-                <p className="text-xl font-bold">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Valor Runas</p>
+                <p className="text-lg md:text-xl font-bold truncate">
                   {formatPrice(totalRunasValue)}
                 </p>
               </div>
