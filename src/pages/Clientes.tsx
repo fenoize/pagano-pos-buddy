@@ -49,6 +49,7 @@ export default function Clientes() {
     customers,
     loading,
     totalCount,
+    totalRunasSum,
     canManageCustomers,
     canViewCustomers,
     fetchCustomers,
@@ -63,13 +64,30 @@ export default function Clientes() {
 
   const { runaRedemptionValue } = useRunasConfig();
 
-  const totalRunas = customers.reduce((sum, c) => sum + (c.cantidad_runas || 0), 0);
-  const totalRunasValue = totalRunas * runaRedemptionValue;
+  const totalRunasValue = totalRunasSum * runaRedemptionValue;
 
   const getActiveFilters = (): CustomerFilters => ({
     ...filters,
-    search: searchTerm.trim().length >= 3 ? searchTerm.trim() : undefined
+    search: searchTerm.trim().length >= 3 ? searchTerm.trim() : undefined,
+    sortBy,
+    sortOrder,
   });
+
+  const handleSort = (col: CustomerSortColumn) => {
+    if (sortBy === col) {
+      setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(col);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortIcon = (col: CustomerSortColumn) => {
+    if (sortBy !== col) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
+    return sortOrder === 'asc'
+      ? <ArrowUp className="w-3 h-3 ml-1" />
+      : <ArrowDown className="w-3 h-3 ml-1" />;
+  };
 
   // Auto-fetch when filters change, debounced while typing search terms
   useEffect(() => {
