@@ -740,13 +740,13 @@ export default function Clientes() {
           
           {selectedCustomer && (
             <Tabs defaultValue="datos" className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="datos">Datos</TabsTrigger>
-                <TabsTrigger value="direcciones">Direcciones</TabsTrigger>
-                <TabsTrigger value="runas">Runas</TabsTrigger>
-                <TabsTrigger value="niveles">Niveles</TabsTrigger>
-                <TabsTrigger value="suscripciones">Suscripciones</TabsTrigger>
-                <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
+              <TabsList className="flex w-full overflow-x-auto pb-1 md:grid md:grid-cols-6">
+                <TabsTrigger value="datos" className="whitespace-nowrap">Datos</TabsTrigger>
+                <TabsTrigger value="direcciones" className="whitespace-nowrap">Direcciones</TabsTrigger>
+                <TabsTrigger value="runas" className="whitespace-nowrap">Runas</TabsTrigger>
+                <TabsTrigger value="niveles" className="whitespace-nowrap">Niveles</TabsTrigger>
+                <TabsTrigger value="suscripciones" className="whitespace-nowrap">Suscripciones</TabsTrigger>
+                <TabsTrigger value="pedidos" className="whitespace-nowrap">Pedidos</TabsTrigger>
               </TabsList>
               
               <TabsContent value="datos" className="space-y-4">
