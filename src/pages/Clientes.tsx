@@ -40,6 +40,8 @@ export default function Clientes() {
   const [selectedCustomerForPassword, setSelectedCustomerForPassword] = useState<Customer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<CustomerFilters>({ estado: 'Activo' });
+  const [sortBy, setSortBy] = useState<CustomerSortColumn>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   
