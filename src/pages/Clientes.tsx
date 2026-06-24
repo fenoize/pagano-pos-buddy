@@ -97,11 +97,11 @@ export default function Clientes() {
     }, searchTerm.trim().length > 0 ? 400 : 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [searchTerm, filters, currentPage, pageSize, canViewCustomers]);
+  }, [searchTerm, filters, currentPage, pageSize, canViewCustomers, sortBy, sortOrder]);
 
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchTerm, filters]);
+  }, [searchTerm, filters, sortBy, sortOrder]);
 
   // Auto-open customer modal when ?customerId=... is in URL (deep link from Sales)
   const [searchParams, setSearchParams] = useSearchParams();
