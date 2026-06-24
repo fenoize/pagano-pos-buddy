@@ -240,30 +240,30 @@ export default function Clientes() {
         <TabsContent value="lista" className="mt-4 space-y-6">
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
                 <Plus className="w-4 h-4 text-primary" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Clientes</p>
-                <p className="text-xl font-bold">{totalCount}</p>
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Total Clientes</p>
+                <p className="text-lg md:text-xl font-bold">{totalCount}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
                 <Badge className="w-4 h-4 text-green-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Activos</p>
-                <p className="text-xl font-bold">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Activos</p>
+                <p className="text-lg md:text-xl font-bold">
                   {customers.filter(c => c.estado_cliente === 'Activo').length}
                 </p>
               </div>
@@ -272,14 +272,14 @@ export default function Clientes() {
         </Card>
         
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                 <CreditCard className="w-4 h-4 text-blue-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Runas</p>
-                <p className="text-xl font-bold">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Total Runas</p>
+                <p className="text-lg md:text-xl font-bold">
                   {formatRunas(totalRunasSum)}
                 </p>
               </div>
@@ -288,14 +288,14 @@ export default function Clientes() {
         </Card>
         
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
                 <Coins className="w-4 h-4 text-purple-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Valor Runas</p>
-                <p className="text-xl font-bold">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Valor Runas</p>
+                <p className="text-lg md:text-xl font-bold truncate">
                   {formatPrice(totalRunasValue)}
                 </p>
               </div>
@@ -306,8 +306,8 @@ export default function Clientes() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
+        <CardContent className="p-3 md:p-4">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4">
             {/* Search */}
             <div className="flex-1">
               <div className="relative">
@@ -320,73 +320,75 @@ export default function Clientes() {
                 />
               </div>
             </div>
-            
-            {/* Estado Filter */}
-            <Select 
-              value={filters.estado || 'Activo'} 
-              onValueChange={(value) => {
-                if (value === 'all') {
-                  setFilters({...filters, estado: undefined});
-                } else {
-                  setFilters({...filters, estado: value as EstadoCliente});
-                }
-              }}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Todos los estados" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="Activo">Activo</SelectItem>
-                <SelectItem value="Inactivo">Inactivo</SelectItem>
-                <SelectItem value="Bloqueado">Bloqueado</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Has Runas Filter */}
-            <Select 
-              value={filters.hasRunas ? 'true' : filters.hasRunas === false ? 'false' : 'all'} 
-              onValueChange={(value) => setFilters({...filters, hasRunas: value === 'true' ? true : value === 'false' ? false : undefined})}
-            >
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Runas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="true">Con Runas</SelectItem>
-                <SelectItem value="false">Sin Runas</SelectItem>
-              </SelectContent>
-            </Select>
 
-            {/* Tag Filter */}
-            <Select
-              value={filters.tagId || 'all'}
-              onValueChange={(value) => setFilters({...filters, tagId: value === 'all' ? undefined : value})}
-            >
-              <SelectTrigger className="w-[200px]">
-                <div className="flex items-center gap-2">
-                  <Tag className="w-4 h-4" />
-                  <SelectValue placeholder="Etiqueta" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las etiquetas</SelectItem>
-                {tags.map((tag) => (
-                  <SelectItem key={tag.id} value={tag.id}>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: tag.color }}
-                      />
-                      {tag.name}
-                      {typeof tag.customer_count === 'number' && (
-                        <span className="text-xs text-muted-foreground">({tag.customer_count})</span>
-                      )}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 md:flex md:flex-row gap-2 md:gap-4">
+              {/* Estado Filter */}
+              <Select
+                value={filters.estado || 'Activo'}
+                onValueChange={(value) => {
+                  if (value === 'all') {
+                    setFilters({...filters, estado: undefined});
+                  } else {
+                    setFilters({...filters, estado: value as EstadoCliente});
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Todos los estados" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="Activo">Activo</SelectItem>
+                  <SelectItem value="Inactivo">Inactivo</SelectItem>
+                  <SelectItem value="Bloqueado">Bloqueado</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Has Runas Filter */}
+              <Select
+                value={filters.hasRunas ? 'true' : filters.hasRunas === false ? 'false' : 'all'}
+                onValueChange={(value) => setFilters({...filters, hasRunas: value === 'true' ? true : value === 'false' ? false : undefined})}
+              >
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Runas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="true">Con Runas</SelectItem>
+                  <SelectItem value="false">Sin Runas</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Tag Filter */}
+              <Select
+                value={filters.tagId || 'all'}
+                onValueChange={(value) => setFilters({...filters, tagId: value === 'all' ? undefined : value})}
+              >
+                <SelectTrigger className="col-span-2 w-full md:w-[200px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Tag className="w-4 h-4 shrink-0" />
+                    <SelectValue placeholder="Etiqueta" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las etiquetas</SelectItem>
+                  {tags.map((tag) => (
+                    <SelectItem key={tag.id} value={tag.id}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: tag.color }}
+                        />
+                        {tag.name}
+                        {typeof tag.customer_count === 'number' && (
+                          <span className="text-xs text-muted-foreground">({tag.customer_count})</span>
+                        )}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -402,6 +404,9 @@ export default function Clientes() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
+            <>
+            {/* Desktop table */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -551,6 +556,114 @@ export default function Clientes() {
                 )}
               </TableBody>
             </Table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="md:hidden space-y-2">
+              {customers.length === 0 ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">
+                  {searchTerm.length >= 3 || Object.keys(filters).some(key => filters[key as keyof CustomerFilters])
+                    ? 'No se encontraron clientes con los filtros aplicados'
+                    : 'No hay clientes registrados'}
+                </p>
+              ) : (
+                customers.map((customer) => (
+                  <div
+                    key={customer.id}
+                    className="rounded-lg border border-border bg-card p-3 active:bg-accent/40 transition-colors"
+                    onClick={() => handleViewCustomer(customer)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm truncate">
+                            {customer.nombres || customer.name} {customer.apellidos || customer.apellido}
+                          </p>
+                          {customer.is_vip && (
+                            <span className="inline-flex items-center rounded-full bg-yellow-100 px-1.5 py-0.5 text-[10px] font-medium text-yellow-800 border border-yellow-300">
+                              <Crown className="w-2.5 h-2.5 mr-0.5" />
+                              VIP
+                            </span>
+                          )}
+                          <Badge variant={getEstadoBadgeVariant(customer.estado_cliente)} className="text-[10px] px-1.5 py-0">
+                            {customer.estado_cliente || 'Activo'}
+                          </Badge>
+                        </div>
+                        {customer.email && (
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{customer.email}</p>
+                        )}
+                        {customer.phone && (
+                          <p className="text-xs text-muted-foreground truncate">{customer.phone}</p>
+                        )}
+                      </div>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="z-[60]">
+                            <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              Ver Detalles
+                            </DropdownMenuItem>
+                            {canManageCustomers && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleManageAuth(customer)}>
+                                  <Shield className="w-4 h-4 mr-2" />
+                                  Gestionar cuenta
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteCustomer(customer)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Desactivar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteCustomerPermanently(customer)}
+                                  className="text-red-800 bg-red-50 focus:bg-red-100"
+                                >
+                                  <X className="w-4 h-4 mr-2" />
+                                  Eliminar definitivamente
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-center border-t border-border/60 pt-2">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Runas</p>
+                        <p className="text-sm font-semibold">{formatRunas(customer.cantidad_runas || 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Valor</p>
+                        <p className="text-sm font-semibold">{formatPrice(customer.valor_cliente || 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Últ. compra</p>
+                        <p className="text-xs font-medium">
+                          {customer.ultima_compra
+                            ? format(new Date(customer.ultima_compra), 'dd MMM', { locale: es })
+                            : '—'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            </>
+
           )}
         </CardContent>
       </Card>
