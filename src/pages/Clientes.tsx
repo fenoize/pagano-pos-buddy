@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Coins, CreditCard, Download, X, Shield, FileText, FileSpreadsheet, Tag, Crown } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Coins, CreditCard, Download, X, Shield, FileText, FileSpreadsheet, Tag, Crown, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useRunasConfig } from '@/hooks/useRunasConfig';
 import { useCustomerTags } from '@/hooks/useCustomerTags';
 import { Button } from "@/components/ui/button";
