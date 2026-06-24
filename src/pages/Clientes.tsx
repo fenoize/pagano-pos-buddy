@@ -306,8 +306,8 @@ export default function Clientes() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
+        <CardContent className="p-3 md:p-4">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4">
             {/* Search */}
             <div className="flex-1">
               <div className="relative">
@@ -320,73 +320,75 @@ export default function Clientes() {
                 />
               </div>
             </div>
-            
-            {/* Estado Filter */}
-            <Select 
-              value={filters.estado || 'Activo'} 
-              onValueChange={(value) => {
-                if (value === 'all') {
-                  setFilters({...filters, estado: undefined});
-                } else {
-                  setFilters({...filters, estado: value as EstadoCliente});
-                }
-              }}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Todos los estados" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="Activo">Activo</SelectItem>
-                <SelectItem value="Inactivo">Inactivo</SelectItem>
-                <SelectItem value="Bloqueado">Bloqueado</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Has Runas Filter */}
-            <Select 
-              value={filters.hasRunas ? 'true' : filters.hasRunas === false ? 'false' : 'all'} 
-              onValueChange={(value) => setFilters({...filters, hasRunas: value === 'true' ? true : value === 'false' ? false : undefined})}
-            >
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Runas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="true">Con Runas</SelectItem>
-                <SelectItem value="false">Sin Runas</SelectItem>
-              </SelectContent>
-            </Select>
 
-            {/* Tag Filter */}
-            <Select
-              value={filters.tagId || 'all'}
-              onValueChange={(value) => setFilters({...filters, tagId: value === 'all' ? undefined : value})}
-            >
-              <SelectTrigger className="w-[200px]">
-                <div className="flex items-center gap-2">
-                  <Tag className="w-4 h-4" />
-                  <SelectValue placeholder="Etiqueta" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las etiquetas</SelectItem>
-                {tags.map((tag) => (
-                  <SelectItem key={tag.id} value={tag.id}>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: tag.color }}
-                      />
-                      {tag.name}
-                      {typeof tag.customer_count === 'number' && (
-                        <span className="text-xs text-muted-foreground">({tag.customer_count})</span>
-                      )}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 md:flex md:flex-row gap-2 md:gap-4">
+              {/* Estado Filter */}
+              <Select
+                value={filters.estado || 'Activo'}
+                onValueChange={(value) => {
+                  if (value === 'all') {
+                    setFilters({...filters, estado: undefined});
+                  } else {
+                    setFilters({...filters, estado: value as EstadoCliente});
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Todos los estados" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="Activo">Activo</SelectItem>
+                  <SelectItem value="Inactivo">Inactivo</SelectItem>
+                  <SelectItem value="Bloqueado">Bloqueado</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Has Runas Filter */}
+              <Select
+                value={filters.hasRunas ? 'true' : filters.hasRunas === false ? 'false' : 'all'}
+                onValueChange={(value) => setFilters({...filters, hasRunas: value === 'true' ? true : value === 'false' ? false : undefined})}
+              >
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Runas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="true">Con Runas</SelectItem>
+                  <SelectItem value="false">Sin Runas</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Tag Filter */}
+              <Select
+                value={filters.tagId || 'all'}
+                onValueChange={(value) => setFilters({...filters, tagId: value === 'all' ? undefined : value})}
+              >
+                <SelectTrigger className="col-span-2 w-full md:w-[200px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Tag className="w-4 h-4 shrink-0" />
+                    <SelectValue placeholder="Etiqueta" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las etiquetas</SelectItem>
+                  {tags.map((tag) => (
+                    <SelectItem key={tag.id} value={tag.id}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: tag.color }}
+                        />
+                        {tag.name}
+                        {typeof tag.customer_count === 'number' && (
+                          <span className="text-xs text-muted-foreground">({tag.customer_count})</span>
+                        )}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
