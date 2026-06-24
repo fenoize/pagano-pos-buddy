@@ -103,6 +103,12 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       if (filters.tagId) {
         params.append('tagId', filters.tagId);
       }
+      if (filters.sortBy) {
+        params.append('sortBy', filters.sortBy);
+      }
+      if (filters.sortOrder) {
+        params.append('sortOrder', filters.sortOrder);
+      }
 
       // 3. Llamar Edge Function
       const response = await fetch(
