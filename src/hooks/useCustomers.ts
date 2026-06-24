@@ -7,12 +7,23 @@ import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import { withStaffContext } from '@/lib/dbContext';
 import { toast } from "sonner";
 
+export type CustomerSortColumn =
+  | 'nombres'
+  | 'email'
+  | 'cantidad_runas'
+  | 'valor_cliente'
+  | 'estado_cliente'
+  | 'ultima_compra'
+  | 'created_at';
+
 export interface CustomerFilters {
   search?: string;
   estado?: EstadoCliente;
   comuna?: string;
   hasRunas?: boolean;
   tagId?: string;
+  sortBy?: CustomerSortColumn;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface CustomerFormData {
