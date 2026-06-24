@@ -137,6 +137,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       if (requestId === fetchRequestIdRef.current) {
         setCustomers(result.data || []);
         setTotalCount(result.count || 0);
+        setTotalRunasSum(typeof result.runas_sum === 'number' ? result.runas_sum : 0);
       }
       
     } catch (error) {
