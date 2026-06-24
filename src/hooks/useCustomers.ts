@@ -7,12 +7,23 @@ import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import { withStaffContext } from '@/lib/dbContext';
 import { toast } from "sonner";
 
+export type CustomerSortColumn =
+  | 'nombres'
+  | 'email'
+  | 'cantidad_runas'
+  | 'valor_cliente'
+  | 'estado_cliente'
+  | 'ultima_compra'
+  | 'created_at';
+
 export interface CustomerFilters {
   search?: string;
   estado?: EstadoCliente;
   comuna?: string;
   hasRunas?: boolean;
   tagId?: string;
+  sortBy?: CustomerSortColumn;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface CustomerFormData {
@@ -35,6 +46,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const [totalRunasSum, setTotalRunasSum] = useState(0);
   const fetchRequestIdRef = useRef(0);
 
   // Actualiza solo un cliente específico en la lista (útil para refrescar runas sin recargar todo)
@@ -91,6 +103,12 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       if (filters.tagId) {
         params.append('tagId', filters.tagId);
       }
+      if (filters.sortBy) {
+        params.append('sortBy', filters.sortBy);
+      }
+      if (filters.sortOrder) {
+        params.append('sortOrder', filters.sortOrder);
+      }
 
       // 3. Llamar Edge Function
       const response = await fetch(
@@ -119,6 +137,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
       if (requestId === fetchRequestIdRef.current) {
         setCustomers(result.data || []);
         setTotalCount(result.count || 0);
+        setTotalRunasSum(typeof result.runas_sum === 'number' ? result.runas_sum : 0);
       }
       
     } catch (error) {
@@ -617,6 +636,7 @@ export function useCustomers({ autoFetch = true }: UseCustomersOptions = {}) {
     customers,
     loading,
     totalCount,
+    totalRunasSum,
     canManageCustomers,
     canViewCustomers,
     fetchCustomers,

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Coins, CreditCard, Download, X, Shield, FileText, FileSpreadsheet, Tag, Crown } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Coins, CreditCard, Download, X, Shield, FileText, FileSpreadsheet, Tag, Crown, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useRunasConfig } from '@/hooks/useRunasConfig';
 import { useCustomerTags } from '@/hooks/useCustomerTags';
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCustomers, CustomerFilters } from '@/hooks/useCustomers';
+import { useCustomers, CustomerFilters, CustomerSortColumn } from '@/hooks/useCustomers';
 import { Customer, EstadoCliente } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -40,6 +40,8 @@ export default function Clientes() {
   const [selectedCustomerForPassword, setSelectedCustomerForPassword] = useState<Customer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<CustomerFilters>({ estado: 'Activo' });
+  const [sortBy, setSortBy] = useState<CustomerSortColumn>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   
@@ -47,6 +49,7 @@ export default function Clientes() {
     customers,
     loading,
     totalCount,
+    totalRunasSum,
     canManageCustomers,
     canViewCustomers,
     fetchCustomers,
@@ -61,13 +64,30 @@ export default function Clientes() {
 
   const { runaRedemptionValue } = useRunasConfig();
 
-  const totalRunas = customers.reduce((sum, c) => sum + (c.cantidad_runas || 0), 0);
-  const totalRunasValue = totalRunas * runaRedemptionValue;
+  const totalRunasValue = totalRunasSum * runaRedemptionValue;
 
   const getActiveFilters = (): CustomerFilters => ({
     ...filters,
-    search: searchTerm.trim().length >= 3 ? searchTerm.trim() : undefined
+    search: searchTerm.trim().length >= 3 ? searchTerm.trim() : undefined,
+    sortBy,
+    sortOrder,
   });
+
+  const handleSort = (col: CustomerSortColumn) => {
+    if (sortBy === col) {
+      setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(col);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortIcon = (col: CustomerSortColumn) => {
+    if (sortBy !== col) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
+    return sortOrder === 'asc'
+      ? <ArrowUp className="w-3 h-3 ml-1" />
+      : <ArrowDown className="w-3 h-3 ml-1" />;
+  };
 
   // Auto-fetch when filters change, debounced while typing search terms
   useEffect(() => {
@@ -77,11 +97,11 @@ export default function Clientes() {
     }, searchTerm.trim().length > 0 ? 400 : 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [searchTerm, filters, currentPage, pageSize, canViewCustomers]);
+  }, [searchTerm, filters, currentPage, pageSize, canViewCustomers, sortBy, sortOrder]);
 
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchTerm, filters]);
+  }, [searchTerm, filters, sortBy, sortOrder]);
 
   // Auto-open customer modal when ?customerId=... is in URL (deep link from Sales)
   const [searchParams, setSearchParams] = useSearchParams();
@@ -260,7 +280,7 @@ export default function Clientes() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Runas</p>
                 <p className="text-xl font-bold">
-                  {formatRunas(totalRunas)}
+                  {formatRunas(totalRunasSum)}
                 </p>
               </div>
             </div>
@@ -385,12 +405,36 @@ export default function Clientes() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Contacto</TableHead>
-                  <TableHead>Runas</TableHead>
-                  <TableHead>Valor Cliente</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Última Compra</TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('nombres')} className="flex items-center hover:text-foreground transition-colors">
+                      Cliente {sortIcon('nombres')}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('email')} className="flex items-center hover:text-foreground transition-colors">
+                      Contacto {sortIcon('email')}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('cantidad_runas')} className="flex items-center hover:text-foreground transition-colors">
+                      Runas {sortIcon('cantidad_runas')}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('valor_cliente')} className="flex items-center hover:text-foreground transition-colors">
+                      Valor Cliente {sortIcon('valor_cliente')}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('estado_cliente')} className="flex items-center hover:text-foreground transition-colors">
+                      Estado {sortIcon('estado_cliente')}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('ultima_compra')} className="flex items-center hover:text-foreground transition-colors">
+                      Última Compra {sortIcon('ultima_compra')}
+                    </button>
+                  </TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
