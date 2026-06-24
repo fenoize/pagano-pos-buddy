@@ -280,7 +280,7 @@ export default function Clientes() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Runas</p>
                 <p className="text-xl font-bold">
-                  {formatRunas(totalRunas)}
+                  {formatRunas(totalRunasSum)}
                 </p>
               </div>
             </div>
