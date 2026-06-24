@@ -405,12 +405,36 @@ export default function Clientes() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Contacto</TableHead>
-                  <TableHead>Runas</TableHead>
-                  <TableHead>Valor Cliente</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Última Compra</TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('nombres')} className="flex items-center hover:text-foreground transition-colors">
+                      Cliente {sortIcon('nombres')}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('email')} className="flex items-center hover:text-foreground transition-colors">
+                      Contacto {sortIcon('email')}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('cantidad_runas')} className="flex items-center hover:text-foreground transition-colors">
+                      Runas {sortIcon('cantidad_runas')}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('valor_cliente')} className="flex items-center hover:text-foreground transition-colors">
+                      Valor Cliente {sortIcon('valor_cliente')}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('estado_cliente')} className="flex items-center hover:text-foreground transition-colors">
+                      Estado {sortIcon('estado_cliente')}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button onClick={() => handleSort('ultima_compra')} className="flex items-center hover:text-foreground transition-colors">
+                      Última Compra {sortIcon('ultima_compra')}
+                    </button>
+                  </TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
