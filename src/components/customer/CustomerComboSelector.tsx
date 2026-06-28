@@ -851,6 +851,7 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                 </div>
               </div>
             )}
+            </>)}
           </div>
         );
       })}
