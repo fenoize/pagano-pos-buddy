@@ -283,7 +283,7 @@ export function ProductCustomizationModalEnhanced({
 
       // Validar que todas las selecciones tengan al menos producto seleccionado
       // La variante puede ser undefined si el producto no tiene variantes configuradas
-      return comboSelections.every((sel) => sel.selectedProduct);
+      return comboSelections.every((sel) => sel.selectedProduct || sel.comboSlot?.is_optional);
     }
 
     return true;
@@ -322,7 +322,7 @@ export function ProductCustomizationModalEnhanced({
     });
 
     // Transform combo selections to include extra names
-    const enrichedComboSelections = useCombo ? comboSelections.map((selection: any) => {
+    const enrichedComboSelections = useCombo ? comboSelections.filter((sel: any) => sel.selectedProduct).map((selection: any) => {
       // Transform extras from Record<string, number> to array with names
       const enrichedExtras: any[] = [];
       if (selection.extras && typeof selection.extras === 'object') {

@@ -194,13 +194,14 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               variant: defaultVariant?.name || defaultVariant
             });
 
+            const isOptional = (slot as any).is_optional === true;
             return {
               comboSlot: slot,
-              selectedProduct: defaultProduct,
-              selectedVariant: defaultVariant,
-              selectedVariants: isPerUnitVariantMode(slot) && defaultVariant
+              selectedProduct: isOptional ? undefined : defaultProduct,
+              selectedVariant: isOptional ? undefined : defaultVariant,
+              selectedVariants: isOptional ? undefined : (isPerUnitVariantMode(slot) && defaultVariant
                 ? Array(slot.quantity).fill(defaultVariant)
-                : ((slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined),
+                : ((slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined)),
               quantity: slot.quantity,
               extras: {},
               modifiers: []
@@ -435,13 +436,14 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         productVariants.find((v) => v.category_variant_id === slot.default_variant_id) :
         productVariants.find((v) => v.is_default) || productVariants[0];
 
+        const isOptional = (slot as any).is_optional === true;
         return {
           comboSlot: slot,
-          selectedProduct: defaultProduct,
-          selectedVariant: defaultVariant,
-          selectedVariants: isPerUnitVariantMode(slot) && defaultVariant
+          selectedProduct: isOptional ? undefined : defaultProduct,
+          selectedVariant: isOptional ? undefined : defaultVariant,
+          selectedVariants: isOptional ? undefined : (isPerUnitVariantMode(slot) && defaultVariant
             ? Array(slot.quantity).fill(defaultVariant)
-            : ((slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined),
+            : ((slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined)),
           quantity: slot.quantity,
           extras: {},
           modifiers: []
@@ -595,6 +597,44 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       });
     }
   };
+
+  const enableOptionalSlot = async (slotIndex: number) => {
+    const selection = selections[slotIndex];
+    const slot = selection?.comboSlot;
+    if (!slot) return;
+    const categoryProducts = slotProducts[slot.category_id] || [];
+    const defaultProduct = slot.default_product_id
+      ? categoryProducts.find((p) => p.id === slot.default_product_id)
+      : categoryProducts[0];
+    if (!defaultProduct?.id) return;
+    if (!productVariantGroups[defaultProduct.id]) {
+      await fetchProductVariantGroups([defaultProduct.id]);
+    }
+    const allVariants = productVariants[defaultProduct.id] || [];
+    const variants = allVariants.filter((v) => v.variant?.category_id === slot.category_id);
+    const defaultVariant = slot.default_variant_id
+      ? variants.find((v) => v.category_variant_id === slot.default_variant_id)
+      : variants.find((v) => v.is_default) || variants[0];
+    updateSelection(slotIndex, {
+      selectedProduct: defaultProduct,
+      selectedVariant: defaultVariant,
+      selectedVariants: isPerUnitVariantMode(slot) && defaultVariant
+        ? Array(slot.quantity).fill(defaultVariant)
+        : ((slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined),
+    });
+  };
+
+  const disableOptionalSlot = (slotIndex: number) => {
+    updateSelection(slotIndex, {
+      selectedProduct: undefined,
+      selectedVariant: undefined,
+      selectedVariants: undefined,
+      extras: {},
+      modifiers: [],
+    });
+  };
+
+
 
   const selectVariant = (slotIndex: number, variant: ProductVariantOption, unitIndex?: number) => {
     const slot = selections[slotIndex]?.comboSlot;
@@ -876,23 +916,53 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           productModifiers[selection.selectedProduct.id!] || [] :
           [];
 
+          const isOptional = (slot as any).is_optional === true;
+          const isOptionalAdded = isOptional && !!selection.selectedProduct;
+
           return (
             <div key={slot.id} className="border-border rounded-lg p-3 space-y-2 border-4">
               {/* Header: category + quantity + locked product inline */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-xl">
                   {selection.selectedProduct?.name || getCategoryName(slot.category_id)}
                 </span>
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                   {slot.quantity}x
                 </Badge>
+                {isOptional && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    Opcional
+                  </Badge>
+                )}
                 {(slot as any).lock_product && selection.selectedProduct &&
                 <span className="ml-auto text-xs text-muted-foreground">
                     {selection.selectedProduct.name} <span className="opacity-60">· fijo</span>
                   </span>
                 }
+                {isOptional && isOptionalAdded && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="ml-auto text-xs"
+                    onClick={() => disableOptionalSlot(index)}
+                  >
+                    Quitar
+                  </Button>
+                )}
               </div>
 
+              {isOptional && !isOptionalAdded ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-center"
+                  onClick={() => enableOptionalSlot(index)}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Agregar {getCategoryName(slot.category_id)}
+                </Button>
+              ) : (
+              <>
               {/* Product Selection - only if NOT locked */}
               {!((slot as any).lock_product && selection.selectedProduct) &&
               <Select
@@ -1124,6 +1194,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                 </div>
               }
 
+              </>)}
             </div>);
 
         })}

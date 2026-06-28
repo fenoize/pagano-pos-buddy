@@ -226,12 +226,13 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
           : slotVars.find(v => v.is_default) || slotVars[0];
 
         const perUnit = isPerUnitVariantMode(slot);
+        const isOptional = (slot as any).is_optional === true;
         return {
           comboSlot: slot,
-          selectedProduct: defaultProduct,
-          selectedVariant: defaultVariant,
-          selectedVariants: perUnit && defaultVariant ? Array(slot.quantity).fill(defaultVariant) : undefined,
-          variant_group_selections: defaultProduct ? buildDefaultGroupSelections(groupedVariantGroups[defaultProduct.id!] || []) : [],
+          selectedProduct: isOptional ? undefined : defaultProduct,
+          selectedVariant: isOptional ? undefined : defaultVariant,
+          selectedVariants: isOptional ? undefined : (perUnit && defaultVariant ? Array(slot.quantity).fill(defaultVariant) : undefined),
+          variant_group_selections: isOptional ? [] : (defaultProduct ? buildDefaultGroupSelections(groupedVariantGroups[defaultProduct.id!] || []) : []),
           quantity: slot.quantity,
           extras: {},
           modifiers: [],
@@ -254,6 +255,39 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     const newSelections = selections.map((s, i) => (i === slotIndex ? { ...s, ...updates } : s));
     setSelections(newSelections);
     onComboItemsChange(newSelections);
+  };
+
+  const enableOptionalSlot = (slotIndex: number) => {
+    const selection = selections[slotIndex];
+    const slot = selection?.comboSlot;
+    if (!slot) return;
+    const catProducts = slotProducts[slot.category_id] || [];
+    const defaultProduct = slot.default_product_id
+      ? catProducts.find(p => p.id === slot.default_product_id)
+      : catProducts[0];
+    const allVars = defaultProduct ? productVariants[defaultProduct.id!] || [] : [];
+    const slotVars = allVars.filter(v => v.variant?.category_id === slot.category_id);
+    const defaultVariant = slot.default_variant_id
+      ? slotVars.find(v => v.category_variant_id === slot.default_variant_id)
+      : slotVars.find(v => v.is_default) || slotVars[0];
+    const perUnit = isPerUnitVariantMode(slot);
+    updateSelection(slotIndex, {
+      selectedProduct: defaultProduct,
+      selectedVariant: defaultVariant,
+      selectedVariants: perUnit && defaultVariant ? Array(slot.quantity).fill(defaultVariant) : undefined,
+      variant_group_selections: defaultProduct ? buildDefaultGroupSelections(productVariantGroups[defaultProduct.id!] || []) : [],
+    });
+  };
+
+  const disableOptionalSlot = (slotIndex: number) => {
+    updateSelection(slotIndex, {
+      selectedProduct: undefined,
+      selectedVariant: undefined,
+      selectedVariants: undefined,
+      variant_group_selections: [],
+      extras: {},
+      modifiers: [],
+    });
   };
 
   const selectProduct = (slotIndex: number, productId: string) => {
@@ -470,20 +504,55 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
         const availableModifiers = selection.selectedProduct ? productModifiers[selection.selectedProduct.id!] || [] : [];
 
         const isProductLocked = (slot as any).lock_product && selection.selectedProduct;
+        const isOptional = (slot as any).is_optional === true;
+        const isOptionalAdded = isOptional && !!selection.selectedProduct;
 
         const slotHeading = selection.selectedProduct?.name || getCategoryName(slot.category_id);
 
         return (
           <div key={slot.id} className="space-y-3">
-            {/* Slot heading: always show the product name so the customer knows what they are customizing */}
-            <div className="pb-1 border-b border-border/40">
-              <h2 className="text-xl font-bold text-white">{slotHeading}</h2>
-              {selection.selectedProduct?.name && (
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                  {getCategoryName(slot.category_id)}
-                </p>
+            {/* Slot heading */}
+            <div className="pb-1 border-b border-border/40 flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  {slotHeading}
+                  {isOptional && (
+                    <span className="ml-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      (Opcional)
+                    </span>
+                  )}
+                </h2>
+                {selection.selectedProduct?.name && (
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                    {getCategoryName(slot.category_id)}
+                  </p>
+                )}
+              </div>
+              {isOptional && isOptionalAdded && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => disableOptionalSlot(slotIndex)}
+                >
+                  Quitar
+                </Button>
               )}
             </div>
+
+            {isOptional && !isOptionalAdded ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => enableOptionalSlot(slotIndex)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar {getCategoryName(slot.category_id)}
+              </Button>
+            ) : (
+            <>
             {/* Product selection (if multiple products and not locked) */}
             {!isProductLocked && availableProducts.length > 1 && (
               <div>
@@ -782,6 +851,7 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                 </div>
               </div>
             )}
+            </>)}
           </div>
         );
       })}
