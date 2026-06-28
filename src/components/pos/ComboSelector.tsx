@@ -916,23 +916,53 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           productModifiers[selection.selectedProduct.id!] || [] :
           [];
 
+          const isOptional = (slot as any).is_optional === true;
+          const isOptionalAdded = isOptional && !!selection.selectedProduct;
+
           return (
             <div key={slot.id} className="border-border rounded-lg p-3 space-y-2 border-4">
               {/* Header: category + quantity + locked product inline */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-xl">
                   {selection.selectedProduct?.name || getCategoryName(slot.category_id)}
                 </span>
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                   {slot.quantity}x
                 </Badge>
+                {isOptional && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    Opcional
+                  </Badge>
+                )}
                 {(slot as any).lock_product && selection.selectedProduct &&
                 <span className="ml-auto text-xs text-muted-foreground">
                     {selection.selectedProduct.name} <span className="opacity-60">· fijo</span>
                   </span>
                 }
+                {isOptional && isOptionalAdded && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="ml-auto text-xs"
+                    onClick={() => disableOptionalSlot(index)}
+                  >
+                    Quitar
+                  </Button>
+                )}
               </div>
 
+              {isOptional && !isOptionalAdded ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-center"
+                  onClick={() => enableOptionalSlot(index)}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Agregar {getCategoryName(slot.category_id)}
+                </Button>
+              ) : (
+              <>
               {/* Product Selection - only if NOT locked */}
               {!((slot as any).lock_product && selection.selectedProduct) &&
               <Select
