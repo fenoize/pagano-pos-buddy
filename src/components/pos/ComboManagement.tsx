@@ -535,6 +535,18 @@ const ComboManagement: React.FC<ComboManagementProps> = ({ productId }) => {
                           />
                           <Label>Permitir múltiples variantes</Label>
                         </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={(item as any).is_optional === true}
+                            onCheckedChange={(checked) => updateComboItem(item.id, 'is_optional', checked)}
+                          />
+                          <div className="flex flex-col">
+                            <Label>Item opcional</Label>
+                            <span className="text-xs text-muted-foreground">
+                              No se incluye en el precio base. El cliente puede agregarlo como upsell.
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
