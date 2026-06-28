@@ -226,12 +226,13 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
           : slotVars.find(v => v.is_default) || slotVars[0];
 
         const perUnit = isPerUnitVariantMode(slot);
+        const isOptional = (slot as any).is_optional === true;
         return {
           comboSlot: slot,
-          selectedProduct: defaultProduct,
-          selectedVariant: defaultVariant,
-          selectedVariants: perUnit && defaultVariant ? Array(slot.quantity).fill(defaultVariant) : undefined,
-          variant_group_selections: defaultProduct ? buildDefaultGroupSelections(groupedVariantGroups[defaultProduct.id!] || []) : [],
+          selectedProduct: isOptional ? undefined : defaultProduct,
+          selectedVariant: isOptional ? undefined : defaultVariant,
+          selectedVariants: isOptional ? undefined : (perUnit && defaultVariant ? Array(slot.quantity).fill(defaultVariant) : undefined),
+          variant_group_selections: isOptional ? [] : (defaultProduct ? buildDefaultGroupSelections(groupedVariantGroups[defaultProduct.id!] || []) : []),
           quantity: slot.quantity,
           extras: {},
           modifiers: [],
