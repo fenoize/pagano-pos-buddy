@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Plus, ChevronRight } from 'lucide-react';
+import { Plus, ChevronRight, X } from 'lucide-react';
 import VariantSelector from './VariantSelector';
 import { ExtrasModal } from './ExtrasModal';
 import { toast } from "sonner";
@@ -943,11 +943,11 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                   <Button
                     type="button"
                     size="sm"
-                    variant="ghost"
-                    className="ml-auto text-xs"
+                    variant="outline"
+                    className="ml-auto text-xs border-destructive text-destructive hover:bg-destructive/10"
                     onClick={() => disableOptionalSlot(index)}
                   >
-                    Quitar
+                    <X className="h-3 w-3 mr-1" /> Quitar
                   </Button>
                 )}
               </div>

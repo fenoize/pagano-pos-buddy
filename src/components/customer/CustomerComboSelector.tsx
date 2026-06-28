@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { configuredSupabase } from '@/lib/supabaseClient';
 import { Product, ComboProduct, ComboItem, Category, ProductVariantOption } from '@/types';
-import { Plus, Minus, Check } from 'lucide-react';
+import { Plus, Minus, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 
@@ -531,12 +531,12 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
               {isOptional && isOptionalAdded && (
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="text-xs"
+                  className="text-xs border-destructive text-destructive hover:bg-destructive/10"
                   onClick={() => disableOptionalSlot(slotIndex)}
                 >
-                  Quitar
+                  <X className="h-3 w-3 mr-1" /> Quitar
                 </Button>
               )}
             </div>
