@@ -257,6 +257,39 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     onComboItemsChange(newSelections);
   };
 
+  const enableOptionalSlot = (slotIndex: number) => {
+    const selection = selections[slotIndex];
+    const slot = selection?.comboSlot;
+    if (!slot) return;
+    const catProducts = slotProducts[slot.category_id] || [];
+    const defaultProduct = slot.default_product_id
+      ? catProducts.find(p => p.id === slot.default_product_id)
+      : catProducts[0];
+    const allVars = defaultProduct ? productVariants[defaultProduct.id!] || [] : [];
+    const slotVars = allVars.filter(v => v.variant?.category_id === slot.category_id);
+    const defaultVariant = slot.default_variant_id
+      ? slotVars.find(v => v.category_variant_id === slot.default_variant_id)
+      : slotVars.find(v => v.is_default) || slotVars[0];
+    const perUnit = isPerUnitVariantMode(slot);
+    updateSelection(slotIndex, {
+      selectedProduct: defaultProduct,
+      selectedVariant: defaultVariant,
+      selectedVariants: perUnit && defaultVariant ? Array(slot.quantity).fill(defaultVariant) : undefined,
+      variant_group_selections: defaultProduct ? buildDefaultGroupSelections(productVariantGroups[defaultProduct.id!] || []) : [],
+    });
+  };
+
+  const disableOptionalSlot = (slotIndex: number) => {
+    updateSelection(slotIndex, {
+      selectedProduct: undefined,
+      selectedVariant: undefined,
+      selectedVariants: undefined,
+      variant_group_selections: [],
+      extras: {},
+      modifiers: [],
+    });
+  };
+
   const selectProduct = (slotIndex: number, productId: string) => {
     const selection = selections[slotIndex];
     const catProducts = slotProducts[selection.comboSlot.category_id] || [];
