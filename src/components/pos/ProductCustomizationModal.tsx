@@ -405,7 +405,7 @@ export function ProductCustomizationModal({ isOpen, onClose, onAddToCart, produc
       notes: specialNotes.trim() || undefined,
       // Combo data
       is_combo_item: useCombo,
-      combo_selections: useCombo ? comboSelections : undefined,
+      combo_selections: useCombo ? comboSelections.filter((s: any) => s.selectedProduct) : undefined,
     };
 
     // Add variant data based on system used (only if not using combo)
