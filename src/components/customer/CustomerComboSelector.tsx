@@ -504,20 +504,55 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
         const availableModifiers = selection.selectedProduct ? productModifiers[selection.selectedProduct.id!] || [] : [];
 
         const isProductLocked = (slot as any).lock_product && selection.selectedProduct;
+        const isOptional = (slot as any).is_optional === true;
+        const isOptionalAdded = isOptional && !!selection.selectedProduct;
 
         const slotHeading = selection.selectedProduct?.name || getCategoryName(slot.category_id);
 
         return (
           <div key={slot.id} className="space-y-3">
-            {/* Slot heading: always show the product name so the customer knows what they are customizing */}
-            <div className="pb-1 border-b border-border/40">
-              <h2 className="text-xl font-bold text-white">{slotHeading}</h2>
-              {selection.selectedProduct?.name && (
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                  {getCategoryName(slot.category_id)}
-                </p>
+            {/* Slot heading */}
+            <div className="pb-1 border-b border-border/40 flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  {slotHeading}
+                  {isOptional && (
+                    <span className="ml-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      (Opcional)
+                    </span>
+                  )}
+                </h2>
+                {selection.selectedProduct?.name && (
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                    {getCategoryName(slot.category_id)}
+                  </p>
+                )}
+              </div>
+              {isOptional && isOptionalAdded && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => disableOptionalSlot(slotIndex)}
+                >
+                  Quitar
+                </Button>
               )}
             </div>
+
+            {isOptional && !isOptionalAdded ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => enableOptionalSlot(slotIndex)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar {getCategoryName(slot.category_id)}
+              </Button>
+            ) : (
+            <>
             {/* Product selection (if multiple products and not locked) */}
             {!isProductLocked && availableProducts.length > 1 && (
               <div>
