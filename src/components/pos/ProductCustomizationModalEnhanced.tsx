@@ -322,7 +322,7 @@ export function ProductCustomizationModalEnhanced({
     });
 
     // Transform combo selections to include extra names
-    const enrichedComboSelections = useCombo ? comboSelections.map((selection: any) => {
+    const enrichedComboSelections = useCombo ? comboSelections.filter((sel: any) => sel.selectedProduct).map((selection: any) => {
       // Transform extras from Record<string, number> to array with names
       const enrichedExtras: any[] = [];
       if (selection.extras && typeof selection.extras === 'object') {
