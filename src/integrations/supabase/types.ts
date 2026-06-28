@@ -8301,6 +8301,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      recompute_combo_variant_prices: {
+        Args: { p_combo_product_id: string }
+        Returns: undefined
+      }
       refresh_staff_token: {
         Args: { _token: string }
         Returns: {
