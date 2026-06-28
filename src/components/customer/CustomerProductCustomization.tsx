@@ -365,7 +365,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
       modifiers: selectedModifiersArray.length > 0 ? selectedModifiersArray : undefined,
       notes: specialNotes.trim() || undefined,
       is_combo_item: useCombo,
-      combo_selections: useCombo ? comboSelections : undefined,
+      combo_selections: useCombo ? comboSelections.filter((s: any) => s.selectedProduct) : undefined,
       imageUrl: product.image_url,
     };
 
