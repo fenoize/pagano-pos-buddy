@@ -194,13 +194,14 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               variant: defaultVariant?.name || defaultVariant
             });
 
+            const isOptional = (slot as any).is_optional === true;
             return {
               comboSlot: slot,
-              selectedProduct: defaultProduct,
-              selectedVariant: defaultVariant,
-              selectedVariants: isPerUnitVariantMode(slot) && defaultVariant
+              selectedProduct: isOptional ? undefined : defaultProduct,
+              selectedVariant: isOptional ? undefined : defaultVariant,
+              selectedVariants: isOptional ? undefined : (isPerUnitVariantMode(slot) && defaultVariant
                 ? Array(slot.quantity).fill(defaultVariant)
-                : ((slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined),
+                : ((slot as any).allow_multiple_variants && defaultVariant ? [defaultVariant] : undefined)),
               quantity: slot.quantity,
               extras: {},
               modifiers: []
