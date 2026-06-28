@@ -448,6 +448,7 @@ export type Database = {
           default_variant_id: string | null
           display_order: number
           id: string
+          is_optional: boolean
           lock_product: boolean
           quantity: number
           updated_at: string
@@ -463,6 +464,7 @@ export type Database = {
           default_variant_id?: string | null
           display_order?: number
           id?: string
+          is_optional?: boolean
           lock_product?: boolean
           quantity?: number
           updated_at?: string
@@ -478,6 +480,7 @@ export type Database = {
           default_variant_id?: string | null
           display_order?: number
           id?: string
+          is_optional?: boolean
           lock_product?: boolean
           quantity?: number
           updated_at?: string
