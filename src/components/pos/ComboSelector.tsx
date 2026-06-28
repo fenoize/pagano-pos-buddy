@@ -1194,6 +1194,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                 </div>
               }
 
+              </>)}
             </div>);
 
         })}
