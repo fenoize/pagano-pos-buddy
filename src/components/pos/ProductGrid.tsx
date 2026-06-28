@@ -382,6 +382,8 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
         let total = comboData.config.base_price || 0;
         const slots = comboData.slots || [];
         for (const slot of slots) {
+          // Skip optional slots (don't count toward base "desde" price)
+          if (slot.is_optional) continue;
           // Skip self-referencing slots
           if (slot.default_product_id === product.id) {
             console.warn(`Combo ${product.name}: slot auto-referenciado detectado, ignorando`);
