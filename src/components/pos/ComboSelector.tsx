@@ -648,7 +648,6 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         selectedVariant: current[0],
       });
     } else if ((slot as any)?.allow_multiple_variants) {
-      // Multi-select mode: toggle variant in array
       const current = selections[slotIndex]?.selectedVariants || [];
       const exists = current.find(v => v.id === variant.id);
       const newVariants = exists
@@ -656,11 +655,34 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         : [...current, variant];
       updateSelection(slotIndex, { 
         selectedVariants: newVariants,
-        selectedVariant: newVariants[0] // Keep first as primary for compatibility
+        selectedVariant: newVariants[0]
       });
     } else {
       updateSelection(slotIndex, { selectedVariant: variant });
     }
+  };
+
+  const addVariantUnit = (slotIndex: number, variant: ProductVariantOption) => {
+    const slot = selections[slotIndex]?.comboSlot;
+    if (!slot) return;
+    const current = [...(selections[slotIndex]?.selectedVariants || [])];
+    if (current.length >= (slot.quantity || 1)) return;
+    current.push(variant);
+    updateSelection(slotIndex, {
+      selectedVariants: current,
+      selectedVariant: current[0],
+    });
+  };
+
+  const removeVariantUnit = (slotIndex: number, variant: ProductVariantOption) => {
+    const current = [...(selections[slotIndex]?.selectedVariants || [])];
+    const idx = current.findIndex(v => v.id === variant.id);
+    if (idx < 0) return;
+    current.splice(idx, 1);
+    updateSelection(slotIndex, {
+      selectedVariants: current,
+      selectedVariant: current[0],
+    });
   };
 
   const calculateComboTotalFromSelections = (
@@ -1019,53 +1041,71 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                   
                   {slot.allow_variant_change !== false ? (
                     isPerUnitVariantMode(slot) ? (
-                      /* Per-unit selection: one radio grid per unit */
+                      /* Per-unit selection: single grid with quantity counters */
                       (() => {
-                        const filledCount = (selection.selectedVariants || []).filter(Boolean).length;
-                        const unitLabel = selection.selectedProduct?.name || 'Unidad';
+                        const selectedArr = selection.selectedVariants || [];
+                        const filledCount = selectedArr.length;
+                        const remaining = (slot.quantity || 1) - filledCount;
+                        const countMap: Record<string, number> = {};
+                        selectedArr.forEach(v => { countMap[v.id] = (countMap[v.id] || 0) + 1; });
                         return (
                           <div className="space-y-3">
                             <h4 className="font-medium text-sm text-muted-foreground">
-                              Elige variante por unidad • {filledCount} de {slot.quantity} seleccionadas
+                              Selecciona hasta {slot.quantity} • {filledCount} de {slot.quantity}
                             </h4>
-                            <div className="space-y-3">
-                              {Array.from({ length: slot.quantity }).map((_, unitIdx) => {
-                                const currentForUnit = selection.selectedVariants?.[unitIdx];
+                            <div className={`grid gap-2 ${availableVariants.length <= 2 ? 'grid-cols-2' : availableVariants.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-3'}`}>
+                              {availableVariants.map((variant) => {
+                                const count = countMap[variant.id] || 0;
+                                const canAdd = remaining > 0;
                                 return (
-                                  <div key={unitIdx} className="rounded-md border border-border/60 p-2">
-                                    <div className="text-xs font-semibold text-muted-foreground mb-2">
-                                      {unitLabel} {unitIdx + 1} de {slot.quantity}
-                                    </div>
-                                    <div className={`grid gap-2 ${availableVariants.length <= 2 ? 'grid-cols-2' : availableVariants.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-3'}`}>
-                                      {availableVariants.map((variant) => {
-                                        const isSelected = currentForUnit?.id === variant.id;
-                                        return (
-                                          <Card
-                                            key={variant.id}
-                                            className={`cursor-pointer transition-all ${
-                                              isSelected ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-accent/50'
-                                            }`}
-                                            onClick={() => selectVariant(index, variant, unitIdx)}
+                                  <Card
+                                    key={variant.id}
+                                    className={`transition-all ${count > 0 ? 'ring-2 ring-primary bg-primary/5' : ''} ${canAdd ? 'cursor-pointer hover:bg-accent/50' : count === 0 ? 'opacity-50' : ''}`}
+                                    onClick={() => canAdd && addVariantUnit(index, variant)}
+                                  >
+                                    <CardContent className="p-2">
+                                      <div className="text-center space-y-1">
+                                        <span className="font-medium text-sm">{variant.variant?.name}</span>
+                                        <div className="text-primary font-semibold text-xs">
+                                          {formatPrice(variant.price)}
+                                        </div>
+                                        {count > 0 && (
+                                          <div
+                                            className="flex items-center justify-center gap-2 pt-1"
+                                            onClick={(e) => e.stopPropagation()}
                                           >
-                                            <CardContent className="p-2">
-                                              <div className="text-center space-y-1">
-                                                <span className="font-medium text-sm">{variant.variant?.name}</span>
-                                                <div className="text-primary font-semibold text-xs">
-                                                  {formatPrice(variant.price)}
-                                                </div>
-                                              </div>
-                                            </CardContent>
-                                          </Card>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-6 w-6 p-0 border-destructive text-destructive hover:bg-destructive/10"
+                                              onClick={() => removeVariantUnit(index, variant)}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                            <span className="text-sm font-bold w-5 text-center">{count}</span>
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-6 w-6 p-0"
+                                              disabled={!canAdd}
+                                              onClick={() => addVariantUnit(index, variant)}
+                                            >
+                                              <Plus className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </CardContent>
+                                  </Card>
                                 );
                               })}
                             </div>
                           </div>
                         );
                       })()
+
                     ) : (slot as any).allow_multiple_variants ? (
                       /* Multi-select mode (quantity=1): checkboxes */
                       <div className="space-y-3">

@@ -356,6 +356,29 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     }
   };
 
+  const addVariantUnit = (slotIndex: number, variant: ProductVariantOption) => {
+    const slot = selections[slotIndex]?.comboSlot;
+    if (!slot) return;
+    const current = [...(selections[slotIndex]?.selectedVariants || [])];
+    if (current.length >= (slot.quantity || 1)) return;
+    current.push(variant);
+    updateSelection(slotIndex, {
+      selectedVariants: current,
+      selectedVariant: current[0],
+    });
+  };
+
+  const removeVariantUnit = (slotIndex: number, variant: ProductVariantOption) => {
+    const current = [...(selections[slotIndex]?.selectedVariants || [])];
+    const idx = current.findIndex(v => v.id === variant.id);
+    if (idx < 0) return;
+    current.splice(idx, 1);
+    updateSelection(slotIndex, {
+      selectedVariants: current,
+      selectedVariant: current[0],
+    });
+  };
+
   const handleExtraToggle = (slotIndex: number, extraId: string) => {
     const current = selections[slotIndex].extras || {};
     if (current[extraId]) {
@@ -594,56 +617,69 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                 : 'Elige tu opción';
 
               if (perUnit) {
-                // Per-unit selection: render one radio grid per unit
-                const units = Array.from({ length: slot.quantity });
-                const filledCount = (selection.selectedVariants || []).filter(Boolean).length;
-                const unitLabel = selection.selectedProduct?.name || getCategoryName(slot.category_id);
+                // Per-unit selection: single list with quantity counters
+                const selectedArr = selection.selectedVariants || [];
+                const filledCount = selectedArr.length;
+                const remaining = (slot.quantity || 1) - filledCount;
+                const countMap: Record<string, number> = {};
+                selectedArr.forEach(v => { countMap[v.id] = (countMap[v.id] || 0) + 1; });
                 return (
                   <div>
                     <div className="mb-1">
                       <h3 className="text-lg font-bold text-white">{slotLabel}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Elige una variante para cada unidad • {filledCount} de {slot.quantity} seleccionadas
+                        Selecciona hasta {slot.quantity} • {filledCount} de {slot.quantity}
                       </p>
                     </div>
-                    <div className="space-y-4 mt-2">
-                      {units.map((_, unitIdx) => {
-                        const currentForUnit = selection.selectedVariants?.[unitIdx];
+                    <div className="gap-0">
+                      {availableVariants.map((variant, idx) => {
+                        const count = countMap[variant.id] || 0;
+                        const canAdd = remaining > 0;
                         return (
-                          <div key={unitIdx} className="rounded-lg border border-border/50 p-3">
-                            <div className="mb-2">
-                              <h4 className="font-semibold text-white">
-                                {unitLabel} {unitIdx + 1} de {slot.quantity}
-                              </h4>
+                          <div
+                            key={variant.id}
+                            className={`flex items-center justify-between py-3 ${
+                              idx < availableVariants.length - 1 ? 'border-b border-border/40' : ''
+                            } ${count > 0 ? '' : canAdd ? 'cursor-pointer' : 'opacity-50'}`}
+                            onClick={() => canAdd && count === 0 && addVariantUnit(slotIndex, variant)}
+                          >
+                            <div className="flex-1">
+                              <span className="font-medium text-white">{variant.variant?.name}</span>
+                              {variant.price > 0 && (
+                                <span className="text-sm text-muted-foreground ml-2">
+                                  {formatPrice(variant.price)}
+                                </span>
+                              )}
                             </div>
-                            <div className="gap-0">
-                              {availableVariants.map((variant, idx) => {
-                                const isSelected = currentForUnit?.id === variant.id;
-                                return (
-                                  <div
-                                    key={variant.id}
-                                    className={`flex items-center justify-between py-3 cursor-pointer ${
-                                      idx < availableVariants.length - 1 ? 'border-b border-border/40' : ''
-                                    }`}
-                                    onClick={() => selectVariant(slotIndex, variant, unitIdx)}
-                                  >
-                                    <div className="flex-1">
-                                      <span className="font-medium text-white">{variant.variant?.name}</span>
-                                      {variant.price > 0 && (
-                                        <span className="text-sm text-muted-foreground ml-2">
-                                          {formatPrice(variant.price)}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                                      isSelected ? 'border-primary' : 'border-muted-foreground/40'
-                                    }`}>
-                                      {isSelected && <div className="w-3.5 h-3.5 rounded-full bg-primary" />}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                            {count > 0 ? (
+                              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onClick={() => removeVariantUnit(slotIndex, variant)}
+                                  className="w-8 h-8 rounded-full border-2 border-destructive text-destructive flex items-center justify-center hover:bg-destructive/10"
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </button>
+                                <span className="font-bold text-white w-5 text-center">{count}</span>
+                                <button
+                                  type="button"
+                                  disabled={!canAdd}
+                                  onClick={() => addVariantUnit(slotIndex, variant)}
+                                  className="w-8 h-8 rounded-full border-2 border-primary text-primary flex items-center justify-center hover:bg-primary/10 disabled:opacity-40"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={!canAdd}
+                                onClick={(e) => { e.stopPropagation(); addVariantUnit(slotIndex, variant); }}
+                                className="w-8 h-8 rounded-full border-2 border-muted-foreground/40 text-muted-foreground flex items-center justify-center hover:border-primary hover:text-primary disabled:opacity-40"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         );
                       })}

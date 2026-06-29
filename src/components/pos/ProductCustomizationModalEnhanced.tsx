@@ -283,7 +283,16 @@ export function ProductCustomizationModalEnhanced({
 
       // Validar que todas las selecciones tengan al menos producto seleccionado
       // La variante puede ser undefined si el producto no tiene variantes configuradas
-      return comboSelections.every((sel) => sel.selectedProduct || sel.comboSlot?.is_optional);
+      return comboSelections.every((sel) => {
+        if (sel.comboSlot?.is_optional && !sel.selectedProduct) return true;
+        if (!sel.selectedProduct) return false;
+        const slot = sel.comboSlot;
+        const perUnit = !!slot?.allow_multiple_variants && (slot?.quantity || 1) > 1;
+        if (perUnit) {
+          return (sel.selectedVariants?.length || 0) === (slot.quantity || 1);
+        }
+        return true;
+      });
     }
 
     return true;
