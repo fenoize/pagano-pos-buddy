@@ -27,6 +27,7 @@ export function CustomerModal({
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [displayResults, setDisplayResults] = useState<Customer[]>([]);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const reqIdRef = React.useRef(0);
