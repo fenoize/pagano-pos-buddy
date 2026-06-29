@@ -3,12 +3,30 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.7";
- export const APP_BUILD_DATE = "2026-06-12";
+ export const APP_VERSION = "1.5.8";
+ export const APP_BUILD_DATE = "2026-06-29";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.5.8",
+     date: "2026-06-29",
+     changes: [
+       "Chat ATENEA (antes LIA): renombrado del asistente IA admin y soporte Markdown en respuestas; manejo amigable de errores 402/429 del Gateway",
+       "Finanzas KPIs: solo ventas reales (estados Entregado/Pendiente/Listo y métodos con 'Cuenta como venta real'); excluye RUNAS",
+       "Ventas: pedidos 'Pendiente de Pago' ocultos en modal Últimas Órdenes (solo informativos en historial)",
+       "Nueva Venta: se eliminó selección manual de 'Canal de Venta' (se infiere por método de pago)",
+       "Ventas/Clientes: nombres reales de clientes registrados garantizados (backfill + realtime); clic en cliente abre quick view con últimas 5 compras",
+       "Combos: nueva opción 'Item opcional' por slot (no suma al precio base hasta agregarlo) con botón 'Quitar' destacado en rojo",
+       "Combos: slot con cantidad > 1 y múltiples variantes ahora muestra una sola lista con contadores +/- e imagen de la variante",
+       "Combos dinámicos: cálculo automático de precio por variante (slot principal + extras fijos) vía trigger; ignora slots opcionales",
+       "KDS: tarjetas con flex-wrap (sin overflow en pedidos de Aplicación); modal Historial visible en modo pantalla completa",
+       "Portal Cliente: tema oscuro forzado en modales; teléfono obligatorio con modal persistente cada 5 min; nombres de items en personalización de combos",
+       "Clientes: Total Runas global (no filtrado), orden por Nombre/Contacto/Runas/Valor/Estado/Última compra y mejoras móviles (cards, tabs scroll)",
+       "Inventario · Solicitud de Compra: input principal es precio unitario (resuelve total destacado), ítems con drag & drop vertical persistente",
+     ]
+   },
    {
      version: "1.5.7",
      date: "2026-06-12",
