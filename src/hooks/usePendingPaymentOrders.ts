@@ -51,11 +51,15 @@ const initGlobalSubscription = () => {
    delivery_address?: string;
  }
  
- export interface PaymentCollectionData {
-   method: string;
+ export interface PaymentCollectionEntry {
+   methodName: string;
+   displayName: string;
    amount: number;
+   cashGiven?: number;
    receiptNumber?: string;
    operationNumber?: string;
+   salesChannelSlug?: string;
+   externalOrderId?: string;
  }
  
  export function usePendingPaymentOrders() {
@@ -114,60 +118,77 @@ const initGlobalSubscription = () => {
      }
    }, []);
  
-   // Cobrar un pedido pendiente
-   const collectPayment = async (
-     orderId: string,
-     paymentData: PaymentCollectionData
-   ): Promise<boolean> => {
-     if (!user) return false;
- 
-     try {
-       await setStaffContext(user.id);
- 
-       // Determinar qué campos de pago actualizar según el método
-       const updates: Record<string, any> = {
-         payment_status: 'paid',
-         payment_method: paymentData.method.toLowerCase() as any
-       };
+    // Cobrar un pedido pendiente (soporta múltiples métodos / pago mixto)
+    const collectPayment = async (
+      orderId: string,
+      entries: PaymentCollectionEntry[]
+    ): Promise<boolean> => {
+      if (!user) return false;
+      if (!entries || entries.length === 0) return false;
 
-       // Persistir comprobantes/operación
-       if (paymentData.receiptNumber) updates.receipt_number = paymentData.receiptNumber;
-       if (paymentData.operationNumber) updates.operation_number = paymentData.operationNumber;
+      try {
+        await setStaffContext(user.id);
 
-       // Actualizar el campo de pago correspondiente
-       switch (paymentData.method.toLowerCase()) {
-         case 'efectivo':
-           updates.payment_efectivo = paymentData.amount;
-           updates.cash_given = paymentData.amount;
-           break;
-         case 'pos':
-           updates.payment_pos = paymentData.amount;
-           break;
-         case 'transferencia':
-         case 'mp':
-           updates.payment_mp = paymentData.amount;
-           if (paymentData.method.toLowerCase() === 'mp') {
-             updates.payment_method = 'mp';
-           }
-           break;
-         case 'aplicacion':
-           updates.payment_aplicacion = paymentData.amount;
-           break;
-         default:
-           // Non-standard methods (colacion, etc.) → store in payment_aplicacion as catch-all
-           updates.payment_aplicacion = paymentData.amount;
-           break;
-       }
- 
-       // Si hay sesión activa, vincular el pedido a ella
-       if (currentSession?.id) {
-         updates.cash_session_id = currentSession.id;
-       }
- 
-       const { error } = await supabase
-         .from('orders')
-         .update(updates)
-         .eq('id', orderId);
+        // Acumular montos por bucket
+        const totals = { efectivo: 0, pos: 0, mp: 0, aplicacion: 0 };
+        let cashGivenTotal = 0;
+        let receiptNumber: string | undefined;
+        let operationNumber: string | undefined;
+        let salesChannelSlug: string | undefined;
+        let externalOrderId: string | undefined;
+
+        for (const e of entries) {
+          const name = (e.methodName || '').toLowerCase();
+          if (name === 'efectivo') {
+            totals.efectivo += e.amount;
+            cashGivenTotal += e.cashGiven ?? e.amount;
+          } else if (name === 'pos') {
+            totals.pos += e.amount;
+          } else if (name === 'transferencia' || name === 'mp') {
+            totals.mp += e.amount;
+          } else if (name === 'aplicacion') {
+            totals.aplicacion += e.amount;
+            if (e.salesChannelSlug) salesChannelSlug = e.salesChannelSlug;
+            if (e.externalOrderId) externalOrderId = e.externalOrderId;
+          } else {
+            // Catch-all (colacion, canje, pluxee, edenred, etc.)
+            totals.aplicacion += e.amount;
+          }
+          if (e.receiptNumber && !receiptNumber) receiptNumber = e.receiptNumber;
+          if (e.operationNumber && !operationNumber) operationNumber = e.operationNumber;
+        }
+
+        const paymentMethod =
+          entries.length === 1
+            ? (entries[0].methodName || 'efectivo').toLowerCase()
+            : 'mixto';
+
+        const updates: Record<string, any> = {
+          payment_status: 'paid',
+          payment_method: paymentMethod as any,
+          payment_efectivo: totals.efectivo,
+          payment_pos: totals.pos,
+          payment_mp: totals.mp,
+          payment_aplicacion: totals.aplicacion,
+          cash_given: cashGivenTotal,
+        };
+
+        if (receiptNumber) updates.receipt_number = receiptNumber;
+        if (operationNumber) updates.operation_number = operationNumber;
+        if (salesChannelSlug) updates.sales_channel_slug = salesChannelSlug;
+        if (externalOrderId) updates.external_order_id = externalOrderId;
+
+        // Si hay sesión activa, vincular el pedido a ella
+        if (currentSession?.id) {
+          updates.cash_session_id = currentSession.id;
+        }
+
+        const { error } = await supabase
+          .from('orders')
+          .update(updates)
+          .eq('id', orderId);
+
+
  
        if (error) throw error;
  
