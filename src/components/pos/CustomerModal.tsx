@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, User, Coins, ScanLine } from 'lucide-react';
+import { Search, Plus, User, Coins, ScanLine, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { STORAGE_KEYS, clearStaffStorage } from '@/lib/storageKeys';
 import { QRScannerModal } from './QRScannerModal';
@@ -26,6 +26,7 @@ export function CustomerModal({
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [displayResults, setDisplayResults] = useState<Customer[]>([]);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const reqIdRef = React.useRef(0);
@@ -35,6 +36,8 @@ export function CustomerModal({
       if (!customer.id) {
         setSearchTerm('');
         setSearchResults([]);
+        setDisplayResults([]);
+        setIsSearching(false);
         setShowNewCustomerForm(false);
       }
     }
@@ -44,6 +47,7 @@ export function CustomerModal({
     const term = searchTerm.trim();
     if (term.length < 2) {
       setSearchResults([]);
+      setDisplayResults([]);
       setIsSearching(false);
       return;
     }
@@ -80,12 +84,15 @@ export function CustomerModal({
       const result = await response.json();
       // Ignore stale responses
       if (myId !== reqIdRef.current) return;
-      setSearchResults(result.data || []);
+      const data = result.data || [];
+      setSearchResults(data);
+      setDisplayResults(data);
     } catch (error) {
       if (myId !== reqIdRef.current) return;
       console.error('Error searching customers:', error);
       toast.error("Error", { description: error instanceof Error ? error.message : "No se pudieron buscar clientes" });
       setSearchResults([]);
+      setDisplayResults([]);
     } finally {
       if (myId === reqIdRef.current) setIsSearching(false);
     }
@@ -95,12 +102,15 @@ export function CustomerModal({
     onCustomerChange(selectedCustomer);
     setSearchTerm('');
     setSearchResults([]);
+    setDisplayResults([]);
     setShowNewCustomerForm(false);
   };
 
   const handleClearCustomer = () => {
     onCustomerChange({});
     setSearchTerm('');
+    setSearchResults([]);
+    setDisplayResults([]);
     setShowNewCustomerForm(false);
   };
 
@@ -183,12 +193,12 @@ export function CustomerModal({
             </div>
 
             {/* Search Results */}
-            {searchResults.length > 0 && (
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {searchResults.map((result) => (
+            {searchTerm.trim().length >= 2 && (
+              <div className="relative space-y-1 max-h-48 overflow-y-auto rounded-lg border p-1">
+                {(displayResults.length > 0 ? displayResults : []).map((result) => (
                   <div
                     key={result.id}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                    className={`flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors ${isSearching ? 'pointer-events-none opacity-60' : ''}`}
                     onClick={() => selectCustomer(result)}
                   >
                     <div className="flex-1 min-w-0">
@@ -205,17 +215,23 @@ export function CustomerModal({
                     )}
                   </div>
                 ))}
-              </div>
-            )}
 
-            {/* No results */}
-            {searchTerm.trim().length >= 2 && searchResults.length === 0 && !isSearching && (
-              <div className="text-center py-4 border rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">Sin resultados</p>
-                <Button onClick={() => { setShowNewCustomerForm(true); setSearchResults([]); }} variant="outline" size="sm">
-                  <Plus className="w-4 h-4 mr-1" />
-                  Crear cliente
-                </Button>
+                {displayResults.length === 0 && !isSearching && (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground mb-2">Sin resultados</p>
+                    <Button onClick={() => { setShowNewCustomerForm(true); setSearchResults([]); setDisplayResults([]); }} variant="outline" size="sm">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Crear cliente
+                    </Button>
+                  </div>
+                )}
+
+                {isSearching && (
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] flex flex-col items-center justify-center z-10 rounded-lg">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <span className="text-xs text-muted-foreground mt-2">Buscando clientes...</span>
+                  </div>
+                )}
               </div>
             )}
 
