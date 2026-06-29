@@ -204,22 +204,19 @@ const initGlobalSubscription = () => {
      }
    };
  
-   // Suscripción realtime + polling de respaldo
+   // Suscripción realtime + evento local para refrescos inmediatos
    useEffect(() => {
      fetchPendingOrders();
 
-    // Registrar este hook como listener
     listeners.add(fetchPendingOrders);
-
-    // Inicializar suscripción global
     initGlobalSubscription();
 
-    // Polling de respaldo (por si realtime no está activo en la tabla)
-    const pollingInterval = setInterval(fetchPendingOrders, 15000);
+    const handler = () => { fetchPendingOrders(); };
+    window.addEventListener('pending-payments-updated', handler);
 
      return () => {
       listeners.delete(fetchPendingOrders);
-      clearInterval(pollingInterval);
+      window.removeEventListener('pending-payments-updated', handler);
      };
    }, [fetchPendingOrders]);
  
