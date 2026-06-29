@@ -194,8 +194,9 @@ const initGlobalSubscription = () => {
  
        toast.success('✅ Pago registrado', { description: 'El pedido ha sido cobrado correctamente' });
  
-       // Refrescar lista
+       // Refrescar lista localmente y notificar a otras instancias
        await fetchPendingOrders();
+       window.dispatchEvent(new Event('pending-payments-updated'));
        return true;
      } catch (error: any) {
        console.error('Error collecting payment:', error);
@@ -204,22 +205,19 @@ const initGlobalSubscription = () => {
      }
    };
  
-   // Suscripción realtime + polling de respaldo
+   // Suscripción realtime + evento local para refrescos inmediatos
    useEffect(() => {
      fetchPendingOrders();
 
-    // Registrar este hook como listener
     listeners.add(fetchPendingOrders);
-
-    // Inicializar suscripción global
     initGlobalSubscription();
 
-    // Polling de respaldo (por si realtime no está activo en la tabla)
-    const pollingInterval = setInterval(fetchPendingOrders, 15000);
+    const handler = () => { fetchPendingOrders(); };
+    window.addEventListener('pending-payments-updated', handler);
 
      return () => {
       listeners.delete(fetchPendingOrders);
-      clearInterval(pollingInterval);
+      window.removeEventListener('pending-payments-updated', handler);
      };
    }, [fetchPendingOrders]);
  
