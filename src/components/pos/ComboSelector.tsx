@@ -648,7 +648,6 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         selectedVariant: current[0],
       });
     } else if ((slot as any)?.allow_multiple_variants) {
-      // Multi-select mode: toggle variant in array
       const current = selections[slotIndex]?.selectedVariants || [];
       const exists = current.find(v => v.id === variant.id);
       const newVariants = exists
@@ -656,11 +655,34 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         : [...current, variant];
       updateSelection(slotIndex, { 
         selectedVariants: newVariants,
-        selectedVariant: newVariants[0] // Keep first as primary for compatibility
+        selectedVariant: newVariants[0]
       });
     } else {
       updateSelection(slotIndex, { selectedVariant: variant });
     }
+  };
+
+  const addVariantUnit = (slotIndex: number, variant: ProductVariantOption) => {
+    const slot = selections[slotIndex]?.comboSlot;
+    if (!slot) return;
+    const current = [...(selections[slotIndex]?.selectedVariants || [])];
+    if (current.length >= (slot.quantity || 1)) return;
+    current.push(variant);
+    updateSelection(slotIndex, {
+      selectedVariants: current,
+      selectedVariant: current[0],
+    });
+  };
+
+  const removeVariantUnit = (slotIndex: number, variant: ProductVariantOption) => {
+    const current = [...(selections[slotIndex]?.selectedVariants || [])];
+    const idx = current.findIndex(v => v.id === variant.id);
+    if (idx < 0) return;
+    current.splice(idx, 1);
+    updateSelection(slotIndex, {
+      selectedVariants: current,
+      selectedVariant: current[0],
+    });
   };
 
   const calculateComboTotalFromSelections = (
