@@ -24,7 +24,10 @@ export const APP_NAME = "Paganos POS";
        "KDS: tarjetas con flex-wrap (sin overflow en pedidos de Aplicación); modal Historial visible en modo pantalla completa",
        "Portal Cliente: tema oscuro forzado en modales; teléfono obligatorio con modal persistente cada 5 min; nombres de items en personalización de combos",
        "Clientes: Total Runas global (no filtrado), orden por Nombre/Contacto/Runas/Valor/Estado/Última compra y mejoras móviles (cards, tabs scroll)",
-       "Inventario · Solicitud de Compra: input principal es precio unitario (resuelve total destacado), ítems con drag & drop vertical persistente",
+      "Inventario · Solicitud de Compra: input principal es precio unitario (resuelve total destacado), ítems con drag & drop vertical persistente",
+      "Cobro de pedidos pendientes: modal unificado con el POS (selector dinámico de métodos, sub-flujo de App Delivery, pago mixto) y un solo campo de referencia según configuración",
+      "Búsqueda de clientes (POS y módulo Clientes): multi-token con debounce, sin parpadeos ni resultados vacíos al dejar de escribir, con overlay de carga y skeletons",
+      "Indicadores de Notificaciones, Pagos Pendientes y Efectivo de Delivery: actualización en tiempo real vía Realtime + eventos locales tras cobrar/depositar (sin necesidad de F5)",
      ]
    },
    {
