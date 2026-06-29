@@ -102,12 +102,15 @@ export function CustomerModal({
     onCustomerChange(selectedCustomer);
     setSearchTerm('');
     setSearchResults([]);
+    setDisplayResults([]);
     setShowNewCustomerForm(false);
   };
 
   const handleClearCustomer = () => {
     onCustomerChange({});
     setSearchTerm('');
+    setSearchResults([]);
+    setDisplayResults([]);
     setShowNewCustomerForm(false);
   };
 
