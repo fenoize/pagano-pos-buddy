@@ -206,30 +206,30 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
              </div>
            )}
  
-           {/* Campos adicionales según método */}
-           {getCurrentMethodConfig()?.requires_receipt && (
-             <div className="space-y-2">
-               <Label htmlFor="receipt">N° de boleta</Label>
-               <Input
-                 id="receipt"
-                 value={receiptNumber}
-                 onChange={(e) => setReceiptNumber(e.target.value)}
-                 placeholder="Número de boleta"
-               />
-             </div>
-           )}
- 
-           {getCurrentMethodConfig()?.requires_operation_number && (
-             <div className="space-y-2">
-               <Label htmlFor="operation">N° de operación</Label>
-               <Input
-                 id="operation"
-                 value={operationNumber}
-                 onChange={(e) => setOperationNumber(e.target.value)}
-                 placeholder="Número de operación"
-               />
-             </div>
-           )}
+          {/* Campos adicionales según método */}
+          {(getCurrentMethodConfig()?.requires_receipt || ['pos', 'aplicacion', 'pluxee', 'edenred', 'colacion', 'canje'].includes(selectedMethod)) && (
+            <div className="space-y-2">
+              <Label htmlFor="receipt">N° de boleta / comprobante</Label>
+              <Input
+                id="receipt"
+                value={receiptNumber}
+                onChange={(e) => setReceiptNumber(e.target.value)}
+                placeholder="Número de boleta o comprobante"
+              />
+            </div>
+          )}
+
+          {(getCurrentMethodConfig()?.requires_operation_number || ['transferencia', 'mp', 'pos', 'aplicacion'].includes(selectedMethod)) && (
+            <div className="space-y-2">
+              <Label htmlFor="operation">N° de operación / pedido</Label>
+              <Input
+                id="operation"
+                value={operationNumber}
+                onChange={(e) => setOperationNumber(e.target.value)}
+                placeholder="Número de operación o pedido"
+              />
+            </div>
+          )}
          </div>
  
          <DialogFooter className="gap-2">
