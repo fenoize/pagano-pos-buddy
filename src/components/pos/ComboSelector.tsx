@@ -1065,7 +1065,15 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                                   >
                                     <CardContent className="p-2">
                                       <div className="text-center space-y-1">
-                                        <span className="font-medium text-sm">{variant.variant?.name}</span>
+                                        {variant.variant?.image_url && (
+                                          <img
+                                            src={variant.variant.image_url}
+                                            alt={variant.variant?.name}
+                                            className="w-full aspect-square object-cover rounded-md mb-1"
+                                            loading="lazy"
+                                          />
+                                        )}
+                                        <span className="font-medium text-sm block">{variant.variant?.name}</span>
                                         <div className="text-primary font-semibold text-xs">
                                           {formatPrice(variant.price)}
                                         </div>
