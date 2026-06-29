@@ -194,8 +194,9 @@ const initGlobalSubscription = () => {
  
        toast.success('✅ Pago registrado', { description: 'El pedido ha sido cobrado correctamente' });
  
-       // Refrescar lista
+       // Refrescar lista localmente y notificar a otras instancias
        await fetchPendingOrders();
+       window.dispatchEvent(new Event('pending-payments-updated'));
        return true;
      } catch (error: any) {
        console.error('Error collecting payment:', error);
