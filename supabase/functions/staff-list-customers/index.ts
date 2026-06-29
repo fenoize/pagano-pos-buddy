@@ -192,11 +192,19 @@ serve(async (req) => {
       });
     }
 
-    // Helper to apply shared filters to any query builder
+    // Helper to apply shared filters to any query builder.
+    // For multi-word search (e.g. "diego ulloa"), split into tokens and AND them,
+    // so each token can match a different column (name vs apellido, etc.).
     const applyFilters = (qb: any) => {
       if (q) {
-        const searchPattern = `%${q}%`;
-        qb = qb.or(`nombres.ilike.${searchPattern},apellidos.ilike.${searchPattern},name.ilike.${searchPattern},apellido.ilike.${searchPattern},email.ilike.${searchPattern},phone.ilike.${searchPattern},rut.ilike.${searchPattern}`);
+        const tokens = q.split(/\s+/).filter(Boolean);
+        for (const tok of tokens) {
+          const safe = tok.replace(/[,()]/g, ' ');
+          const pat = `%${safe}%`;
+          qb = qb.or(
+            `nombres.ilike.${pat},apellidos.ilike.${pat},name.ilike.${pat},apellido.ilike.${pat},email.ilike.${pat},phone.ilike.${pat},rut.ilike.${pat}`
+          );
+        }
       }
       if (estado) qb = qb.eq("estado_cliente", estado);
       if (hasRunas === 'true') qb = qb.gt("cantidad_runas", 0);
