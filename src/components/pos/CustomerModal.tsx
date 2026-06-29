@@ -28,6 +28,7 @@ export function CustomerModal({
   const [isSearching, setIsSearching] = useState(false);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const reqIdRef = React.useRef(0);
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -40,21 +41,27 @@ export function CustomerModal({
   }, [isOpen]);
 
   useEffect(() => {
-    if (searchTerm.length >= 3) {
-      searchCustomers();
-    } else {
+    const term = searchTerm.trim();
+    if (term.length < 2) {
       setSearchResults([]);
+      setIsSearching(false);
+      return;
     }
+    const myId = ++reqIdRef.current;
+    setIsSearching(true);
+    const t = setTimeout(() => {
+      searchCustomers(term, myId);
+    }, 300);
+    return () => clearTimeout(t);
   }, [searchTerm]);
 
-  const searchCustomers = async () => {
-    setIsSearching(true);
+  const searchCustomers = async (term: string, myId: number) => {
     try {
       const token = localStorage.getItem(STORAGE_KEYS.STAFF_TOKEN);
       if (!token) throw new Error('No hay sesión activa');
 
       const supabaseUrl = (supabase as any).supabaseUrl || 'https://lxxfhayifyiioglfbsyj.supabase.co';
-      const params = new URLSearchParams({ q: searchTerm, limit: '5', offset: '0' });
+      const params = new URLSearchParams({ q: term, limit: '10', offset: '0' });
 
       const response = await fetch(
         `${supabaseUrl}/functions/v1/staff-list-customers?${params}`,
@@ -71,13 +78,16 @@ export function CustomerModal({
       }
 
       const result = await response.json();
+      // Ignore stale responses
+      if (myId !== reqIdRef.current) return;
       setSearchResults(result.data || []);
     } catch (error) {
+      if (myId !== reqIdRef.current) return;
       console.error('Error searching customers:', error);
       toast.error("Error", { description: error instanceof Error ? error.message : "No se pudieron buscar clientes" });
       setSearchResults([]);
     } finally {
-      setIsSearching(false);
+      if (myId === reqIdRef.current) setIsSearching(false);
     }
   };
 
