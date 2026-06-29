@@ -37,6 +37,8 @@ export function CustomerModal({
       if (!customer.id) {
         setSearchTerm('');
         setSearchResults([]);
+        setDisplayResults([]);
+        setIsSearching(false);
         setShowNewCustomerForm(false);
       }
     }
@@ -46,6 +48,7 @@ export function CustomerModal({
     const term = searchTerm.trim();
     if (term.length < 2) {
       setSearchResults([]);
+      setDisplayResults([]);
       setIsSearching(false);
       return;
     }
