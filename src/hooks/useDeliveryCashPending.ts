@@ -229,7 +229,14 @@ export function useDeliveryCashPending() {
     // Listen for cross-instance refetch events
     const handler = () => { fetchPendingCash(); };
     window.addEventListener('delivery-cash-updated', handler);
-    return () => window.removeEventListener('delivery-cash-updated', handler);
+
+    // Polling de respaldo cada 15s para asegurar sincronización
+    const pollingInterval = user?.id ? setInterval(fetchPendingCash, 15000) : null;
+
+    return () => {
+      window.removeEventListener('delivery-cash-updated', handler);
+      if (pollingInterval) clearInterval(pollingInterval);
+    };
   }, [user?.id, fetchPendingCash]);
 
   return {
