@@ -51,11 +51,15 @@ const initGlobalSubscription = () => {
    delivery_address?: string;
  }
  
- export interface PaymentCollectionData {
-   method: string;
+ export interface PaymentCollectionEntry {
+   methodName: string;
+   displayName: string;
    amount: number;
+   cashGiven?: number;
    receiptNumber?: string;
    operationNumber?: string;
+   salesChannelSlug?: string;
+   externalOrderId?: string;
  }
  
  export function usePendingPaymentOrders() {
