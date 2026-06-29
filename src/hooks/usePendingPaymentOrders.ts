@@ -204,18 +204,22 @@ const initGlobalSubscription = () => {
      }
    };
  
-   // Suscripción realtime
+   // Suscripción realtime + polling de respaldo
    useEffect(() => {
      fetchPendingOrders();
- 
+
     // Registrar este hook como listener
     listeners.add(fetchPendingOrders);
-    
+
     // Inicializar suscripción global
     initGlobalSubscription();
- 
+
+    // Polling de respaldo (por si realtime no está activo en la tabla)
+    const pollingInterval = setInterval(fetchPendingOrders, 15000);
+
      return () => {
       listeners.delete(fetchPendingOrders);
+      clearInterval(pollingInterval);
      };
    }, [fetchPendingOrders]);
  
