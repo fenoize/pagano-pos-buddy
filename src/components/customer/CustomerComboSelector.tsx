@@ -643,13 +643,23 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                             } ${count > 0 ? '' : canAdd ? 'cursor-pointer' : 'opacity-50'}`}
                             onClick={() => canAdd && count === 0 && addVariantUnit(slotIndex, variant)}
                           >
-                            <div className="flex-1">
-                              <span className="font-medium text-white">{variant.variant?.name}</span>
-                              {variant.price > 0 && (
-                                <span className="text-sm text-muted-foreground ml-2">
-                                  {formatPrice(variant.price)}
-                                </span>
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              {variant.variant?.image_url && (
+                                <img
+                                  src={variant.variant.image_url}
+                                  alt={variant.variant?.name}
+                                  className="w-14 h-14 rounded-md object-cover flex-shrink-0"
+                                  loading="lazy"
+                                />
                               )}
+                              <div className="min-w-0">
+                                <span className="font-medium text-white block truncate">{variant.variant?.name}</span>
+                                {variant.price > 0 && (
+                                  <span className="text-sm text-muted-foreground">
+                                    {formatPrice(variant.price)}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             {count > 0 ? (
                               <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
