@@ -209,7 +209,7 @@ export function CustomerModal({
             )}
 
             {/* No results */}
-            {searchTerm.length >= 3 && searchResults.length === 0 && !isSearching && (
+            {searchTerm.trim().length >= 2 && searchResults.length === 0 && !isSearching && (
               <div className="text-center py-4 border rounded-lg">
                 <p className="text-sm text-muted-foreground mb-2">Sin resultados</p>
                 <Button onClick={() => { setShowNewCustomerForm(true); setSearchResults([]); }} variant="outline" size="sm">
