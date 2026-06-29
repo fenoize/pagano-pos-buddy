@@ -451,24 +451,28 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
                       placeholder="$0"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="receipt">N° de boleta / comprobante {methodConfig?.requires_receipt ? '' : '(opcional)'}</Label>
-                    <Input
-                      id="receipt"
-                      value={currentReceipt}
-                      onChange={(e) => setCurrentReceipt(e.target.value)}
-                      placeholder="Número de boleta o comprobante"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="operation">N° de operación / pedido {methodConfig?.requires_operation_number ? '' : '(opcional)'}</Label>
-                    <Input
-                      id="operation"
-                      value={currentOperation}
-                      onChange={(e) => setCurrentOperation(e.target.value)}
-                      placeholder="Número de operación o pedido"
-                    />
-                  </div>
+                  {methodConfig?.requires_receipt && (
+                    <div>
+                      <Label htmlFor="receipt">N° de boleta / comprobante</Label>
+                      <Input
+                        id="receipt"
+                        value={currentReceipt}
+                        onChange={(e) => setCurrentReceipt(e.target.value)}
+                        placeholder="Número de boleta o comprobante"
+                      />
+                    </div>
+                  )}
+                  {methodConfig?.requires_operation_number && (
+                    <div>
+                      <Label htmlFor="operation">N° de operación / pedido</Label>
+                      <Input
+                        id="operation"
+                        value={currentOperation}
+                        onChange={(e) => setCurrentOperation(e.target.value)}
+                        placeholder="Número de operación o pedido"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
