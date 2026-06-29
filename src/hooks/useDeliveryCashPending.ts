@@ -222,20 +222,27 @@ export function useDeliveryCashPending() {
   }, [pendingCash, pendingByPerson]);
 
   useEffect(() => {
-    if (user?.id) {
-      fetchPendingCash();
-    }
+    if (!user?.id) return;
 
-    // Listen for cross-instance refetch events
+    fetchPendingCash();
+
+    // Evento local para sincronizar instancias tras depósito/creación
     const handler = () => { fetchPendingCash(); };
     window.addEventListener('delivery-cash-updated', handler);
 
-    // Polling de respaldo cada 15s para asegurar sincronización
-    const pollingInterval = user?.id ? setInterval(fetchPendingCash, 15000) : null;
+    // Suscripción realtime
+    const channel = supabase
+      .channel('delivery-cash-pending-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'delivery_cash_pending' },
+        () => { fetchPendingCash(); }
+      )
+      .subscribe();
 
     return () => {
       window.removeEventListener('delivery-cash-updated', handler);
-      if (pollingInterval) clearInterval(pollingInterval);
+      supabase.removeChannel(channel);
     };
   }, [user?.id, fetchPendingCash]);
 
