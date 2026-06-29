@@ -85,12 +85,15 @@ export function CustomerModal({
       const result = await response.json();
       // Ignore stale responses
       if (myId !== reqIdRef.current) return;
-      setSearchResults(result.data || []);
+      const data = result.data || [];
+      setSearchResults(data);
+      setDisplayResults(data);
     } catch (error) {
       if (myId !== reqIdRef.current) return;
       console.error('Error searching customers:', error);
       toast.error("Error", { description: error instanceof Error ? error.message : "No se pudieron buscar clientes" });
       setSearchResults([]);
+      setDisplayResults([]);
     } finally {
       if (myId === reqIdRef.current) setIsSearching(false);
     }
