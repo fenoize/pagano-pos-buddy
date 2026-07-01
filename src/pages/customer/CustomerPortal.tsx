@@ -398,6 +398,9 @@ export default function CustomerPortal() {
         customerId={customer.id}
         customerName={customer.name || customer.nombres || undefined}
       />
+
+      {/* Onboarding primera vez */}
+      <ClanOnboardingModal />
     </div>
   );
 }
