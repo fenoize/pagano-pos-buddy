@@ -963,10 +963,19 @@ export default function PaymentModal({
           {/* Payment Method Selection */}
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">Agregar método de pago</CardTitle>
+              <CardTitle className="text-base">
+                {getRemainingBalance() === 0 ? 'Pago completo' : 'Agregar método de pago'}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!isAppFlow && (
+              {getRemainingBalance() === 0 && (
+                <div className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 shrink-0" />
+                  <span className="text-sm font-medium">Monto total cubierto al 100%</span>
+                </div>
+              )}
+
+              {getRemainingBalance() > 0 && !isAppFlow && (
                 <div className="grid grid-cols-2 gap-2">
                   {paymentMethods.map((method) => {
                     const isApp = method.name === 'aplicacion';
