@@ -57,7 +57,7 @@ export function CustomerForgotPasswordModal({ isOpen, onClose }: CustomerForgotP
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="customer-app sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" />

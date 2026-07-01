@@ -543,7 +543,7 @@ export default function CustomerProfile() {
 
       {/* Password Change Modal */}
       <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
-        <DialogContent>
+        <DialogContent className="customer-app">
           <DialogHeader>
             <DialogTitle>Cambiar Contraseña</DialogTitle>
             <DialogDescription>

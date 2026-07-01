@@ -92,7 +92,7 @@ export function RequirePhoneModal() {
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) handleSkip(); else setOpen(true); }}>
       <DialogContent
-        className="max-w-sm"
+        className="customer-app max-w-sm"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}

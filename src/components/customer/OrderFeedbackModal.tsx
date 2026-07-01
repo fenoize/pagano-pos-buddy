@@ -67,7 +67,7 @@ export function OrderFeedbackModal({
 
   return (
     <AlertDialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <AlertDialogContent className="max-w-md p-0 overflow-hidden dark bg-background text-foreground border-border">
+      <AlertDialogContent className="customer-app max-w-md p-0 overflow-hidden dark bg-background text-foreground border-border">
         {/* Header */}
         <div className="relative bg-primary/10 p-6 text-center">
           <AlertDialogTitle className="text-xl font-bold">

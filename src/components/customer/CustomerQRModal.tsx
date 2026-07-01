@@ -16,7 +16,7 @@ export function CustomerQRModal({ isOpen, onClose, customerId, customerName }: C
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="customer-app max-w-sm">
         <DialogHeader className="text-center">
           <DialogTitle className="text-center">Mi Código QR</DialogTitle>
           <DialogDescription className="text-center">
