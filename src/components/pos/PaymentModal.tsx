@@ -756,8 +756,8 @@ export default function PaymentModal({
           </div>
         </DialogHeader>
 
-        {/* Quick action buttons: Customer + Coupon */}
-        {(onOpenCustomerModal || onOpenCouponModal) && (
+        {/* Quick action buttons: Customer + Coupon + Beneficios */}
+        {(onOpenCustomerModal || onOpenCouponModal || (onOpenBenefitsModal && hasAllianceBenefits && customer.id)) && (
           <div className="px-6 pb-2 flex items-center gap-2 shrink-0 flex-wrap">
             {onOpenCustomerModal && (
               <Button 
