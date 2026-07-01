@@ -379,6 +379,18 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     });
   };
 
+  const swapVariantUnit = (slotIndex: number, variant: ProductVariantOption) => {
+    const current = [...(selections[slotIndex]?.selectedVariants || [])];
+    if (current.length === 0) return;
+    // Remove the last entry and add the new variant
+    current.splice(current.length - 1, 1);
+    current.push(variant);
+    updateSelection(slotIndex, {
+      selectedVariants: current,
+      selectedVariant: current[0],
+    });
+  };
+
   const handleExtraToggle = (slotIndex: number, extraId: string) => {
     const current = selections[slotIndex].extras || {};
     if (current[extraId]) {
