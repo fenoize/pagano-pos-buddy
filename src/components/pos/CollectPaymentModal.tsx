@@ -319,11 +319,22 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-base">
-                {payments.length > 0 ? 'Agregar otro método' : 'Método de pago'}
+                {remaining === 0
+                  ? 'Pago completo'
+                  : payments.length > 0
+                  ? 'Agregar otro método'
+                  : 'Método de pago'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!(isApp && selectedAppChannel) && (
+              {remaining === 0 && (
+                <div className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 shrink-0" />
+                  <span className="text-sm font-medium">Monto total cubierto al 100%</span>
+                </div>
+              )}
+
+              {remaining > 0 && !(isApp && selectedAppChannel) && (
                 <div className="grid grid-cols-2 gap-2">
                   {paymentMethods.map((m) => {
                     const isAppMethod = m.name === 'aplicacion';
