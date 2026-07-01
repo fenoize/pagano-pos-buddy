@@ -153,7 +153,15 @@ export default function CustomerLogin() {
 
     setLoading(true);
 
-    const { error } = await signUp(signupEmail, signupPassword, signupNombre, signupApellido, signupPhone, signupBirthDate);
+    const { error, alreadyRegistered } = await signUp(signupEmail, signupPassword, signupNombre, signupApellido, signupPhone, signupBirthDate);
+
+    if (alreadyRegistered) {
+      await handleAlreadyRegistered(signupEmail, signupPassword);
+      signupCaptchaRef.current?.reset();
+      setSignupCaptchaToken(null);
+      setLoading(false);
+      return;
+    }
 
     if (error) {
       const isDuplicate = error.message?.toLowerCase().includes('already registered') ||
@@ -162,7 +170,7 @@ export default function CustomerLogin() {
         error.message?.toLowerCase().includes('already been registered');
       
       if (isDuplicate) {
-        setSignupEmailExists(true);
+        await handleAlreadyRegistered(signupEmail, signupPassword);
       } else {
         toast.error('Error al registrarse', {
           description: error.message,
@@ -181,6 +189,115 @@ export default function CustomerLogin() {
     }
 
     setLoading(false);
+  };
+
+  const showGenericExistsMessage = () => {
+    setSignupEmailExists(true);
+    toast.info('Ya existe una cuenta con este correo', {
+      description: 'Inicia sesión o restablece tu contraseña para continuar.',
+    });
+  };
+
+  const handleAlreadyRegistered = async (email: string, password: string) => {
+    // Snapshot y limpieza inmediata del slug para evitar auto-claim durante el login
+    const { slug, sessionId } = getAllianceAttribution();
+    if (slug) clearAllianceAttribution();
+
+    // Verificar identidad iniciando sesión con las credenciales que la persona acaba de escribir
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInError || !signInData.user) {
+      showGenericExistsMessage();
+      return;
+    }
+
+    // Sin slug de alianza en contexto: mensaje genérico
+    if (!slug) {
+      showGenericExistsMessage();
+      return;
+    }
+
+    // Buscar customer_id
+    const { data: customerRow } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('auth_user_id', signInData.user.id)
+      .maybeSingle();
+
+    if (!customerRow?.id) {
+      showGenericExistsMessage();
+      return;
+    }
+
+    const { data: offerData, error: offerError } = await supabase.rpc('get_alliance_join_offer' as any, {
+      _slug: slug,
+      _customer_id: customerRow.id,
+    });
+
+    const offer = Array.isArray(offerData) ? offerData[0] : offerData;
+
+    if (offerError || !offer || offer.reason === 'invalid_alliance') {
+      showGenericExistsMessage();
+      return;
+    }
+
+    const allianceName = offer.alliance_name || 'la alianza';
+
+    if (offer.reason === 'already_member') {
+      toast.info(`Ya formas parte de ${allianceName}`, {
+        description: 'Inicia sesión para ver tus beneficios.',
+      });
+      return;
+    }
+
+    if (offer.reason === 'already_in_other_alliance') {
+      toast.info('Ya perteneces a otra alianza', {
+        description: 'Ya perteneces a otra alianza dentro del Clan. Solo puedes mantener una alianza activa a la vez.',
+      });
+      return;
+    }
+
+    if (offer.eligible) {
+      // Restaurar temporalmente el slug por si el usuario acepta (para reutilizar sessionId consistente)
+      saveAllianceAttribution(slug);
+      setAllianceOffer({ slug, allianceName, customerId: customerRow.id });
+      return;
+    }
+
+    showGenericExistsMessage();
+  };
+
+  const handleConfirmAllianceJoin = async () => {
+    if (!allianceOffer) return;
+    setClaimingAlliance(true);
+    const sessionId = getAllianceSessionId();
+    const { data, error } = await supabase.rpc('claim_marketing_alliance_signup' as any, {
+      _slug: allianceOffer.slug,
+      _session_id: sessionId,
+      _customer_id: allianceOffer.customerId,
+    });
+
+    if (error || !data) {
+      toast.error('No pudimos activar la alianza', {
+        description: 'Intenta nuevamente en unos minutos.',
+      });
+      setClaimingAlliance(false);
+      return;
+    }
+
+    clearAllianceAttribution();
+    toast.success('Alianza forjada', {
+      description: `Ya tienes los beneficios de ${allianceOffer.allianceName} en tu cuenta.`,
+    });
+    setAllianceOffer(null);
+    setClaimingAlliance(false);
+    navigate('/');
+  };
+
+  const handleCancelAllianceJoin = () => {
+    clearAllianceAttribution();
+    setAllianceOffer(null);
+    showGenericExistsMessage();
   };
 
   const handleGoogleSignIn = async () => {
