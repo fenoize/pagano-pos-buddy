@@ -419,6 +419,11 @@ export default function PaymentModal({
   };
 
   const handleAddPayment = () => {
+    if (getRemainingBalance() === 0) {
+      toast.info('Monto cubierto', { description: 'El total de la venta ya fue cubierto al 100%' });
+      return;
+    }
+    
     const amount = parseFloat(currentAmount) || 0;
     const methodConfig = getCurrentMethodConfig();
     
