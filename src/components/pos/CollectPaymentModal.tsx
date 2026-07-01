@@ -190,6 +190,10 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   };
 
   const handleAddPayment = () => {
+    if (remaining === 0) {
+      toast.info('Monto cubierto', { description: 'El total del pedido ya fue cubierto al 100%' });
+      return;
+    }
     const entry = buildCurrentEntry();
     if (!entry) return;
     setPayments([...payments, entry]);
