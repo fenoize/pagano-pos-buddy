@@ -1298,6 +1298,8 @@ export default function NewSale() {
         manualDiscount={manualDiscount}
         onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
         onOpenCouponModal={() => setIsCouponModalOpen(true)}
+        onOpenBenefitsModal={() => setIsBenefitsModalOpen(true)}
+        hasAllianceBenefits={hasAllianceBenefits}
         subscriptionDiscountPercent={subscriptionDiscountPercent}
       />
 

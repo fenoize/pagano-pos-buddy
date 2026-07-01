@@ -38,6 +38,8 @@ interface PaymentModalProps {
   manualDiscount?: { type: 'percentage' | 'fixed'; value: number; amount: number } | null;
   onOpenCustomerModal?: () => void;
   onOpenCouponModal?: () => void;
+  onOpenBenefitsModal?: () => void;
+  hasAllianceBenefits?: boolean;
   subscriptionDiscountPercent?: number;
 }
 
@@ -206,6 +208,8 @@ export default function PaymentModal({
   manualDiscount,
   onOpenCustomerModal,
   onOpenCouponModal,
+  onOpenBenefitsModal,
+  hasAllianceBenefits = false,
   subscriptionDiscountPercent = 0
 }: PaymentModalProps) {
   const [payments, setPayments] = useState<SinglePayment[]>([]);
@@ -752,8 +756,8 @@ export default function PaymentModal({
           </div>
         </DialogHeader>
 
-        {/* Quick action buttons: Customer + Coupon */}
-        {(onOpenCustomerModal || onOpenCouponModal) && (
+        {/* Quick action buttons: Customer + Coupon + Beneficios */}
+        {(onOpenCustomerModal || onOpenCouponModal || (onOpenBenefitsModal && hasAllianceBenefits && customer.id)) && (
           <div className="px-6 pb-2 flex items-center gap-2 shrink-0 flex-wrap">
             {onOpenCustomerModal && (
               <Button 
@@ -782,6 +786,17 @@ export default function PaymentModal({
                 {appliedCoupons.length > 0 || manualDiscount
                   ? `${appliedCoupons.length > 0 ? `${appliedCoupons.length} Cupón${appliedCoupons.length > 1 ? 'es' : ''}` : 'Descuento'}`
                   : 'Añadir Cupón'}
+              </Button>
+            )}
+            {onOpenBenefitsModal && hasAllianceBenefits && customer.id && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-primary/40 text-primary hover:bg-primary/10"
+                onClick={onOpenBenefitsModal}
+              >
+                <Sparkles className="w-4 h-4" />
+                Beneficios
               </Button>
             )}
           </div>
