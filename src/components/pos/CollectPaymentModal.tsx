@@ -27,6 +27,7 @@ import {
   Bike,
   Plus,
   X,
+  CheckCircle,
 } from 'lucide-react';
 import { PendingPaymentOrder } from '@/hooks/usePendingPaymentOrders';
 import { formatCurrency } from '@/lib/utils';
