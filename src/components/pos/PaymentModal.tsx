@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { 
   CreditCard, Banknote, Smartphone, Coins, Bike, Plus, X,
-  AppWindow, Sparkles, DollarSign, Wallet, User, Ticket, ChevronDown, ChevronUp
+  AppWindow, Sparkles, DollarSign, Wallet, User, Ticket, ChevronDown, ChevronUp, CheckCircle
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription } from '@/components/ui/alert';
