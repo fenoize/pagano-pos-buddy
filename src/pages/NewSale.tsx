@@ -97,6 +97,7 @@ export default function NewSale() {
   // Alliance benefits detection (notifies cashier + auto-applies coupon)
   const {
     autoCoupon: allianceAutoCoupon,
+    allianceCoupons: allianceCouponsAll,
     freeDelivery: allianceFreeDelivery,
     hasAnyAvailable: hasAllianceBenefits,
   } = useCustomerAllianceBenefits({
@@ -1340,6 +1341,7 @@ export default function NewSale() {
             ? (allianceAutoCoupon.application.discount_products || 0) + (allianceAutoCoupon.application.discount_delivery || 0)
             : 0
         }
+        allianceCoupons={allianceCouponsAll}
         freeDelivery={allianceFreeDelivery}
         onChange={() => {
           // If cashier just disabled the auto-applied coupon, remove it
