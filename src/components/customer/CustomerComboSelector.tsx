@@ -652,8 +652,11 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                             key={variant.id}
                             className={`flex items-center justify-between py-3 ${
                               idx < availableVariants.length - 1 ? 'border-b border-border/40' : ''
-                            } ${count > 0 ? '' : canAdd ? 'cursor-pointer' : 'opacity-50'}`}
-                            onClick={() => canAdd && count === 0 && addVariantUnit(slotIndex, variant)}
+                            } ${(canAdd || (remaining === 0 && count === 0)) ? 'cursor-pointer hover:bg-accent/50' : ''}`}
+                            onClick={() => {
+                              if (canAdd && count === 0) addVariantUnit(slotIndex, variant);
+                              else if (!canAdd && count === 0 && remaining === 0) swapVariantUnit(slotIndex, variant);
+                            }}
                           >
                             <div className="flex items-center gap-3 flex-1 min-w-0">
                               {variant.variant?.image_url && (
