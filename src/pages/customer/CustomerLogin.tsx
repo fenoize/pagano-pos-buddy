@@ -758,6 +758,15 @@ export default function CustomerLogin() {
         initialData={getGoogleModalInitialData()}
         onComplete={completeProfile}
       />
+
+      {/* Modal de oferta de alianza para cuentas existentes */}
+      <AllianceJoinOfferModal
+        open={!!allianceOffer}
+        allianceName={allianceOffer?.allianceName || ''}
+        loading={claimingAlliance}
+        onConfirm={handleConfirmAllianceJoin}
+        onCancel={handleCancelAllianceJoin}
+      />
     </div>
   );
 }
