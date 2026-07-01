@@ -999,7 +999,7 @@ export default function PaymentModal({
               )}
 
               {/* Payment Details based on selected method */}
-              {currentMethod === 'efectivo' && (
+              {getRemainingBalance() > 0 && currentMethod === 'efectivo' && (
                 <div className="space-y-3">
                   <Label>Billetes Rápidos</Label>
                   <div className="grid grid-cols-3 gap-2">
