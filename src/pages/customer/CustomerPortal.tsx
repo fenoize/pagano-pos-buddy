@@ -264,6 +264,18 @@ export default function CustomerPortal() {
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium text-foreground">Puntos</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Info Puntos">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="customer-app max-w-[220px]">
+                        1 Punto = $100 en compras. Determinan tu rango en el Clan.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <span className="text-lg font-bold text-foreground">{puntos.toLocaleString('es-CL')}</span>
               </div>
