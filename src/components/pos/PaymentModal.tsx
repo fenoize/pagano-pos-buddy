@@ -788,6 +788,17 @@ export default function PaymentModal({
                   : 'Añadir Cupón'}
               </Button>
             )}
+            {onOpenBenefitsModal && hasAllianceBenefits && customer.id && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-primary/40 text-primary hover:bg-primary/10"
+                onClick={onOpenBenefitsModal}
+              >
+                <Sparkles className="w-4 h-4" />
+                Beneficios
+              </Button>
+            )}
           </div>
         )}
 
