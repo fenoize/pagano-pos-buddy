@@ -97,6 +97,7 @@ export default function NewSale() {
   // Alliance benefits detection (notifies cashier + auto-applies coupon)
   const {
     autoCoupon: allianceAutoCoupon,
+    allianceCoupons: allianceCouponsAll,
     freeDelivery: allianceFreeDelivery,
     hasAnyAvailable: hasAllianceBenefits,
   } = useCustomerAllianceBenefits({
