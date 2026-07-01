@@ -38,11 +38,12 @@ export const claimAllianceSignup = async (customerId: string) => {
 
   if (error) {
     console.error('Error claiming alliance signup:', error);
-    return false;
+    return false; // error de red — mantener slug para reintentar
   }
 
-  // Limpiar slug tras éxito para no reintentar en cada carga
-  if (data) clearAllianceAttribution();
+  // Respuesta definitiva del servidor (true = éxito, false = bloqueado/ya existe)
+  // En ambos casos limpiar slug — no tiene sentido seguir reintentando
+  clearAllianceAttribution();
   return Boolean(data);
 };
 

@@ -7,11 +7,13 @@ import { trackPromoView, trackPromoClick } from '@/hooks/usePromoAnalytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Flame, ShoppingBag, Award, QrCode, UtensilsCrossed, ArrowRight, RefreshCw } from 'lucide-react';
+import { Flame, ShoppingBag, Award, QrCode, UtensilsCrossed, ArrowRight, RefreshCw, Info } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PWAInstallPrompt } from '@/components/customer/PWAInstallPrompt';
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { CustomerQRModal } from '@/components/customer/CustomerQRModal';
+import { ClanOnboardingModal } from '@/components/customer/ClanOnboardingModal';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { toast } from 'sonner';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -226,7 +228,21 @@ export default function CustomerPortal() {
                   <Flame className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Runas</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground">Runas</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Info Runas">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="customer-app max-w-[220px]">
+                          1 Runa = $5.000 en compras. Canjeables por descuentos.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <p className="text-xl font-bold text-foreground">{runas.toLocaleString('es-CL')}</p>
                 </div>
               </div>
@@ -248,6 +264,18 @@ export default function CustomerPortal() {
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium text-foreground">Puntos</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Info Puntos">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="customer-app max-w-[220px]">
+                        1 Punto = $100 en compras. Determinan tu rango en el Clan.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <span className="text-lg font-bold text-foreground">{puntos.toLocaleString('es-CL')}</span>
               </div>
@@ -370,6 +398,9 @@ export default function CustomerPortal() {
         customerId={customer.id}
         customerName={customer.name || customer.nombres || undefined}
       />
+
+      {/* Onboarding primera vez */}
+      <ClanOnboardingModal />
     </div>
   );
 }
