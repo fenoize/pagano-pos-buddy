@@ -358,7 +358,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
               )}
 
               {/* Efectivo */}
-              {isEfectivo && (
+              {remaining > 0 && isEfectivo && (
                 <div className="space-y-2">
                   <Label htmlFor="cash">Con cuánto paga</Label>
                   <Input
@@ -380,7 +380,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
               )}
 
               {/* Aplicación sub-flow */}
-              {isApp && (
+              {remaining > 0 && isApp && (
                 <div className="space-y-3">
                   {!selectedAppChannel ? (
                     <div>
@@ -451,7 +451,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
               )}
 
               {/* Otros métodos: monto + opcional boleta/operación */}
-              {!isEfectivo && !isApp && currentMethod && (
+              {remaining > 0 && !isEfectivo && !isApp && currentMethod && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="amount">Monto {methodConfig?.display_name}</Label>
