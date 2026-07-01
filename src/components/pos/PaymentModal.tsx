@@ -473,6 +473,9 @@ export default function PaymentModal({
         toast.error("Error", { description: `Máximo ${maxRunasForRemaining} runas para cubrir el saldo restante (${formatPrice(remainingBalance)})` });
         return;
       }
+    }
+
+
 
     // For aplicacion sub-flow, require the channel + external order id
     if (currentMethod === 'aplicacion') {
