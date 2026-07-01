@@ -16,7 +16,7 @@ interface CustomerAuthContextType {
   customer: Customer | null;
   loading: boolean;
   needsProfileCompletion: boolean;
-  signUp: (email: string, password: string, nombre: string, apellido: string, phone?: string, birthDate?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, nombre: string, apellido: string, phone?: string, birthDate?: string) => Promise<{ error: Error | null; alreadyRegistered?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: (skipBrowserRedirect?: boolean) => Promise<{ error: Error | null; data?: { url: string } | null }>;
   signOut: () => Promise<void>;
@@ -134,6 +134,11 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
 
       if (error) throw error;
+
+      // Detectar caso "correo ya registrado": Supabase devuelve user con identities=[] y no envía correo.
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        return { error: null, alreadyRegistered: true };
+      }
 
       // Fallback: verificar si se creó el customer, si no, crearlo manualmente
       if (data.user) {
