@@ -8,7 +8,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
-import { LIAWidget } from "@/components/lia/LIAWidget";
+import { AteneaWidget } from "@/components/atenea/AteneaWidget";
 import { MobileNav } from "@/components/MobileNav";
 import { SEOHead } from "@/components/SEOHead";
 import { CashSessionTopBar } from "@/components/cash/CashSessionTopBar";
@@ -148,7 +148,7 @@ function LoadingFallback() {
           style={{ borderColor: '#cc2525' }}
         />
         <p style={{ color: isPosRoute ? 'hsl(220 9% 70%)' : 'hsl(var(--muted-foreground))' }}>
-          Cargando...
+          {isPosRoute ? 'Cargando el cuartel...' : 'Convocando al Clan...'}
         </p>
       </div>
     </div>
@@ -220,7 +220,7 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         {!(isKitchenRoute && isExpanded) && <MobileNav />}
-        <LIAWidget />
+        <AteneaWidget />
 
         
         {/* Push notification permission banner for staff */}

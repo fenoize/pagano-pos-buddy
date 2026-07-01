@@ -134,7 +134,7 @@ export function RequirePhoneModal() {
               Más tarde
             </Button>
             <Button type="submit" className="flex-1" disabled={saving}>
-              {saving ? 'Guardando…' : 'Actualizar'}
+              {saving ? 'Guardando…' : 'Guardar'}
             </Button>
           </div>
 
