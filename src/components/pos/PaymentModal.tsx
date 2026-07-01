@@ -38,6 +38,8 @@ interface PaymentModalProps {
   manualDiscount?: { type: 'percentage' | 'fixed'; value: number; amount: number } | null;
   onOpenCustomerModal?: () => void;
   onOpenCouponModal?: () => void;
+  onOpenBenefitsModal?: () => void;
+  hasAllianceBenefits?: boolean;
   subscriptionDiscountPercent?: number;
 }
 
