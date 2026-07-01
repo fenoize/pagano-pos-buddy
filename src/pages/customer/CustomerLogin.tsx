@@ -70,6 +70,10 @@ export default function CustomerLogin() {
   const [signupCaptchaToken, setSignupCaptchaToken] = useState<string | null>(null);
   const [signupEmailExists, setSignupEmailExists] = useState(false);
 
+  // Alliance join offer modal state
+  const [allianceOffer, setAllianceOffer] = useState<{ slug: string; allianceName: string; customerId: string } | null>(null);
+  const [claimingAlliance, setClaimingAlliance] = useState(false);
+
   // ReCAPTCHA refs
   const loginCaptchaRef = useRef<ReCAPTCHA>(null);
   const signupCaptchaRef = useRef<ReCAPTCHA>(null);
