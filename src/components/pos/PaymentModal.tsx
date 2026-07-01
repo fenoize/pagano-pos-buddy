@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { 
   CreditCard, Banknote, Smartphone, Coins, Bike, Plus, X,
-  AppWindow, Sparkles, DollarSign, Wallet, User, Ticket, ChevronDown, ChevronUp
+  AppWindow, Sparkles, DollarSign, Wallet, User, Ticket, ChevronDown, ChevronUp, CheckCircle
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -419,6 +419,11 @@ export default function PaymentModal({
   };
 
   const handleAddPayment = () => {
+    if (getRemainingBalance() === 0) {
+      toast.info('Monto cubierto', { description: 'El total de la venta ya fue cubierto al 100%' });
+      return;
+    }
+    
     const amount = parseFloat(currentAmount) || 0;
     const methodConfig = getCurrentMethodConfig();
     
@@ -963,10 +968,19 @@ export default function PaymentModal({
           {/* Payment Method Selection */}
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">Agregar método de pago</CardTitle>
+              <CardTitle className="text-base">
+                {getRemainingBalance() === 0 ? 'Pago completo' : 'Agregar método de pago'}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!isAppFlow && (
+              {getRemainingBalance() === 0 && (
+                <div className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 shrink-0" />
+                  <span className="text-sm font-medium">Monto total cubierto al 100%</span>
+                </div>
+              )}
+
+              {getRemainingBalance() > 0 && !isAppFlow && (
                 <div className="grid grid-cols-2 gap-2">
                   {paymentMethods.map((method) => {
                     const isApp = method.name === 'aplicacion';
@@ -990,7 +1004,7 @@ export default function PaymentModal({
               )}
 
               {/* Payment Details based on selected method */}
-              {currentMethod === 'efectivo' && (
+              {getRemainingBalance() > 0 && currentMethod === 'efectivo' && (
                 <div className="space-y-3">
                   <Label>Billetes Rápidos</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -1053,7 +1067,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'pos' && (
+              {getRemainingBalance() > 0 && currentMethod === 'pos' && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="pos">Monto POS</Label>
@@ -1077,7 +1091,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'transferencia' && (
+              {getRemainingBalance() > 0 && currentMethod === 'transferencia' && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="mp">Monto transferencia</Label>
@@ -1101,7 +1115,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'aplicacion' && (
+              {getRemainingBalance() > 0 && currentMethod === 'aplicacion' && (
                 <div className="space-y-3">
                   {!selectedAppChannel ? (
                     <div>
@@ -1179,7 +1193,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {!['efectivo', 'pos', 'transferencia', 'aplicacion', 'runas', 'pendiente', 'colacion', 'canje'].includes(currentMethod) && (
+              {getRemainingBalance() > 0 && !['efectivo', 'pos', 'transferencia', 'aplicacion', 'runas', 'pendiente', 'colacion', 'canje'].includes(currentMethod) && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor={`amount-${currentMethod}`}>Monto {getCurrentMethodConfig()?.display_name || currentMethod}</Label>
@@ -1218,7 +1232,7 @@ export default function PaymentModal({
 
 
 
-              {currentMethod === 'runas' && (
+              {getRemainingBalance() > 0 && currentMethod === 'runas' && (
                 <div className="space-y-3">
                   <div className="p-3 bg-primary/5 rounded-lg space-y-2">
                     <div className="flex items-center gap-2">
@@ -1259,7 +1273,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'pendiente' && (
+              {getRemainingBalance() > 0 && currentMethod === 'pendiente' && (
                 <div className="space-y-3">
                   <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
                     <Clock className="h-4 w-4 text-amber-600" />
@@ -1271,7 +1285,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {!isAppFlow && (
+              {getRemainingBalance() > 0 && !isAppFlow && (
                 <Button
                   type="button"
                   variant="secondary"

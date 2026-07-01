@@ -27,6 +27,7 @@ import {
   Bike,
   Plus,
   X,
+  CheckCircle,
 } from 'lucide-react';
 import { PendingPaymentOrder } from '@/hooks/usePendingPaymentOrders';
 import { formatCurrency } from '@/lib/utils';
@@ -189,6 +190,10 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   };
 
   const handleAddPayment = () => {
+    if (remaining === 0) {
+      toast.info('Monto cubierto', { description: 'El total del pedido ya fue cubierto al 100%' });
+      return;
+    }
     const entry = buildCurrentEntry();
     if (!entry) return;
     setPayments([...payments, entry]);
@@ -318,11 +323,22 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-base">
-                {payments.length > 0 ? 'Agregar otro método' : 'Método de pago'}
+                {remaining === 0
+                  ? 'Pago completo'
+                  : payments.length > 0
+                  ? 'Agregar otro método'
+                  : 'Método de pago'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!(isApp && selectedAppChannel) && (
+              {remaining === 0 && (
+                <div className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 shrink-0" />
+                  <span className="text-sm font-medium">Monto total cubierto al 100%</span>
+                </div>
+              )}
+
+              {remaining > 0 && !(isApp && selectedAppChannel) && (
                 <div className="grid grid-cols-2 gap-2">
                   {paymentMethods.map((m) => {
                     const isAppMethod = m.name === 'aplicacion';
@@ -346,7 +362,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
               )}
 
               {/* Efectivo */}
-              {isEfectivo && (
+              {remaining > 0 && isEfectivo && (
                 <div className="space-y-2">
                   <Label htmlFor="cash">Con cuánto paga</Label>
                   <Input
@@ -368,7 +384,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
               )}
 
               {/* Aplicación sub-flow */}
-              {isApp && (
+              {remaining > 0 && isApp && (
                 <div className="space-y-3">
                   {!selectedAppChannel ? (
                     <div>
@@ -439,7 +455,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
               )}
 
               {/* Otros métodos: monto + opcional boleta/operación */}
-              {!isEfectivo && !isApp && currentMethod && (
+              {remaining > 0 && !isEfectivo && !isApp && currentMethod && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="amount">Monto {methodConfig?.display_name}</Label>
