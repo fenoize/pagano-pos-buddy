@@ -3,12 +3,30 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.8";
- export const APP_BUILD_DATE = "2026-06-29";
+ export const APP_VERSION = "1.5.9";
+ export const APP_BUILD_DATE = "2026-07-01";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.5.9",
+     date: "2026-07-01",
+     changes: [
+       "Pagos mixtos: Runas pueden combinarse con otros métodos (se calcula automáticamente el saldo restante en dinero real)",
+       "Pagos mixtos: al cubrir el 100% del total, se bloquea la adición de más métodos y se muestra banner de confirmación",
+       "POS: nuevo botón 'Beneficios' (✨) en el modal de pago para revisar y activar cupones de alianza del cliente durante el cobro",
+       "Beneficios de cliente: se muestran todos los cupones de alianza vigentes con badges de estado ('Aplicable ahora' vs 'No aplicable') y motivo",
+       "Cupones: fix en edición de 'Días y horas de validez' (los cambios y eliminaciones ahora se persisten correctamente)",
+       "Registro cliente: detección de correo ya registrado (identities vacíos) con verificación por contraseña y oferta de unión a alianza vía modal dedicado",
+       "App Cliente: modal de onboarding de 3 slides al primer ingreso al portal (Clan, Runas, Puntos)",
+       "App Cliente: tooltips educativos en Runas ($5.000) y Puntos ($100) del portal",
+       "App Cliente: tema oscuro forzado en todos los modales (DialogContent con clase customer-app)",
+       "Atribución de alianzas: se limpia el slug de localStorage ante cualquier respuesta definitiva del servidor (evita reintentos infinitos)",
+       "Refactor: renombrado LIAWidget → AteneaWidget (archivos e importaciones); loading fallback contextual por ruta (POS vs Cliente)",
+       "Fix: URL de recuperación de contraseña corregida en CustomerAuthContext; botón 'Actualizar' → 'Guardar' en modal de teléfono obligatorio"
+     ]
+   },
    {
      version: "1.5.8",
      date: "2026-06-29",
