@@ -258,8 +258,6 @@ export default function CustomerLogin() {
     }
 
     if (offer.eligible) {
-      // Restaurar temporalmente el slug por si el usuario acepta (para reutilizar sessionId consistente)
-      saveAllianceAttribution(slug);
       setAllianceOffer({ slug, allianceName, customerId: customerRow.id });
       return;
     }
