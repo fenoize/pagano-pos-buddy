@@ -1341,6 +1341,7 @@ export default function NewSale() {
             ? (allianceAutoCoupon.application.discount_products || 0) + (allianceAutoCoupon.application.discount_delivery || 0)
             : 0
         }
+        allianceCoupons={allianceCouponsAll}
         freeDelivery={allianceFreeDelivery}
         onChange={() => {
           // If cashier just disabled the auto-applied coupon, remove it
