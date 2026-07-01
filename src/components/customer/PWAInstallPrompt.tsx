@@ -71,7 +71,7 @@ export function PWAInstallPrompt() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent 
-        className="sm:max-w-md bg-[#1c1e21] border-[#cc2525]/20 text-white"
+        className="customer-app sm:max-w-md bg-[#1c1e21] border-[#cc2525]/20 text-white"
         onInteractOutside={(e) => e.preventDefault()} // No cerrar con click fuera
       >
         {!showIOSInstructions ? (

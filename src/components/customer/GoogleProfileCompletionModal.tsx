@@ -74,7 +74,7 @@ export function GoogleProfileCompletionModal({
   return (
     <Dialog open={isOpen} onOpenChange={() => {/* No permitir cerrar */}}>
       <DialogContent 
-        className="sm:max-w-md"
+        className="customer-app sm:max-w-md"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >

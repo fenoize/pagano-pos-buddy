@@ -223,7 +223,7 @@ export default function MyOrders() {
 
       {/* Reorder Dialog */}
       <AlertDialog open={reorderDialogOpen} onOpenChange={setReorderDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="customer-app">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Reorden</AlertDialogTitle>
             <AlertDialogDescription>

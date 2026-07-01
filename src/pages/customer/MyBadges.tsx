@@ -75,7 +75,7 @@ export default function MyBadges() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="customer-app max-w-md">
           {selectedBadge && (
             <div className="flex flex-col items-center text-center space-y-4 p-4">
               <Trophy size={80} className="text-primary" />
