@@ -14,7 +14,9 @@ import { Loader2, Flame, Eye, EyeOff, Gift } from 'lucide-react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useCustomerPortalConfig } from '@/hooks/useCustomerPortalConfig';
 import { useGoogleSignInEnabled } from '@/hooks/useGoogleSignInEnabled';
-import { saveAllianceAttribution } from '@/lib/allianceAttribution';
+import { saveAllianceAttribution, getAllianceAttribution, clearAllianceAttribution, getAllianceSessionId } from '@/lib/allianceAttribution';
+import { supabase } from '@/integrations/supabase/client';
+import { AllianceJoinOfferModal } from '@/components/customer/AllianceJoinOfferModal';
 
 // Google icon component
 const GoogleIcon = () => (
