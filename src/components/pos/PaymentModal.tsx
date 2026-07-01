@@ -1062,7 +1062,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'pos' && (
+              {getRemainingBalance() > 0 && currentMethod === 'pos' && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="pos">Monto POS</Label>
@@ -1086,7 +1086,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'transferencia' && (
+              {getRemainingBalance() > 0 && currentMethod === 'transferencia' && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="mp">Monto transferencia</Label>
@@ -1110,7 +1110,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'aplicacion' && (
+              {getRemainingBalance() > 0 && currentMethod === 'aplicacion' && (
                 <div className="space-y-3">
                   {!selectedAppChannel ? (
                     <div>
@@ -1188,7 +1188,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {!['efectivo', 'pos', 'transferencia', 'aplicacion', 'runas', 'pendiente', 'colacion', 'canje'].includes(currentMethod) && (
+              {getRemainingBalance() > 0 && !['efectivo', 'pos', 'transferencia', 'aplicacion', 'runas', 'pendiente', 'colacion', 'canje'].includes(currentMethod) && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor={`amount-${currentMethod}`}>Monto {getCurrentMethodConfig()?.display_name || currentMethod}</Label>
@@ -1227,7 +1227,7 @@ export default function PaymentModal({
 
 
 
-              {currentMethod === 'runas' && (
+              {getRemainingBalance() > 0 && currentMethod === 'runas' && (
                 <div className="space-y-3">
                   <div className="p-3 bg-primary/5 rounded-lg space-y-2">
                     <div className="flex items-center gap-2">
@@ -1268,7 +1268,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {currentMethod === 'pendiente' && (
+              {getRemainingBalance() > 0 && currentMethod === 'pendiente' && (
                 <div className="space-y-3">
                   <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
                     <Clock className="h-4 w-4 text-amber-600" />
@@ -1280,7 +1280,7 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {!isAppFlow && (
+              {getRemainingBalance() > 0 && !isAppFlow && (
                 <Button
                   type="button"
                   variant="secondary"
