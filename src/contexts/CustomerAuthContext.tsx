@@ -135,6 +135,11 @@ export const CustomerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       if (error) throw error;
 
+      // Detectar caso "correo ya registrado": Supabase devuelve user con identities=[] y no envía correo.
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        return { error: null, alreadyRegistered: true };
+      }
+
       // Fallback: verificar si se creó el customer, si no, crearlo manualmente
       if (data.user) {
         try {
