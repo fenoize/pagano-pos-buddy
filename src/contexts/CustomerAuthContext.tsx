@@ -16,7 +16,7 @@ interface CustomerAuthContextType {
   customer: Customer | null;
   loading: boolean;
   needsProfileCompletion: boolean;
-  signUp: (email: string, password: string, nombre: string, apellido: string, phone?: string, birthDate?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, nombre: string, apellido: string, phone?: string, birthDate?: string) => Promise<{ error: Error | null; alreadyRegistered?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: (skipBrowserRedirect?: boolean) => Promise<{ error: Error | null; data?: { url: string } | null }>;
   signOut: () => Promise<void>;
