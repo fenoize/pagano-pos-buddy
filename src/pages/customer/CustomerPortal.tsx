@@ -228,7 +228,21 @@ export default function CustomerPortal() {
                   <Flame className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Runas</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground">Runas</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Info Runas">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="customer-app max-w-[220px]">
+                          1 Runa = $5.000 en compras. Canjeables por descuentos.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <p className="text-xl font-bold text-foreground">{runas.toLocaleString('es-CL')}</p>
                 </div>
               </div>
