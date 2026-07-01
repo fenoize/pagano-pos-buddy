@@ -291,13 +291,15 @@ export default function PaymentModal({
       setCurrentAmount(remainingBalance.toString());
     }
     
-    // Auto-llenar runas necesarias
+    // Auto-llenar runas: si el cliente no tiene suficientes, usar todas (pago parcial).
+    // Si tiene suficientes, usar sólo las necesarias para cubrir el saldo restante.
     if (currentMethod === 'runas' && remainingBalance > 0) {
       const runasNeeded = Math.ceil(remainingBalance / runaRewardValue);
-      
-      // Usar la cantidad necesaria, sin importar si se pasa
-      setCurrentRunas(runasNeeded.toString());
-      setCurrentAmount((runasNeeded * runaRewardValue).toString());
+      const runasAvailable = customer.cantidad_runas || 0;
+      const runasToUse = Math.min(runasNeeded, runasAvailable);
+
+      setCurrentRunas(runasToUse.toString());
+      setCurrentAmount((runasToUse * runaRewardValue).toString());
     }
     
     // Limpiar campos para Efectivo (mantener comportamiento actual)
@@ -462,14 +464,18 @@ export default function PaymentModal({
         return;
       }
       
-      // Validar que las runas cubran al menos el saldo restante
+      // Permitir pago parcial con runas: el saldo restante se cobrará con otros métodos.
+      // Sólo evitar sobrepago (más runas de las necesarias para cubrir el saldo restante).
       const runasValue = runasNum * runaRewardValue;
       const remainingBalance = getRemainingBalance();
-      if (runasValue < remainingBalance) {
-        toast.error("Error", { description: `Se necesitan al menos ${Math.ceil(remainingBalance / runaRewardValue)} runas para cubrir el saldo restante` });
+      const maxRunasForRemaining = Math.ceil(remainingBalance / runaRewardValue);
+      if (runasNum > maxRunasForRemaining && remainingBalance > 0) {
+        toast.error("Error", { description: `Máximo ${maxRunasForRemaining} runas para cubrir el saldo restante (${formatPrice(remainingBalance)})` });
         return;
       }
     }
+
+
 
     // For aplicacion sub-flow, require the channel + external order id
     if (currentMethod === 'aplicacion') {
