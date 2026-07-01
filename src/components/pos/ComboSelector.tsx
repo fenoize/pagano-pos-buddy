@@ -1072,8 +1072,11 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
                                 return (
                                   <Card
                                     key={variant.id}
-                                    className={`transition-all ${count > 0 ? 'ring-2 ring-primary bg-primary/5' : ''} ${canAdd ? 'cursor-pointer hover:bg-accent/50' : count === 0 ? 'opacity-50' : ''}`}
-                                    onClick={() => canAdd && addVariantUnit(index, variant)}
+                                    className={`transition-all ${count > 0 ? 'ring-2 ring-primary bg-primary/5' : ''} ${(canAdd || (remaining === 0 && count === 0)) ? 'cursor-pointer hover:bg-accent/50' : ''}`}
+                                    onClick={() => {
+                                      if (canAdd) addVariantUnit(index, variant);
+                                      else if (remaining === 0 && count === 0) swapVariantUnit(index, variant);
+                                    }}
                                   >
                                     <CardContent className="p-2">
                                       <div className="text-center space-y-1">
