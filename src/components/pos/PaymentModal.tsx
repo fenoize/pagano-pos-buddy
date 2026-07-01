@@ -291,13 +291,15 @@ export default function PaymentModal({
       setCurrentAmount(remainingBalance.toString());
     }
     
-    // Auto-llenar runas necesarias
+    // Auto-llenar runas: si el cliente no tiene suficientes, usar todas (pago parcial).
+    // Si tiene suficientes, usar sólo las necesarias para cubrir el saldo restante.
     if (currentMethod === 'runas' && remainingBalance > 0) {
       const runasNeeded = Math.ceil(remainingBalance / runaRewardValue);
-      
-      // Usar la cantidad necesaria, sin importar si se pasa
-      setCurrentRunas(runasNeeded.toString());
-      setCurrentAmount((runasNeeded * runaRewardValue).toString());
+      const runasAvailable = customer.cantidad_runas || 0;
+      const runasToUse = Math.min(runasNeeded, runasAvailable);
+
+      setCurrentRunas(runasToUse.toString());
+      setCurrentAmount((runasToUse * runaRewardValue).toString());
     }
     
     // Limpiar campos para Efectivo (mantener comportamiento actual)
