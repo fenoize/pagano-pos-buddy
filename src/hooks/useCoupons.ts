@@ -198,10 +198,35 @@ export const useCoupons = () => {
         ...couponFields
       } = couponData as any;
 
-      const updatePayload = {
+      const rawPayload: Record<string, any> = {
         ...couponFields,
         code: couponData.code?.toUpperCase(),
       };
+
+      // Convertir undefined → null para que PostgREST realmente actualice
+      // (undefined es ignorado por supabase-js y no limpia el valor en DB).
+      const nullableFields = [
+        'time_windows',
+        'date_start',
+        'date_end',
+        'min_spend',
+        'max_spend',
+        'usage_limit_total',
+        'usage_limit_per_customer',
+        'roles_allowed',
+        'delivery_mode',
+        'delivery_amount',
+        'commission_type',
+        'commission_value',
+        'commission_contact',
+        'description',
+      ];
+      const updatePayload: Record<string, any> = { ...rawPayload };
+      for (const key of nullableFields) {
+        if (key in rawPayload && rawPayload[key] === undefined) {
+          updatePayload[key] = null;
+        }
+      }
 
       console.log('[updateCoupon] payload', { id, updatePayload });
 
