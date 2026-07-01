@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 interface Msg { role: 'user' | 'assistant'; content: string; }
 
-export function LIAWidget() {
+export function AteneaWidget() {
   const { user } = useAuthContext();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
