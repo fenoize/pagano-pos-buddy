@@ -208,6 +208,8 @@ export default function PaymentModal({
   manualDiscount,
   onOpenCustomerModal,
   onOpenCouponModal,
+  onOpenBenefitsModal,
+  hasAllianceBenefits = false,
   subscriptionDiscountPercent = 0
 }: PaymentModalProps) {
   const [payments, setPayments] = useState<SinglePayment[]>([]);
