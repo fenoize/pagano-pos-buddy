@@ -28,8 +28,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { UserPlus, Search, Edit, Trash2, Key, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Search, Edit, Trash2, Key, Eye, EyeOff, Mail } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { InviteUserDialog } from '@/components/users/InviteUserDialog';
 import { User, AppRole } from '@/types';
 import { UserForm } from '@/components/users/UserForm';
 import { PasswordModal } from '@/components/users/PasswordModal';
@@ -44,6 +45,7 @@ export default function Users() {
   const [roleFilter, setRoleFilter] = useState<AppRole | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [showForm, setShowForm] = useState(false);
+  const [showInviteForm, setShowInviteForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteDialogUser, setDeleteDialogUser] = useState<User | null>(null);
   const [passwordModalUser, setPasswordModalUser] = useState<User | null>(null);
@@ -167,10 +169,16 @@ export default function Users() {
                 {filteredUsers.length} de {users.length} usuarios
               </CardDescription>
             </div>
-            <Button onClick={handleCreateUser}>
-              <UserPlus className="w-4 h-4 mr-2" />
-              Crear Usuario
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowInviteForm(true)}>
+                <Mail className="w-4 h-4 mr-2" />
+                Invitar Usuario
+              </Button>
+              <Button onClick={handleCreateUser}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Crear Usuario
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -331,6 +339,12 @@ export default function Users() {
         onClose={() => setShowForm(false)}
         onSuccess={handleFormSuccess}
         editingUser={editingUser}
+      />
+
+      <InviteUserDialog
+        open={showInviteForm}
+        onOpenChange={setShowInviteForm}
+        currentUser={currentUser}
       />
 
       {/* Password Modal */}
