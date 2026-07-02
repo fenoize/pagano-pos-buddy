@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Coins, CreditCard, Download, X, Shield, FileText, FileSpreadsheet, Tag, Crown, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Coins, CreditCard, Download, X, Shield, FileText, FileSpreadsheet, Tag, Crown, ArrowUp, ArrowDown, ArrowUpDown, Mail } from "lucide-react";
+import { useAuthContext } from '@/contexts/AuthContext';
+import { InviteCustomerDialog } from '@/components/clientes/InviteCustomerDialog';
 import { useRunasConfig } from '@/hooks/useRunasConfig';
 import { useCustomerTags } from '@/hooks/useCustomerTags';
 import { Button } from "@/components/ui/button";
@@ -31,6 +33,8 @@ import CustomerTagChips from '@/components/clientes/CustomerTagChips';
 import CustomerTagsManager from '@/components/clientes/CustomerTagsManager';
 
 export default function Clientes() {
+  const { user: currentUser } = useAuthContext();
+  const [showInviteCustomerDialog, setShowInviteCustomerDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
@@ -226,10 +230,16 @@ export default function Clientes() {
               </DropdownMenuContent>
             </DropdownMenu>
             {canManageCustomers && (
-              <Button onClick={() => setIsNewCustomerModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nuevo Cliente
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowInviteCustomerDialog(true)}>
+                  <Mail className="w-4 h-4 mr-2" />
+                  Invitar Cliente
+                </Button>
+                <Button onClick={() => setIsNewCustomerModalOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nuevo Cliente
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -844,6 +854,12 @@ export default function Clientes() {
           setSelectedCustomerForPassword(null);
         }}
         onAuthUpdated={() => fetchCustomers(getActiveFilters(), currentPage, pageSize)}
+      />
+
+      <InviteCustomerDialog
+        open={showInviteCustomerDialog}
+        onOpenChange={setShowInviteCustomerDialog}
+        currentUser={currentUser}
       />
     </div>
   );

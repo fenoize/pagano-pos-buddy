@@ -1422,6 +1422,33 @@ export type Database = {
           },
         ]
       }
+      customer_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by_username: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by_username?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by_username?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       customer_level_definitions: {
         Row: {
           benefits: Json | null
@@ -8231,6 +8258,10 @@ export type Database = {
           id: string
           name: string
         }[]
+      }
+      log_customer_invitation: {
+        Args: { p_email: string; p_invited_by: string }
+        Returns: string
       }
       log_user_invitation: {
         Args: { p_email: string; p_invited_by: string; p_role: string }
