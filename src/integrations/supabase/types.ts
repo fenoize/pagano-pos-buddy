@@ -7127,6 +7127,36 @@ export type Database = {
           },
         ]
       }
+      user_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by_username: string | null
+          role: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by_username?: string | null
+          role?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by_username?: string | null
+          role?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -8201,6 +8231,10 @@ export type Database = {
           id: string
           name: string
         }[]
+      }
+      log_user_invitation: {
+        Args: { p_email: string; p_invited_by: string; p_role: string }
+        Returns: string
       }
       manage_loyalty_campaign:
         | {
