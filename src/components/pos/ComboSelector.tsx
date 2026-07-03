@@ -635,10 +635,13 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         const def = g.options.find(o => o.is_default) || g.options[0];
         if (def) defaults[g.group_id] = def.id;
       });
+      const newSlotGroups = { ...slotGroupSelections };
       if (Object.keys(defaults).length > 0) {
-        setSlotGroupSelections(prev => ({ ...prev, [slotIndex]: defaults }));
+        newSlotGroups[slotIndex] = defaults;
+        setSlotGroupSelections(newSlotGroups);
       } else {
-        setSlotGroupSelections(prev => { const next = { ...prev }; delete next[slotIndex]; return next; });
+        delete newSlotGroups[slotIndex];
+        setSlotGroupSelections(newSlotGroups);
       }
 
       // Filter by group if applicable
@@ -650,7 +653,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       updateSelection(slotIndex, {
         selectedProduct: product,
         selectedVariant: defaultVariant
-      });
+      }, newSlotGroups);
+
     }
   };
 
