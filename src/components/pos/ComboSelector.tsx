@@ -65,6 +65,51 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const isInitialized = useRef(false);
   const lastProductId = useRef<string | null>(null);
 
+  // Build variant_group_selections (proteína/etc) for a single slot so it can be persisted
+  // into the order and displayed in KDS/Sales/Cart.
+  const buildGroupSelectionsForSlot = (
+    slotIndex: number,
+    selection: ComboItemSelection,
+    slotGroupsOverride?: Record<number, Record<string, string>>,
+    groupsMapOverride?: Record<string, VariantGroupWithOptions[]>,
+  ) => {
+    const productId = selection.selectedProduct?.id;
+    if (!productId) return [];
+    const groupsMap = groupsMapOverride || productVariantGroups;
+    const slotGroups = slotGroupsOverride || slotGroupSelections;
+    const groups = groupsMap[productId] || [];
+    const selMap = slotGroups[slotIndex] || {};
+    return groups
+      .map((g) => {
+        const optId = selMap[g.group_id];
+        const opt =
+          g.options.find((o) => o.id === optId) ||
+          g.options.find((o) => o.is_default) ||
+          g.options[0];
+        if (!opt) return null;
+        return {
+          group_id: g.group_id,
+          group_name: g.group_name,
+          option_id: opt.id,
+          option_name: opt.name,
+        };
+      })
+      .filter(Boolean) as Array<{ group_id: string; group_name: string; option_id: string; option_name: string }>;
+  };
+
+  const notifyItems = (
+    sels: ComboItemSelection[],
+    slotGroupsOverride?: Record<number, Record<string, string>>,
+    groupsMapOverride?: Record<string, VariantGroupWithOptions[]>,
+  ) => {
+    const enriched = sels.map((sel, idx) => ({
+      ...sel,
+      variant_group_selections: buildGroupSelectionsForSlot(idx, sel, slotGroupsOverride, groupsMapOverride),
+    }));
+    onComboItemsChange(enriched as any);
+  };
+
+
   useEffect(() => {
     // Reset if product changes
     if (product.id !== lastProductId.current) {
@@ -117,7 +162,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       setSelections(transformedSelections);
       const total = calculateComboTotalFromSelections(transformedSelections, comboConfig, productExtras, productVariants);
       onComboTotalChange(total);
-      onComboItemsChange(transformedSelections);
+      notifyItems(transformedSelections);
     }
   }, [initialSelections?.length]);
 
@@ -233,9 +278,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               return await fetchProductVariantGroups(selectedProductIds);
             })();
         
-        // Initialize default group selections per slot and re-resolve variants
+        let defaultSlotGroups: Record<number, Record<string, string>> = {};
         if (groupsMap) {
-          const defaultSlotGroups: Record<number, Record<string, string>> = {};
           computedSelections.forEach((sel, idx) => {
             if (sel.selectedProduct?.id && groupsMap[sel.selectedProduct.id]) {
               const defaults: Record<string, string> = {};
@@ -255,7 +299,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         // Notify parent immediately with computed selections
         const total = calculateComboTotalFromSelections(computedSelections, preloadedComboData.config, preloadedComboData.productExtras, preloadedComboData.productVariants);
         onComboTotalChange(total);
-        onComboItemsChange(computedSelections);
+        notifyItems(computedSelections, defaultSlotGroups, groupsMap as any);
+
 
         setLoading(false);
         return;
@@ -517,21 +562,27 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const filterVariantsByGroup = (variants: ProductVariantOption[], _groupSelections: Record<string, string>) => variants;
 
   const handleSlotGroupOptionChange = (slotIndex: number, groupId: string, optionId: string) => {
-    const newSelections = { ...slotGroupSelections };
-    newSelections[slotIndex] = { ...(newSelections[slotIndex] || {}), [groupId]: optionId };
-    setSlotGroupSelections(newSelections);
+    const newSlotGroups = { ...slotGroupSelections };
+    newSlotGroups[slotIndex] = { ...(newSlotGroups[slotIndex] || {}), [groupId]: optionId };
+    setSlotGroupSelections(newSlotGroups);
 
     // Re-filter variants for this slot and update selected variant
     const selection = selections[slotIndex];
-    if (!selection?.selectedProduct) return;
+    if (!selection?.selectedProduct) {
+      // Still notify parent so the group change propagates to KDS/cart
+      notifyItems(selections, newSlotGroups);
+      return;
+    }
     const allVariants = productVariants[selection.selectedProduct.id!] || [];
     const categoryFiltered = allVariants.filter(v => v.variant?.category_id === selection.comboSlot.category_id);
-    const filtered = filterVariantsByGroup(categoryFiltered, newSelections[slotIndex]);
-    
+    const filtered = filterVariantsByGroup(categoryFiltered, newSlotGroups[slotIndex]);
+
     if (filtered.length > 0) {
       const currentName = selection.selectedVariant?.variant?.name;
       const sameNameVariant = filtered.find(v => v.variant?.name === currentName);
-      updateSelection(slotIndex, { selectedVariant: sameNameVariant || filtered.find(v => v.is_default) || filtered[0] });
+      updateSelection(slotIndex, { selectedVariant: sameNameVariant || filtered.find(v => v.is_default) || filtered[0] }, newSlotGroups);
+    } else {
+      notifyItems(selections, newSlotGroups);
     }
   };
 
@@ -544,7 +595,11 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     }
   }, [selections, productExtras, comboConfig]);
 
-  const updateSelection = (slotIndex: number, updates: Partial<ComboItemSelection>) => {
+  const updateSelection = (
+    slotIndex: number,
+    updates: Partial<ComboItemSelection>,
+    slotGroupsOverride?: Record<number, Record<string, string>>,
+  ) => {
     const newSelections = selections.map((selection, index) =>
     index === slotIndex ?
     { ...selection, ...updates } :
@@ -555,8 +610,9 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
     // Notify parent of changes
     const total = calculateComboTotal();
     onComboTotalChange(total);
-    onComboItemsChange(newSelections);
+    notifyItems(newSelections, slotGroupsOverride);
   };
+
 
   const selectProduct = async (slotIndex: number, productId: string) => {
     const selection = selections[slotIndex];
@@ -579,10 +635,13 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         const def = g.options.find(o => o.is_default) || g.options[0];
         if (def) defaults[g.group_id] = def.id;
       });
+      const newSlotGroups = { ...slotGroupSelections };
       if (Object.keys(defaults).length > 0) {
-        setSlotGroupSelections(prev => ({ ...prev, [slotIndex]: defaults }));
+        newSlotGroups[slotIndex] = defaults;
+        setSlotGroupSelections(newSlotGroups);
       } else {
-        setSlotGroupSelections(prev => { const next = { ...prev }; delete next[slotIndex]; return next; });
+        delete newSlotGroups[slotIndex];
+        setSlotGroupSelections(newSlotGroups);
       }
 
       // Filter by group if applicable
@@ -594,7 +653,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       updateSelection(slotIndex, {
         selectedProduct: product,
         selectedVariant: defaultVariant
-      });
+      }, newSlotGroups);
+
     }
   };
 
