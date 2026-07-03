@@ -278,9 +278,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
               return await fetchProductVariantGroups(selectedProductIds);
             })();
         
-        // Initialize default group selections per slot and re-resolve variants
+        let defaultSlotGroups: Record<number, Record<string, string>> = {};
         if (groupsMap) {
-          const defaultSlotGroups: Record<number, Record<string, string>> = {};
           computedSelections.forEach((sel, idx) => {
             if (sel.selectedProduct?.id && groupsMap[sel.selectedProduct.id]) {
               const defaults: Record<string, string> = {};
@@ -300,7 +299,8 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
         // Notify parent immediately with computed selections
         const total = calculateComboTotalFromSelections(computedSelections, preloadedComboData.config, preloadedComboData.productExtras, preloadedComboData.productVariants);
         onComboTotalChange(total);
-        onComboItemsChange(computedSelections);
+        notifyItems(computedSelections, defaultSlotGroups, groupsMap as any);
+
 
         setLoading(false);
         return;
