@@ -162,7 +162,7 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
       setSelections(transformedSelections);
       const total = calculateComboTotalFromSelections(transformedSelections, comboConfig, productExtras, productVariants);
       onComboTotalChange(total);
-      onComboItemsChange(transformedSelections);
+      notifyItems(transformedSelections);
     }
   }, [initialSelections?.length]);
 
