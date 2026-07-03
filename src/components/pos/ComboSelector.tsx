@@ -65,6 +65,51 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
   const isInitialized = useRef(false);
   const lastProductId = useRef<string | null>(null);
 
+  // Build variant_group_selections (proteína/etc) for a single slot so it can be persisted
+  // into the order and displayed in KDS/Sales/Cart.
+  const buildGroupSelectionsForSlot = (
+    slotIndex: number,
+    selection: ComboItemSelection,
+    slotGroupsOverride?: Record<number, Record<string, string>>,
+    groupsMapOverride?: Record<string, VariantGroupWithOptions[]>,
+  ) => {
+    const productId = selection.selectedProduct?.id;
+    if (!productId) return [];
+    const groupsMap = groupsMapOverride || productVariantGroups;
+    const slotGroups = slotGroupsOverride || slotGroupSelections;
+    const groups = groupsMap[productId] || [];
+    const selMap = slotGroups[slotIndex] || {};
+    return groups
+      .map((g) => {
+        const optId = selMap[g.group_id];
+        const opt =
+          g.options.find((o) => o.id === optId) ||
+          g.options.find((o) => o.is_default) ||
+          g.options[0];
+        if (!opt) return null;
+        return {
+          group_id: g.group_id,
+          group_name: g.group_name,
+          option_id: opt.id,
+          option_name: opt.name,
+        };
+      })
+      .filter(Boolean) as Array<{ group_id: string; group_name: string; option_id: string; option_name: string }>;
+  };
+
+  const notifyItems = (
+    sels: ComboItemSelection[],
+    slotGroupsOverride?: Record<number, Record<string, string>>,
+    groupsMapOverride?: Record<string, VariantGroupWithOptions[]>,
+  ) => {
+    const enriched = sels.map((sel, idx) => ({
+      ...sel,
+      variant_group_selections: buildGroupSelectionsForSlot(idx, sel, slotGroupsOverride, groupsMapOverride),
+    }));
+    onComboItemsChange(enriched as any);
+  };
+
+
   useEffect(() => {
     // Reset if product changes
     if (product.id !== lastProductId.current) {
