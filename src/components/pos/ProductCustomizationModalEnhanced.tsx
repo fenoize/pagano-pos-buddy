@@ -374,9 +374,12 @@ export function ProductCustomizationModalEnhanced({
         category: preloadedComboData?.categories?.find((c: any) => c.id === selection.comboSlot.category_id)
       };
 
-      // Modelo ortogonal: las selecciones de grupo (proteína) se manejan aparte de la variante (tamaño).
-      // Si en el futuro se necesita persistirlas en combos, se leerán desde slotGroupSelections.
-      const variantGroupSelections: any[] = [];
+      // Modelo ortogonal: las variantes (tamaño) se manejan aparte de los grupos (proteína).
+      // Persistimos variant_group_selections desde el selection para que el KDS/Ventas/Cart
+      // muestren la proteína elegida (Carne / Pollo / Vegetal, etc.).
+      const variantGroupSelections: any[] = Array.isArray((selection as any).variant_group_selections)
+        ? (selection as any).variant_group_selections
+        : [];
 
       return {
         ...selection,
@@ -387,6 +390,7 @@ export function ProductCustomizationModalEnhanced({
         // Preserve selectedVariants for multi-select slots
         selectedVariants: selection.selectedVariants,
       };
+
     }) : undefined;
 
     const orderItem: any = {
