@@ -11,15 +11,15 @@ let extrasCatalogPromise: Promise<Record<string, ExtraCatalogEntry>> | null = nu
 
 function loadExtrasCatalog(): Promise<Record<string, ExtraCatalogEntry>> {
   if (!extrasCatalogPromise) {
-    extrasCatalogPromise = supabase
-      .from('product_extras')
-      .select('id, name, price')
-      .then(({ data, error }) => {
-        if (error || !data) return {};
-        const map: Record<string, ExtraCatalogEntry> = {};
-        for (const e of data) map[e.id] = { name: e.name, price: Number(e.price) || 0 };
-        return map;
-      });
+    extrasCatalogPromise = (async () => {
+      const { data, error } = await supabase
+        .from('product_extras')
+        .select('id, name, price');
+      if (error || !data) return {};
+      const map: Record<string, ExtraCatalogEntry> = {};
+      for (const e of data) map[e.id] = { name: e.name, price: Number(e.price) || 0 };
+      return map;
+    })();
   }
   return extrasCatalogPromise;
 }
