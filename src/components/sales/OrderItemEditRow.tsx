@@ -1,8 +1,38 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { OrderItem } from '@/types';
 import { Trash2, Edit } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+// Module-level cache: single fetch shared across all rows
+type ExtraCatalogEntry = { name: string; price: number };
+let extrasCatalogPromise: Promise<Record<string, ExtraCatalogEntry>> | null = null;
+
+function loadExtrasCatalog(): Promise<Record<string, ExtraCatalogEntry>> {
+  if (!extrasCatalogPromise) {
+    extrasCatalogPromise = supabase
+      .from('product_extras')
+      .select('id, name, price')
+      .then(({ data, error }) => {
+        if (error || !data) return {};
+        const map: Record<string, ExtraCatalogEntry> = {};
+        for (const e of data) map[e.id] = { name: e.name, price: Number(e.price) || 0 };
+        return map;
+      });
+  }
+  return extrasCatalogPromise;
+}
+
+function useExtrasCatalog() {
+  const [catalog, setCatalog] = useState<Record<string, ExtraCatalogEntry>>({});
+  useEffect(() => {
+    let alive = true;
+    loadExtrasCatalog().then((c) => { if (alive) setCatalog(c); });
+    return () => { alive = false; };
+  }, []);
+  return catalog;
+}
 
 interface OrderItemEditRowProps {
   item: OrderItem;
