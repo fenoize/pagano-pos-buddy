@@ -81,15 +81,28 @@ export function OrderItemEditRow({ item, index, isEditMode, onUpdate, onRemove }
                       {comboItem.selectedVariant?.variant?.name && ` - ${comboItem.selectedVariant.variant.name}`}
                     </div>
                     {comboItem.extras && (() => {
-                      const extrasArray = Array.isArray(comboItem.extras) 
-                        ? comboItem.extras 
-                        : Object.values(comboItem.extras).filter((e: any) => e);
-                      
-                      return extrasArray.length > 0 && (
+                      // Normalize extras to array of { name, quantity } regardless of stored shape:
+                      //  - Array of enriched objects: [{ id, name/label, price, quantity }]
+                      //  - Map from ExtrasModal: { [extraId]: quantity }
+                      let normalized: Array<{ name: string; quantity: number }> = [];
+                      if (Array.isArray(comboItem.extras)) {
+                        normalized = comboItem.extras
+                          .map((e: any) => ({
+                            name: e?.label || e?.name || extrasCatalog[e?.id]?.name || 'Extra',
+                            quantity: Number(e?.quantity) || 1,
+                          }));
+                      } else if (typeof comboItem.extras === 'object') {
+                        normalized = Object.entries(comboItem.extras)
+                          .filter(([, qty]) => Number(qty) > 0)
+                          .map(([id, qty]) => ({
+                            name: extrasCatalog[id]?.name || 'Extra',
+                            quantity: Number(qty) || 1,
+                          }));
+                      }
+
+                      return normalized.length > 0 && (
                         <div className="pl-2">
-                          Extras: {extrasArray.map((e: any) => 
-                            `${e.quantity || 1}x ${e.label || e.name}`
-                          ).join(', ')}
+                          Extras: {normalized.map((e) => `${e.quantity}x ${e.name}`).join(', ')}
                         </div>
                       );
                     })()}
