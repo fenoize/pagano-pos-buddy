@@ -43,6 +43,8 @@ interface OrderItemEditRowProps {
 }
 
 export function OrderItemEditRow({ item, index, isEditMode, onUpdate, onRemove }: OrderItemEditRowProps) {
+  const extrasCatalog = useExtrasCatalog();
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
