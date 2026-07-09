@@ -7663,6 +7663,10 @@ export type Database = {
         Args: { p_customer_id: string; p_order_id: string }
         Returns: Json
       }
+      accrue_runas_for_order: {
+        Args: { p_customer_id: string; p_order_id: string }
+        Returns: Json
+      }
       adjust_stock_quick: {
         Args: {
           p_current_stock: number
