@@ -9,6 +9,7 @@ import { es } from 'date-fns/locale';
 import { getOrderDisplayName } from '@/lib/orderDisplay';
 import { OrderSourceBadge } from '@/components/sales/OrderSourceBadge';
 import { useSalesChannels } from '@/hooks/useSalesChannels';
+import { useExtrasCatalog } from '@/hooks/useExtrasCatalog';
 
 function ExtraChip({ quantity, label }: { quantity: number; label: string }) {
   return (
