@@ -9,6 +9,7 @@ import { es } from 'date-fns/locale';
 import { getOrderDisplayName } from '@/lib/orderDisplay';
 import { OrderSourceBadge } from '@/components/sales/OrderSourceBadge';
 import { useSalesChannels } from '@/hooks/useSalesChannels';
+import { useExtrasCatalog } from '@/hooks/useExtrasCatalog';
 
 function ExtraChip({ quantity, label }: { quantity: number; label: string }) {
   return (
@@ -62,6 +63,7 @@ interface OrderCardProps {
 export function OrderCard({ order, config, onStatusChange, compact = false, isUpdating = false }: OrderCardProps) {
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
   const { channels } = useSalesChannels();
+  const extrasCatalog = useExtrasCatalog();
 
   useEffect(() => {
     const updateElapsedTime = () => {
@@ -270,20 +272,26 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
                               {comboItem.variant_group_selections.map((s: any) => s.option_name).join(' / ')}
                             </div>
                           )}
-                          {/* Combo item extras - handle both object and array */}
+                          {/* Combo item extras - normalize array shape OR {id: qty} map */}
                           {comboItem.extras && (() => {
-                            const extrasArray = Array.isArray(comboItem.extras) 
-                              ? comboItem.extras 
-                              : Object.values(comboItem.extras).filter((e: any) => e);
-                            
-                            return extrasArray.length > 0 && (
+                            let normalized: { name: string; quantity: number }[] = [];
+                            if (Array.isArray(comboItem.extras)) {
+                              normalized = comboItem.extras.map((e: any) => ({
+                                name: e?.label || e?.name || extrasCatalog[e?.id]?.name || 'Extra',
+                                quantity: Number(e?.quantity) || 1,
+                              }));
+                            } else if (typeof comboItem.extras === 'object') {
+                              normalized = Object.entries(comboItem.extras)
+                                .filter(([, qty]) => Number(qty) > 0)
+                                .map(([id, qty]) => ({
+                                  name: extrasCatalog[id]?.name || 'Extra',
+                                  quantity: Number(qty) || 1,
+                                }));
+                            }
+                            return normalized.length > 0 && (
                               <div className="ml-2 flex flex-wrap gap-[5px] pl-2 mt-1">
-                                {extrasArray.map((extra: any, ei: number) => (
-                                  <ExtraChip
-                                    key={ei}
-                                    quantity={extra.quantity || 1}
-                                    label={extra.label || extra.name}
-                                  />
+                                {normalized.map((extra, ei) => (
+                                  <ExtraChip key={ei} quantity={extra.quantity} label={extra.name} />
                                 ))}
                               </div>
                             );
