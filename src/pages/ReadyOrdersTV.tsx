@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { Maximize, Minimize, Volume2, VolumeX, RefreshCw, Settings, LogOut, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReadyOrders } from "@/hooks/useReadyOrders";
@@ -13,7 +13,7 @@ import { TVLayoutPromoOnly } from "@/components/tv/TVLayoutPromoOnly";
 import { TVConfigModal } from "@/components/tv/TVConfigModal";
 import { TVPreloader } from "@/components/tv/TVPreloader";
 import { cn } from "@/lib/utils";
-import { STORAGE_KEYS } from "@/lib/storageKeys";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { clearTVImageCache } from "@/lib/imageCache";
@@ -22,11 +22,13 @@ export default function ReadyOrdersTV() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { slug: urlSlug } = useParams<{ slug?: string }>();
 
-  // Resolve screenId: URL param > localStorage > undefined (will load default)
-  const urlScreenId = searchParams.get('screen') || undefined;
-  const storedScreenId = localStorage.getItem(STORAGE_KEYS.TV_SCREEN_ID) || undefined;
-  const screenId = urlScreenId || storedScreenId || undefined;
+  // Resolve screenId: URL path :slug > ?screen= query param > undefined (loads default)
+  // NOTE: Do NOT persist to localStorage — the screen must always be explicitly chosen
+  // via URL (bookmarkable slug) or default config.
+  const urlScreenId = urlSlug || searchParams.get('screen') || undefined;
+  const screenId = urlScreenId || undefined;
 
   // Resolve branchId: ?branch=<id> URL param > active branch in localStorage > null (all branches)
   const urlBranchId = searchParams.get('branch') || undefined;
@@ -80,14 +82,11 @@ export default function ReadyOrdersTV() {
     [promoContent]
   );
 
-  // Load saved config when available & persist screenId
+  // Load saved config when available (NO localStorage persistence — always requires
+  // explicit selection via URL slug or falls back to the default screen).
   useEffect(() => {
     if (savedConfig) {
       setLocalConfig(savedConfig);
-      // Persist screen ID to localStorage
-      if (savedConfig.id) {
-        localStorage.setItem(STORAGE_KEYS.TV_SCREEN_ID, savedConfig.id);
-      }
     }
   }, [savedConfig]);
 

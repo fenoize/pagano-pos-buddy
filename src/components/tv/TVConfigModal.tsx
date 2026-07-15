@@ -148,6 +148,7 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
       await updateConfig({
         id: currentConfig.id,
         name: currentConfig.name,
+        slug: currentConfig.slug,
         template: currentConfig.template,
         slider_interval_seconds: currentConfig.slider_interval_seconds,
         show_logo: currentConfig.show_logo,
@@ -182,9 +183,9 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
   };
 
   const copyScreenUrl = (config: TVScreenConfig) => {
-    const url = `${window.location.origin}/pos/pedido-listo?screen=${config.id}`;
+    const url = `${window.location.origin}/pos/pedido-listo/${config.slug}`;
     navigator.clipboard.writeText(url);
-    toast.success('URL copiada al portapapeles');
+    toast.success(`URL copiada: /pos/pedido-listo/${config.slug}`);
   };
 
   const handleAddContent = async (promotionId: string) => {
@@ -442,6 +443,25 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
               </div>
             </div>
 
+            {/* Slug (URL única) — sólo visible cuando existe una config cargada */}
+            {currentConfig?.id && (
+              <div className="space-y-2 pt-4 border-t">
+                <Label>Código de URL (slug)</Label>
+                <div className="flex gap-2 items-center">
+                  <span className="text-sm text-muted-foreground shrink-0">/pos/pedido-listo/</span>
+                  <Input
+                    value={currentConfig.slug || ''}
+                    onChange={(e) => onConfigChange({ ...currentConfig, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })}
+                    placeholder="pa1a2b3"
+                    className="font-mono"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sólo letras minúsculas y números. Guarda esta URL en tu navegador para abrir siempre esta pantalla.
+                </p>
+              </div>
+            )}
+
             {/* Botón para actualizar configuración existente */}
             {currentConfig?.id && (
               <div className="pt-4 border-t">
@@ -578,21 +598,26 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
               ) : (
                 configs.map((config) => (
                   <Card key={config.id} className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{config.name}</span>
-                        {config.is_default && (
-                          <Badge variant="secondary" className="text-xs">
-                            <Star className="w-3 h-3 mr-1" />
-                            Default
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium">{config.name}</span>
+                          {config.is_default && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Star className="w-3 h-3 mr-1" />
+                              Default
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-xs">
+                            {TEMPLATES.find(t => t.value === config.template)?.label}
                           </Badge>
-                        )}
-                        <Badge variant="outline" className="text-xs">
-                          {TEMPLATES.find(t => t.value === config.template)?.label}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {config.theme === 'dark' ? '🌙' : '☀️'}
-                        </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {config.theme === 'dark' ? '🌙' : '☀️'}
+                          </Badge>
+                        </div>
+                        <code className="text-xs text-muted-foreground truncate">
+                          /pos/pedido-listo/{config.slug}
+                        </code>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button

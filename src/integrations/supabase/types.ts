@@ -6979,6 +6979,7 @@ export type Database = {
           show_clock: boolean
           show_logo: boolean
           slider_interval_seconds: number
+          slug: string
           sound_enabled: boolean
           template: string
           theme: string | null
@@ -6997,6 +6998,7 @@ export type Database = {
           show_clock?: boolean
           show_logo?: boolean
           slider_interval_seconds?: number
+          slug?: string
           sound_enabled?: boolean
           template?: string
           theme?: string | null
@@ -7015,6 +7017,7 @@ export type Database = {
           show_clock?: boolean
           show_logo?: boolean
           slider_interval_seconds?: number
+          slug?: string
           sound_enabled?: boolean
           template?: string
           theme?: string | null
@@ -7890,6 +7893,7 @@ export type Database = {
       }
       generate_po_number: { Args: never; Returns: string }
       generate_simple_hash: { Args: { password: string }; Returns: string }
+      generate_tv_screen_slug: { Args: never; Returns: string }
       get_active_staff_user_id: { Args: never; Returns: string }
       get_active_suppliers: {
         Args: { p_user_id: string }

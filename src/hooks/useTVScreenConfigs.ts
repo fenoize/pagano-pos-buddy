@@ -13,6 +13,7 @@ export const TV_STATUS_OPTIONS = [
 export interface TVScreenConfig {
   id: string;
   name: string;
+  slug: string;
   template: 'full' | 'split_horizontal' | 'split_vertical' | 'promo_only';
   slider_interval_seconds: number;
   show_logo: boolean;
@@ -29,7 +30,7 @@ export interface TVScreenConfig {
   updated_at: string;
 }
 
-export type TVScreenConfigInput = Omit<TVScreenConfig, 'id' | 'created_at' | 'updated_at'>;
+export type TVScreenConfigInput = Omit<TVScreenConfig, 'id' | 'slug' | 'created_at' | 'updated_at'> & { slug?: string };
 
 export const useTVScreenConfigs = () => {
   const queryClient = useQueryClient();
@@ -157,16 +158,28 @@ export const useTVScreenConfig = (screenId?: string) => {
         return data as TVScreenConfig | null;
       }
 
-      // Buscar por ID o nombre
-      const { data: byId } = await configuredSupabase
+      // UUID vs slug detection
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(screenId);
+
+      if (isUuid) {
+        const { data: byId } = await configuredSupabase
+          .from('tv_screen_configs')
+          .select('*')
+          .eq('id', screenId)
+          .maybeSingle();
+        if (byId) return byId as TVScreenConfig;
+      }
+
+      // Buscar por slug (alfanumérico, e.g. pa1a2b3)
+      const { data: bySlug } = await configuredSupabase
         .from('tv_screen_configs')
         .select('*')
-        .eq('id', screenId)
+        .eq('slug', screenId.toLowerCase())
         .maybeSingle();
 
-      if (byId) return byId as TVScreenConfig;
+      if (bySlug) return bySlug as TVScreenConfig;
 
-      // Si no encuentra por ID, buscar por nombre
+      // Fallback: buscar por nombre
       const { data: byName } = await configuredSupabase
         .from('tv_screen_configs')
         .select('*')

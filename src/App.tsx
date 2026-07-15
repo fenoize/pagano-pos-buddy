@@ -441,6 +441,12 @@ const App = () => (
                   <ReadyOrdersTV />
                 </StaffProtectedRoute>
               } />
+
+              <Route path="/pos/pedido-listo/:slug" element={
+                <StaffProtectedRoute>
+                  <ReadyOrdersTV />
+                </StaffProtectedRoute>
+              } />
               
               <Route path="/pos/productos" element={
                 <StaffProtectedRoute>
