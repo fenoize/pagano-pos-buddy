@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { Maximize, Minimize, Volume2, VolumeX, RefreshCw, Settings, LogOut, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReadyOrders } from "@/hooks/useReadyOrders";
