@@ -13,6 +13,7 @@ export const TV_STATUS_OPTIONS = [
 export interface TVScreenConfig {
   id: string;
   name: string;
+  slug: string;
   template: 'full' | 'split_horizontal' | 'split_vertical' | 'promo_only';
   slider_interval_seconds: number;
   show_logo: boolean;
