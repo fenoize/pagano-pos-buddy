@@ -25,6 +25,7 @@
   const [modalOpen, setModalOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
+  const [soundKey, setSoundKey] = useState(0);
   // Track how many orders the cashier has already dismissed (minimized).
   // Auto-open the modal only when orders.length exceeds this threshold,
   // so minimizing keeps the modal closed until a NEW pending order arrives.
@@ -34,6 +35,14 @@
   if (dismissedCountRef.current > orders.length) {
     dismissedCountRef.current = orders.length;
   }
+
+  // Cuando el hook detecta un pedido nuevo → forzar remount del sonido
+  useEffect(() => {
+    if (newOrderArrived) {
+      setSoundKey(k => k + 1);
+      clearNewOrderFlag();
+    }
+  }, [newOrderArrived, clearNewOrderFlag]);
 
   // Auto-open modal whenever there are more pending orders than dismissed
   useEffect(() => {
@@ -89,9 +98,10 @@
      <>
        {/* Sound component */}
         <IncomingOrderSound
+          key={soundKey}
           enabled={soundEnabled}
           newOrderArrived={orders.length > 0}
-          onSoundPlayed={clearNewOrderFlag}
+          onSoundPlayed={() => {}}
           persistent
         />
  

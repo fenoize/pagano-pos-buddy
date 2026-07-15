@@ -1,4 +1,4 @@
- import { useState, useEffect, useCallback } from 'react';
+ import { useState, useEffect, useCallback, useRef } from 'react';
  import { supabase } from '@/integrations/supabase/client';
  import { Order, User, OrderItem } from '@/types';
  import { useCashSession } from './useCashSession';
@@ -70,6 +70,10 @@
    const { settings: deliverySettings } = useDeliverySettings();
   const { user } = useAuthContext();
 
+  const [newOrderArrived, setNewOrderArrived] = useState(false);
+  const lastAlertedCountRef = useRef(0);
+  const latestOrderCountRef = useRef(0);
+
   const canAcceptAppOrders = currentSession?.accept_app_orders === true;
   const deliveryAssignmentMode = deliverySettings?.assignment_mode || 'pool';
  
@@ -122,8 +126,16 @@
          items: Array.isArray(order.items) ? order.items : [],
          customer: order.customer || undefined
        }));
-       
-        setOrders(newOrders);
+      
+       setOrders(newOrders);
+       const newCount = newOrders.length;
+       latestOrderCountRef.current = newCount;
+       if (newCount > lastAlertedCountRef.current) {
+         setNewOrderArrived(true);
+       }
+       if (newCount < lastAlertedCountRef.current) {
+         lastAlertedCountRef.current = newCount;
+       }
      } catch (error) {
        console.error('Error fetching pending orders:', error);
      } finally {
@@ -211,11 +223,10 @@
      }
    }, [currentSession, user, orders, deliveryPersons, deliveryAssignmentMode, fetchPendingOrders]);
  
-    // Derived flag: true whenever there are pending orders
-    const newOrderArrived = orders.length > 0;
-    const clearNewOrderFlag = useCallback(() => {
-      // No-op: presence in orders array is the source of truth
-    }, []);
+     const clearNewOrderFlag = useCallback(() => {
+       setNewOrderArrived(false);
+       lastAlertedCountRef.current = latestOrderCountRef.current;
+     }, []);
  
    // Initial fetch
    useEffect(() => {
@@ -271,6 +282,7 @@
       // Only reconnect channel when tab returns from background (not on every focus)
       const handleVisibility = () => {
         if (document.visibilityState === 'visible') {
+          lastAlertedCountRef.current = 0;
           fetchPendingOrders();
           // Only recreate channel if it's not healthy
           if (channel) {
