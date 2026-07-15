@@ -126,8 +126,16 @@
          items: Array.isArray(order.items) ? order.items : [],
          customer: order.customer || undefined
        }));
-       
-        setOrders(newOrders);
+      
+       setOrders(newOrders);
+       const newCount = newOrders.length;
+       latestOrderCountRef.current = newCount;
+       if (newCount > lastAlertedCountRef.current) {
+         setNewOrderArrived(true);
+       }
+       if (newCount < lastAlertedCountRef.current) {
+         lastAlertedCountRef.current = newCount;
+       }
      } catch (error) {
        console.error('Error fetching pending orders:', error);
      } finally {
