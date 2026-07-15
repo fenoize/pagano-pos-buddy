@@ -148,6 +148,7 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
       await updateConfig({
         id: currentConfig.id,
         name: currentConfig.name,
+        slug: currentConfig.slug,
         template: currentConfig.template,
         slider_interval_seconds: currentConfig.slider_interval_seconds,
         show_logo: currentConfig.show_logo,
