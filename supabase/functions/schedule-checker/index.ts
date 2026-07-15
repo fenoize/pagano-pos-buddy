@@ -131,7 +131,15 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
 
-  const summary = { checked: 0, openedCount: 0, closedCount: 0, noShiftCount: 0, errors: 0 }
+  const summary = {
+    checked: 0,
+    openedCount: 0,
+    closedCount: 0,
+    noShiftCount: 0,
+    sessionsDisabled: 0,
+    sessionsEnabled: 0,
+    errors: 0,
+  }
 
   try {
     const { data: branches, error } = await supabase
@@ -151,64 +159,82 @@ serve(async (req) => {
         const today = hours[DAY_KEYS[weekdayIdx]]
         const prev = hours[DAY_KEYS[(weekdayIdx + 6) % 7]]
 
-        // APERTURA
+        // ── Determinar de forma DETERMINISTA si el local debe estar abierto ahora ──
+        // Considera horario del día actual (con posible cierre al día siguiente)
+        // y horario del día anterior con closes_next_day que aún no cerró.
+        let shouldBeOpen = false
+
         if (today && today.closed === false) {
           const openMin = toMin(today.open)
-          if (within3(openMin, currentMin)) {
-            // ¿Hay sesión de caja activa? closed_at IS NULL
-            const { data: session } = await supabase
-              .from('cash_sessions')
-              .select('id')
-              .eq('branch_id', branch.id)
-              .is('closed_at', null)
-              .limit(1)
-              .maybeSingle()
+          const closeMin = toMin(today.close)
+          if (today.closes_next_day === true) {
+            // Abre hoy y cierra mañana → desde openMin hasta fin del día
+            if (currentMin >= openMin) shouldBeOpen = true
+          } else {
+            // Mismo día: [open, close)
+            if (currentMin >= openMin && currentMin < closeMin) shouldBeOpen = true
+          }
+        }
 
-            if (session) {
-              if (!branch.accepts_online_orders) {
+        if (!shouldBeOpen && prev && prev.closed === false && prev.closes_next_day === true) {
+          // Ventana de cierre cruzado del día anterior: [00:00, close)
+          const closeMin = toMin(prev.close)
+          if (currentMin < closeMin) shouldBeOpen = true
+        }
+
+        // ── Reconciliar branches.accepts_online_orders ──
+        if (shouldBeOpen !== branch.accepts_online_orders) {
+          await supabase
+            .from('branches')
+            .update({ accepts_online_orders: shouldBeOpen })
+            .eq('id', branch.id)
+          if (shouldBeOpen) summary.openedCount++
+          else summary.closedCount++
+        }
+
+        // ── Reconciliar el "badge" por sesión de caja abierta ──
+        // Este es el flag real que consume la app cliente (cash_sessions.accept_app_orders).
+        const { data: openSessions } = await supabase
+          .from('cash_sessions')
+          .select('id, accept_app_orders')
+          .eq('branch_id', branch.id)
+          .is('closed_at', null)
+
+        if (shouldBeOpen) {
+          // En horario: activar el badge en sesiones que lo tengan en false
+          // (respeta desactivaciones manuales SOLO al cierre; al abrir el ciclo lo reactiva)
+          const openMin = today ? toMin(today.open) : -1
+          const isOpeningEdge = today && today.closed === false && within3(openMin, currentMin)
+
+          if (isOpeningEdge && (!openSessions || openSessions.length === 0)) {
+            await notifyNoShift(supabase, branch.name, today!.open)
+            summary.noShiftCount++
+          }
+
+          if (isOpeningEdge && openSessions) {
+            for (const s of openSessions) {
+              if (!s.accept_app_orders) {
                 await supabase
-                  .from('branches')
-                  .update({ accepts_online_orders: true })
-                  .eq('id', branch.id)
+                  .from('cash_sessions')
+                  .update({ accept_app_orders: true })
+                  .eq('id', s.id)
+                summary.sessionsEnabled++
               }
-              summary.openedCount++
-            } else {
-              await notifyNoShift(supabase, branch.name, today.open)
-              summary.noShiftCount++
             }
           }
-        }
-
-        // CIERRE MISMO DÍA
-        if (
-          today &&
-          today.closed === false &&
-          today.closes_next_day !== true &&
-          within3(toMin(today.close), currentMin)
-        ) {
-          if (branch.accepts_online_orders) {
-            await supabase
-              .from('branches')
-              .update({ accepts_online_orders: false })
-              .eq('id', branch.id)
+        } else {
+          // Fuera de horario: forzar badge en OFF para toda sesión abierta.
+          if (openSessions) {
+            for (const s of openSessions) {
+              if (s.accept_app_orders) {
+                await supabase
+                  .from('cash_sessions')
+                  .update({ accept_app_orders: false })
+                  .eq('id', s.id)
+                summary.sessionsDisabled++
+              }
+            }
           }
-          summary.closedCount++
-        }
-
-        // CIERRE CRUZADO (día anterior con closes_next_day)
-        if (
-          prev &&
-          prev.closed === false &&
-          prev.closes_next_day === true &&
-          within3(toMin(prev.close), currentMin)
-        ) {
-          if (branch.accepts_online_orders) {
-            await supabase
-              .from('branches')
-              .update({ accepts_online_orders: false })
-              .eq('id', branch.id)
-          }
-          summary.closedCount++
         }
       } catch (e) {
         summary.errors++
