@@ -223,11 +223,10 @@
      }
    }, [currentSession, user, orders, deliveryPersons, deliveryAssignmentMode, fetchPendingOrders]);
  
-    // Derived flag: true whenever there are pending orders
-    const newOrderArrived = orders.length > 0;
-    const clearNewOrderFlag = useCallback(() => {
-      // No-op: presence in orders array is the source of truth
-    }, []);
+     const clearNewOrderFlag = useCallback(() => {
+       setNewOrderArrived(false);
+       lastAlertedCountRef.current = latestOrderCountRef.current;
+     }, []);
  
    // Initial fetch
    useEffect(() => {
