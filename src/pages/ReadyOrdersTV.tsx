@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { Maximize, Minimize, Volume2, VolumeX, RefreshCw, Settings, LogOut, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
