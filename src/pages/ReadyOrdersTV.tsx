@@ -68,6 +68,9 @@ export default function ReadyOrdersTV() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showTopBar, setShowTopBar] = useState(false);
   const [preloaded, setPreloaded] = useState(false);
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+  const autoFullscreenAttempted = useRef(false);
+
 
   // Fetch promo content for preloading assets
   const { data: promoContent = [] } = useActiveTVScreenContent(screenId);
