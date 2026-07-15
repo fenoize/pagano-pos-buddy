@@ -443,7 +443,19 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
                   onCheckedChange={(v) => handleToggle('hide_header_fullscreen', v)}
                 />
               </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Pantalla completa automática</Label>
+                  <p className="text-sm text-muted-foreground">Al cargar la URL, entra automáticamente en pantalla completa (requiere un primer click del usuario por seguridad del navegador)</p>
+                </div>
+                <Switch
+                  checked={currentConfig?.auto_fullscreen ?? false}
+                  onCheckedChange={(v) => handleToggle('auto_fullscreen', v)}
+                />
+              </div>
             </div>
+
 
             {/* Slug (URL única) — sólo visible cuando existe una config cargada */}
             {currentConfig?.id && (
