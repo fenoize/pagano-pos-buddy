@@ -598,21 +598,26 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
               ) : (
                 configs.map((config) => (
                   <Card key={config.id} className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{config.name}</span>
-                        {config.is_default && (
-                          <Badge variant="secondary" className="text-xs">
-                            <Star className="w-3 h-3 mr-1" />
-                            Default
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium">{config.name}</span>
+                          {config.is_default && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Star className="w-3 h-3 mr-1" />
+                              Default
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-xs">
+                            {TEMPLATES.find(t => t.value === config.template)?.label}
                           </Badge>
-                        )}
-                        <Badge variant="outline" className="text-xs">
-                          {TEMPLATES.find(t => t.value === config.template)?.label}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {config.theme === 'dark' ? '🌙' : '☀️'}
-                        </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {config.theme === 'dark' ? '🌙' : '☀️'}
+                          </Badge>
+                        </div>
+                        <code className="text-xs text-muted-foreground truncate">
+                          /pos/pedido-listo/{config.slug}
+                        </code>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button
