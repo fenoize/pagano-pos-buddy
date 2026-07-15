@@ -122,6 +122,30 @@ export default function ReadyOrdersTV() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Auto fullscreen: si la config lo pide, intentar entrar en pantalla completa
+  // al terminar el preload. Si el navegador lo bloquea (requiere gesto), mostrar
+  // un overlay con un solo botón para entrar.
+  useEffect(() => {
+    if (!preloaded) return;
+    if (!localConfig.auto_fullscreen) return;
+    if (document.fullscreenElement) return;
+    if (autoFullscreenAttempted.current) return;
+    autoFullscreenAttempted.current = true;
+
+    document.documentElement.requestFullscreen()
+      .catch(() => setShowFullscreenPrompt(true));
+  }, [preloaded, localConfig.auto_fullscreen]);
+
+  const enterFullscreenFromPrompt = useCallback(() => {
+    document.documentElement.requestFullscreen()
+      .then(() => setShowFullscreenPrompt(false))
+      .catch((e) => {
+        console.error('No se pudo activar pantalla completa', e);
+        setShowFullscreenPrompt(false);
+      });
+  }, []);
+
+
   // Handle new orders - mark as recent for animation
   const handleNewOrder = useCallback((orderId: string) => {
     setRecentlyReady(prev => new Set(prev).add(orderId));
