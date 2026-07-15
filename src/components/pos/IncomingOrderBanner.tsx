@@ -98,9 +98,10 @@
      <>
        {/* Sound component */}
         <IncomingOrderSound
+          key={soundKey}
           enabled={soundEnabled}
           newOrderArrived={orders.length > 0}
-          onSoundPlayed={clearNewOrderFlag}
+          onSoundPlayed={() => {}}
           persistent
         />
  
