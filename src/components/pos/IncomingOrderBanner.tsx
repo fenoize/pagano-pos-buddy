@@ -36,6 +36,14 @@
     dismissedCountRef.current = orders.length;
   }
 
+  // Cuando el hook detecta un pedido nuevo → forzar remount del sonido
+  useEffect(() => {
+    if (newOrderArrived) {
+      setSoundKey(k => k + 1);
+      clearNewOrderFlag();
+    }
+  }, [newOrderArrived, clearNewOrderFlag]);
+
   // Auto-open modal whenever there are more pending orders than dismissed
   useEffect(() => {
     if (!canAcceptAppOrders) return;
