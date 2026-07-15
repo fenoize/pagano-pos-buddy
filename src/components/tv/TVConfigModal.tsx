@@ -182,9 +182,9 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
   };
 
   const copyScreenUrl = (config: TVScreenConfig) => {
-    const url = `${window.location.origin}/pos/pedido-listo?screen=${config.id}`;
+    const url = `${window.location.origin}/pos/pedido-listo/${config.slug}`;
     navigator.clipboard.writeText(url);
-    toast.success('URL copiada al portapapeles');
+    toast.success(`URL copiada: /pos/pedido-listo/${config.slug}`);
   };
 
   const handleAddContent = async (promotionId: string) => {
