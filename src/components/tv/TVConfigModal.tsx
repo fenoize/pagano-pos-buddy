@@ -443,6 +443,25 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
               </div>
             </div>
 
+            {/* Slug (URL única) — sólo visible cuando existe una config cargada */}
+            {currentConfig?.id && (
+              <div className="space-y-2 pt-4 border-t">
+                <Label>Código de URL (slug)</Label>
+                <div className="flex gap-2 items-center">
+                  <span className="text-sm text-muted-foreground shrink-0">/pos/pedido-listo/</span>
+                  <Input
+                    value={currentConfig.slug || ''}
+                    onChange={(e) => onConfigChange({ ...currentConfig, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })}
+                    placeholder="pa1a2b3"
+                    className="font-mono"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sólo letras minúsculas y números. Guarda esta URL en tu navegador para abrir siempre esta pantalla.
+                </p>
+              </div>
+            )}
+
             {/* Botón para actualizar configuración existente */}
             {currentConfig?.id && (
               <div className="pt-4 border-t">
