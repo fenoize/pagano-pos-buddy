@@ -24,6 +24,7 @@ export interface TVScreenConfig {
   font_size: 'small' | 'medium' | 'large';
   theme: 'light' | 'dark';
   hide_header_fullscreen: boolean;
+  auto_fullscreen: boolean;
   visible_statuses: string[];
   idle_screen_config_id: string | null;
   created_at: string;
