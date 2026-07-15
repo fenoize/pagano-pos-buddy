@@ -70,6 +70,10 @@
    const { settings: deliverySettings } = useDeliverySettings();
   const { user } = useAuthContext();
 
+  const [newOrderArrived, setNewOrderArrived] = useState(false);
+  const lastAlertedCountRef = useRef(0);
+  const latestOrderCountRef = useRef(0);
+
   const canAcceptAppOrders = currentSession?.accept_app_orders === true;
   const deliveryAssignmentMode = deliverySettings?.assignment_mode || 'pool';
  
