@@ -159,6 +159,7 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
         font_size: currentConfig.font_size,
         theme: currentConfig.theme,
         hide_header_fullscreen: currentConfig.hide_header_fullscreen,
+        auto_fullscreen: currentConfig.auto_fullscreen,
         visible_statuses: currentConfig.visible_statuses,
         idle_screen_config_id: currentConfig.idle_screen_config_id,
       });
