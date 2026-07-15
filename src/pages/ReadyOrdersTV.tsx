@@ -392,6 +392,22 @@ export default function ReadyOrdersTV() {
       )}
 
       {renderLayout()}
+
+      {showFullscreenPrompt && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer"
+          onClick={enterFullscreenFromPrompt}
+        >
+          <div className="text-center px-6">
+            <Maximize className="h-16 w-16 mx-auto mb-4 text-white" />
+            <h2 className="text-3xl font-bold text-white mb-2">Toca para pantalla completa</h2>
+            <p className="text-white/70">El navegador requiere un click para activar el modo pantalla completa</p>
+            <Button size="lg" className="mt-6" onClick={enterFullscreenFromPrompt}>
+              <Maximize className="h-5 w-5 mr-2" /> Entrar en pantalla completa
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
