@@ -85,7 +85,7 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
     onConfigChange({ ...currentConfig, theme });
   };
 
-  const handleToggle = (key: 'show_logo' | 'show_clock' | 'sound_enabled' | 'hide_header_fullscreen', value: boolean) => {
+  const handleToggle = (key: 'show_logo' | 'show_clock' | 'sound_enabled' | 'hide_header_fullscreen' | 'auto_fullscreen', value: boolean) => {
     onConfigChange({ ...currentConfig, [key]: value });
   };
 
