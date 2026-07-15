@@ -282,6 +282,7 @@
       // Only reconnect channel when tab returns from background (not on every focus)
       const handleVisibility = () => {
         if (document.visibilityState === 'visible') {
+          lastAlertedCountRef.current = 0;
           fetchPendingOrders();
           // Only recreate channel if it's not healthy
           if (channel) {
