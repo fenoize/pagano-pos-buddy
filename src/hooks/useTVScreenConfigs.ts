@@ -30,7 +30,7 @@ export interface TVScreenConfig {
   updated_at: string;
 }
 
-export type TVScreenConfigInput = Omit<TVScreenConfig, 'id' | 'created_at' | 'updated_at'>;
+export type TVScreenConfigInput = Omit<TVScreenConfig, 'id' | 'slug' | 'created_at' | 'updated_at'> & { slug?: string };
 
 export const useTVScreenConfigs = () => {
   const queryClient = useQueryClient();
