@@ -1,0 +1,1 @@
+ALTER TABLE public.tv_screen_configs ADD COLUMN IF NOT EXISTS auto_fullscreen boolean NOT NULL DEFAULT false;

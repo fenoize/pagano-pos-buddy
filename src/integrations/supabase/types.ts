@@ -6968,6 +6968,7 @@ export type Database = {
       }
       tv_screen_configs: {
         Row: {
+          auto_fullscreen: boolean
           columns: number | null
           created_at: string
           font_size: string | null
@@ -6987,6 +6988,7 @@ export type Database = {
           visible_statuses: string[] | null
         }
         Insert: {
+          auto_fullscreen?: boolean
           columns?: number | null
           created_at?: string
           font_size?: string | null
@@ -7006,6 +7008,7 @@ export type Database = {
           visible_statuses?: string[] | null
         }
         Update: {
+          auto_fullscreen?: boolean
           columns?: number | null
           created_at?: string
           font_size?: string | null
