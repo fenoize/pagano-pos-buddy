@@ -85,7 +85,7 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
     onConfigChange({ ...currentConfig, theme });
   };
 
-  const handleToggle = (key: 'show_logo' | 'show_clock' | 'sound_enabled' | 'hide_header_fullscreen', value: boolean) => {
+  const handleToggle = (key: 'show_logo' | 'show_clock' | 'sound_enabled' | 'hide_header_fullscreen' | 'auto_fullscreen', value: boolean) => {
     onConfigChange({ ...currentConfig, [key]: value });
   };
 
@@ -123,6 +123,7 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
         font_size: currentConfig?.font_size || 'medium',
         theme: currentConfig?.theme || 'light',
         hide_header_fullscreen: currentConfig?.hide_header_fullscreen ?? false,
+        auto_fullscreen: currentConfig?.auto_fullscreen ?? false,
         visible_statuses: currentConfig?.visible_statuses || ['En preparación', 'Listo', 'Entregado'],
         idle_screen_config_id: currentConfig?.idle_screen_config_id || null,
         is_default: false,
@@ -158,6 +159,7 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
         font_size: currentConfig.font_size,
         theme: currentConfig.theme,
         hide_header_fullscreen: currentConfig.hide_header_fullscreen,
+        auto_fullscreen: currentConfig.auto_fullscreen,
         visible_statuses: currentConfig.visible_statuses,
         idle_screen_config_id: currentConfig.idle_screen_config_id,
       });
@@ -441,7 +443,19 @@ export function TVConfigModal({ open, onOpenChange, currentConfig, onConfigChang
                   onCheckedChange={(v) => handleToggle('hide_header_fullscreen', v)}
                 />
               </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Pantalla completa automática</Label>
+                  <p className="text-sm text-muted-foreground">Al cargar la URL, entra automáticamente en pantalla completa (requiere un primer click del usuario por seguridad del navegador)</p>
+                </div>
+                <Switch
+                  checked={currentConfig?.auto_fullscreen ?? false}
+                  onCheckedChange={(v) => handleToggle('auto_fullscreen', v)}
+                />
+              </div>
             </div>
+
 
             {/* Slug (URL única) — sólo visible cuando existe una config cargada */}
             {currentConfig?.id && (

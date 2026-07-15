@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { Maximize, Minimize, Volume2, VolumeX, RefreshCw, Settings, LogOut, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,9 @@ export default function ReadyOrdersTV() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showTopBar, setShowTopBar] = useState(false);
   const [preloaded, setPreloaded] = useState(false);
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+  const autoFullscreenAttempted = useRef(false);
+
 
   // Fetch promo content for preloading assets
   const { data: promoContent = [] } = useActiveTVScreenContent(screenId);
@@ -118,6 +121,30 @@ export default function ReadyOrdersTV() {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
+
+  // Auto fullscreen: si la config lo pide, intentar entrar en pantalla completa
+  // al terminar el preload. Si el navegador lo bloquea (requiere gesto), mostrar
+  // un overlay con un solo botón para entrar.
+  useEffect(() => {
+    if (!preloaded) return;
+    if (!localConfig.auto_fullscreen) return;
+    if (document.fullscreenElement) return;
+    if (autoFullscreenAttempted.current) return;
+    autoFullscreenAttempted.current = true;
+
+    document.documentElement.requestFullscreen()
+      .catch(() => setShowFullscreenPrompt(true));
+  }, [preloaded, localConfig.auto_fullscreen]);
+
+  const enterFullscreenFromPrompt = useCallback(() => {
+    document.documentElement.requestFullscreen()
+      .then(() => setShowFullscreenPrompt(false))
+      .catch((e) => {
+        console.error('No se pudo activar pantalla completa', e);
+        setShowFullscreenPrompt(false);
+      });
+  }, []);
+
 
   // Handle new orders - mark as recent for animation
   const handleNewOrder = useCallback((orderId: string) => {
@@ -365,6 +392,22 @@ export default function ReadyOrdersTV() {
       )}
 
       {renderLayout()}
+
+      {showFullscreenPrompt && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer"
+          onClick={enterFullscreenFromPrompt}
+        >
+          <div className="text-center px-6">
+            <Maximize className="h-16 w-16 mx-auto mb-4 text-white" />
+            <h2 className="text-3xl font-bold text-white mb-2">Toca para pantalla completa</h2>
+            <p className="text-white/70">El navegador requiere un click para activar el modo pantalla completa</p>
+            <Button size="lg" className="mt-6" onClick={enterFullscreenFromPrompt}>
+              <Maximize className="h-5 w-5 mr-2" /> Entrar en pantalla completa
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
