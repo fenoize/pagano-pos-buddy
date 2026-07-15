@@ -22,11 +22,13 @@ export default function ReadyOrdersTV() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { slug: urlSlug } = useParams<{ slug?: string }>();
 
-  // Resolve screenId: URL param > localStorage > undefined (will load default)
-  const urlScreenId = searchParams.get('screen') || undefined;
-  const storedScreenId = localStorage.getItem(STORAGE_KEYS.TV_SCREEN_ID) || undefined;
-  const screenId = urlScreenId || storedScreenId || undefined;
+  // Resolve screenId: URL path :slug > ?screen= query param > undefined (loads default)
+  // NOTE: Do NOT persist to localStorage — the screen must always be explicitly chosen
+  // via URL (bookmarkable slug) or default config.
+  const urlScreenId = urlSlug || searchParams.get('screen') || undefined;
+  const screenId = urlScreenId || undefined;
 
   // Resolve branchId: ?branch=<id> URL param > active branch in localStorage > null (all branches)
   const urlBranchId = searchParams.get('branch') || undefined;
