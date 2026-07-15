@@ -82,14 +82,11 @@ export default function ReadyOrdersTV() {
     [promoContent]
   );
 
-  // Load saved config when available & persist screenId
+  // Load saved config when available (NO localStorage persistence — always requires
+  // explicit selection via URL slug or falls back to the default screen).
   useEffect(() => {
     if (savedConfig) {
       setLocalConfig(savedConfig);
-      // Persist screen ID to localStorage
-      if (savedConfig.id) {
-        localStorage.setItem(STORAGE_KEYS.TV_SCREEN_ID, savedConfig.id);
-      }
     }
   }, [savedConfig]);
 
