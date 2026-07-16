@@ -155,6 +155,50 @@ serve(async (req) => {
       
       console.log(`✅ Order ${orderId} updated to status: ${newStatus}`);
       
+      // Notificar por push a cajeros activos cuando el pedido queda PendienteAceptacion
+      if (newStatus === 'PendienteAceptacion') {
+        try {
+          console.log('📲 Buscando cajeros activos para push notification...');
+          
+          const { data: activeSessions } = await supabase
+            .from('cash_sessions')
+            .select('user_id')
+            .is('closed_at', null)
+            .eq('accept_app_orders', true);
+          
+          if (activeSessions && activeSessions.length > 0) {
+            const orderNumber = currentOrder.order_number;
+            const orderType = currentOrder.fulfillment === 'delivery' ? 'Delivery 🛵' : 'Retiro 🏃';
+            const totalFormatted = Number(currentOrder.total).toLocaleString('es-CL');
+            
+            for (const session of activeSessions) {
+              if (session.user_id) {
+                const { error: pushError } = await supabase.functions.invoke('send-staff-push', {
+                  body: {
+                    user_id: session.user_id,
+                    type: 'new_app_order',
+                    title: `⚔️ Nuevo pedido #${orderNumber}`,
+                    body: `${orderType} • $${totalFormatted} — requiere aceptación en el POS`,
+                    payload: { order_id: orderId, order_number: orderNumber }
+                  }
+                });
+                if (pushError) {
+                  console.warn(`⚠️ Push error for cashier ${session.user_id}:`, pushError);
+                } else {
+                  console.log(`✅ Push enviado al cajero: ${session.user_id}`);
+                }
+              }
+            }
+          } else {
+            console.log('ℹ️ No hay sesiones de caja activas con accept_app_orders=true para notificar');
+          }
+        } catch (pushErr) {
+          // No-fatal: logear pero no fallar el webhook
+          console.error('⚠️ Error al enviar push a cajeros:', pushErr);
+        }
+      }
+      
+      
       // Incrementar usage_count de suscripción de descuento si el pago fue aprobado
       if (payment.status === 'approved' && currentOrder.customer_id && currentOrder.discount > 0) {
         try {
