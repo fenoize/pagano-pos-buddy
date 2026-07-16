@@ -160,11 +160,22 @@ serve(async (req) => {
         try {
           console.log('📲 Buscando cajeros activos para push notification...');
           
-          const { data: activeSessions } = await supabase
+          const orderBranchId = currentOrder.branch_id;
+
+          let sessionsQuery = supabase
             .from('cash_sessions')
             .select('user_id')
             .is('closed_at', null)
             .eq('accept_app_orders', true);
+
+          if (orderBranchId) {
+            sessionsQuery = sessionsQuery.eq('branch_id', orderBranchId);
+            console.log('🏪 Filtrando cajeros por branch_id:', orderBranchId);
+          } else {
+            console.warn('⚠️ Orden sin branch_id — notificando a todos los cajeros activos como fallback');
+          }
+
+          const { data: activeSessions } = await sessionsQuery;
           
           if (activeSessions && activeSessions.length > 0) {
             const orderNumber = currentOrder.order_number;
