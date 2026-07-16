@@ -74,6 +74,18 @@ serve(async (req) => {
       );
     }
     
+    // 1b. OBTENER BRANCH_ID DE LA SESIÓN DE CAJA ACTIVA QUE ACEPTA APP ORDERS
+    const { data: activeSession } = await supabase
+      .from('cash_sessions')
+      .select('branch_id')
+      .is('closed_at', null)
+      .eq('accept_app_orders', true)
+      .limit(1)
+      .maybeSingle();
+
+    const orderBranchId = activeSession?.branch_id || null;
+    console.log('🏪 Branch ID para esta orden:', orderBranchId);
+    
     // 2. CALCULAR SUBTOTAL (incluye items + extras)
     const subtotal = items.reduce((sum: number, item: any) => {
       const base = (item.basePrice || 0) * (item.quantity || 1);
@@ -213,6 +225,7 @@ serve(async (req) => {
     
     // 3. CREAR ORDEN EN DB con status='PendientePago'
     const orderData = {
+      branch_id: orderBranchId,
       customer_id: customer_id || null,
       source: 'customer_app',
       fulfillment: actualFulfillment,
