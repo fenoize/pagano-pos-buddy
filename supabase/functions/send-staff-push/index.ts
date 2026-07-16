@@ -108,6 +108,8 @@ serve(async (req) => {
       clickUrl = `${baseUrl}/pos/mi-calendario`;
     } else if (body.type === 'shift_accepted' || body.type === 'shift_rejected') {
       clickUrl = `${baseUrl}/pos/rrhh/turnos`;
+    } else if (body.type === 'new_app_order') {
+      clickUrl = `${baseUrl}/pos/ventas`;
     }
 
     // Build OneSignal payload
