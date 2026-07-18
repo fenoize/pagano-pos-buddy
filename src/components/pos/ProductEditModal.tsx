@@ -56,6 +56,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
         image_url: product.image_url || '',
         show_in_pos: (product as any).show_in_pos ?? true,
         show_in_app: (product as any).show_in_app ?? true,
+        show_in_web: (product as any).show_in_web ?? true,
         raw_material_id: (product as any).raw_material_id || null
       });
       
