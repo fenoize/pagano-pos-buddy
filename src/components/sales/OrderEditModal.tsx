@@ -987,7 +987,15 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
 
                   {(order.discount > 0 || (isEditMode && editData?.discount && editData.discount > 0)) && (
                     <div className="flex justify-between text-red-600">
-                      <span>Descuento:</span>
+                      <span>
+                        Descuento
+                        {(order as any).coupon_code ? (
+                          <span className="ml-1 text-xs font-mono bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded">
+                            {(order as any).coupon_code}
+                          </span>
+                        ) : null}
+                        :
+                      </span>
                       <span>-{formatCurrency(isEditMode ? editData?.discount || 0 : order.discount)}</span>
                     </div>
                   )}
