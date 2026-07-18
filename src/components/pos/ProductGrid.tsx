@@ -154,7 +154,6 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
             variant:category_variants!inner(*)
           `)
           .eq('active', true)
-          .eq('show_in_pos', true)
           .eq('variant.active', true)
           .order('variant(display_order)'),
         
