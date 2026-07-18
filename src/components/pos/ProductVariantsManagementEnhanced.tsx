@@ -387,6 +387,9 @@ export default function ProductVariantsManagementEnhanced({
               <TableHead>Precio base</TableHead>
               <TableHead>Materia Prima</TableHead>
               <TableHead>Por Defecto</TableHead>
+              <TableHead className="text-center">POS</TableHead>
+              <TableHead className="text-center">App</TableHead>
+              <TableHead className="text-center">Web</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
