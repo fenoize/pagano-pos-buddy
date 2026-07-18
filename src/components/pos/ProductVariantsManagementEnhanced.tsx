@@ -463,6 +463,30 @@ export default function ProductVariantsManagementEnhanced({
                         disabled={!existingOption.is_enabled || variant.name === "Default"} />
                     )}
                   </TableCell>
+                  <TableCell className="text-center">
+                    {existingOption && (
+                      <Switch
+                        checked={existingOption.show_in_pos ?? true}
+                        onCheckedChange={(v) => updateVariantVisibility(existingOption.id, 'show_in_pos', v)}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {existingOption && (
+                      <Switch
+                        checked={existingOption.show_in_app ?? true}
+                        onCheckedChange={(v) => updateVariantVisibility(existingOption.id, 'show_in_app', v)}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {existingOption && (
+                      <Switch
+                        checked={existingOption.show_in_web ?? true}
+                        onCheckedChange={(v) => updateVariantVisibility(existingOption.id, 'show_in_web', v)}
+                      />
+                    )}
+                  </TableCell>
                   <TableCell>
                     {variant.name !== "Default" && (
                       <Switch checked={!!existingOption}
