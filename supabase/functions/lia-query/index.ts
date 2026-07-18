@@ -15,21 +15,107 @@ Si te preguntan algo que no está en la base de datos de Paganos, responde: "Sol
 Cuando necesites datos, usa la herramienta run_sql con SQL válido para PostgreSQL/Supabase. Solo puedes usar SELECT. Nunca uses INSERT, UPDATE, DELETE, DROP.
 
 SCHEMA DISPONIBLE:
-- orders: id, total, payment_method, source, sales_channel_slug, external_order_id, customer_id, branch_id, created_at, status
-- customers: id, nombres, apellidos, email, phone, is_vip, created_at, auth_user_id
-- cash_sessions: id, branch_id, opened_at, closed_at, opening_cash, closing_cash, observaciones
-- cash_movements: id, session_id, type, amount, note, created_at
-- runas_transactions: id, customer_id, order_id, amount, type, created_at
-- customer_points_log: id, customer_id, order_id, points, created_at
-- products: id, name, active, show_in_app, category
-- config: key, value (contiene runas_exclude_if_discounted, runa_value, runa_reward_value, max_runas_per_order, etc.)
-- users: id, name, email, role
-- sales_channels: id, name, slug, type, active
-- loyalty_campaigns: id, name, active
-- coupons: id, code, active, discount_type, discount_value
-- combo_products: id, product_id, base_price, pricing_mode
 
-Cuando respondas con datos numéricos, formatea los valores en pesos chilenos (ej: $18.990). Sé directo y conciso. Tono profesional, no generes texto innecesario.`;
+orders — pedidos del sistema
+  id (uuid), order_number (int), customer_id (uuid), branch_id (uuid), cash_session_id (uuid),
+  source (text: 'pos'|'customer_app'|'web'), sales_channel_slug (text), external_order_id (text),
+  fulfillment (text: 'retiro'|'delivery'), pickup_mode (text: 'servir'|'llevar'),
+  subtotal (int, CLP), delivery_fee (int, CLP), discount (int, CLP), total (int, CLP),
+  payment_efectivo (int), payment_mp (int), payment_pos (int), payment_aplicacion (int), payment_runas (int),
+  payment_method (text), payment_status (text), cash_given (numeric),
+  status (text: 'PendientePago'|'PendienteAceptacion'|'Pendiente'|'En preparación'|'En pausa'|'Listo'|'En camino'|'Entregado'|'Cancelado'),
+  items (jsonb — array de productos del pedido),
+  nombre_resumen (text), customer_name (text), customer_phone (text), notes (text),
+  coupon_id (uuid), coupon_code (text),
+  delivery_address (text), delivery_number (text), delivery_comuna (text), delivery_zone_name (text),
+  delivery_person_id (uuid), delivery_person_name (text),
+  delivery_assigned_at (timestamptz), delivery_delivered_at (timestamptz), delivery_distance (numeric),
+  receipt_number (text), operation_number (text),
+  created_at (timestamptz), updated_at (timestamptz), created_by_user_id (uuid)
+
+customers — clientes registrados
+  id (uuid), auth_user_id (uuid),
+  nombres (text), apellidos (text), name (text), apellido (text),
+  email (text), phone (text), rut (text), fecha_nacimiento (date),
+  estado_cliente (text: 'Activo'|'Inactivo'|'Bloqueado'), motivo_estado (text),
+  cantidad_runas (int), puntos (int), puntos_lifetime (int),
+  valor_cliente (numeric), ultima_compra (timestamptz), is_vip (boolean),
+  marketing_opt_in (boolean), created_at (timestamptz)
+
+cash_sessions — turnos de caja
+  id (uuid), branch_id (uuid), user_id (uuid),
+  opened_at (timestamptz), closed_at (timestamptz, NULL = sesión abierta),
+  opening_cash (int, CLP), closing_cash (int, CLP),
+  accept_app_orders (boolean), observaciones (text)
+
+cash_movements — movimientos de caja (ingresos/egresos)
+  id (uuid), session_id (uuid), branch_id (uuid),
+  type (text: 'ingreso'|'egreso'|'transferencia'),
+  amount (int, CLP), category (text), note (text), created_at (timestamptz)
+
+runas_transactions — historial de runas
+  id (uuid), customer_id (uuid), order_id (uuid),
+  type (text: 'acumulacion'|'canje'|'ajuste'|'promo'),
+  runas (int), amount (int, CLP),
+  origen (text), motivo (text), created_at (timestamptz)
+
+users — usuarios del sistema (staff)
+  id (uuid), username (text), full_name (text), email (text),
+  role (text: 'Administrador'|'Cajero'|'Cocinero'|'Preparador'|'Reparto'|'Viewer'),
+  active (boolean), can_do_delivery (boolean), can_use_lia (boolean),
+  created_at (timestamptz)
+
+branches — locales / sucursales
+  id (uuid), name (text), address (text),
+  is_active (boolean), accepts_online_orders (boolean), timezone (text)
+
+products — productos del menú
+  id (uuid), name (text), category (text), active (boolean), show_in_app (boolean)
+
+coupons — cupones de descuento
+  id (uuid), code (text), type (text), amount (numeric), description (text),
+  is_active (boolean), date_start (timestamptz), date_end (timestamptz),
+  usage_limit_total (int), usage_limit_per_customer (int),
+  commission_enabled (boolean), commission_type (text), commission_value (numeric)
+
+customer_discount_subscriptions — suscripciones de descuento por cliente
+  id (uuid), customer_id (uuid), discount_percent (int),
+  is_active (boolean), usage_count (int), usage_limit (int),
+  start_date (date), end_date (date), notes (text), created_at (timestamptz)
+
+marketing_push_campaigns — campañas de push marketing
+  id (uuid), title (text), message (text), status (text),
+  recipients_count (int), sent_count (int), error_count (int),
+  created_at (timestamptz), sent_at (timestamptz)
+
+config — configuración del sistema (clave/valor)
+  key (text), value (jsonb)
+  Claves útiles: 'runa_value', 'runa_reward_value', 'max_runas_per_order', 'onesignal', 'pwa_config'
+
+sales_channels — canales de venta
+  id (uuid), name (text), slug (text), type (text), active (boolean)
+
+JOINS ÚTILES:
+- orders → customers: orders.customer_id = customers.id
+- orders → branches: orders.branch_id = branches.id
+- orders → cash_sessions: orders.cash_session_id = cash_sessions.id
+- orders → users (cajero): orders.created_by_user_id = users.id
+- cash_sessions → users (cajero): cash_sessions.user_id = users.id
+- cash_sessions → branches: cash_sessions.branch_id = branches.id
+- cash_movements → cash_sessions: cash_movements.session_id = cash_sessions.id
+- runas_transactions → customers: runas_transactions.customer_id = customers.id
+- runas_transactions → orders: runas_transactions.order_id = orders.id
+- customer_discount_subscriptions → customers: customer_discount_subscriptions.customer_id = customers.id
+
+NOTAS IMPORTANTES:
+- Todos los montos están en pesos chilenos (CLP) como enteros. Formatea con $ y separadores de miles.
+- orders.items es JSONB con los productos del pedido. Usa jsonb_array_elements para desglozarlo.
+- Para el nombre del cliente: usa COALESCE(c.nombres || ' ' || c.apellidos, c.name, o.customer_name).
+- closed_at IS NULL en cash_sessions significa sesión actualmente abierta.
+- status 'Cancelado' en orders excluye ventas reales — filtra con WHERE status != 'Cancelado' para métricas de ventas.
+- Para buscar un pedido por número usa order_number (entero), no id.
+
+Cuando respondas con datos numéricos, formatea en pesos chilenos (ej: $18.990). Sé directo y conciso. Tono profesional.`;
 
 const FORBIDDEN = /\b(insert|update|delete|drop|truncate|alter|create|grant|revoke|comment|vacuum|reindex|copy|merge|replace)\b/i;
 
