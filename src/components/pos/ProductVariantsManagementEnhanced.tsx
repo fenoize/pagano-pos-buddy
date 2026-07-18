@@ -33,6 +33,9 @@ interface ProductVariantOption {
   active: boolean;
   is_enabled: boolean;
   raw_material_id: string | null;
+  show_in_pos: boolean;
+  show_in_app: boolean;
+  show_in_web: boolean;
   category_variant?: CategoryVariant;
 }
 
