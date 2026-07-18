@@ -299,6 +299,15 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
                   />
                   <Label htmlFor="show_in_app">Mostrar en App Cliente</Label>
                 </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show_in_web"
+                    checked={formData.show_in_web}
+                    onCheckedChange={(checked) => setFormData({ ...formData, show_in_web: checked })}
+                  />
+                  <Label htmlFor="show_in_web">Mostrar en Web (WordPress)</Label>
+                </div>
               </div>
 
               {/* Inventario - Materia Prima Directa */}
