@@ -293,6 +293,7 @@ export default function ProductGrid({ products, onProductClick, onDataPreloaded 
           .in('product_id', productIds)
           .eq('active', true)
           .eq('is_enabled', true)
+          .eq('show_in_pos', true)
           .eq('variant.active', true)
           .order('variant(display_order)'),
         supabase
