@@ -185,6 +185,22 @@ export default function ProductVariantsManagementEnhanced({
     }
   };
 
+  const updateVariantVisibility = async (variantOptionId: string, field: 'show_in_pos' | 'show_in_app' | 'show_in_web', value: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('product_variant_options')
+        .update({ [field]: value })
+        .eq('id', variantOptionId);
+      if (error) throw error;
+      setProductVariants(prev =>
+        prev.map(v => v.id === variantOptionId ? { ...v, [field]: value } : v)
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error('Error', { description: 'No se pudo actualizar la visibilidad' });
+    }
+  };
+
   const saveBulkPrices = async () => {
     const updates = Object.entries(bulkPrices).map(([id, priceStr]) => {
       const price = parseInt(priceStr.replace(/\D/g, ''));
