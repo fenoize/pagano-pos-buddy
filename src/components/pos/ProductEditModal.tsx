@@ -189,6 +189,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
       image_url: '',
       show_in_pos: true,
       show_in_app: true,
+      show_in_web: true,
       raw_material_id: null
     });
     setSelectedCategories([]);
