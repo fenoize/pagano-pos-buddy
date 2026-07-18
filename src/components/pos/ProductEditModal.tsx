@@ -120,6 +120,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             image_url: formData.image_url || null,
             show_in_pos: formData.show_in_pos,
             show_in_app: formData.show_in_app,
+            show_in_web: formData.show_in_web,
             raw_material_id: formData.raw_material_id || null,
             prices: { combo: {}, only: {} } // Default empty prices for backward compatibility
           } as any)
