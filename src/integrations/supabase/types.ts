@@ -5313,6 +5313,9 @@ export type Database = {
           price: number
           product_id: string
           raw_material_id: string | null
+          show_in_app: boolean | null
+          show_in_pos: boolean | null
+          show_in_web: boolean | null
           sku: string | null
           stock: number
           updated_at: string
@@ -5327,6 +5330,9 @@ export type Database = {
           price?: number
           product_id: string
           raw_material_id?: string | null
+          show_in_app?: boolean | null
+          show_in_pos?: boolean | null
+          show_in_web?: boolean | null
           sku?: string | null
           stock?: number
           updated_at?: string
@@ -5341,6 +5347,9 @@ export type Database = {
           price?: number
           product_id?: string
           raw_material_id?: string | null
+          show_in_app?: boolean | null
+          show_in_pos?: boolean | null
+          show_in_web?: boolean | null
           sku?: string | null
           stock?: number
           updated_at?: string
@@ -5382,6 +5391,7 @@ export type Database = {
           raw_material_id: string | null
           show_in_app: boolean | null
           show_in_pos: boolean | null
+          show_in_web: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -5396,6 +5406,7 @@ export type Database = {
           raw_material_id?: string | null
           show_in_app?: boolean | null
           show_in_pos?: boolean | null
+          show_in_web?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -5410,6 +5421,7 @@ export type Database = {
           raw_material_id?: string | null
           show_in_app?: boolean | null
           show_in_pos?: boolean | null
+          show_in_web?: boolean | null
           updated_at?: string | null
         }
         Relationships: [

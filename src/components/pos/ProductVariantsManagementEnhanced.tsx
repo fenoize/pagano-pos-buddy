@@ -33,6 +33,9 @@ interface ProductVariantOption {
   active: boolean;
   is_enabled: boolean;
   raw_material_id: string | null;
+  show_in_pos: boolean;
+  show_in_app: boolean;
+  show_in_web: boolean;
   category_variant?: CategoryVariant;
 }
 
@@ -179,6 +182,22 @@ export default function ProductVariantsManagementEnhanced({
     } catch (error) {
       console.error(error);
       toast.error("Error");
+    }
+  };
+
+  const updateVariantVisibility = async (variantOptionId: string, field: 'show_in_pos' | 'show_in_app' | 'show_in_web', value: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('product_variant_options')
+        .update({ [field]: value })
+        .eq('id', variantOptionId);
+      if (error) throw error;
+      setProductVariants(prev =>
+        prev.map(v => v.id === variantOptionId ? { ...v, [field]: value } : v)
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error('Error', { description: 'No se pudo actualizar la visibilidad' });
     }
   };
 
@@ -368,6 +387,9 @@ export default function ProductVariantsManagementEnhanced({
               <TableHead>Precio base</TableHead>
               <TableHead>Materia Prima</TableHead>
               <TableHead>Por Defecto</TableHead>
+              <TableHead className="text-center">POS</TableHead>
+              <TableHead className="text-center">App</TableHead>
+              <TableHead className="text-center">Web</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -439,6 +461,30 @@ export default function ProductVariantsManagementEnhanced({
                       <Switch checked={existingOption.is_default}
                         onCheckedChange={() => setDefaultVariant(existingOption.id)}
                         disabled={!existingOption.is_enabled || variant.name === "Default"} />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {existingOption && (
+                      <Switch
+                        checked={existingOption.show_in_pos ?? true}
+                        onCheckedChange={(v) => updateVariantVisibility(existingOption.id, 'show_in_pos', v)}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {existingOption && (
+                      <Switch
+                        checked={existingOption.show_in_app ?? true}
+                        onCheckedChange={(v) => updateVariantVisibility(existingOption.id, 'show_in_app', v)}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {existingOption && (
+                      <Switch
+                        checked={existingOption.show_in_web ?? true}
+                        onCheckedChange={(v) => updateVariantVisibility(existingOption.id, 'show_in_web', v)}
+                      />
                     )}
                   </TableCell>
                   <TableCell>

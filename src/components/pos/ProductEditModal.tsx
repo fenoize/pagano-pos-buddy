@@ -40,6 +40,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
     image_url: '',
     show_in_pos: true,
     show_in_app: true,
+    show_in_web: true,
     raw_material_id: '' as string | null
   });
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -55,6 +56,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
         image_url: product.image_url || '',
         show_in_pos: (product as any).show_in_pos ?? true,
         show_in_app: (product as any).show_in_app ?? true,
+        show_in_web: (product as any).show_in_web ?? true,
         raw_material_id: (product as any).raw_material_id || null
       });
       
@@ -118,6 +120,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             image_url: formData.image_url || null,
             show_in_pos: formData.show_in_pos,
             show_in_app: formData.show_in_app,
+            show_in_web: formData.show_in_web,
             raw_material_id: formData.raw_material_id || null,
             prices: { combo: {}, only: {} } // Default empty prices for backward compatibility
           } as any)
@@ -135,6 +138,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
             image_url: formData.image_url || null,
             show_in_pos: formData.show_in_pos,
             show_in_app: formData.show_in_app,
+            show_in_web: formData.show_in_web,
             raw_material_id: formData.raw_material_id || null,
             prices: { combo: {}, only: {} } // Default empty prices for backward compatibility
           })
@@ -185,6 +189,7 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
       image_url: '',
       show_in_pos: true,
       show_in_app: true,
+      show_in_web: true,
       raw_material_id: null
     });
     setSelectedCategories([]);
@@ -293,6 +298,15 @@ export function ProductEditModal({ isOpen, onClose, product, onProductUpdated }:
                     onCheckedChange={(checked) => setFormData({ ...formData, show_in_app: checked })}
                   />
                   <Label htmlFor="show_in_app">Mostrar en App Cliente</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show_in_web"
+                    checked={formData.show_in_web}
+                    onCheckedChange={(checked) => setFormData({ ...formData, show_in_web: checked })}
+                  />
+                  <Label htmlFor="show_in_web">Mostrar en Web (WordPress)</Label>
                 </div>
               </div>
 

@@ -117,6 +117,7 @@ export function CustomerProductCustomization({ isOpen, onClose, onAddToCart, pro
         `)
         .eq('product_id', product.id)
         .eq('active', true)
+        .eq('show_in_app', true)
         .in('variant.category_id', categoryIds.length > 0 ? categoryIds : ['00000000-0000-0000-0000-000000000000'])
         .order('variant(display_order)');
 
