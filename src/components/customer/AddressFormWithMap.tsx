@@ -141,40 +141,84 @@ export function AddressFormWithMap({
 
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    // Add marker if we have coordinates
+    // Add draggable marker if we have coordinates
     if (hasValidLocation && formData.latitude && formData.longitude) {
-      markerRef.current = new mapboxgl.Marker({ color: '#f97316' })
+      markerRef.current = new mapboxgl.Marker({ color: '#f97316', draggable: true })
         .setLngLat([formData.longitude, formData.latitude])
         .addTo(mapRef.current);
+      markerRef.current.on('dragend', handleMarkerDragEnd);
     }
 
     return () => {
       mapRef.current?.remove();
       mapRef.current = null;
+      markerRef.current = null;
     };
   }, [mapboxToken]);
 
-  // Update map when coordinates change
+  // Update marker when coordinates change (from search)
   useEffect(() => {
     if (!mapRef.current || !formData.latitude || !formData.longitude) return;
 
-    // Remove old marker
     if (markerRef.current) {
-      markerRef.current.remove();
+      markerRef.current.setLngLat([formData.longitude, formData.latitude]);
+    } else {
+      markerRef.current = new mapboxgl.Marker({ color: '#f97316', draggable: true })
+        .setLngLat([formData.longitude, formData.latitude])
+        .addTo(mapRef.current);
+      markerRef.current.on('dragend', handleMarkerDragEnd);
     }
 
-    // Add new marker
-    markerRef.current = new mapboxgl.Marker({ color: '#f97316' })
-      .setLngLat([formData.longitude, formData.latitude])
-      .addTo(mapRef.current);
-
-    // Fly to location
     mapRef.current.flyTo({
       center: [formData.longitude, formData.latitude],
       zoom: 16,
       duration: 1000
     });
   }, [formData.latitude, formData.longitude]);
+
+  // Reverse geocode when marker is dragged
+  const handleMarkerDragEnd = async () => {
+    if (!markerRef.current || !mapboxToken) return;
+    const lngLat = markerRef.current.getLngLat();
+
+    setFormData(prev => ({
+      ...prev,
+      latitude: lngLat.lat,
+      longitude: lngLat.lng,
+    }));
+    setHasValidLocation(true);
+
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lngLat.lng},${lngLat.lat}.json?access_token=${mapboxToken}&country=cl&limit=1&language=es`
+      );
+      if (!response.ok) return;
+      const data = await response.json();
+      const feature = data.features?.[0];
+      if (!feature) return;
+
+      const addressParts = feature.place_name.split(',')[0].trim();
+      const numberMatch = addressParts.match(/(\d+)$/);
+      const streetName = numberMatch
+        ? addressParts.replace(/\s*\d+$/, '').trim()
+        : addressParts;
+      const streetNumber = numberMatch ? numberMatch[1] : '';
+      const comunaContext = feature.context?.find((c: any) =>
+        c.id.startsWith('locality') || c.id.startsWith('place')
+      );
+
+      setFormData(prev => ({
+        ...prev,
+        calle: streetName || prev.calle,
+        numero: streetNumber || prev.numero,
+        comuna: comunaContext?.text || prev.comuna,
+        formatted_address: feature.place_name,
+      }));
+      setAddressSearch(feature.place_name);
+    } catch (error) {
+      console.error('Reverse geocode error:', error);
+    }
+  };
 
   const handleAddressSelect = (result: {
     address: string;
@@ -255,7 +299,7 @@ export function AddressFormWithMap({
           <Label>Ubicación en el mapa</Label>
           <div 
             ref={mapContainerRef}
-            className="h-48 rounded-lg border overflow-hidden bg-muted"
+            className="h-64 rounded-lg border overflow-hidden bg-muted"
           >
             {!hasValidLocation && (
               <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
@@ -264,6 +308,12 @@ export function AddressFormWithMap({
               </div>
             )}
           </div>
+          {hasValidLocation && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              Arrastra el pin para ajustar la ubicación exacta (lote, parcela, portón).
+            </p>
+          )}
         </div>
       )}
 
