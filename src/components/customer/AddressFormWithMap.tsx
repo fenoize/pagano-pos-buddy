@@ -299,7 +299,7 @@ export function AddressFormWithMap({
           <Label>Ubicación en el mapa</Label>
           <div 
             ref={mapContainerRef}
-            className="h-48 rounded-lg border overflow-hidden bg-muted"
+            className="h-64 rounded-lg border overflow-hidden bg-muted"
           >
             {!hasValidLocation && (
               <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
@@ -308,6 +308,12 @@ export function AddressFormWithMap({
               </div>
             )}
           </div>
+          {hasValidLocation && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              Arrastra el pin para ajustar la ubicación exacta (lote, parcela, portón).
+            </p>
+          )}
         </div>
       )}
 
