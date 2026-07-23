@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit2, Trash2, MapPin } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, Calculator } from 'lucide-react';
 import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import { DeliveryZoneForm } from './DeliveryZoneForm';
 import { DeliveryZonesMiniMap, ZONE_COLORS } from './DeliveryZonesMiniMap';
+import { AddressQuoteModal } from './AddressQuoteModal';
 import { toast } from 'sonner';
 
 export function DeliveryZoneManagement() {
@@ -15,6 +16,7 @@ export function DeliveryZoneManagement() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingZone, setEditingZone] = useState(null);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [isQuoteOpen, setIsQuoteOpen] = useState(false);
 
   if (!canManageZones) {
     return (
@@ -100,10 +102,16 @@ export function DeliveryZoneManagement() {
               Gestiona las zonas de delivery y sus costos
             </CardDescription>
           </div>
-          <Button onClick={handleCreateZone}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Zona
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsQuoteOpen(true)}>
+              <Calculator className="w-4 h-4 mr-2" />
+              Cotizar dirección
+            </Button>
+            <Button onClick={handleCreateZone}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Zona
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -208,6 +216,11 @@ export function DeliveryZoneManagement() {
           onSubmit={handleFormSubmit}
           zone={editingZone}
           mode={formMode}
+        />
+
+        <AddressQuoteModal
+          isOpen={isQuoteOpen}
+          onClose={() => setIsQuoteOpen(false)}
         />
       </CardContent>
     </Card>
