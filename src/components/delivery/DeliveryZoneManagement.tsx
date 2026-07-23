@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit2, Trash2, MapPin } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, Calculator } from 'lucide-react';
 import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import { DeliveryZoneForm } from './DeliveryZoneForm';
 import { DeliveryZonesMiniMap, ZONE_COLORS } from './DeliveryZonesMiniMap';
+import { AddressQuoteModal } from './AddressQuoteModal';
 import { toast } from 'sonner';
 
 export function DeliveryZoneManagement() {
