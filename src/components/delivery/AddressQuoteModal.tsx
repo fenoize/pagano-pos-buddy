@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Search, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { MapPin, Search, Loader2, CheckCircle2, AlertCircle, Calculator, Map as MapIcon } from 'lucide-react';
 import { useDeliveryGeo, DeliveryZoneWithGeo } from '@/hooks/useDeliveryGeo';
 import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import { useDeliverySettings } from '@/hooks/useDeliverySettings';
@@ -42,24 +42,26 @@ export function AddressQuoteModal({
   initialAddress = '',
   initialCoordinates = null,
   title = 'Cotizar dirección',
-  description = 'Busca una dirección, arrastra el pin para ajustar la ubicación exacta y obtén el costo de envío.',
+  description = 'Ingresa una dirección y presiona Cotizar para obtener el costo de envío.',
   confirmLabel,
   onConfirm,
 }: AddressQuoteModalProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
-  const [mapReady, setMapReady] = useState(false);
 
   const { zones } = useDeliveryZones();
-  const { settings, getStoreLocation } = useDeliverySettings();
-  const { searchAddresses, findZoneByCoordinates, calculateDistance, calculateDeliveryFee, fetchMapboxToken } = useDeliveryGeo();
+  const { getStoreLocation } = useDeliverySettings();
+  const { searchAddresses, findZoneByCoordinates, calculateDistance, calculateDeliveryFee, fetchMapboxToken, geocodeAddress } = useDeliveryGeo();
 
   const [token, setToken] = useState<string | null>(null);
   const [search, setSearch] = useState(initialAddress);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [quoting, setQuoting] = useState(false);
+  const [quoted, setQuoted] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [reverseAddress, setReverseAddress] = useState<string>(initialAddress);
   const [coords, setCoords] = useState<Coords | null>(initialCoordinates);
 
@@ -78,84 +80,26 @@ export function AddressQuoteModal({
 
   const store = getStoreLocation();
 
-  // Fetch token
   useEffect(() => {
     if (!isOpen) return;
     fetchMapboxToken().then(setToken);
   }, [isOpen, fetchMapboxToken]);
 
-  // Reset on close
+  // Reset on open/close
   useEffect(() => {
     if (!isOpen) {
       setSuggestions([]);
       setShowSuggestions(false);
+      setShowMap(false);
+      setQuoted(false);
     } else {
       setSearch(initialAddress);
       setCoords(initialCoordinates);
       setReverseAddress(initialAddress);
+      setQuoted(!!initialCoordinates);
+      setShowMap(!!initialCoordinates);
     }
   }, [isOpen, initialAddress, initialCoordinates]);
-
-  // Init map
-  useEffect(() => {
-    if (!isOpen || !token || !mapContainer.current || map.current) return;
-    mapboxgl.accessToken = token;
-    const center = initialCoordinates ?? (store ? { lat: store.lat, lng: store.lng } : { lat: -33.4489, lng: -70.6693 });
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [center.lng, center.lat],
-      zoom: 14,
-    });
-    map.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
-
-    map.current.on('load', () => {
-      if (!map.current) return;
-      // Store marker
-      if (store) {
-        new mapboxgl.Marker({ color: '#000' })
-          .setLngLat([store.lng, store.lat])
-          .setPopup(new mapboxgl.Popup().setHTML('<strong>📍 Tienda</strong>'))
-          .addTo(map.current);
-      }
-      // Zones
-      activeZones.forEach((zone, idx) => {
-        if (!map.current) return;
-        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
-        const color = colors[idx % colors.length];
-        let coordsPoly: number[][][] = [];
-        try {
-          const poly = typeof zone.polygon === 'string' ? JSON.parse(zone.polygon) : zone.polygon;
-          if (poly.type === 'Polygon') coordsPoly = poly.coordinates;
-          else if (Array.isArray(poly)) coordsPoly = [poly];
-        } catch { return; }
-        if (!coordsPoly.length) return;
-        const srcId = `q-zone-${zone.id}`;
-        map.current.addSource(srcId, {
-          type: 'geojson',
-          data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: coordsPoly } },
-        });
-        map.current.addLayer({ id: `${srcId}-fill`, type: 'fill', source: srcId, paint: { 'fill-color': color, 'fill-opacity': 0.15 } });
-        map.current.addLayer({ id: `${srcId}-line`, type: 'line', source: srcId, paint: { 'line-color': color, 'line-width': 2 } });
-      });
-
-      setMapReady(true);
-
-      if (initialCoordinates) placeMarker(initialCoordinates);
-    });
-
-    map.current.on('click', (e) => {
-      placeMarker({ lat: e.lngLat.lat, lng: e.lngLat.lng });
-    });
-
-    return () => {
-      map.current?.remove();
-      map.current = null;
-      marker.current = null;
-      setMapReady(false);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, token]);
 
   const reverseGeocode = useCallback(async (c: Coords) => {
     if (!token) return;
@@ -189,6 +133,61 @@ export function AddressQuoteModal({
     reverseGeocode(c);
   }, [reverseGeocode]);
 
+  // Init map only when showMap toggled on
+  useEffect(() => {
+    if (!isOpen || !showMap || !token || !mapContainer.current || map.current) return;
+    mapboxgl.accessToken = token;
+    const center = coords ?? (store ? { lat: store.lat, lng: store.lng } : { lat: -33.4489, lng: -70.6693 });
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [center.lng, center.lat],
+      zoom: 14,
+    });
+    map.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+
+    map.current.on('load', () => {
+      if (!map.current) return;
+      if (store) {
+        new mapboxgl.Marker({ color: '#000' })
+          .setLngLat([store.lng, store.lat])
+          .setPopup(new mapboxgl.Popup().setHTML('<strong>📍 Tienda</strong>'))
+          .addTo(map.current);
+      }
+      activeZones.forEach((zone, idx) => {
+        if (!map.current) return;
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+        const color = colors[idx % colors.length];
+        let coordsPoly: number[][][] = [];
+        try {
+          const poly = typeof zone.polygon === 'string' ? JSON.parse(zone.polygon) : zone.polygon;
+          if (poly.type === 'Polygon') coordsPoly = poly.coordinates;
+          else if (Array.isArray(poly)) coordsPoly = [poly];
+        } catch { return; }
+        if (!coordsPoly.length) return;
+        const srcId = `q-zone-${zone.id}`;
+        map.current.addSource(srcId, {
+          type: 'geojson',
+          data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: coordsPoly } },
+        });
+        map.current.addLayer({ id: `${srcId}-fill`, type: 'fill', source: srcId, paint: { 'fill-color': color, 'fill-opacity': 0.15 } });
+        map.current.addLayer({ id: `${srcId}-line`, type: 'line', source: srcId, paint: { 'line-color': color, 'line-width': 2 } });
+      });
+      if (coords) placeMarker(coords);
+    });
+
+    map.current.on('click', (e) => {
+      placeMarker({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+    });
+
+    return () => {
+      map.current?.remove();
+      map.current = null;
+      marker.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, showMap, token]);
+
   // Debounced search
   useEffect(() => {
     if (!search || search.length < 3) {
@@ -208,18 +207,39 @@ export function AddressQuoteModal({
   const handlePickSuggestion = (s: any) => {
     setSearch(s.address);
     setReverseAddress(s.address);
+    setCoords(s.coordinates);
     setShowSuggestions(false);
-    placeMarker(s.coordinates);
+    setQuoted(true);
   };
 
-  // Compute quote
-  const zone = coords ? findZoneByCoordinates(coords, activeZones) : null;
-  const distanceKm = coords && store ? calculateDistance(store, coords) : null;
+  const handleCotizar = async () => {
+    if (!search || search.length < 3) {
+      toast.error('Ingresa una dirección');
+      return;
+    }
+    setQuoting(true);
+    setShowSuggestions(false);
+    try {
+      const result = await geocodeAddress(search);
+      if (!result) {
+        toast.error('No se pudo encontrar la dirección');
+        return;
+      }
+      setCoords(result.coordinates);
+      setReverseAddress(result.address);
+      setQuoted(true);
+    } finally {
+      setQuoting(false);
+    }
+  };
+
+  const zone = coords && quoted ? findZoneByCoordinates(coords, activeZones) : null;
+  const distanceKm = coords && quoted && store ? calculateDistance(store, coords) : null;
   const fee = zone && distanceKm !== null ? calculateDeliveryFee(zone, distanceKm) : zone ? zone.delivery_fee : null;
 
   const handleConfirm = () => {
     if (!coords) {
-      toast.error('Selecciona una ubicación en el mapa');
+      toast.error('Cotiza primero una dirección');
       return;
     }
     onConfirm?.({
@@ -234,7 +254,7 @@ export function AddressQuoteModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="w-5 h-5" /> {title}
@@ -243,22 +263,29 @@ export function AddressQuoteModal({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4">
-          {/* Search */}
+          {/* Search + Cotizar */}
           <div className="relative">
             <Label>Dirección</Label>
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                placeholder="Ej: Av. Providencia 1234, Providencia"
-                className="pl-9"
-              />
-              {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
+            <div className="flex gap-2 mt-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setQuoted(false); }}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCotizar(); } }}
+                  placeholder="Ej: Av. Providencia 1234, Providencia"
+                  className="pl-9"
+                />
+                {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
+              </div>
+              <Button onClick={handleCotizar} disabled={quoting || !search || search.length < 3}>
+                {quoting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
+                <span className="ml-2">Cotizar</span>
+              </Button>
             </div>
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-md max-h-56 overflow-y-auto">
+              <div className="absolute z-10 mt-1 left-0 right-[112px] bg-popover border rounded-md shadow-md max-h-56 overflow-y-auto">
                 {suggestions.map((s, i) => (
                   <button
                     key={i}
@@ -274,24 +301,8 @@ export function AddressQuoteModal({
             )}
           </div>
 
-          {/* Map */}
-          <div className="relative rounded-lg border overflow-hidden bg-muted" style={{ height: 360 }}>
-            {!token ? (
-              <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
-                Configura Mapbox en Integraciones para usar el mapa
-              </div>
-            ) : (
-              <div ref={mapContainer} className="w-full h-full" />
-            )}
-            {coords && (
-              <div className="absolute top-2 left-2 bg-background/95 backdrop-blur px-3 py-1.5 rounded-md text-xs shadow border">
-                💡 Arrastra el pin rojo para ajustar la ubicación
-              </div>
-            )}
-          </div>
-
           {/* Result */}
-          {coords && (
+          {quoted && coords && (
             <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
               <div>
                 <div className="text-xs text-muted-foreground">Dirección seleccionada</div>
@@ -327,9 +338,40 @@ export function AddressQuoteModal({
                   <div>
                     <div className="text-sm font-medium">Fuera de zonas de cobertura</div>
                     <div className="text-xs text-muted-foreground mt-0.5">
-                      Esta ubicación no está dentro de ninguna zona activa. Arrastra el pin o busca otra dirección.
+                      Ajusta la ubicación en el mapa o busca otra dirección.
                     </div>
                   </div>
+                </div>
+              )}
+
+              <div className="pt-2 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMap((v) => !v)}
+                  className="w-full"
+                >
+                  <MapIcon className="w-4 h-4 mr-2" />
+                  {showMap ? 'Ocultar mapa' : 'Ajustar en el mapa'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Map (only when toggled) */}
+          {showMap && (
+            <div className="relative rounded-lg border overflow-hidden bg-muted" style={{ height: 360 }}>
+              {!token ? (
+                <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+                  Configura Mapbox en Integraciones para usar el mapa
+                </div>
+              ) : (
+                <div ref={mapContainer} className="w-full h-full" />
+              )}
+              {coords && (
+                <div className="absolute top-2 left-2 bg-background/95 backdrop-blur px-3 py-1.5 rounded-md text-xs shadow border">
+                  💡 Arrastra el pin rojo para ajustar la ubicación
                 </div>
               )}
             </div>
@@ -339,7 +381,7 @@ export function AddressQuoteModal({
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cerrar</Button>
           {onConfirm && (
-            <Button onClick={handleConfirm} disabled={!coords}>
+            <Button onClick={handleConfirm} disabled={!coords || !quoted}>
               {confirmLabel ?? 'Usar esta dirección'}
             </Button>
           )}
