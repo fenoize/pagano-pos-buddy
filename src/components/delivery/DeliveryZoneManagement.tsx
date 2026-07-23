@@ -16,6 +16,7 @@ export function DeliveryZoneManagement() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingZone, setEditingZone] = useState(null);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [isQuoteOpen, setIsQuoteOpen] = useState(false);
 
   if (!canManageZones) {
     return (
