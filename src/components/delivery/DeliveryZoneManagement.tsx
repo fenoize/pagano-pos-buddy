@@ -102,10 +102,16 @@ export function DeliveryZoneManagement() {
               Gestiona las zonas de delivery y sus costos
             </CardDescription>
           </div>
-          <Button onClick={handleCreateZone}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Zona
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsQuoteOpen(true)}>
+              <Calculator className="w-4 h-4 mr-2" />
+              Cotizar dirección
+            </Button>
+            <Button onClick={handleCreateZone}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Zona
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
