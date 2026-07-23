@@ -217,6 +217,11 @@ export function DeliveryZoneManagement() {
           zone={editingZone}
           mode={formMode}
         />
+
+        <AddressQuoteModal
+          isOpen={isQuoteOpen}
+          onClose={() => setIsQuoteOpen(false)}
+        />
       </CardContent>
     </Card>
   );
