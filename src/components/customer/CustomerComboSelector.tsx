@@ -762,9 +762,10 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                             <span className="font-medium text-white">{variant.variant?.name}</span>
                             {variant.price > 0 && (
                               <span className="text-sm text-muted-foreground ml-2">
-                                {formatPrice(variant.price)}
+                                {formatPrice(getEffectiveVariantPrice(slotIndex, variant))}
                               </span>
                             )}
+
                           </div>
                           {isMulti ? (
                             <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
