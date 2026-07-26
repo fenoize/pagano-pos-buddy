@@ -691,9 +691,10 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                                 <span className="font-medium text-white block truncate">{variant.variant?.name}</span>
                                 {variant.price > 0 && (
                                   <span className="text-sm text-muted-foreground">
-                                    {formatPrice(variant.price)}
+                                    {formatPrice(getEffectiveVariantPrice(slotIndex, variant))}
                                   </span>
                                 )}
+
                               </div>
                             </div>
                             {count > 0 ? (
