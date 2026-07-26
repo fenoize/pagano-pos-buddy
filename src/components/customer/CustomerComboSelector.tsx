@@ -508,6 +508,26 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(price);
 
+  /**
+   * Precio efectivo por unidad del combo si se elige esta variante:
+   * precio base del combo + defaults de los slots obligatorios.
+   * Evita mostrar el precio "pelado" de la hamburguesa cuando el combo suma papas, etc.
+   */
+  const getEffectiveVariantPrice = (slotIndex: number, variant: ProductVariantOption): number => {
+    if (!comboConfig) return variant.price || 0;
+    const baseline = selections.map((sel, i) => ({
+      ...sel,
+      quantity: 1,
+      extras: {},
+      modifiers: [],
+      variant_group_selections: [],
+      ...(i === slotIndex ? { selectedVariant: variant, selectedVariants: [variant] } : {}),
+    })) as ComboItemSelection[];
+    const total = calcTotalFromSelections(baseline, comboConfig, productExtras, productVariants, productVariantGroups);
+    return total > 0 ? total : (variant.price || 0);
+  };
+
+
   const getCategoryName = (categoryId: string): string =>
     categories.find(c => c.id === categoryId)?.name || 'Categoría';
 
@@ -671,9 +691,10 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                                 <span className="font-medium text-white block truncate">{variant.variant?.name}</span>
                                 {variant.price > 0 && (
                                   <span className="text-sm text-muted-foreground">
-                                    {formatPrice(variant.price)}
+                                    {formatPrice(getEffectiveVariantPrice(slotIndex, variant))}
                                   </span>
                                 )}
+
                               </div>
                             </div>
                             {count > 0 ? (
@@ -741,9 +762,10 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                             <span className="font-medium text-white">{variant.variant?.name}</span>
                             {variant.price > 0 && (
                               <span className="text-sm text-muted-foreground ml-2">
-                                {formatPrice(variant.price)}
+                                {formatPrice(getEffectiveVariantPrice(slotIndex, variant))}
                               </span>
                             )}
+
                           </div>
                           {isMulti ? (
                             <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
