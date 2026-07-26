@@ -508,6 +508,26 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(price);
 
+  /**
+   * Precio efectivo por unidad del combo si se elige esta variante:
+   * precio base del combo + defaults de los slots obligatorios.
+   * Evita mostrar el precio "pelado" de la hamburguesa cuando el combo suma papas, etc.
+   */
+  const getEffectiveVariantPrice = (slotIndex: number, variant: ProductVariantOption): number => {
+    if (!comboConfig) return variant.price || 0;
+    const baseline = selections.map((sel, i) => ({
+      ...sel,
+      quantity: 1,
+      extras: {},
+      modifiers: [],
+      variant_group_selections: [],
+      ...(i === slotIndex ? { selectedVariant: variant, selectedVariants: [variant] } : {}),
+    })) as ComboItemSelection[];
+    const total = calcTotalFromSelections(baseline, comboConfig, productExtras, productVariants, productVariantGroups);
+    return total > 0 ? total : (variant.price || 0);
+  };
+
+
   const getCategoryName = (categoryId: string): string =>
     categories.find(c => c.id === categoryId)?.name || 'Categoría';
 
