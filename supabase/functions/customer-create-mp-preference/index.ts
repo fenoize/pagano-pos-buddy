@@ -23,7 +23,8 @@ serve(async (req) => {
       items, customer_id, notes, fulfillment, 
       delivery_address, delivery_fee, delivery_zone_id, delivery_zone_name, delivery_lat, delivery_lng,
       coupon_id, coupon_code,
-      subscription_discount_amount, subscription_delivery_discount, alliance_delivery_discount
+      subscription_discount_amount, subscription_delivery_discount, alliance_delivery_discount,
+      runas_to_use
     } = body;
     
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -210,9 +211,47 @@ serve(async (req) => {
     const totalDeliveryDiscount = Math.min(actualDeliveryFee, couponDiscountDelivery + subDeliveryDiscount + allianceDeliveryDisc);
     const effectiveSubtotal = subtotal - totalProductDiscount;
     const effectiveDeliveryFee = actualDeliveryFee - totalDeliveryDiscount;
-    const total = effectiveSubtotal + (actualFulfillment === 'delivery' ? effectiveDeliveryFee : 0);
+    const orderTotal = effectiveSubtotal + (actualFulfillment === 'delivery' ? effectiveDeliveryFee : 0);
+
+    // 2c. PAGO MIXTO: abono con Runas (validado server-side)
+    let runasUsed = 0;
+    let runasDiscount = 0;
+    const requestedRunas = Math.max(0, Math.floor(Number(runas_to_use) || 0));
+
+    if (requestedRunas > 0) {
+      const { data: settings } = await supabase.rpc('get_online_order_settings', { p_user_id: null });
+      if (!(settings as any)?.mixed_payment_enabled) {
+        return new Response(
+          JSON.stringify({ error: 'El pago mixto (Runas + MercadoPago) no está habilitado.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: runaCfg } = await supabase
+        .from('config')
+        .select('value')
+        .eq('key', 'runa_reward_value')
+        .maybeSingle();
+      const runaValue = Number((runaCfg as any)?.value) || 600;
+
+      const { data: custRunas } = await supabase
+        .from('customers')
+        .select('cantidad_runas')
+        .eq('id', customer_id)
+        .single();
+      const balance = Math.max(0, Number(custRunas?.cantidad_runas) || 0);
+
+      // Siempre debe quedar un saldo > 0 para cobrar por MercadoPago
+      const maxRunasForTotal = Math.max(0, Math.ceil(orderTotal / runaValue) - 1);
+      runasUsed = Math.min(requestedRunas, balance, maxRunasForTotal);
+      runasDiscount = runasUsed * runaValue;
+
+      console.log('🪙 Runas mixtas:', { requestedRunas, balance, runaValue, runasUsed, runasDiscount });
+    }
+
+    const total = Math.max(0, orderTotal - runasDiscount);
     
-    console.log('💵 Final amounts:', { subtotal, totalProductDiscount, effectiveDeliveryFee, total });
+    console.log('💵 Final amounts:', { subtotal, totalProductDiscount, effectiveDeliveryFee, orderTotal, runasDiscount, total });
     
     // Validar que el total no sea cero
     if (total <= 0) {
@@ -231,7 +270,7 @@ serve(async (req) => {
       fulfillment: actualFulfillment,
       items: items,
       subtotal: subtotal,
-      total: total,
+      total: orderTotal,
       discount: totalProductDiscount,
       delivery_fee: actualFulfillment === 'delivery' ? effectiveDeliveryFee : 0,
       delivery_address: delivery_address || null,
@@ -242,8 +281,9 @@ serve(async (req) => {
       coupon_id: validatedCouponId,
       coupon_code: validatedCouponCode,
       status: 'PendientePago',
-      payment_method: 'mp',
+      payment_method: runasUsed > 0 ? 'mixto' : 'mp',
       payment_mp: 0,
+      payment_runas: runasDiscount,
       notes: notes || 'Pedido desde app cliente - Pago pendiente',
       nombre_resumen: (
         [(customer as any).nombres || customer.name, (customer as any).apellidos || (customer as any).apellido]
@@ -267,6 +307,29 @@ serve(async (req) => {
     }
     
     console.log('✅ Order created:', order.id, 'Order number:', order.order_number);
+
+    // 3b. Reservar (descontar) las runas usadas en el pago mixto
+    if (runasUsed > 0) {
+      const { error: runasTxError } = await supabase
+        .from('runas_transactions')
+        .insert([{
+          customer_id,
+          type: 'canje',
+          runas: -runasUsed,
+          amount: runasDiscount,
+          origen: 'Web',
+          order_id: order.id,
+          motivo: `Abono con runas en pedido #${order.order_number} (pago mixto)`
+        }]);
+
+      if (runasTxError) {
+        console.error('❌ Error registrando canje de runas, revirtiendo orden:', runasTxError);
+        await supabase.from('orders').delete().eq('id', order.id);
+        throw new Error('No se pudo aplicar el abono con runas. Intenta nuevamente.');
+      }
+    }
+    
+
     
     // 4. CREAR PREFERENCE EN MERCADOPAGO
     const MP_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');

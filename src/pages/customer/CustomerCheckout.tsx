@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2, Coins, Truck, Ma
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { RunasPaymentSection } from '@/components/customer/RunasPaymentSection';
+import { MixedRunasPaymentSection } from '@/components/customer/MixedRunasPaymentSection';
 import { CustomerCouponInput } from '@/components/customer/CustomerCouponInput';
 import { useCart } from '@/contexts/CartContext';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
@@ -60,6 +61,8 @@ export default function CustomerCheckout() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mercadopago' | 'runas'>('mercadopago');
   const [runasToUse, setRunasToUse] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [mixedRunas, setMixedRunas] = useState(0);
+  const [mixedRunasDiscount, setMixedRunasDiscount] = useState(0);
   const [processingRunas, setProcessingRunas] = useState(false);
   const initialStoredCoupon = (() => {
     try { return loadCartCoupon(); } catch { return null; }
@@ -76,6 +79,7 @@ export default function CustomerCheckout() {
 
   const mpEnabled = paymentSettings?.mp_payment_enabled ?? true;
   const runasEnabled = paymentSettings?.runas_payment_enabled ?? true;
+  const mixedPaymentEnabled = paymentSettings?.mixed_payment_enabled ?? false;
   const deliveryEnabled = paymentSettings?.app_delivery_enabled ?? false;
   const pickupEnabled = paymentSettings?.app_pickup_enabled ?? true;
 
@@ -311,7 +315,8 @@ export default function CustomerCheckout() {
           coupon_code: couponToSend?.code || couponApplicationToSend?.payload?.coupon_code || null,
           subscription_discount_amount: subscriptionDiscountAmount,
           subscription_delivery_discount: subscriptionDeliveryDiscount,
-          alliance_delivery_discount: allianceDeliveryDiscount
+          alliance_delivery_discount: allianceDeliveryDiscount,
+          runas_to_use: mixedPaymentEnabled ? mixedRunas : 0
         });
       } else if (selectedPaymentMethod === 'runas') {
         // Flujo de Runas (sin redirección)
@@ -371,6 +376,11 @@ export default function CustomerCheckout() {
     setRunasToUse(runas);
     setDiscountAmount(discount);
   };
+
+  const handleMixedRunasChange = useCallback((runas: number, discount: number) => {
+    setMixedRunas(runas);
+    setMixedRunasDiscount(discount);
+  }, []);
 
   const canPayWithRunas = customer && (customer.cantidad_runas || 0) >= runasToUse;
   const loading = mpLoading || processingRunas || settingsLoading || zonesLoading;
@@ -694,13 +704,22 @@ export default function CustomerCheckout() {
                       </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="mercadopago" className="mt-4">
+                    <TabsContent value="mercadopago" className="mt-4 space-y-4">
                       <div className="space-y-3 text-sm text-muted-foreground">
                         <p>• Paga con tarjetas de crédito/débito</p>
                         <p>• Proceso seguro a través de MercadoPago</p>
                         <p>• Serás redirigido para completar el pago</p>
                       </div>
+                      {mixedPaymentEnabled && customer && (
+                        <MixedRunasPaymentSection
+                          customerRunas={customer.cantidad_runas || 0}
+                          total={total}
+                          runasToUse={mixedRunas}
+                          onChange={handleMixedRunasChange}
+                        />
+                      )}
                     </TabsContent>
+
 
                     <TabsContent value="runas" className="mt-4">
                       {customer && (
@@ -715,15 +734,26 @@ export default function CustomerCheckout() {
                 ) : (
                   <>
                     {mpEnabled && (
-                      <div className="space-y-3 text-sm text-muted-foreground">
-                        <p className="font-semibold flex items-center gap-2">
-                          <CreditCard className="h-4 w-4" />
-                          MercadoPago
-                        </p>
-                        <p>• Paga con tarjetas de crédito/débito</p>
-                        <p>• Proceso seguro a través de MercadoPago</p>
+                      <div className="space-y-4">
+                        <div className="space-y-3 text-sm text-muted-foreground">
+                          <p className="font-semibold flex items-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            MercadoPago
+                          </p>
+                          <p>• Paga con tarjetas de crédito/débito</p>
+                          <p>• Proceso seguro a través de MercadoPago</p>
+                        </div>
+                        {mixedPaymentEnabled && customer && (
+                          <MixedRunasPaymentSection
+                            customerRunas={customer.cantidad_runas || 0}
+                            total={total}
+                            runasToUse={mixedRunas}
+                            onChange={handleMixedRunasChange}
+                          />
+                        )}
                       </div>
                     )}
+
                     {runasEnabled && customer && (
                       <RunasPaymentSection
                         customerRunas={customer.cantidad_runas || 0}
@@ -803,6 +833,19 @@ export default function CustomerCheckout() {
               <span>Total</span>
               <span>{formatCurrency(total)}</span>
             </div>
+
+            {selectedPaymentMethod === 'mercadopago' && mixedPaymentEnabled && mixedRunasDiscount > 0 && (
+              <>
+                <div className="flex justify-between text-sm text-primary font-medium">
+                  <span>Abono con runas ({mixedRunas})</span>
+                  <span>-{formatCurrency(mixedRunasDiscount)}</span>
+                </div>
+                <div className="flex justify-between text-base font-bold">
+                  <span>A pagar en MercadoPago</span>
+                  <span>{formatCurrency(Math.max(0, total - mixedRunasDiscount))}</span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -828,9 +871,12 @@ export default function CustomerCheckout() {
               {selectedPaymentMethod === 'mercadopago' ? (
                 <>
                   <CreditCard className="h-4 w-4 mr-2" />
-                  Pagar con MercadoPago
+                  {mixedRunasDiscount > 0
+                    ? `Pagar ${formatCurrency(Math.max(0, total - mixedRunasDiscount))} con MercadoPago`
+                    : 'Pagar con MercadoPago'}
                 </>
               ) : (
+
                 <>
                   <Coins className="h-4 w-4 mr-2" />
                   Confirmar Pedido con Runas

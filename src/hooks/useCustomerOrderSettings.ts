@@ -4,6 +4,7 @@ import { configuredSupabase } from '@/lib/supabaseClient';
 export interface CustomerOrderSettings {
   mp_payment_enabled: boolean;
   runas_payment_enabled: boolean;
+  mixed_payment_enabled: boolean;
   app_orders_enabled: boolean;
   app_pickup_enabled: boolean;
   app_delivery_enabled: boolean;
@@ -43,6 +44,7 @@ export function useCustomerOrderSettings() {
         setSettings({
           mp_payment_enabled: settingsData.mp_payment_enabled ?? true,
           runas_payment_enabled: settingsData.runas_payment_enabled ?? true,
+          mixed_payment_enabled: settingsData.mixed_payment_enabled ?? false,
           app_orders_enabled: settingsData.app_orders_enabled ?? true,
           app_pickup_enabled: settingsData.app_pickup_enabled ?? true,
           app_delivery_enabled: settingsData.app_delivery_enabled ?? false
@@ -56,6 +58,7 @@ export function useCustomerOrderSettings() {
       setSettings({
         mp_payment_enabled: true,
         runas_payment_enabled: true,
+        mixed_payment_enabled: false,
         app_orders_enabled: true,
         app_pickup_enabled: true,
         app_delivery_enabled: false

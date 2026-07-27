@@ -25,6 +25,7 @@ export interface CreateMPPreferenceParams {
   subscription_discount_amount?: number;
   subscription_delivery_discount?: number;
   alliance_delivery_discount?: number;
+  runas_to_use?: number;
 }
 
 export interface CreateMPPreferenceResponse {

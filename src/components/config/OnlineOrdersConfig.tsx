@@ -27,7 +27,8 @@ export function OnlineOrdersConfig() {
     mp_client_id: '',
     mp_client_secret: '',
     runas_payment_enabled: true,
-    mp_payment_enabled: true
+    mp_payment_enabled: true,
+    mixed_payment_enabled: false
   });
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -43,7 +44,8 @@ export function OnlineOrdersConfig() {
         mp_client_id: settings.mp_client_id || '',
         mp_client_secret: settings.mp_client_secret || '',
         runas_payment_enabled: settings.runas_payment_enabled ?? true,
-        mp_payment_enabled: settings.mp_payment_enabled ?? true
+        mp_payment_enabled: settings.mp_payment_enabled ?? true,
+        mixed_payment_enabled: settings.mixed_payment_enabled ?? false
       });
     }
   }, [settings]);
@@ -355,6 +357,31 @@ export function OnlineOrdersConfig() {
               disabled={!localSettings.app_orders_enabled || !isAdmin || loading}
             />
           </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="mixed_payment_enabled" className="text-base font-medium flex items-center gap-2">
+                <Coins className="h-4 w-4" />
+                Pago mixto (Runas + MercadoPago)
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                El cliente abona parte del pedido con runas y paga el saldo con MercadoPago
+              </p>
+            </div>
+            <Switch
+              id="mixed_payment_enabled"
+              checked={localSettings.mixed_payment_enabled}
+              onCheckedChange={(checked) => handleChange('mixed_payment_enabled', checked)}
+              disabled={
+                !localSettings.app_orders_enabled ||
+                !localSettings.mp_enabled ||
+                !localSettings.mp_payment_enabled ||
+                !isAdmin ||
+                loading
+              }
+            />
+          </div>
+
 
           {localSettings.runas_payment_enabled && (
             <div className="p-4 border rounded-lg bg-muted/30 space-y-2 text-sm">

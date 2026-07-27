@@ -4573,6 +4573,7 @@ export type Database = {
           created_at: string
           google_signin_enabled: boolean
           id: string
+          mixed_payment_enabled: boolean
           mp_client_id: string | null
           mp_client_secret: string | null
           mp_enabled: boolean
@@ -4589,6 +4590,7 @@ export type Database = {
           created_at?: string
           google_signin_enabled?: boolean
           id?: string
+          mixed_payment_enabled?: boolean
           mp_client_id?: string | null
           mp_client_secret?: string | null
           mp_enabled?: boolean
@@ -4605,6 +4607,7 @@ export type Database = {
           created_at?: string
           google_signin_enabled?: boolean
           id?: string
+          mixed_payment_enabled?: boolean
           mp_client_id?: string | null
           mp_client_secret?: string | null
           mp_enabled?: boolean
