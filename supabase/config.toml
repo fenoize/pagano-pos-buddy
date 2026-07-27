@@ -48,6 +48,10 @@ verify_jwt = false
 [functions.lia-query]
 verify_jwt = false
 
+[functions.notify-new-app-order]
+verify_jwt = false
+
+
 
 
 
