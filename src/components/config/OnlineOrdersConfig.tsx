@@ -27,7 +27,8 @@ export function OnlineOrdersConfig() {
     mp_client_id: '',
     mp_client_secret: '',
     runas_payment_enabled: true,
-    mp_payment_enabled: true
+    mp_payment_enabled: true,
+    mixed_payment_enabled: false
   });
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -43,7 +44,8 @@ export function OnlineOrdersConfig() {
         mp_client_id: settings.mp_client_id || '',
         mp_client_secret: settings.mp_client_secret || '',
         runas_payment_enabled: settings.runas_payment_enabled ?? true,
-        mp_payment_enabled: settings.mp_payment_enabled ?? true
+        mp_payment_enabled: settings.mp_payment_enabled ?? true,
+        mixed_payment_enabled: settings.mixed_payment_enabled ?? false
       });
     }
   }, [settings]);
