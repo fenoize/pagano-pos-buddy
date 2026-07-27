@@ -734,15 +734,26 @@ export default function CustomerCheckout() {
                 ) : (
                   <>
                     {mpEnabled && (
-                      <div className="space-y-3 text-sm text-muted-foreground">
-                        <p className="font-semibold flex items-center gap-2">
-                          <CreditCard className="h-4 w-4" />
-                          MercadoPago
-                        </p>
-                        <p>• Paga con tarjetas de crédito/débito</p>
-                        <p>• Proceso seguro a través de MercadoPago</p>
+                      <div className="space-y-4">
+                        <div className="space-y-3 text-sm text-muted-foreground">
+                          <p className="font-semibold flex items-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            MercadoPago
+                          </p>
+                          <p>• Paga con tarjetas de crédito/débito</p>
+                          <p>• Proceso seguro a través de MercadoPago</p>
+                        </div>
+                        {mixedPaymentEnabled && customer && (
+                          <MixedRunasPaymentSection
+                            customerRunas={customer.cantidad_runas || 0}
+                            total={total}
+                            runasToUse={mixedRunas}
+                            onChange={handleMixedRunasChange}
+                          />
+                        )}
                       </div>
                     )}
+
                     {runasEnabled && customer && (
                       <RunasPaymentSection
                         customerRunas={customer.cantidad_runas || 0}
