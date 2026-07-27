@@ -3,12 +3,34 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.5.9";
- export const APP_BUILD_DATE = "2026-07-01";
+ export const APP_VERSION = "1.6.0";
+ export const APP_BUILD_DATE = "2026-07-27";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.6.0",
+     date: "2026-07-27",
+     changes: [
+       "App Cliente: pago mixto Runas + MercadoPago (switch configurable, validación de saldo server-side, devolución automática de runas si el pago falla)",
+       "Configuración · Pedidos Online: nuevo switch 'Pago mixto (Runas + MercadoPago)'",
+       "Configuración · Zonas de Delivery: nuevo modal 'Cotizar dirección' con búsqueda Mapbox, mapa interactivo y pin arrastrable (zona, distancia y costo en tiempo real)",
+       "App Cliente: pin arrastrable con geocodificación inversa al crear/editar direcciones (evita ubicaciones erróneas en parcelas y lotes)",
+       "App Cliente: combos muestran el precio efectivo por unidad (incluye slots obligatorios) en cada variante",
+       "Productos y variantes: visibilidad por plataforma (POS / App / Web) con switches y filtrado en cada canal",
+       "Usuarios: invitación de staff por email con trazabilidad (user_invitations + Edge Function invite-user)",
+       "Clientes: invitación al Clan Pagano por email branded vía Resend (customer_invitations), sin crear cuenta previa",
+       "Pantalla 'Pedido Listo' (TV): slug único por pantalla (/pos/pedido-listo/xxxx), sin depender de localStorage, y modo pantalla completa automático",
+       "Horarios: cierre automático de pedidos online y de app al finalizar el horario del local (sincronización por cron)",
+       "Pedidos de App: alarma de PendienteAceptacion vuelve a sonar al retomar la pestaña; push OneSignal a cajeros activos filtrado por sucursal",
+       "KDS: se muestran grupos de variantes (Carne / Pollo / Vegetal) y nombres reales de extras (fin del '1x undefined')",
+       "Runas: acumulación automática al marcar el pedido como Entregado y corrección del recálculo de saldo en ajustes manuales",
+       "Ventas: el código del cupón se muestra junto al descuento en el detalle del pedido",
+       "Combos con múltiples unidades: al hacer clic en una variante con el slot lleno se reemplaza la última selección (sin bloqueos)",
+       "ATENEA: SYSTEM_PROMPT ampliado con el esquema detallado de orders, customers, coupons, runas y cash_sessions"
+     ]
+   },
    {
      version: "1.5.9",
      date: "2026-07-01",
