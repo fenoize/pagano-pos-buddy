@@ -117,7 +117,7 @@ serve(async (req) => {
       updateData = {
         status: newStatus,
         payment_mp: payment.transaction_amount,
-        payment_method: 'mp',
+        payment_method: Number(currentOrder.payment_runas) > 0 ? 'mixto' : 'mp',
         notes: `${currentOrder.notes || ''}\n\n✅ Pago confirmado\nMP ID: ${payment.id}\nMétodo: ${payment.payment_method_id || 'N/A'}\nMonto: $${payment.transaction_amount}`.trim()
       };
     } else if (payment.status === 'pending' || payment.status === 'in_process') {
@@ -154,6 +154,40 @@ serve(async (req) => {
       }
       
       console.log(`✅ Order ${orderId} updated to status: ${newStatus}`);
+
+      // Devolver las runas abonadas si el pago no prosperó (pago mixto)
+      if (
+        newStatus === 'Cancelado' &&
+        currentOrder.status !== 'Cancelado' &&
+        Number(currentOrder.payment_runas) > 0 &&
+        currentOrder.customer_id
+      ) {
+        try {
+          const { data: canje } = await supabase
+            .from('runas_transactions')
+            .select('id, runas, amount')
+            .eq('order_id', orderId)
+            .eq('type', 'canje')
+            .maybeSingle();
+
+          if (canje && Number(canje.runas) < 0) {
+            await supabase.from('runas_transactions').insert([{
+              customer_id: currentOrder.customer_id,
+              type: 'ajuste',
+              runas: Math.abs(Number(canje.runas)),
+              amount: Number(canje.amount) || 0,
+              origen: 'Web',
+              order_id: orderId,
+              motivo: `Devolución de runas por pago no completado (pedido #${currentOrder.order_number})`
+            }]);
+            console.log('🪙 Runas devueltas al cliente');
+          }
+        } catch (refundErr) {
+          console.error('⚠️ Error devolviendo runas:', refundErr);
+        }
+      }
+      
+
       
       // Notificar por push a cajeros activos cuando el pedido queda PendienteAceptacion
       if (newStatus === 'PendienteAceptacion') {
