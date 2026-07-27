@@ -375,6 +375,11 @@ export default function CustomerCheckout() {
     setDiscountAmount(discount);
   };
 
+  const handleMixedRunasChange = useCallback((runas: number, discount: number) => {
+    setMixedRunas(runas);
+    setMixedRunasDiscount(discount);
+  }, []);
+
   const canPayWithRunas = customer && (customer.cantidad_runas || 0) >= runasToUse;
   const loading = mpLoading || processingRunas || settingsLoading || zonesLoading;
 
