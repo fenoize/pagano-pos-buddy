@@ -704,13 +704,22 @@ export default function CustomerCheckout() {
                       </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="mercadopago" className="mt-4">
+                    <TabsContent value="mercadopago" className="mt-4 space-y-4">
                       <div className="space-y-3 text-sm text-muted-foreground">
                         <p>• Paga con tarjetas de crédito/débito</p>
                         <p>• Proceso seguro a través de MercadoPago</p>
                         <p>• Serás redirigido para completar el pago</p>
                       </div>
+                      {mixedPaymentEnabled && customer && (
+                        <MixedRunasPaymentSection
+                          customerRunas={customer.cantidad_runas || 0}
+                          total={total}
+                          runasToUse={mixedRunas}
+                          onChange={handleMixedRunasChange}
+                        />
+                      )}
                     </TabsContent>
+
 
                     <TabsContent value="runas" className="mt-4">
                       {customer && (
