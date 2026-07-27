@@ -356,6 +356,31 @@ export function OnlineOrdersConfig() {
             />
           </div>
 
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="mixed_payment_enabled" className="text-base font-medium flex items-center gap-2">
+                <Coins className="h-4 w-4" />
+                Pago mixto (Runas + MercadoPago)
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                El cliente abona parte del pedido con runas y paga el saldo con MercadoPago
+              </p>
+            </div>
+            <Switch
+              id="mixed_payment_enabled"
+              checked={localSettings.mixed_payment_enabled}
+              onCheckedChange={(checked) => handleChange('mixed_payment_enabled', checked)}
+              disabled={
+                !localSettings.app_orders_enabled ||
+                !localSettings.mp_enabled ||
+                !localSettings.mp_payment_enabled ||
+                !isAdmin ||
+                loading
+              }
+            />
+          </div>
+
+
           {localSettings.runas_payment_enabled && (
             <div className="p-4 border rounded-lg bg-muted/30 space-y-2 text-sm">
               <p className="font-medium">Información sobre el pago con Runas:</p>
