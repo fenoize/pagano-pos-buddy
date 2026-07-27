@@ -201,10 +201,9 @@ export async function createRunasOrder(
 
     if (transactionError) throw transactionError;
 
-    // 6. Notificar a los cajeros activos (push OneSignal) — no bloqueante
-    supabase.functions
-      .invoke('notify-new-app-order', { body: { order_id: orderId } })
-      .catch((err) => console.warn('No se pudo notificar a los cajeros:', err));
+    // El push a cajeros lo dispara automáticamente el trigger de base de datos
+    // trg_notify_pending_acceptance_order al quedar el pedido en PendienteAceptacion.
+
 
     // El trigger sync_customer_runas_on_transaction actualiza automáticamente cantidad_runas
     const newBalance = validation.currentBalance - runas_to_use;
