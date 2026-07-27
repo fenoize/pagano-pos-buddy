@@ -58,6 +58,7 @@ export function useCustomerOrderSettings() {
       setSettings({
         mp_payment_enabled: true,
         runas_payment_enabled: true,
+        mixed_payment_enabled: false,
         app_orders_enabled: true,
         app_pickup_enabled: true,
         app_delivery_enabled: false
