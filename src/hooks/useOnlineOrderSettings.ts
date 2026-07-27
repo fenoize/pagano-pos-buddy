@@ -15,6 +15,7 @@ export interface OnlineOrderSettings {
   mp_client_secret: string | null;
   runas_payment_enabled: boolean;
   mp_payment_enabled: boolean;
+  mixed_payment_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
