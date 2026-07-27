@@ -60,6 +60,8 @@ export default function CustomerCheckout() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mercadopago' | 'runas'>('mercadopago');
   const [runasToUse, setRunasToUse] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [mixedRunas, setMixedRunas] = useState(0);
+  const [mixedRunasDiscount, setMixedRunasDiscount] = useState(0);
   const [processingRunas, setProcessingRunas] = useState(false);
   const initialStoredCoupon = (() => {
     try { return loadCartCoupon(); } catch { return null; }
