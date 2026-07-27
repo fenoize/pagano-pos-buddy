@@ -833,6 +833,19 @@ export default function CustomerCheckout() {
               <span>Total</span>
               <span>{formatCurrency(total)}</span>
             </div>
+
+            {selectedPaymentMethod === 'mercadopago' && mixedPaymentEnabled && mixedRunasDiscount > 0 && (
+              <>
+                <div className="flex justify-between text-sm text-primary font-medium">
+                  <span>Abono con runas ({mixedRunas})</span>
+                  <span>-{formatCurrency(mixedRunasDiscount)}</span>
+                </div>
+                <div className="flex justify-between text-base font-bold">
+                  <span>A pagar en MercadoPago</span>
+                  <span>{formatCurrency(Math.max(0, total - mixedRunasDiscount))}</span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -858,9 +871,12 @@ export default function CustomerCheckout() {
               {selectedPaymentMethod === 'mercadopago' ? (
                 <>
                   <CreditCard className="h-4 w-4 mr-2" />
-                  Pagar con MercadoPago
+                  {mixedRunasDiscount > 0
+                    ? `Pagar ${formatCurrency(Math.max(0, total - mixedRunasDiscount))} con MercadoPago`
+                    : 'Pagar con MercadoPago'}
                 </>
               ) : (
+
                 <>
                   <Coins className="h-4 w-4 mr-2" />
                   Confirmar Pedido con Runas
