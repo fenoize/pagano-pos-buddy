@@ -315,7 +315,8 @@ export default function CustomerCheckout() {
           coupon_code: couponToSend?.code || couponApplicationToSend?.payload?.coupon_code || null,
           subscription_discount_amount: subscriptionDiscountAmount,
           subscription_delivery_discount: subscriptionDeliveryDiscount,
-          alliance_delivery_discount: allianceDeliveryDiscount
+          alliance_delivery_discount: allianceDeliveryDiscount,
+          runas_to_use: mixedPaymentEnabled ? mixedRunas : 0
         });
       } else if (selectedPaymentMethod === 'runas') {
         // Flujo de Runas (sin redirección)
