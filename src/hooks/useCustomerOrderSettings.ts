@@ -4,6 +4,7 @@ import { configuredSupabase } from '@/lib/supabaseClient';
 export interface CustomerOrderSettings {
   mp_payment_enabled: boolean;
   runas_payment_enabled: boolean;
+  mixed_payment_enabled: boolean;
   app_orders_enabled: boolean;
   app_pickup_enabled: boolean;
   app_delivery_enabled: boolean;
