@@ -23,7 +23,8 @@ serve(async (req) => {
       items, customer_id, notes, fulfillment, 
       delivery_address, delivery_fee, delivery_zone_id, delivery_zone_name, delivery_lat, delivery_lng,
       coupon_id, coupon_code,
-      subscription_discount_amount, subscription_delivery_discount, alliance_delivery_discount
+      subscription_discount_amount, subscription_delivery_discount, alliance_delivery_discount,
+      runas_to_use
     } = body;
     
     if (!items || !Array.isArray(items) || items.length === 0) {
