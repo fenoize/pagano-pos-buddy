@@ -76,6 +76,7 @@ export default function CustomerCheckout() {
 
   const mpEnabled = paymentSettings?.mp_payment_enabled ?? true;
   const runasEnabled = paymentSettings?.runas_payment_enabled ?? true;
+  const mixedPaymentEnabled = paymentSettings?.mixed_payment_enabled ?? false;
   const deliveryEnabled = paymentSettings?.app_delivery_enabled ?? false;
   const pickupEnabled = paymentSettings?.app_pickup_enabled ?? true;
 
