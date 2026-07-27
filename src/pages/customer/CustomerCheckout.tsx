@@ -13,6 +13,7 @@ import { ShoppingCart, CreditCard, AlertCircle, Store, Loader2, Coins, Truck, Ma
 import { CustomerBottomNav } from '@/components/customer/CustomerBottomNav';
 import { StoreStatusBanner } from '@/components/customer/StoreStatusBanner';
 import { RunasPaymentSection } from '@/components/customer/RunasPaymentSection';
+import { MixedRunasPaymentSection } from '@/components/customer/MixedRunasPaymentSection';
 import { CustomerCouponInput } from '@/components/customer/CustomerCouponInput';
 import { useCart } from '@/contexts/CartContext';
 import { useCustomerAuth } from '@/contexts/CustomerAuthContext';
