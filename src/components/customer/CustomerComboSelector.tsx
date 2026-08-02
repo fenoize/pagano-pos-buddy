@@ -684,14 +684,15 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                               <div className="min-w-0">
                                 <span className="font-medium text-white block truncate">{variant.variant?.name}</span>
                                 {(() => {
-                                  const upcharge = getVariantUpcharge(slotIndex, variant);
-                                  if (upcharge <= 0) return null;
+                                  const delta = getVariantDelta(slotIndex, variant);
+                                  if (delta <= 0) return null;
                                   return (
                                     <span className="text-sm text-primary font-semibold ml-2">
-                                      +{formatPrice(upcharge)}
+                                      +{formatPrice(delta)}
                                     </span>
                                   );
                                 })()}
+
 
                               </div>
                             </div>
