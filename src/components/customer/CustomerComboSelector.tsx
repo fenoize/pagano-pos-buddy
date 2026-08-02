@@ -508,47 +508,18 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(price);
 
-  /**
-   * Precio efectivo por unidad del combo si se elige esta variante:
-   * precio base del combo + defaults de los slots obligatorios.
-   * Evita mostrar el precio "pelado" de la hamburguesa cuando el combo suma papas, etc.
-   */
-  const getEffectiveVariantPrice = (slotIndex: number, variant: ProductVariantOption): number => {
-    if (!comboConfig) return variant.price || 0;
-    const baseline = selections.map((sel, i) => ({
-      ...sel,
-      quantity: 1,
-      extras: {},
-      modifiers: [],
-      variant_group_selections: [],
-      ...(i === slotIndex ? { selectedVariant: variant, selectedVariants: [variant] } : {}),
-    })) as ComboItemSelection[];
-    const total = calcTotalFromSelections(baseline, comboConfig, productExtras, productVariants, productVariantGroups);
-    return total > 0 ? total : (variant.price || 0);
+  const getVariantDelta = (slotIndex: number, variant: ProductVariantOption): number => {
+    const selection = selections[slotIndex];
+    if (!selection) return 0;
+    const slot = selection.comboSlot;
+    const allVars = selection.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
+    const catVars = allVars.filter(v => v.variant?.category_id === slot?.category_id);
+    if (catVars.length === 0) return 0;
+    const minPrice = Math.min(...catVars.map(v => v.price || 0));
+    return Math.max(0, (variant.price || 0) - minPrice);
   };
 
-  const getVariantUpcharge = (slotIndex: number, variant: ProductVariantOption): number => {
-    if (!comboConfig) return 0;
 
-    // For fixed price combos with included_variants = false,
-    // return the price delta vs. the default variant (the actual upcharge).
-    // For all other modes, return the variant's own price contribution.
-    if (comboConfig.pricing_mode === 'fixed' && !comboConfig.included_variants) {
-      const selection = selections[slotIndex];
-      const slot = selection?.comboSlot;
-      const allVars = selection?.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
-      const catVars = allVars.filter(v => v.variant?.category_id === slot?.category_id);
-      const defVar = slot?.default_variant_id
-        ? catVars.find(v => v.category_variant_id === slot.default_variant_id)
-        : catVars.find(v => v.is_default);
-      const defPrice = defVar?.price || 0;
-      return Math.max(0, (variant.price || 0) - defPrice);
-    }
-
-    // Dynamic mode: show the discounted variant price
-    const discount = (1 - (comboConfig.combo_discount || 0) / 100);
-    return (variant.price || 0) * discount;
-  };
 
 
   const getCategoryName = (categoryId: string): string =>
@@ -713,14 +684,15 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                               <div className="min-w-0">
                                 <span className="font-medium text-white block truncate">{variant.variant?.name}</span>
                                 {(() => {
-                                  const upcharge = getVariantUpcharge(slotIndex, variant);
-                                  if (upcharge <= 0) return null;
+                                  const delta = getVariantDelta(slotIndex, variant);
+                                  if (delta <= 0) return null;
                                   return (
                                     <span className="text-sm text-primary font-semibold ml-2">
-                                      +{formatPrice(upcharge)}
+                                      +{formatPrice(delta)}
                                     </span>
                                   );
                                 })()}
+
 
                               </div>
                             </div>
@@ -788,14 +760,15 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                           <div className="flex-1">
                             <span className="font-medium text-white">{variant.variant?.name}</span>
                             {(() => {
-                              const upcharge = getVariantUpcharge(slotIndex, variant);
-                              if (upcharge <= 0) return null;
+                              const delta = getVariantDelta(slotIndex, variant);
+                              if (delta <= 0) return null;
                               return (
                                 <span className="text-sm text-primary font-semibold ml-2">
-                                  +{formatPrice(upcharge)}
+                                  +{formatPrice(delta)}
                                 </span>
                               );
                             })()}
+
 
                           </div>
                           {isMulti ? (
