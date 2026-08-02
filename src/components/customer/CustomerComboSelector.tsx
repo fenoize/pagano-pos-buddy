@@ -527,6 +527,29 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
     return total > 0 ? total : (variant.price || 0);
   };
 
+  const getVariantUpcharge = (slotIndex: number, variant: ProductVariantOption): number => {
+    if (!comboConfig) return 0;
+
+    // For fixed price combos with included_variants = false,
+    // return the price delta vs. the default variant (the actual upcharge).
+    // For all other modes, return the variant's own price contribution.
+    if (comboConfig.pricing_mode === 'fixed' && !comboConfig.included_variants) {
+      const selection = selections[slotIndex];
+      const slot = selection?.comboSlot;
+      const allVars = selection?.selectedProduct ? productVariants[selection.selectedProduct.id!] || [] : [];
+      const catVars = allVars.filter(v => v.variant?.category_id === slot?.category_id);
+      const defVar = slot?.default_variant_id
+        ? catVars.find(v => v.category_variant_id === slot.default_variant_id)
+        : catVars.find(v => v.is_default);
+      const defPrice = defVar?.price || 0;
+      return Math.max(0, (variant.price || 0) - defPrice);
+    }
+
+    // Dynamic mode: show the discounted variant price
+    const discount = (1 - (comboConfig.combo_discount || 0) / 100);
+    return (variant.price || 0) * discount;
+  };
+
 
   const getCategoryName = (categoryId: string): string =>
     categories.find(c => c.id === categoryId)?.name || 'Categoría';
