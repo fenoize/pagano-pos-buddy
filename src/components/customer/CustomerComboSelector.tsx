@@ -787,11 +787,15 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                         >
                           <div className="flex-1">
                             <span className="font-medium text-white">{variant.variant?.name}</span>
-                            {variant.price > 0 && (
-                              <span className="text-sm text-muted-foreground ml-2">
-                                {formatPrice(getEffectiveVariantPrice(slotIndex, variant))}
-                              </span>
-                            )}
+                            {(() => {
+                              const upcharge = getVariantUpcharge(slotIndex, variant);
+                              if (upcharge <= 0) return null;
+                              return (
+                                <span className="text-sm text-primary font-semibold ml-2">
+                                  +{formatPrice(upcharge)}
+                                </span>
+                              );
+                            })()}
 
                           </div>
                           {isMulti ? (
