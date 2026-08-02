@@ -712,11 +712,15 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
                               )}
                               <div className="min-w-0">
                                 <span className="font-medium text-white block truncate">{variant.variant?.name}</span>
-                                {variant.price > 0 && (
-                                  <span className="text-sm text-muted-foreground">
-                                    {formatPrice(getEffectiveVariantPrice(slotIndex, variant))}
-                                  </span>
-                                )}
+                                {(() => {
+                                  const upcharge = getVariantUpcharge(slotIndex, variant);
+                                  if (upcharge <= 0) return null;
+                                  return (
+                                    <span className="text-sm text-primary font-semibold ml-2">
+                                      +{formatPrice(upcharge)}
+                                    </span>
+                                  );
+                                })()}
 
                               </div>
                             </div>
