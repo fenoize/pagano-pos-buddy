@@ -100,7 +100,10 @@ export function AddressFormWithMap({
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const isProgrammaticMoveRef = useRef(false);
+  const lastCenterRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -132,54 +135,68 @@ export function AddressFormWithMap({
     const defaultLat = formData.latitude || -33.4489;
     const defaultLng = formData.longitude || -70.6693;
 
-    mapRef.current = new mapboxgl.Map({
+    const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [defaultLng, defaultLat],
-      zoom: hasValidLocation ? 16 : 12
+      zoom: hasValidLocation ? 17 : 12
     });
+    mapRef.current = map;
+    lastCenterRef.current = { lat: defaultLat, lng: defaultLng };
 
-    mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
 
-    // Add draggable marker if we have coordinates
-    if (hasValidLocation && formData.latitude && formData.longitude) {
-      markerRef.current = new mapboxgl.Marker({ color: '#f97316', draggable: true })
-        .setLngLat([formData.longitude, formData.latitude])
-        .addTo(mapRef.current);
-      markerRef.current.on('dragend', handleMarkerDragEnd);
-    }
+    const onMoveStart = () => {
+      if (!isProgrammaticMoveRef.current) setIsMoving(true);
+    };
+    const onMoveEnd = () => {
+      setIsMoving(false);
+      if (isProgrammaticMoveRef.current) {
+        isProgrammaticMoveRef.current = false;
+        return;
+      }
+      handleCenterChange();
+    };
+
+    map.on('movestart', onMoveStart);
+    map.on('moveend', onMoveEnd);
 
     return () => {
-      mapRef.current?.remove();
+      map.remove();
       mapRef.current = null;
-      markerRef.current = null;
     };
   }, [mapboxToken]);
 
-  // Update marker when coordinates change (from search)
+  // Recenter map when coordinates change from search
   useEffect(() => {
     if (!mapRef.current || !formData.latitude || !formData.longitude) return;
 
-    if (markerRef.current) {
-      markerRef.current.setLngLat([formData.longitude, formData.latitude]);
-    } else {
-      markerRef.current = new mapboxgl.Marker({ color: '#f97316', draggable: true })
-        .setLngLat([formData.longitude, formData.latitude])
-        .addTo(mapRef.current);
-      markerRef.current.on('dragend', handleMarkerDragEnd);
+    const last = lastCenterRef.current;
+    if (
+      last &&
+      Math.abs(last.lat - formData.latitude) < 0.000001 &&
+      Math.abs(last.lng - formData.longitude) < 0.000001
+    ) {
+      return;
     }
 
+    lastCenterRef.current = { lat: formData.latitude, lng: formData.longitude };
+    isProgrammaticMoveRef.current = true;
     mapRef.current.flyTo({
       center: [formData.longitude, formData.latitude],
-      zoom: 16,
+      zoom: 17,
       duration: 1000
     });
   }, [formData.latitude, formData.longitude]);
 
-  // Reverse geocode when marker is dragged
-  const handleMarkerDragEnd = async () => {
-    if (!markerRef.current || !mapboxToken) return;
-    const lngLat = markerRef.current.getLngLat();
+  // Reverse geocode using the map center (pin stays fixed at center)
+  const handleCenterChange = async () => {
+    const map = mapRef.current;
+    if (!map || !mapboxToken) return;
+    const lngLat = map.getCenter();
+
+    lastCenterRef.current = { lat: lngLat.lat, lng: lngLat.lng };
+
 
     setFormData(prev => ({
       ...prev,
