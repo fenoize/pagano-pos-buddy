@@ -204,6 +204,7 @@ export function AddressFormWithMap({
       longitude: lngLat.lng,
     }));
     setHasValidLocation(true);
+    setIsGeocoding(true);
 
     try {
       const response = await fetch(
@@ -234,8 +235,11 @@ export function AddressFormWithMap({
       setAddressSearch(feature.place_name);
     } catch (error) {
       console.error('Reverse geocode error:', error);
+    } finally {
+      setIsGeocoding(false);
     }
   };
+
 
   const handleAddressSelect = (result: {
     address: string;
