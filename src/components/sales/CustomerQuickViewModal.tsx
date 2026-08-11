@@ -48,6 +48,7 @@ export function CustomerQuickViewModal({ customerId, open, onOpenChange }: Props
   const [customer, setCustomer] = useState<CustomerLite | null>(null);
   const [orders, setOrders] = useState<RecentOrder[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!open || !customerId) {
