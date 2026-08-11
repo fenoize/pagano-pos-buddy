@@ -50,10 +50,19 @@ export function CustomerQuickViewModal({ customerId, open, onOpenChange }: Props
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!open || !customerId) return;
+    if (!open || !customerId) {
+      if (!open) {
+        setCustomer(null);
+        setOrders([]);
+        setLoading(false);
+      }
+      return;
+    }
     let cancelled = false;
+    setLoading(true);
+    setCustomer(null);
+    setOrders([]);
     (async () => {
-      setLoading(true);
       const [{ data: c }, { data: o }] = await Promise.all([
         supabase
           .from('customers')
