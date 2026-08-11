@@ -48,12 +48,24 @@ export function CustomerQuickViewModal({ customerId, open, onOpenChange }: Props
   const [customer, setCustomer] = useState<CustomerLite | null>(null);
   const [orders, setOrders] = useState<RecentOrder[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!open || !customerId) return;
+    if (!open || !customerId) {
+      if (!open) {
+        setCustomer(null);
+        setOrders([]);
+        setLoading(false);
+        setLoaded(false);
+      }
+      return;
+    }
     let cancelled = false;
+    setLoading(true);
+    setLoaded(false);
+    setCustomer(null);
+    setOrders([]);
     (async () => {
-      setLoading(true);
       const [{ data: c }, { data: o }] = await Promise.all([
         supabase
           .from('customers')
@@ -71,6 +83,7 @@ export function CustomerQuickViewModal({ customerId, open, onOpenChange }: Props
       setCustomer((c as any) || null);
       setOrders((o as any) || []);
       setLoading(false);
+      setLoaded(true);
     })();
     return () => {
       cancelled = true;
@@ -94,7 +107,7 @@ export function CustomerQuickViewModal({ customerId, open, onOpenChange }: Props
           <DialogDescription>Información del cliente</DialogDescription>
         </DialogHeader>
 
-        {loading ? (
+        {loading || !loaded ? (
           <div className="flex justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
