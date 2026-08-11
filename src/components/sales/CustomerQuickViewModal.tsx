@@ -83,7 +83,7 @@ export function CustomerQuickViewModal({ customerId, open, onOpenChange }: Props
       setCustomer((c as any) || null);
       setOrders((o as any) || []);
       setLoading(false);
-    })();
+      setLoaded(true);
     return () => {
       cancelled = true;
     };
