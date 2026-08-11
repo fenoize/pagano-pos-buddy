@@ -56,11 +56,13 @@ export function CustomerQuickViewModal({ customerId, open, onOpenChange }: Props
         setCustomer(null);
         setOrders([]);
         setLoading(false);
+        setLoaded(false);
       }
       return;
     }
     let cancelled = false;
     setLoading(true);
+    setLoaded(false);
     setCustomer(null);
     setOrders([]);
     (async () => {
