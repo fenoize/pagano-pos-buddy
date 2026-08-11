@@ -107,7 +107,7 @@ export function CustomerQuickViewModal({ customerId, open, onOpenChange }: Props
           <DialogDescription>Información del cliente</DialogDescription>
         </DialogHeader>
 
-        {loading ? (
+        {loading || !loaded ? (
           <div className="flex justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
