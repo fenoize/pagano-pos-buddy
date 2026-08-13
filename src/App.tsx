@@ -24,6 +24,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { POSThemeProvider } from "@/components/theme/POSThemeProvider";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { StaffPushBanner } from "@/components/notifications/StaffPushBanner";
+import { StaffStartupChecks } from "@/components/pos/StaffStartupChecks";
 import { IncomingOrderBanner } from "@/components/pos/IncomingOrderBanner";
 import { ConnectionAlarmBanner } from "@/components/pos/ConnectionAlarmBanner";
 import { BranchProvider } from "@/contexts/BranchContext";
@@ -187,6 +188,9 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
           onLogout={handleForceLogout}
         />
         
+        {/* Validaciones de inicio: versión + permisos de notificaciones */}
+        <StaffStartupChecks />
+
         {/* Prompt de instalación PWA para POS */}
         <POSInstallPrompt />
         
