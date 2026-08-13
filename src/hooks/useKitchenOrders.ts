@@ -238,8 +238,8 @@ export function useKitchenOrders() {
           return prev.filter(order => order.id !== orderId);
         }
 
-        // Si el pedido está en estado final o pendiente de aceptación, no mostrarlo en KDS
-        if (['Entregado', 'Cancelado', 'PendienteAceptacion'].includes(orderWithItems.status)) {
+        // Si el pedido está en estado final, pendiente de pago o pendiente de aceptación, no mostrarlo en KDS
+        if (['Entregado', 'Cancelado', 'PendienteAceptacion', 'PendientePago'].includes(orderWithItems.status)) {
           if (['Entregado', 'Cancelado'].includes(orderWithItems.status)) {
             console.log(`[KDS] Order #${orderWithItems.order_number} marked as ${orderWithItems.status}, adding to history`);
             addToHistory(orderId);
