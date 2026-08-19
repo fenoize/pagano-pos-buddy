@@ -11,6 +11,17 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 import { Order, OrderItem, Comuna, Customer, Product, ProductVariantOption } from '@/types';
 import { useOrderEdit, OrderEditData } from '@/hooks/useOrderEdit';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -69,6 +80,10 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   }>({ variants: {}, extras: [], modifiers: [], combos: {} });
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerResults, setCustomerResults] = useState<Customer[]>([]);
+  const [showRunasPrompt, setShowRunasPrompt] = useState(false);
+  const [runasPromptCustomer, setRunasPromptCustomer] = useState<Customer | null>(null);
+  const [accrueRunasOnSave, setAccrueRunasOnSave] = useState(false);
+
   
   const { updateOrder, calculateTotals, isLoading } = useOrderEdit();
   const { customers } = useCustomers();
@@ -332,11 +347,32 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
 
     try {
       const updatedOrder = await updateOrder(order.id, editData, reason);
+
+      // Cargar (acumular) las runas del pedido al cliente recién asignado
+      if (accrueRunasOnSave && editData.customer_id) {
+        const { data: accrual, error: accrualError } = await supabase.rpc('accrue_runas_for_order', {
+          p_customer_id: editData.customer_id,
+          p_order_id: order.id,
+        });
+        if (accrualError) {
+          toast.error('No se pudieron cargar las runas', { description: accrualError.message });
+        } else {
+          const result = accrual as any;
+          const runasGanadas = Number(result?.runas || 0);
+          if (runasGanadas > 0) {
+            toast.success(`✅ Se cargaron ${runasGanadas} runas al cliente`);
+          } else {
+            toast.info('No se cargaron runas', { description: `Motivo: ${result?.reason || 'no aplica'}` });
+          }
+        }
+      }
+
       onOrderUpdated(updatedOrder as Order);
       setIsEditMode(false);
       setEditData(null);
       setReason('');
       setRunasEditadas(0);
+      setAccrueRunasOnSave(false);
       
       // Recargar sesión de caja para actualizar los totales
       await checkActiveSession();
@@ -350,7 +386,9 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
     setEditData(null);
     setReason('');
     setRunasEditadas(0);
+    setAccrueRunasOnSave(false);
   };
+
 
   const handleItemUpdate = (index: number, updates: Partial<OrderItem>) => {
     if (!editData) return;
@@ -397,7 +435,13 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       customer_id: c.id, 
       nombre_resumen: `${c.name || ''} ${c.apellido || ''}`.trim() 
     } : null);
+    // Al asignar un cliente registrado distinto al original, preguntar si se cargan las runas
+    if (c.id !== order?.customer_id) {
+      setRunasPromptCustomer(c);
+      setShowRunasPrompt(true);
+    }
     setCustomerSearch('');
+
     setCustomerResults([]);
   };
 
@@ -1349,6 +1393,24 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
       />
+
+      <AlertDialog open={showRunasPrompt} onOpenChange={setShowRunasPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cargar las runas de este pedido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {runasPromptCustomer
+                ? `${`${runasPromptCustomer.name || ''} ${runasPromptCustomer.apellido || ''}`.trim()} es un cliente registrado. `
+                : ''}
+              Puedes acumular las runas correspondientes a este pedido al guardar los cambios.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setAccrueRunasOnSave(false)}>No</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setAccrueRunasOnSave(true)}>Sí, cargar runas</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -45,7 +45,10 @@ export interface CollectPaymentEntry {
   operationNumber?: string;
   salesChannelSlug?: string;
   externalOrderId?: string;
+  runas?: number;
+  customerId?: string | null;
 }
+
 
 interface CollectPaymentModalProps {
   isOpen: boolean;
@@ -71,9 +74,14 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   const { channels: allChannels } = useSalesChannels({ onlyActive: true });
   const deliveryAppChannels = allChannels.filter((c) => c.type === 'delivery_app');
 
-  // Filter: active, exclude runas (needs customer) and pendiente (order already pendiente)
+  const hasCustomer = !!order.customer_id;
+
+  // Filter: active, exclude pendiente (order already pendiente). Runas solo si hay cliente.
   const paymentMethods = allMethods.filter(
-    (m) => m.is_active && !['runas', 'pendiente'].includes(m.name.toLowerCase())
+    (m) =>
+      m.is_active &&
+      m.name.toLowerCase() !== 'pendiente' &&
+      (m.name.toLowerCase() !== 'runas' || hasCustomer)
   );
 
   const [payments, setPayments] = useState<CollectPaymentEntry[]>([]);
@@ -84,6 +92,9 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   const [selectedAppChannel, setSelectedAppChannel] = useState<SalesChannel | null>(null);
   const [externalOrderId, setExternalOrderId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentRunas, setCurrentRunas] = useState('');
+  const [customerRunas, setCustomerRunas] = useState(0);
+  const [runaRewardValue, setRunaRewardValue] = useState(600);
   const appInputRef = useRef<HTMLInputElement>(null);
 
   const total = order.total;
@@ -99,11 +110,40 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
       setCurrentOperation('');
       setSelectedAppChannel(null);
       setExternalOrderId('');
+      setCurrentRunas('');
       setLoading(false);
       const first = paymentMethods.find((m) => m.name === 'efectivo') || paymentMethods[0];
       if (first) setCurrentMethod(first.name);
     }
   }, [isOpen, allMethods.length]);
+
+  // Cargar saldo de runas del cliente y valor de canje
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      const { data: cfg } = await supabase
+        .from('config')
+        .select('value')
+        .eq('key', 'runa_reward_value')
+        .maybeSingle();
+      if (!cancelled && cfg?.value != null) setRunaRewardValue(Number(cfg.value) || 600);
+
+      if (order.customer_id) {
+        const { data: cust } = await supabase
+          .from('customers')
+          .select('cantidad_runas')
+          .eq('id', order.customer_id)
+          .maybeSingle();
+        if (!cancelled) setCustomerRunas(cust?.cantidad_runas || 0);
+      } else if (!cancelled) {
+        setCustomerRunas(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, order.customer_id]);
 
   // When switching away from aplicacion clear sub-state
   useEffect(() => {
@@ -118,10 +158,18 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
     if (!isOpen) return;
     if (currentMethod === 'efectivo') {
       setCurrentAmount('');
+    } else if (currentMethod === 'runas') {
+      const used = payments.reduce((s, p) => s + (p.runas || 0), 0);
+      const needed = Math.ceil(remaining / Math.max(runaRewardValue, 1));
+      const toUse = Math.max(0, Math.min(needed, customerRunas - used));
+      setCurrentRunas(toUse.toString());
+      setCurrentAmount(Math.min(toUse * runaRewardValue, remaining).toString());
+
     } else {
       setCurrentAmount(remaining.toString());
     }
-  }, [currentMethod, isOpen]);
+  }, [currentMethod, isOpen, customerRunas, runaRewardValue]);
+
 
   // When app is picked, lock to remaining and focus
   useEffect(() => {
@@ -135,9 +183,14 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   const methodConfig = paymentMethods.find((m) => m.name === currentMethod);
   const isEfectivo = currentMethod === 'efectivo';
   const isApp = currentMethod === 'aplicacion';
+  const isRunas = currentMethod === 'runas';
 
   const currentAmountNum = parseFloat(currentAmount) || 0;
+  const currentRunasNum = parseFloat(currentRunas) || 0;
+  const usedRunas = payments.reduce((s, p) => s + (p.runas || 0), 0);
+  const availableRunas = Math.max(0, customerRunas - usedRunas);
   const currentChange = isEfectivo ? Math.max(0, currentAmountNum - remaining) : 0;
+
 
   const getMethodIcon = (iconName?: string) => ICONS[iconName || ''] || <CreditCard className="w-5 h-5" />;
 
@@ -163,10 +216,39 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
       };
     }
 
+    if (isRunas) {
+      if (!order.customer_id) {
+        toast.error('El pedido no tiene cliente registrado');
+        return null;
+      }
+      if (currentRunasNum <= 0) {
+        toast.error('Ingrese la cantidad de runas');
+        return null;
+      }
+      if (currentRunasNum > availableRunas) {
+        toast.error(`El cliente solo tiene ${availableRunas} runas disponibles`);
+        return null;
+      }
+
+      const maxRunas = Math.ceil(remaining / Math.max(runaRewardValue, 1));
+      if (currentRunasNum > maxRunas) {
+        toast.error(`Máximo ${maxRunas} runas para cubrir el saldo restante`);
+        return null;
+      }
+      return {
+        methodName: 'runas',
+        displayName: methodConfig.display_name,
+        amount: Math.min(currentRunasNum * runaRewardValue, remaining),
+        runas: currentRunasNum,
+        customerId: order.customer_id,
+      };
+    }
+
     if (currentAmountNum <= 0) {
       toast.error('Ingrese un monto válido');
       return null;
     }
+
 
     if (methodConfig.requires_receipt && !currentReceipt.trim()) {
       toast.error('Ingrese el número de boleta');
@@ -202,6 +284,11 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
     setCurrentOperation('');
     setSelectedAppChannel(null);
     setExternalOrderId('');
+    setCurrentRunas('');
+    if (entry.methodName === 'runas') {
+      const fallback = paymentMethods.find((m) => m.name === 'efectivo') || paymentMethods[0];
+      if (fallback) setCurrentMethod(fallback.name);
+    }
     toast.success('Pago agregado', { description: `${entry.displayName} agregado` });
   };
 
@@ -233,6 +320,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
 
   const canAddOrConfirm = (() => {
     if (isApp) return !!selectedAppChannel && !!externalOrderId.trim();
+    if (isRunas) return currentRunasNum > 0 && currentRunasNum <= availableRunas;
     if (currentAmountNum <= 0) return false;
     if (methodConfig?.requires_receipt && !currentReceipt.trim()) return false;
     if (methodConfig?.requires_operation_number && !currentOperation.trim()) return false;
@@ -242,6 +330,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   const willCoverTotal = payments.length > 0
     ? totalPaid >= total
     : (isApp ? !!selectedAppChannel && !!externalOrderId.trim() : currentAmountNum >= remaining && canAddOrConfirm);
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -383,6 +472,47 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
                 </div>
               )}
 
+              {/* Runas */}
+              {remaining > 0 && isRunas && (
+                <div className="space-y-2">
+                  <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span>Saldo del cliente:</span>
+                      <span className="font-semibold">{availableRunas} runas</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Valor:</span>
+                      <span>1 runa = {formatCurrency(runaRewardValue)}</span>
+                    </div>
+                  </div>
+                  <Label htmlFor="runas">Runas a canjear</Label>
+                  <Input
+                    id="runas"
+                    type="number"
+                    value={currentRunas}
+                    onChange={(e) => {
+                      setCurrentRunas(e.target.value);
+                      const qty = parseFloat(e.target.value) || 0;
+                      setCurrentAmount(Math.min(qty * runaRewardValue, remaining).toString());
+                    }}
+                    placeholder="0"
+                  />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Equivale a:</span>
+                    <span className="font-semibold text-primary">
+                      {formatCurrency(Math.min(currentRunasNum * runaRewardValue, remaining))}
+                    </span>
+                  </div>
+                  {availableRunas === 0 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      El cliente no tiene runas disponibles.
+                    </p>
+                  )}
+                </div>
+              )}
+
+
+
               {/* Aplicación sub-flow */}
               {remaining > 0 && isApp && (
                 <div className="space-y-3">
@@ -455,7 +585,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
               )}
 
               {/* Otros métodos: monto + opcional boleta/operación */}
-              {remaining > 0 && !isEfectivo && !isApp && currentMethod && (
+              {remaining > 0 && !isEfectivo && !isApp && !isRunas && currentMethod && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="amount">Monto {methodConfig?.display_name}</Label>

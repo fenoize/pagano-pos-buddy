@@ -41,6 +41,7 @@ const initGlobalSubscription = () => {
    total: number;
    customer_name?: string;
    customer_phone?: string;
+   customer_id?: string | null;
    fulfillment: string;
    pickup_mode?: string;
    created_at: string;
@@ -60,7 +61,12 @@ const initGlobalSubscription = () => {
    operationNumber?: string;
    salesChannelSlug?: string;
    externalOrderId?: string;
+   /** Cantidad de runas usadas (solo para methodName === 'runas') */
+   runas?: number;
+   /** Cliente asociado (necesario para runas) */
+   customerId?: string | null;
  }
+
  
  export function usePendingPaymentOrders() {
    const [pendingOrders, setPendingOrders] = useState<PendingPaymentOrder[]>([]);
@@ -103,12 +109,14 @@ const initGlobalSubscription = () => {
          fulfillment: order.fulfillment,
          pickup_mode: order.pickup_mode,
          created_at: order.created_at,
-         cash_session_id: order.cash_session_id,
-        items: Array.isArray(order.items) ? order.items : [],
-         nombre_resumen: order.nombre_resumen,
-         notes: order.notes,
-         delivery_address: order.delivery_address
-       }));
+         customer_id: order.customer_id,
+          cash_session_id: order.cash_session_id,
+         items: Array.isArray(order.items) ? order.items : [],
+          nombre_resumen: order.nombre_resumen,
+          notes: order.notes,
+          delivery_address: order.delivery_address
+        }));
+
  
        setPendingOrders(orders);
      } catch (error) {
@@ -130,7 +138,9 @@ const initGlobalSubscription = () => {
         await setStaffContext(user.id);
 
         // Acumular montos por bucket
-        const totals = { efectivo: 0, pos: 0, mp: 0, aplicacion: 0 };
+        const totals = { efectivo: 0, pos: 0, mp: 0, aplicacion: 0, runas: 0 };
+        let runasQty = 0;
+        let runasCustomerId: string | null | undefined = null;
         let cashGivenTotal = 0;
         let receiptNumber: string | undefined;
         let operationNumber: string | undefined;
@@ -146,6 +156,10 @@ const initGlobalSubscription = () => {
             totals.pos += e.amount;
           } else if (name === 'transferencia' || name === 'mp') {
             totals.mp += e.amount;
+          } else if (name === 'runas') {
+            totals.runas += e.amount;
+            runasQty += e.runas || 0;
+            if (e.customerId) runasCustomerId = e.customerId;
           } else if (name === 'aplicacion') {
             totals.aplicacion += e.amount;
             if (e.salesChannelSlug) salesChannelSlug = e.salesChannelSlug;
@@ -170,6 +184,7 @@ const initGlobalSubscription = () => {
           payment_pos: totals.pos,
           payment_mp: totals.mp,
           payment_aplicacion: totals.aplicacion,
+          payment_runas: totals.runas,
           cash_given: cashGivenTotal,
         };
 
@@ -187,6 +202,27 @@ const initGlobalSubscription = () => {
           .from('orders')
           .update(updates)
           .eq('id', orderId);
+
+        // Registrar el canje de runas (si aplica)
+        if (!error && runasQty > 0 && runasCustomerId) {
+          const { error: runasError } = await supabase.rpc('insert_runas_transaction_with_context', {
+            p_user_id: user.id,
+            p_customer_id: runasCustomerId,
+            p_order_id: orderId,
+            p_type: 'canje',
+            p_runas: -runasQty,
+            p_amount: totals.runas,
+            p_origen: 'POS',
+            p_motivo: 'Canje de runas al cobrar pedido pendiente',
+          });
+          if (runasError) {
+            console.error('Error registrando canje de runas:', runasError);
+            toast.error('Pago registrado, pero falló el canje de runas', {
+              description: runasError.message,
+            });
+          }
+        }
+
 
 
  
