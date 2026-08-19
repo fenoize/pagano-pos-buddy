@@ -45,7 +45,10 @@ export interface CollectPaymentEntry {
   operationNumber?: string;
   salesChannelSlug?: string;
   externalOrderId?: string;
+  runas?: number;
+  customerId?: string | null;
 }
+
 
 interface CollectPaymentModalProps {
   isOpen: boolean;
