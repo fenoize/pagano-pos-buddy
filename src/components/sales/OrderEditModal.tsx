@@ -435,7 +435,13 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
       customer_id: c.id, 
       nombre_resumen: `${c.name || ''} ${c.apellido || ''}`.trim() 
     } : null);
+    // Al asignar un cliente registrado distinto al original, preguntar si se cargan las runas
+    if (c.id !== order?.customer_id) {
+      setRunasPromptCustomer(c);
+      setShowRunasPrompt(true);
+    }
     setCustomerSearch('');
+
     setCustomerResults([]);
   };
 
