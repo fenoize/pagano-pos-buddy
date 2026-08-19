@@ -159,10 +159,12 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
     if (currentMethod === 'efectivo') {
       setCurrentAmount('');
     } else if (currentMethod === 'runas') {
+      const used = payments.reduce((s, p) => s + (p.runas || 0), 0);
       const needed = Math.ceil(remaining / Math.max(runaRewardValue, 1));
-      const toUse = Math.max(0, Math.min(needed, customerRunas));
+      const toUse = Math.max(0, Math.min(needed, customerRunas - used));
       setCurrentRunas(toUse.toString());
       setCurrentAmount(Math.min(toUse * runaRewardValue, remaining).toString());
+
     } else {
       setCurrentAmount(remaining.toString());
     }
