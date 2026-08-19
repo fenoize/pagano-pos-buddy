@@ -1,66 +1,48 @@
-# Plan: Sub-flujo "Aplicación" en modal de pago
+# Fix notificaciones POS: banner de conexión + alarma de pedidos por aprobar
 
-## 1. Base de datos
+Nota de nomenclatura: en esta base de datos el estado se llama `PendienteAceptacion` (no `PendienteAprobacion`). El plan usa el estado real.
 
-Migración que añade a `orders`:
-- `external_order_id text` (nullable) — N° de pedido asignado por la app externa (Rappi/Uber/PedidosYa).
-- Índice simple `idx_orders_external_order_id` para búsquedas/duplicados.
+## Estado actual verificado
 
-No se cambia el enum `payment_method` (ya tiene `aplicacion`). No se tocan grants ni RLS (la tabla ya está configurada).
+- `src/hooks/useIncomingOrders.ts` ya crea el canal Realtime `incoming-orders` filtrado por `status=eq.PendienteAceptacion`, con reconexión y polling de respaldo cada 20s, pero **no expone el estado del canal** (`SUBSCRIBED` / `CLOSED` / `CHANNEL_ERROR`).
+- `src/components/pos/ConnectionAlarmBanner.tsx` + `src/hooks/useConnectionAlarm.ts` existen y se montan en `StaffLayout` (`src/App.tsx`), pero el chequeo de salud busca canales por nombre y solo considera desconexión el estado `closed`, además de exigir sesión de caja activa. Por eso deja de avisar en casos de `CHANNEL_ERROR`.
+- El sonido (`IncomingOrderSound`) se monta dentro de `IncomingOrderBanner`, que retorna `null` si no hay pedidos o si la caja no acepta pedidos de app; el `AudioContext` se crea recién al sonar, así que si el navegador lo bloquea no hay audio y no hay reintento.
+- No existe `audioManager` singleton, ni badge en `document.title`, ni Notification API para pedidos entrantes.
 
-## 2. Modal de pago — Nueva venta (`src/components/pos/PaymentModal.tsx`)
+## Cambios propuestos
 
-Estado nuevo:
-- `selectedAppChannel: SalesChannel | null`
-- `externalOrderId: string`
-- `appInputRef` para autofocus.
+### 1. Estado del canal expuesto por el hook
+En `useIncomingOrders.ts`: agregar estado `channelStatus` ('SUBSCRIBED' | 'CLOSED' | 'CHANNEL_ERROR' | 'TIMED_OUT' | 'CONNECTING'), actualizarlo en el callback de `.subscribe()` y devolverlo. No se cambia la lógica de reconexión ni el polling.
 
-Comportamiento al seleccionar el método "Aplicación":
-- **Paso 1**: en lugar de sumar el monto al instante, mostrar dentro del modal un sub-panel con los canales activos `type = 'delivery_app'` (vienen de `useSalesChannels({ onlyActive: true })`). Cada chip usa `channel.color` de borde/fondo y muestra el `name`.
-- **Paso 2**: al elegir un canal, aparece un `Input` "Nº de pedido [Nombre]" con `autoFocus`, `inputMode="text"`, `pattern="[A-Za-z0-9\-]+"` y sanitización en `onChange` (regex `/[^A-Za-z0-9-]/g`). Botón "Cambiar app" para volver al paso 1.
-- **Paso 3**: mientras haya app seleccionada:
-  - Ocultar los demás botones de método de pago y los campos de monto recibido / vuelto / pagos mixtos.
-  - El monto de la línea "aplicacion" se fija automáticamente en `total`.
-  - El botón principal pasa a decir "Confirmar pedido" (en vez de "Cobrar"); deshabilitado si `externalOrderId.trim() === ''`.
-- Al confirmar, el modal devuelve además `{ salesChannelSlug, externalOrderId }` en su payload `onConfirm`.
+### 2. Banner de conexión
+Reescribir `ConnectionAlarmBanner` para que muestre el aviso cuando `navigator.onLine === false` o el canal esté en `CLOSED` / `CHANNEL_ERROR` / `TIMED_OUT` de forma sostenida (~5s de debounce para evitar parpadeos en reconexiones normales):
+- Fondo `#7f1d1d`, texto blanco, fijo arriba, z-index alto.
+- Texto: "⚠ Sin conexión — No se están recibiendo pedidos".
+- Desaparece solo al volver `online` + canal `SUBSCRIBED`.
+- Se mantiene el botón de reconectar manual.
+Como el banner y el hook viven en componentes distintos, se comparte el estado del canal mediante un pequeño store módulo (suscripción tipo listener) que `useIncomingOrders` actualiza y el banner lee. Así el banner no necesita duplicar la suscripción.
 
-Si el usuario deselecciona "Aplicación" o cambia a otro método, se limpia `selectedAppChannel` y `externalOrderId`, y reaparece el flujo normal.
+### 3. `src/lib/audioManager.ts` (nuevo singleton)
+- `unlockAudio()`: crea/resume el `AudioContext` en la primera interacción.
+- `playAlarm()`: patrón de osciladores 880/660/880 Hz, sin archivos de audio.
+Se llama `unlockAudio()` en el primer `click`/`keydown` dentro del `StaffLayout`.
 
-## 3. Persistencia en `NewSale.tsx`
+### 4. Alarma persistente mientras haya pedidos pendientes
+Nuevo componente montado siempre en `StaffLayout` (independiente de que el banner de pedidos se renderice):
+- Suena de inmediato al detectar un pedido nuevo y repite cada 8s mientras exista al menos un pedido `PendienteAceptacion` sin atender.
+- Se detiene al llegar a cero pedidos pendientes.
+- Sustituye el uso de `IncomingOrderSound` para pedidos entrantes (se deja el componente para otros usos si los hay).
 
-En el handler de confirmación de venta:
-- Cuando el pago incluye "aplicacion" con sub-canal, sobrescribir:
-  - `sales_channel_slug = selectedAppChannel.slug`
-  - `external_order_id = externalOrderId.trim()`
-  - `payment_method = 'aplicacion'`
-- No alterar el cálculo de totales/vuelto/mixtos del resto de métodos.
-- Validación de respaldo: si `payment_aplicacion > 0` y el canal elegido por el usuario en el selector general de canal es de tipo `delivery_app`, exigir `external_order_id`.
+### 5. Badge en el título de la pestaña
+`document.title = "(N) ⚡ Pedido nuevo — Paganos POS"` cuando hay pendientes; restaurar el título original cuando no hay.
 
-`CollectPaymentModal.tsx` (cobrar pendientes) recibe el mismo sub-flujo: cuando se elige "Aplicación", pedir canal + `external_order_id`, persistirlos al actualizar la orden (`updates.sales_channel_slug`, `updates.external_order_id`). Esto mantiene consistencia para pedidos que se dejaron "pendiente" y se cobran después como app.
+### 6. Notificación del sistema
+- Pedir permiso `Notification` al entrar al POS (se integra con `StaffStartupChecks`, que ya gestiona el modal de permisos, para no duplicar prompts).
+- Al detectar un pedido nuevo, disparar `new Notification('⚡ Nuevo pedido en Paganos', { body: 'Pedido #N esperando aprobación', requireInteraction: true })`.
 
-## 4. Visualización en órdenes (KDS / Últimas Órdenes / Historial)
+## Archivos afectados
 
-`src/components/kitchen/OrderCard.tsx`, `src/components/sales/RecentOrdersModal.tsx`, `src/components/sales/OrderEditModal.tsx` y `src/pages/Sales.tsx`:
-- Si `order.sales_channel_slug` existe y el canal correspondiente tiene `type === 'delivery_app'`:
-  - Renderizar un badge con `channel.name` y `channel.color` (background + texto contrastante) **junto al** badge de tipo de entrega actual ("LLEVAR"/"DELIVERY"). No reemplaza; complementa.
-  - Si la orden tiene `external_order_id`, mostrarlo como texto pequeño debajo del badge: `#RAP-48291`.
-- Para canales no delivery_app o sin slug, comportamiento actual sin cambios.
+- Nuevo: `src/lib/audioManager.ts`, `src/lib/incomingOrdersChannelStore.ts`, `src/components/pos/PendingOrdersAlarm.tsx`
+- Editados: `src/hooks/useIncomingOrders.ts`, `src/components/pos/ConnectionAlarmBanner.tsx`, `src/hooks/useConnectionAlarm.ts`, `src/App.tsx` (StaffLayout), `src/components/pos/StaffStartupChecks.tsx`
 
-Reutilizar `OrderSourceBadge` extendiéndolo con una variante "delivery_app" que pinte con `channel.color` cuando aplica; los demás casos siguen igual.
-
-## 5. Versión
-
-Bump `src/config/version.ts` a `1.5.4` con changelog: "Sub-flujo Aplicación (Rappi/Uber/PedidosYa) con N° de pedido externo y badge de canal en órdenes".
-
-## Fuera de alcance
-- Integraciones reales con APIs de Rappi/Uber/PedidosYa.
-- Cambios al flujo de Efectivo, POS, MercadoPago, Transferencia, Runas, etc.
-- Cambios en reportes de caja (la app sigue contabilizándose vía `payment_aplicacion` como hoy).
-
-## Detalles técnicos
-
-- Sanitización del input: `value.replace(/[^A-Za-z0-9\-_ ]/g, '').slice(0, 40)`.
-- Autofocus con `useEffect` al cambiar `selectedAppChannel`.
-- Carga de canales: `useSalesChannels({ onlyActive: true })`, filtrar `type === 'delivery_app'`. Si la lista está vacía, deshabilitar el botón "Aplicación" con tooltip "No hay apps configuradas".
-- Tipos: extender `SaleConfirmPayload` (o equivalente que use `NewSale`) con `salesChannelSlug?: string` y `externalOrderId?: string`.
-- En `types/index.ts`/`integrations/supabase/types.ts`: el nuevo campo `external_order_id` quedará reflejado tras la migración (no se edita manualmente).
+Sin cambios de base de datos.
