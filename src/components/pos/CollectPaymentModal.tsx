@@ -472,6 +472,47 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
                 </div>
               )}
 
+              {/* Runas */}
+              {remaining > 0 && isRunas && (
+                <div className="space-y-2">
+                  <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span>Saldo del cliente:</span>
+                      <span className="font-semibold">{availableRunas} runas</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Valor:</span>
+                      <span>1 runa = {formatCurrency(runaRewardValue)}</span>
+                    </div>
+                  </div>
+                  <Label htmlFor="runas">Runas a canjear</Label>
+                  <Input
+                    id="runas"
+                    type="number"
+                    value={currentRunas}
+                    onChange={(e) => {
+                      setCurrentRunas(e.target.value);
+                      const qty = parseFloat(e.target.value) || 0;
+                      setCurrentAmount(Math.min(qty * runaRewardValue, remaining).toString());
+                    }}
+                    placeholder="0"
+                  />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Equivale a:</span>
+                    <span className="font-semibold text-primary">
+                      {formatCurrency(Math.min(currentRunasNum * runaRewardValue, remaining))}
+                    </span>
+                  </div>
+                  {availableRunas === 0 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      El cliente no tiene runas disponibles.
+                    </p>
+                  )}
+                </div>
+              )}
+
+
+
               {/* Aplicación sub-flow */}
               {remaining > 0 && isApp && (
                 <div className="space-y-3">
