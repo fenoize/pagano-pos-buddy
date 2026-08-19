@@ -74,9 +74,14 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   const { channels: allChannels } = useSalesChannels({ onlyActive: true });
   const deliveryAppChannels = allChannels.filter((c) => c.type === 'delivery_app');
 
-  // Filter: active, exclude runas (needs customer) and pendiente (order already pendiente)
+  const hasCustomer = !!order.customer_id;
+
+  // Filter: active, exclude pendiente (order already pendiente). Runas solo si hay cliente.
   const paymentMethods = allMethods.filter(
-    (m) => m.is_active && !['runas', 'pendiente'].includes(m.name.toLowerCase())
+    (m) =>
+      m.is_active &&
+      m.name.toLowerCase() !== 'pendiente' &&
+      (m.name.toLowerCase() !== 'runas' || hasCustomer)
   );
 
   const [payments, setPayments] = useState<CollectPaymentEntry[]>([]);
@@ -87,6 +92,9 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   const [selectedAppChannel, setSelectedAppChannel] = useState<SalesChannel | null>(null);
   const [externalOrderId, setExternalOrderId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentRunas, setCurrentRunas] = useState('');
+  const [customerRunas, setCustomerRunas] = useState(0);
+  const [runaRewardValue, setRunaRewardValue] = useState(600);
   const appInputRef = useRef<HTMLInputElement>(null);
 
   const total = order.total;
@@ -102,11 +110,40 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
       setCurrentOperation('');
       setSelectedAppChannel(null);
       setExternalOrderId('');
+      setCurrentRunas('');
       setLoading(false);
       const first = paymentMethods.find((m) => m.name === 'efectivo') || paymentMethods[0];
       if (first) setCurrentMethod(first.name);
     }
   }, [isOpen, allMethods.length]);
+
+  // Cargar saldo de runas del cliente y valor de canje
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      const { data: cfg } = await supabase
+        .from('config')
+        .select('value')
+        .eq('key', 'runa_reward_value')
+        .maybeSingle();
+      if (!cancelled && cfg?.value != null) setRunaRewardValue(Number(cfg.value) || 600);
+
+      if (order.customer_id) {
+        const { data: cust } = await supabase
+          .from('customers')
+          .select('cantidad_runas')
+          .eq('id', order.customer_id)
+          .maybeSingle();
+        if (!cancelled) setCustomerRunas(cust?.cantidad_runas || 0);
+      } else if (!cancelled) {
+        setCustomerRunas(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, order.customer_id]);
 
   // When switching away from aplicacion clear sub-state
   useEffect(() => {
@@ -121,10 +158,16 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
     if (!isOpen) return;
     if (currentMethod === 'efectivo') {
       setCurrentAmount('');
+    } else if (currentMethod === 'runas') {
+      const needed = Math.ceil(remaining / Math.max(runaRewardValue, 1));
+      const toUse = Math.max(0, Math.min(needed, customerRunas));
+      setCurrentRunas(toUse.toString());
+      setCurrentAmount(Math.min(toUse * runaRewardValue, remaining).toString());
     } else {
       setCurrentAmount(remaining.toString());
     }
-  }, [currentMethod, isOpen]);
+  }, [currentMethod, isOpen, customerRunas, runaRewardValue]);
+
 
   // When app is picked, lock to remaining and focus
   useEffect(() => {
