@@ -132,8 +132,26 @@ export function CashSessionTopBar() {
     if (!currentSession || !user) return;
 
     try {
+      // Bloquear activación manual fuera del horario del local
+      if (checked && (currentSession as any).branch_id) {
+        const { data: branch } = await supabase
+          .from('branches')
+          .select('accepts_online_orders, name')
+          .eq('id', (currentSession as any).branch_id)
+          .maybeSingle();
+
+        if (branch && branch.accepts_online_orders === false) {
+          setAcceptAppOrders(false);
+          toast.error('Fuera de horario', {
+            description: `El local está cerrado según su horario. No se pueden activar los pedidos desde la app.`,
+          });
+          return;
+        }
+      }
+
       // Establecer contexto de staff antes de actualizar
       await setStaffContext(user.id);
+
 
       const { error } = await supabase
         .from('cash_sessions')
