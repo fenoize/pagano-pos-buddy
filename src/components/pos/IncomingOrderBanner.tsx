@@ -4,7 +4,6 @@
  import { Badge } from '@/components/ui/badge';
  import { useIncomingOrders, IncomingOrder } from '@/hooks/useIncomingOrders';
  import { IncomingOrderModal } from './IncomingOrderModal';
- import { IncomingOrderSound } from './IncomingOrderSound';
  import { formatCurrency } from '@/lib/utils';
  import { cn } from '@/lib/utils';
 import { usePendingOrdersAlarm } from '@/hooks/usePendingOrdersAlarm';
@@ -101,13 +100,7 @@ import { usePendingOrdersAlarm } from '@/hooks/usePendingOrdersAlarm';
    return (
      <>
        {/* Sound component */}
-        <IncomingOrderSound
-          key={soundKey}
-          enabled={soundEnabled}
-          newOrderArrived={orders.length > 0}
-          onSoundPlayed={() => {}}
-          persistent
-        />
+        {/* Sonido gestionado por usePendingOrdersAlarm (audioManager) */}
  
        {/* Banner */}
        <div
