@@ -1393,6 +1393,24 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
       />
+
+      <AlertDialog open={showRunasPrompt} onOpenChange={setShowRunasPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cargar las runas de este pedido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {runasPromptCustomer
+                ? `${`${runasPromptCustomer.name || ''} ${runasPromptCustomer.apellido || ''}`.trim()} es un cliente registrado. `
+                : ''}
+              Puedes acumular las runas correspondientes a este pedido al guardar los cambios.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setAccrueRunasOnSave(false)}>No</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setAccrueRunasOnSave(true)}>Sí, cargar runas</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
