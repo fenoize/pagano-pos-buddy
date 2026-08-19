@@ -223,10 +223,11 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
         toast.error('Ingrese la cantidad de runas');
         return null;
       }
-      if (currentRunasNum > customerRunas) {
-        toast.error(`El cliente solo tiene ${customerRunas} runas disponibles`);
+      if (currentRunasNum > availableRunas) {
+        toast.error(`El cliente solo tiene ${availableRunas} runas disponibles`);
         return null;
       }
+
       const maxRunas = Math.ceil(remaining / Math.max(runaRewardValue, 1));
       if (currentRunasNum > maxRunas) {
         toast.error(`Máximo ${maxRunas} runas para cubrir el saldo restante`);
