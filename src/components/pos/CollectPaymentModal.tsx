@@ -585,7 +585,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
               )}
 
               {/* Otros métodos: monto + opcional boleta/operación */}
-              {remaining > 0 && !isEfectivo && !isApp && currentMethod && (
+              {remaining > 0 && !isEfectivo && !isApp && !isRunas && currentMethod && (
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="amount">Monto {methodConfig?.display_name}</Label>
