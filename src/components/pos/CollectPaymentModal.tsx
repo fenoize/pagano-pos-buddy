@@ -278,6 +278,11 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
     setCurrentOperation('');
     setSelectedAppChannel(null);
     setExternalOrderId('');
+    setCurrentRunas('');
+    if (entry.methodName === 'runas') {
+      const fallback = paymentMethods.find((m) => m.name === 'efectivo') || paymentMethods[0];
+      if (fallback) setCurrentMethod(fallback.name);
+    }
     toast.success('Pago agregado', { description: `${entry.displayName} agregado` });
   };
 
@@ -309,6 +314,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
 
   const canAddOrConfirm = (() => {
     if (isApp) return !!selectedAppChannel && !!externalOrderId.trim();
+    if (isRunas) return currentRunasNum > 0 && currentRunasNum <= availableRunas;
     if (currentAmountNum <= 0) return false;
     if (methodConfig?.requires_receipt && !currentReceipt.trim()) return false;
     if (methodConfig?.requires_operation_number && !currentOperation.trim()) return false;
@@ -318,6 +324,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   const willCoverTotal = payments.length > 0
     ? totalPaid >= total
     : (isApp ? !!selectedAppChannel && !!externalOrderId.trim() : currentAmountNum >= remaining && canAddOrConfirm);
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
