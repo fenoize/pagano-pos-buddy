@@ -187,6 +187,7 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   const currentRunasNum = parseFloat(currentRunas) || 0;
   const usedRunas = payments.reduce((s, p) => s + (p.runas || 0), 0);
   const availableRunas = Math.max(0, customerRunas - usedRunas);
+  const currentChange = isEfectivo ? Math.max(0, currentAmountNum - remaining) : 0;
 
 
   const getMethodIcon = (iconName?: string) => ICONS[iconName || ''] || <CreditCard className="w-5 h-5" />;
