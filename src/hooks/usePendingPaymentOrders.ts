@@ -41,6 +41,7 @@ const initGlobalSubscription = () => {
    total: number;
    customer_name?: string;
    customer_phone?: string;
+   customer_id?: string | null;
    fulfillment: string;
    pickup_mode?: string;
    created_at: string;
@@ -60,7 +61,12 @@ const initGlobalSubscription = () => {
    operationNumber?: string;
    salesChannelSlug?: string;
    externalOrderId?: string;
+   /** Cantidad de runas usadas (solo para methodName === 'runas') */
+   runas?: number;
+   /** Cliente asociado (necesario para runas) */
+   customerId?: string | null;
  }
+
  
  export function usePendingPaymentOrders() {
    const [pendingOrders, setPendingOrders] = useState<PendingPaymentOrder[]>([]);
