@@ -47,6 +47,53 @@ export function CashSessionTopBar() {
     }
   }, [currentSession]);
 
+  // Mantener el switch sincronizado con la BD (el cron de horarios puede apagarlo)
+  React.useEffect(() => {
+    if (!currentSession?.id) return;
+    const sessionId = currentSession.id;
+
+    const syncFromDb = async () => {
+      const { data } = await supabase
+        .from('cash_sessions')
+        .select('accept_app_orders, closed_at')
+        .eq('id', sessionId)
+        .maybeSingle();
+      if (!data) return;
+      if (data.closed_at) {
+        checkActiveSession();
+        return;
+      }
+      setAcceptAppOrders((prev) => {
+        const next = data.accept_app_orders || false;
+        if (prev !== next) updateCurrentSessionLocally({ accept_app_orders: next });
+        return next;
+      });
+    };
+
+    const channel = supabase
+      .channel(`cash-session-${sessionId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'cash_sessions', filter: `id=eq.${sessionId}` },
+        (payload: any) => {
+          const next = payload.new?.accept_app_orders || false;
+          setAcceptAppOrders(next);
+          updateCurrentSessionLocally({ accept_app_orders: next });
+        }
+      )
+      .subscribe();
+
+    const interval = setInterval(syncFromDb, 60000);
+    syncFromDb();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSession?.id]);
+
+
   // Only show for Cajero/Caja and Administrador roles
   if (!user || !['Cajero', 'Caja', 'Administrador'].includes(user.role)) {
     return null;
