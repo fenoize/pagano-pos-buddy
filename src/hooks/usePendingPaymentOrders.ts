@@ -109,12 +109,14 @@ const initGlobalSubscription = () => {
          fulfillment: order.fulfillment,
          pickup_mode: order.pickup_mode,
          created_at: order.created_at,
-         cash_session_id: order.cash_session_id,
-        items: Array.isArray(order.items) ? order.items : [],
-         nombre_resumen: order.nombre_resumen,
-         notes: order.notes,
-         delivery_address: order.delivery_address
-       }));
+         customer_id: order.customer_id,
+          cash_session_id: order.cash_session_id,
+         items: Array.isArray(order.items) ? order.items : [],
+          nombre_resumen: order.nombre_resumen,
+          notes: order.notes,
+          delivery_address: order.delivery_address
+        }));
+
  
        setPendingOrders(orders);
      } catch (error) {
