@@ -80,6 +80,10 @@ export function OrderEditModal({ order, isOpen, onClose, onOrderUpdated }: Order
   }>({ variants: {}, extras: [], modifiers: [], combos: {} });
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerResults, setCustomerResults] = useState<Customer[]>([]);
+  const [showRunasPrompt, setShowRunasPrompt] = useState(false);
+  const [runasPromptCustomer, setRunasPromptCustomer] = useState<Customer | null>(null);
+  const [accrueRunasOnSave, setAccrueRunasOnSave] = useState(false);
+
   
   const { updateOrder, calculateTotals, isLoading } = useOrderEdit();
   const { customers } = useCustomers();
