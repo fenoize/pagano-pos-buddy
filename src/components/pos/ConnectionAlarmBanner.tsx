@@ -1,60 +1,108 @@
-import { useConnectionAlarm } from '@/hooks/useConnectionAlarm';
+import { useEffect, useRef, useState } from 'react';
+import {
+  getIncomingChannelStatus,
+  subscribeIncomingChannelStatus,
+  type IncomingChannelStatus,
+} from '@/lib/incomingOrdersChannelStore';
+
+const BAD_STATUSES: IncomingChannelStatus[] = ['CLOSED', 'CHANNEL_ERROR', 'TIMED_OUT'];
+const DEBOUNCE_MS = 5000;
 
 export function ConnectionAlarmBanner() {
-  const { isDisconnected, dismissAlarm } = useConnectionAlarm();
+  const [isOffline, setIsOffline] = useState(
+    typeof navigator !== 'undefined' ? !navigator.onLine : false
+  );
+  const [channelStatus, setChannelStatus] = useState<IncomingChannelStatus>(
+    getIncomingChannelStatus()
+  );
+  const [visible, setVisible] = useState(false);
+  const unhealthySinceRef = useRef<number | null>(null);
 
-  if (!isDisconnected) return null;
+  // Monitor de red
+  useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+
+  // Monitor del canal Realtime de pedidos
+  useEffect(() => subscribeIncomingChannelStatus(setChannelStatus), []);
+
+  // Debounce: solo alertar si el problema se sostiene
+  useEffect(() => {
+    const evaluate = () => {
+      const unhealthy = isOffline || BAD_STATUSES.includes(channelStatus);
+
+      if (!unhealthy) {
+        unhealthySinceRef.current = null;
+        setVisible(false);
+        return;
+      }
+
+      if (isOffline) {
+        setVisible(true);
+        return;
+      }
+
+      if (unhealthySinceRef.current === null) {
+        unhealthySinceRef.current = Date.now();
+        return;
+      }
+      if (Date.now() - unhealthySinceRef.current >= DEBOUNCE_MS) {
+        setVisible(true);
+      }
+    };
+
+    evaluate();
+    const interval = window.setInterval(evaluate, 1000);
+    return () => clearInterval(interval);
+  }, [isOffline, channelStatus]);
+
+  if (!visible) return null;
 
   return (
-    <>
-      <style>{`
-        @keyframes connectionAlarmPulse {
-          from { transform: scale(1); }
-          to { transform: scale(1.02); }
-        }
-      `}</style>
-      <div
-        role="alert"
+    <div
+      role="alert"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        backgroundColor: '#7f1d1d',
+        color: '#ffffff',
+        fontWeight: 700,
+        padding: '14px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 16,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+      }}
+    >
+      <span style={{ fontSize: 17 }}>⚠ Sin conexión — No se están recibiendo pedidos</span>
+      <button
+        onClick={() => window.location.reload()}
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 9999,
-          backgroundColor: '#cc2525',
-          color: '#ffffff',
-          fontWeight: 700,
-          padding: '16px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
-          animation: 'connectionAlarmPulse 0.5s infinite alternate',
-          transformOrigin: 'center top',
+          background: '#ffffff',
+          color: '#7f1d1d',
+          border: 'none',
+          padding: '10px 20px',
+          fontSize: 15,
+          fontWeight: 800,
+          borderRadius: 6,
+          cursor: 'pointer',
+          letterSpacing: 0.5,
         }}
       >
-        <span style={{ fontSize: 18 }}>
-          ⚠ SIN CONEXIÓN CON EL SISTEMA — Los pedidos de clientes pueden no estar llegando.
-        </span>
-        <button
-          onClick={dismissAlarm}
-          style={{
-            background: '#ffffff',
-            color: '#cc2525',
-            border: 'none',
-            padding: '12px 24px',
-            fontSize: 16,
-            fontWeight: 800,
-            borderRadius: 6,
-            cursor: 'pointer',
-            letterSpacing: 0.5,
-          }}
-        >
-          RECONECTAR AHORA
-        </button>
-      </div>
-    </>
+        RECONECTAR
+      </button>
+    </div>
   );
 }
 

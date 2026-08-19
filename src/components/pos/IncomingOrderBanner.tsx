@@ -4,9 +4,9 @@
  import { Badge } from '@/components/ui/badge';
  import { useIncomingOrders, IncomingOrder } from '@/hooks/useIncomingOrders';
  import { IncomingOrderModal } from './IncomingOrderModal';
- import { IncomingOrderSound } from './IncomingOrderSound';
  import { formatCurrency } from '@/lib/utils';
  import { cn } from '@/lib/utils';
+import { usePendingOrdersAlarm } from '@/hooks/usePendingOrdersAlarm';
  
  export function IncomingOrderBanner() {
    const {
@@ -30,6 +30,9 @@
   // Auto-open the modal only when orders.length exceeds this threshold,
   // so minimizing keeps the modal closed until a NEW pending order arrives.
   const dismissedCountRef = useRef(0);
+
+  // Alarma sonora persistente + badge en título + notificación del sistema
+  usePendingOrdersAlarm(orders, canAcceptAppOrders && soundEnabled);
 
   // Clamp dismissed count if orders were accepted/decreased
   if (dismissedCountRef.current > orders.length) {
@@ -97,13 +100,7 @@
    return (
      <>
        {/* Sound component */}
-        <IncomingOrderSound
-          key={soundKey}
-          enabled={soundEnabled}
-          newOrderArrived={orders.length > 0}
-          onSoundPlayed={() => {}}
-          persistent
-        />
+        {/* Sonido gestionado por usePendingOrdersAlarm (audioManager) */}
  
        {/* Banner */}
        <div

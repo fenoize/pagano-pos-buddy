@@ -27,6 +27,7 @@ import { StaffPushBanner } from "@/components/notifications/StaffPushBanner";
 import { StaffStartupChecks } from "@/components/pos/StaffStartupChecks";
 import { IncomingOrderBanner } from "@/components/pos/IncomingOrderBanner";
 import { ConnectionAlarmBanner } from "@/components/pos/ConnectionAlarmBanner";
+import { unlockAudio } from "@/lib/audioManager";
 import { BranchProvider } from "@/contexts/BranchContext";
 import { BranchSelectorModal } from "@/components/branches/BranchSelectorModal";
 import { BranchIndicator } from "@/components/branches/BranchIndicator";
@@ -194,7 +195,7 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
         {/* Prompt de instalación PWA para POS */}
         <POSInstallPrompt />
         
-        <div className="min-h-screen flex w-full">
+        <div className="min-h-screen flex w-full" onClick={unlockAudio} onKeyDown={unlockAudio}>
           <AppSidebar />
           <div className="flex-1 flex flex-col">
             <header className="h-14 flex items-center justify-between border-b bg-background px-4 md:px-6">
