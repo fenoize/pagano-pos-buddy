@@ -181,8 +181,10 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
   const methodConfig = paymentMethods.find((m) => m.name === currentMethod);
   const isEfectivo = currentMethod === 'efectivo';
   const isApp = currentMethod === 'aplicacion';
+  const isRunas = currentMethod === 'runas';
 
   const currentAmountNum = parseFloat(currentAmount) || 0;
+  const currentRunasNum = parseFloat(currentRunas) || 0;
   const currentChange = isEfectivo ? Math.max(0, currentAmountNum - remaining) : 0;
 
   const getMethodIcon = (iconName?: string) => ICONS[iconName || ''] || <CreditCard className="w-5 h-5" />;
@@ -209,10 +211,38 @@ export function CollectPaymentModal({ isOpen, onClose, order, onCollectPayment }
       };
     }
 
+    if (isRunas) {
+      if (!order.customer_id) {
+        toast.error('El pedido no tiene cliente registrado');
+        return null;
+      }
+      if (currentRunasNum <= 0) {
+        toast.error('Ingrese la cantidad de runas');
+        return null;
+      }
+      if (currentRunasNum > customerRunas) {
+        toast.error(`El cliente solo tiene ${customerRunas} runas disponibles`);
+        return null;
+      }
+      const maxRunas = Math.ceil(remaining / Math.max(runaRewardValue, 1));
+      if (currentRunasNum > maxRunas) {
+        toast.error(`Máximo ${maxRunas} runas para cubrir el saldo restante`);
+        return null;
+      }
+      return {
+        methodName: 'runas',
+        displayName: methodConfig.display_name,
+        amount: Math.min(currentRunasNum * runaRewardValue, remaining),
+        runas: currentRunasNum,
+        customerId: order.customer_id,
+      };
+    }
+
     if (currentAmountNum <= 0) {
       toast.error('Ingrese un monto válido');
       return null;
     }
+
 
     if (methodConfig.requires_receipt && !currentReceipt.trim()) {
       toast.error('Ingrese el número de boleta');
