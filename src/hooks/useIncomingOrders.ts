@@ -6,6 +6,7 @@
  import { toast } from 'sonner';
  import { triggerOrderAssignedNotification } from '@/lib/staffNotificationTriggers';
  import { useAuthContext } from '@/contexts/AuthContext';
+import { setIncomingChannelStatus, type IncomingChannelStatus } from '@/lib/incomingOrdersChannelStore';
  
  // Simplified customer type for incoming orders
  export interface IncomingOrderCustomer {
@@ -71,6 +72,7 @@
   const { user } = useAuthContext();
 
   const [newOrderArrived, setNewOrderArrived] = useState(false);
+  const [channelStatus, setChannelStatus] = useState<IncomingChannelStatus>('IDLE');
   const lastAlertedCountRef = useRef(0);
   const latestOrderCountRef = useRef(0);
 
@@ -247,6 +249,8 @@
       let reconnectTimeout: ReturnType<typeof setTimeout>;
 
       const setupChannel = () => {
+        setChannelStatus('CONNECTING');
+        setIncomingChannelStatus('CONNECTING');
         if (channel) {
           supabase.removeChannel(channel);
         }
@@ -267,6 +271,8 @@
             }
           )
           .subscribe((status) => {
+            setChannelStatus(status as any);
+            setIncomingChannelStatus(status as any);
             if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
               console.warn('📡 Channel lost, reconnecting in 5s...');
               reconnectTimeout = setTimeout(setupChannel, 5000);
@@ -297,6 +303,7 @@
       document.addEventListener('visibilitychange', handleVisibility);
 
       return () => {
+        setIncomingChannelStatus('IDLE');
         if (channel) supabase.removeChannel(channel);
         clearInterval(pollInterval);
         clearTimeout(reconnectTimeout);
@@ -314,6 +321,7 @@
      canAcceptAppOrders,
      newOrderArrived,
      clearNewOrderFlag,
+     channelStatus,
      refetch: fetchPendingOrders
    };
  }
