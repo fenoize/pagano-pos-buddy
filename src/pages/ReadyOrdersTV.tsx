@@ -13,6 +13,7 @@ import { TVLayoutPromoOnly } from "@/components/tv/TVLayoutPromoOnly";
 import { TVConfigModal } from "@/components/tv/TVConfigModal";
 import { TVPreloader } from "@/components/tv/TVPreloader";
 import { cn } from "@/lib/utils";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ export default function ReadyOrdersTV() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { logout } = useAuthContext();
   const { slug: urlSlug } = useParams<{ slug?: string }>();
 
   // Resolve screenId: URL path :slug > ?screen= query param > undefined (loads default)
@@ -170,6 +172,16 @@ export default function ReadyOrdersTV() {
       document.exitFullscreen().catch(console.error);
     }
   };
+
+  // Cerrar sesión real (el rol TV no puede navegar a otras rutas del POS)
+  const handleLogout = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen().catch(console.error);
+      await logout();
+    } finally {
+      navigate('/pos/login', { replace: true });
+    }
+  }, [logout, navigate]);
 
   // Force full refresh: config + content + orders + image cache
   const handleForceRefresh = useCallback(async () => {
@@ -352,7 +364,7 @@ export default function ReadyOrdersTV() {
               <Settings className="h-5 w-5" />
             </Button>
 
-            <Button variant="ghost" size="icon" onClick={() => navigate('/pos')} title="Salir"
+            <Button variant="ghost" size="icon" onClick={handleLogout} title="Cerrar sesión"
               className={cn(theme === 'dark' ? "text-white hover:bg-gray-700" : "", "text-destructive hover:text-destructive")}>
               <LogOut className="h-5 w-5" />
             </Button>
@@ -362,7 +374,8 @@ export default function ReadyOrdersTV() {
 
       {!showHeader && (
         <div className="absolute top-0 left-0 right-0 h-16 z-40"
-          onMouseEnter={() => setShowTopBar(true)} onMouseLeave={() => setShowTopBar(false)} />
+          onMouseEnter={() => setShowTopBar(true)} onMouseLeave={() => setShowTopBar(false)}
+          onClick={() => setShowTopBar(true)} />
       )}
 
       {!showHeader && (
@@ -384,9 +397,9 @@ export default function ReadyOrdersTV() {
             <Settings className="h-4 w-4 mr-2" /> Configuración
           </Button>
           <Button variant="secondary" size="sm"
-            onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(console.error); navigate('/pos'); }}
+            onClick={handleLogout}
             className="bg-red-500/80 hover:bg-red-500 text-white">
-            <LogOut className="h-4 w-4 mr-2" /> Salir
+            <LogOut className="h-4 w-4 mr-2" /> Cerrar sesión
           </Button>
         </div>
       )}
