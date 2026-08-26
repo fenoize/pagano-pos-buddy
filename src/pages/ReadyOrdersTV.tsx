@@ -171,6 +171,16 @@ export default function ReadyOrdersTV() {
     }
   };
 
+  // Cerrar sesión real (el rol TV no puede navegar a otras rutas del POS)
+  const handleLogout = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen().catch(console.error);
+      await logout();
+    } finally {
+      navigate('/pos/login', { replace: true });
+    }
+  }, [logout, navigate]);
+
   // Force full refresh: config + content + orders + image cache
   const handleForceRefresh = useCallback(async () => {
     await clearTVImageCache();
