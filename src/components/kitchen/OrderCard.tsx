@@ -144,8 +144,14 @@ export function OrderCard({ order, config, onStatusChange, compact = false, isUp
   const cardMinHeight = compact ? 'min-h-[280px]' : 
     config.cardSize === 'large' ? 'min-h-[400px]' : 'min-h-[320px]';
 
+  const isVip = !!order.customer?.is_vip;
+
   return (
-    <Card className={`${getCardColor()} ${cardSizeClasses[config.cardSize]} transition-all duration-300 ${cardMinHeight}`}>
+    <Card
+      className={`${getCardColor()} ${cardSizeClasses[config.cardSize]} transition-all duration-300 ${cardMinHeight} ${
+        isVip ? 'vip-glow border-amber-400/70 dark:border-amber-500/60' : ''
+      }`}
+    >
       <CardHeader className={compact ? "pb-2 px-3" : "pb-3"}>
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">

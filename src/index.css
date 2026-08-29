@@ -271,4 +271,18 @@ All colors MUST be HSL and themed for light/dark modes.
   .currency {
     font-variant-numeric: tabular-nums;
   }
+
+  /* Glow sutil para tarjetas de clientes VIP en el KDS */
+  @keyframes vip-glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 10px 1px rgba(234, 179, 8, 0.30), 0 0 22px 2px rgba(234, 179, 8, 0.15);
+    }
+    50% {
+      box-shadow: 0 0 14px 2px rgba(234, 179, 8, 0.45), 0 0 30px 4px rgba(234, 179, 8, 0.22);
+    }
+  }
+
+  .vip-glow {
+    animation: vip-glow-pulse 3s ease-in-out infinite;
+  }
 }
