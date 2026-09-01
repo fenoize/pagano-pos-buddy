@@ -79,6 +79,32 @@ export function LevelFormModal({ open, onOpenChange, editingLevel, existingLevel
   const [form, setForm] = useState<FormState>(() => emptyForm(existingLevels.length + 1));
   const [codeTouched, setCodeTouched] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [couponSearchOpen, setCouponSearchOpen] = useState(false);
+  const [couponQuery, setCouponQuery] = useState('');
+  const [couponResults, setCouponResults] = useState<{ id: string; code: string; description: string | null }[]>([]);
+
+  const hasLevelCoupon = form.benefits.some(
+    (b) => typeof b !== 'string' && (b as Record<string, string>).type === 'level_coupon'
+  );
+
+  useEffect(() => {
+    if (!couponSearchOpen) return;
+    const term = couponQuery.trim();
+    const timer = setTimeout(async () => {
+      let query = supabase
+        .from('coupons')
+        .select('id, code, description')
+        .eq('is_active', true)
+        .order('code')
+        .limit(20);
+      if (term) query = query.ilike('code', `%${term}%`);
+      const { data } = await query;
+      setCouponResults(data || []);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [couponQuery, couponSearchOpen]);
+
+
 
   useEffect(() => {
     if (!open) return;
