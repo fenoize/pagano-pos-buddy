@@ -148,6 +148,64 @@ export default function NewSale() {
     }
   }, [customer?.id, autoAppliedAllianceCouponId]);
 
+  // ===== Beneficio de nivel de fidelización =====
+  const { data: levelBenefit } = useLevelBenefit(customer?.id);
+  const { fetchCouponByCode } = useCoupons();
+  const [levelBenefitShown, setLevelBenefitShown] = useState(false);
+  const [levelBenefitModalOpen, setLevelBenefitModalOpen] = useState(false);
+  const [levelBenefitCouponId, setLevelBenefitCouponId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLevelBenefitShown(false);
+    setLevelBenefitCouponId(null);
+  }, [customer?.id]);
+
+  useEffect(() => {
+    if (!levelBenefit?.found) return;
+    if (levelBenefitShown) return;
+    if (cartItems.length === 0) return;
+    setLevelBenefitShown(true);
+    setLevelBenefitModalOpen(true);
+  }, [levelBenefit, levelBenefitShown, cartItems.length]);
+
+  const handleApplyCouponByCode = useCallback(async (code: string) => {
+    try {
+      const coupon = await fetchCouponByCode(code);
+      if (!coupon) {
+        toast.error('Cupón de nivel no encontrado');
+        return;
+      }
+      const result = await validateCouponEligibility(
+        coupon,
+        cartItems,
+        subtotal,
+        customer,
+        user?.role as any,
+        [],
+        deliveryFee
+      );
+      if (!result.valid) {
+        toast.error(result.errors?.[0] || 'El cupón no es aplicable a este carrito');
+        return;
+      }
+      const application = await applyCouponToCart(
+        result.coupon || coupon,
+        cartItems,
+        result.eligible_line_indices || [],
+        deliveryFee,
+        user?.id
+      );
+      // Solo puede haber un cupón activo: reemplaza cualquier otro
+      setAppliedCoupons([application]);
+      setLevelBenefitCouponId(application.coupon_id);
+      toast.success(`Beneficio de nivel aplicado: ${coupon.code}`);
+    } catch (e) {
+      console.error('Error aplicando beneficio de nivel:', e);
+      toast.error('Error al aplicar el beneficio de nivel');
+    }
+  }, [fetchCouponByCode, cartItems, subtotal, customer, user?.role, user?.id, deliveryFee]);
+
+
   // Calculate subscription discount with rules
   const calculateSubscriptionDiscount = () => {
     if (subscriptionDiscountPercent <= 0 || !subscriptionRules) return { products: 0, delivery: 0 };
