@@ -1304,12 +1304,36 @@ export default function NewSale() {
         subscriptionDiscountPercent={subscriptionDiscountPercent}
       />
 
+      {/* Level Benefit Modal */}
+      {levelBenefit && (
+        <LevelBenefitOfferModal
+          open={levelBenefitModalOpen}
+          onOpenChange={setLevelBenefitModalOpen}
+          benefit={levelBenefit}
+          customerName={customer?.nombre || undefined}
+          hasExistingCoupon={appliedCoupons.length > 0}
+          existingCouponCode={appliedCoupons[0]?.payload?.coupon_code}
+          onApply={(code) => {
+            handleApplyCouponByCode(code);
+            setLevelBenefitModalOpen(false);
+          }}
+          onSkip={() => setLevelBenefitModalOpen(false)}
+        />
+      )}
+
       {/* Coupon Modal */}
       <CouponModal
         isOpen={isCouponModalOpen}
         onClose={() => setIsCouponModalOpen(false)}
         onApply={(coupon) => {
-          setAppliedCoupons(prev => [...prev, coupon]);
+          // Un cupón de nivel y un cupón manual no se acumulan: el nuevo reemplaza al anterior
+          setAppliedCoupons(prev => [
+            ...prev.filter(c => c.coupon_id !== levelBenefitCouponId),
+            coupon,
+          ]);
+          if (levelBenefitCouponId && coupon.coupon_id !== levelBenefitCouponId) {
+            setLevelBenefitCouponId(null);
+          }
         }}
         cartItems={cartItems}
         subtotal={subtotal}
@@ -1318,10 +1342,12 @@ export default function NewSale() {
         existingCoupons={appliedCoupons}
         onRemoveCoupon={(couponId) => {
           setAppliedCoupons(prev => prev.filter(c => c.coupon_id !== couponId));
+          if (couponId === levelBenefitCouponId) setLevelBenefitCouponId(null);
         }}
         manualDiscount={manualDiscount}
         onManualDiscountChange={setManualDiscount}
       />
+
 
       {/* Customer Modal */}
       <CustomerModal
