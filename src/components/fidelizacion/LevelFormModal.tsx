@@ -6,7 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Plus, Save, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Loader2, Plus, Save, Ticket, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { LevelIcon, LEVEL_ICON_NAMES } from './LevelIcon';
 import type { Level, LevelInput } from '@/hooks/useCustomerLevels';
 import { cn } from '@/lib/utils';
@@ -23,6 +26,8 @@ export const LEVEL_COLORS = [
   { value: 'text-yellow-400', label: 'Amarillo' },
 ];
 
+export type BenefitItem = string | Record<string, string>;
+
 interface FormState {
   level_code: string;
   level_name: string;
@@ -34,7 +39,7 @@ interface FormState {
   icon: string;
   color: string;
   description: string;
-  benefits: string[];
+  benefits: BenefitItem[];
   is_active: boolean;
 }
 
@@ -74,12 +79,38 @@ export function LevelFormModal({ open, onOpenChange, editingLevel, existingLevel
   const [form, setForm] = useState<FormState>(() => emptyForm(existingLevels.length + 1));
   const [codeTouched, setCodeTouched] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [couponSearchOpen, setCouponSearchOpen] = useState(false);
+  const [couponQuery, setCouponQuery] = useState('');
+  const [couponResults, setCouponResults] = useState<{ id: string; code: string; description: string | null }[]>([]);
+
+  const hasLevelCoupon = form.benefits.some(
+    (b) => typeof b !== 'string' && (b as Record<string, string>).type === 'level_coupon'
+  );
+
+  useEffect(() => {
+    if (!couponSearchOpen) return;
+    const term = couponQuery.trim();
+    const timer = setTimeout(async () => {
+      let query = supabase
+        .from('coupons')
+        .select('id, code, description')
+        .eq('is_active', true)
+        .order('code')
+        .limit(20);
+      if (term) query = query.ilike('code', `%${term}%`);
+      const { data } = await query;
+      setCouponResults(data || []);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [couponQuery, couponSearchOpen]);
+
+
 
   useEffect(() => {
     if (!open) return;
     setErrors([]);
     if (editingLevel) {
-      const benefits = Array.isArray(editingLevel.benefits) ? (editingLevel.benefits as string[]) : [];
+      const benefits = Array.isArray(editingLevel.benefits) ? (editingLevel.benefits as BenefitItem[]) : [];
       setForm({
         level_code: editingLevel.level_code,
         level_name: editingLevel.level_name,
@@ -146,7 +177,7 @@ export function LevelFormModal({ open, onOpenChange, editingLevel, existingLevel
       icon: form.icon,
       color: form.color,
       description: form.description.trim() || null,
-      benefits: form.benefits.filter((b) => b.trim() !== ''),
+      benefits: form.benefits.filter((b) => (typeof b === 'string' ? b.trim() !== '' : true)),
       is_active: form.is_active,
     };
     await onSave(input, editingLevel?.id);
@@ -329,42 +360,130 @@ export function LevelFormModal({ open, onOpenChange, editingLevel, existingLevel
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <Label>Beneficios</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => set('benefits', [...form.benefits, ''])}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Agregar beneficio
-              </Button>
+              <div className="flex gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={hasLevelCoupon}
+                          onClick={() => setCouponSearchOpen((v) => !v)}
+                        >
+                          <Ticket className="h-4 w-4 mr-1" />
+                          Vincular cupón de nivel
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {hasLevelCoupon && (
+                      <TooltipContent>Ya hay un cupón de nivel vinculado</TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => set('benefits', [...form.benefits, ''])}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Agregar beneficio
+                </Button>
+              </div>
             </div>
-            <div className="space-y-2">
-              {form.benefits.map((benefit, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input
-                    placeholder="ej: 5% descuento en productos"
-                    value={benefit}
-                    onChange={(e) =>
-                      set('benefits', form.benefits.map((b, i) => (i === index ? e.target.value : b)))
-                    }
-                  />
-                  {form.benefits.length > 1 && (
-                    <Button
+
+            {couponSearchOpen && !hasLevelCoupon && (
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <Input
+                  placeholder="Buscar cupón por código..."
+                  value={couponQuery}
+                  onChange={(e) => setCouponQuery(e.target.value.toUpperCase())}
+                />
+                {couponResults.length === 0 && couponQuery.trim().length > 0 && (
+                  <p className="text-xs text-muted-foreground">Sin resultados.</p>
+                )}
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {couponResults.map((c) => (
+                    <button
+                      key={c.id}
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => set('benefits', form.benefits.filter((_, i) => i !== index))}
+                      onClick={() => {
+                        set('benefits', [
+                          ...form.benefits,
+                          {
+                            type: 'level_coupon',
+                            coupon_id: c.id,
+                            coupon_code: c.code,
+                            label: c.description || c.code,
+                          },
+                        ]);
+                        setCouponSearchOpen(false);
+                        setCouponQuery('');
+                      }}
+                      className="flex w-full items-center gap-2 rounded-md border border-border px-3 py-2 text-left text-sm hover:bg-muted"
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
+                      <Ticket className="h-4 w-4 text-primary" />
+                      <span className="font-medium">{c.code}</span>
+                      <span className="text-xs text-muted-foreground truncate">{c.description}</span>
+                    </button>
+                  ))}
                 </div>
-              ))}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {form.benefits.map((benefit, index) => {
+                if (typeof benefit !== 'string') {
+                  const b = benefit as Record<string, string>;
+                  return (
+                    <div
+                      key={`coupon-${index}`}
+                      className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-2"
+                    >
+                      <Ticket className="h-4 w-4 text-primary shrink-0" />
+                      <span className="font-medium text-sm">{b.coupon_code}</span>
+                      <Badge variant="secondary">Cupón vinculado</Badge>
+                      <span className="text-xs text-muted-foreground truncate flex-1">{b.label}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => set('benefits', form.benefits.filter((_, i) => i !== index))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      placeholder="ej: 5% descuento en productos"
+                      value={benefit}
+                      onChange={(e) =>
+                        set('benefits', form.benefits.map((b, i) => (i === index ? e.target.value : b)))
+                      }
+                    />
+                    {form.benefits.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => set('benefits', form.benefits.filter((_, i) => i !== index))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
+
 
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <Label htmlFor="is_active" className="cursor-pointer">

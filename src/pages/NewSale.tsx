@@ -20,6 +20,10 @@ import RunasCalculator from '@/components/pos/RunasCalculator';
 import { CouponManager } from '@/components/pos/CouponManager';
 import { CouponModal } from '@/components/pos/CouponModal';
 import { POSCustomerBenefitsModal } from '@/components/pos/POSCustomerBenefitsModal';
+import { LevelBenefitOfferModal } from '@/components/pos/LevelBenefitOfferModal';
+import { useLevelBenefit } from '@/hooks/useLevelBenefit';
+import { useCoupons } from '@/hooks/useCoupons';
+import { validateCouponEligibility, applyCouponToCart } from '@/lib/couponValidation';
 import { useCustomerAllianceBenefits } from '@/hooks/useCustomerAllianceBenefits';
 import { isPosAllianceCouponEnabled } from '@/lib/allianceBenefitPrefs';
 import { ArrowLeft, ArrowRight, User, Ticket, History, AlertTriangle, Sparkles } from 'lucide-react';
@@ -143,6 +147,64 @@ export default function NewSale() {
       setAutoAppliedAllianceCouponId(null);
     }
   }, [customer?.id, autoAppliedAllianceCouponId]);
+
+  // ===== Beneficio de nivel de fidelización =====
+  const { data: levelBenefit } = useLevelBenefit(customer?.id);
+  const { fetchCouponByCode } = useCoupons();
+  const [levelBenefitShown, setLevelBenefitShown] = useState(false);
+  const [levelBenefitModalOpen, setLevelBenefitModalOpen] = useState(false);
+  const [levelBenefitCouponId, setLevelBenefitCouponId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLevelBenefitShown(false);
+    setLevelBenefitCouponId(null);
+  }, [customer?.id]);
+
+  useEffect(() => {
+    if (!levelBenefit?.found) return;
+    if (levelBenefitShown) return;
+    if (cartItems.length === 0) return;
+    setLevelBenefitShown(true);
+    setLevelBenefitModalOpen(true);
+  }, [levelBenefit, levelBenefitShown, cartItems.length]);
+
+  const handleApplyCouponByCode = useCallback(async (code: string) => {
+    try {
+      const coupon = await fetchCouponByCode(code);
+      if (!coupon) {
+        toast.error('Cupón de nivel no encontrado');
+        return;
+      }
+      const result = await validateCouponEligibility(
+        coupon,
+        cartItems,
+        subtotal,
+        customer,
+        user?.role as any,
+        [],
+        deliveryFee
+      );
+      if (!result.valid) {
+        toast.error(result.errors?.[0] || 'El cupón no es aplicable a este carrito');
+        return;
+      }
+      const application = await applyCouponToCart(
+        result.coupon || coupon,
+        cartItems,
+        result.eligible_line_indices || [],
+        deliveryFee,
+        user?.id
+      );
+      // Solo puede haber un cupón activo: reemplaza cualquier otro
+      setAppliedCoupons([application]);
+      setLevelBenefitCouponId(application.coupon_id);
+      toast.success(`Beneficio de nivel aplicado: ${coupon.code}`);
+    } catch (e) {
+      console.error('Error aplicando beneficio de nivel:', e);
+      toast.error('Error al aplicar el beneficio de nivel');
+    }
+  }, [fetchCouponByCode, cartItems, subtotal, customer, user?.role, user?.id, deliveryFee]);
+
 
   // Calculate subscription discount with rules
   const calculateSubscriptionDiscount = () => {
@@ -1304,12 +1366,36 @@ export default function NewSale() {
         subscriptionDiscountPercent={subscriptionDiscountPercent}
       />
 
+      {/* Level Benefit Modal */}
+      {levelBenefit && (
+        <LevelBenefitOfferModal
+          open={levelBenefitModalOpen}
+          onOpenChange={setLevelBenefitModalOpen}
+          benefit={levelBenefit}
+          customerName={customer?.nombres || customer?.name || undefined}
+          hasExistingCoupon={appliedCoupons.length > 0}
+          existingCouponCode={appliedCoupons[0]?.payload?.coupon_code}
+          onApply={(code) => {
+            handleApplyCouponByCode(code);
+            setLevelBenefitModalOpen(false);
+          }}
+          onSkip={() => setLevelBenefitModalOpen(false)}
+        />
+      )}
+
       {/* Coupon Modal */}
       <CouponModal
         isOpen={isCouponModalOpen}
         onClose={() => setIsCouponModalOpen(false)}
         onApply={(coupon) => {
-          setAppliedCoupons(prev => [...prev, coupon]);
+          // Un cupón de nivel y un cupón manual no se acumulan: el nuevo reemplaza al anterior
+          setAppliedCoupons(prev => [
+            ...prev.filter(c => c.coupon_id !== levelBenefitCouponId),
+            coupon,
+          ]);
+          if (levelBenefitCouponId && coupon.coupon_id !== levelBenefitCouponId) {
+            setLevelBenefitCouponId(null);
+          }
         }}
         cartItems={cartItems}
         subtotal={subtotal}
@@ -1318,10 +1404,12 @@ export default function NewSale() {
         existingCoupons={appliedCoupons}
         onRemoveCoupon={(couponId) => {
           setAppliedCoupons(prev => prev.filter(c => c.coupon_id !== couponId));
+          if (couponId === levelBenefitCouponId) setLevelBenefitCouponId(null);
         }}
         manualDiscount={manualDiscount}
         onManualDiscountChange={setManualDiscount}
       />
+
 
       {/* Customer Modal */}
       <CustomerModal

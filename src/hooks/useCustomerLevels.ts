@@ -31,7 +31,7 @@ export interface LevelInput {
   icon: string;
   color: string;
   description: string | null;
-  benefits: string[];
+  benefits: (string | Record<string, string>)[];
   is_active: boolean;
 }
 
