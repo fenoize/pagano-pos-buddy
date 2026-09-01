@@ -260,7 +260,7 @@ export function AppSidebar() {
               const renderCollapsible = (
                 key: string,
                 label: string,
-                Icon: any,
+                Icon: ElementType,
                 pathPrefix: string,
                 open: boolean,
                 setOpen: (v: boolean) => void,
