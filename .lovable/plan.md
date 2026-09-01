@@ -17,13 +17,13 @@ Columnas (ordenadas por `level_order`):
 
 Botón "+ Agregar nivel" arriba a la derecha. En móvil, la tabla se reemplaza por tarjetas con la misma información.
 
-Se mantiene la columna existente "Costo en puntos" (`points_cost`), ya que la lógica de progresión la consume al subir de nivel.
-
 ## Modal de creación / edición
 
-Campos: Nombre, Código (minúsculas y guión bajo, autogenerado desde el nombre si está vacío), Orden (autosugerido), Puntos mínimos, Puntos máximos con checkbox "Último nivel (sin límite)", Costo en puntos, Ícono (grilla de íconos con preview: Flame, Shield, Sword, Swords, Star, Zap, Crown, Trophy, Award, Skull, Medal, Target), Color (swatches: gris, verde, azul, índigo, violeta, naranja, ámbar, rojo, amarillo), Descripción, Beneficios (lista editable con agregar/eliminar), Activo.
+Campos: Nombre, Código (minúsculas y guión bajo, autogenerado desde el nombre si está vacío), Orden (autosugerido), Puntos mínimos, Puntos máximos con checkbox "Último nivel (sin límite)", Costo en puntos (`points_cost`, input numérico simple, sin uso en cálculos ni validaciones — se mantiene solo por compatibilidad futura), Ícono (grilla de íconos con preview: Flame, Shield, Sword, Swords, Star, Zap, Crown, Trophy, Award, Skull, Medal, Target), Color (swatches: gris, verde, azul, índigo, violeta, naranja, ámbar, rojo, amarillo), Descripción, Beneficios (lista editable con agregar/eliminar), Activo.
 
 Vista previa del ícono con su color arriba del formulario.
+
+La progresión de nivel se determina exclusivamente por `min_points` y `max_points`; `points_cost` no participa de ninguna lógica.
 
 ## Validaciones
 
