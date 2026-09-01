@@ -174,7 +174,11 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
   if (isKitchenRoute && isExpanded) {
     return (
       <POSThemeProvider userId={user?.id}>
-        {children}
+        <div onClick={unlockAudio} onKeyDown={unlockAudio}>
+          <ConnectionAlarmBanner />
+          <IncomingOrderBanner />
+          {children}
+        </div>
       </POSThemeProvider>
     );
   }
