@@ -87,7 +87,7 @@ const sheetSections: SheetSection[] = [
     items: [
       { title: "RRHH", url: "/pos/rrhh", icon: IdCard, roles: ['Administrador'] },
       { title: "Usuarios", url: "/pos/usuarios", icon: User, roles: ['Administrador'] },
-      { title: "Mi Calendario", url: "/pos/mi-calendario", icon: Calendar, roles: ['Administrador', 'Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Cocina', 'Viewer'] },
+      { title: "Mi Calendario", url: "/pos/mi-calendario", icon: Calendar, roles: ['Administrador', 'Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Viewer'] },
     ],
   },
   {
