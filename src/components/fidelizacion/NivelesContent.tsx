@@ -1,219 +1,97 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Award, Save, Loader2, Plus, Pencil, Trash2, X } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
-import type { Json } from '@/integrations/supabase/types';
-import { toast } from "sonner";
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Award, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useCustomerLevels, useLevelMutations, type LevelInput, type LevelWithCount } from '@/hooks/useCustomerLevels';
+import { LevelIcon } from './LevelIcon';
+import { LevelFormModal } from './LevelFormModal';
+import { LevelDetailSheet } from './LevelDetailSheet';
+import { formatCLP } from '@/lib/utils';
 
-interface Level {
-  id: string;
-  level_code: string;
-  level_name: string;
-  level_order: number;
-  min_points: number;
-  max_points: number | null;
-  points_cost: number;
-  icon: string;
-  color: string;
-  description: string | null;
-  benefits: Json;
-  is_active: boolean;
-}
+const rangeLabel = (level: LevelWithCount) =>
+  `${level.min_points} – ${level.max_points ?? '∞'}`;
 
-const ICON_OPTIONS = [
-  'Star', 'Award', 'Crown', 'Trophy', 'Medal', 'Flame', 'Zap', 'Heart'
-];
-
-const COLOR_OPTIONS = [
-  { value: 'text-gray-500', label: 'Gris', bg: 'bg-gray-500' },
-  { value: 'text-blue-500', label: 'Azul', bg: 'bg-blue-500' },
-  { value: 'text-green-500', label: 'Verde', bg: 'bg-green-500' },
-  { value: 'text-amber-500', label: 'Dorado', bg: 'bg-amber-500' },
-  { value: 'text-purple-500', label: 'Púrpura', bg: 'bg-purple-500' },
-  { value: 'text-red-500', label: 'Rojo', bg: 'bg-red-500' },
-];
+const clpLabel = (level: LevelWithCount) =>
+  `${formatCLP(level.min_points * 100)} – ${level.max_points ? formatCLP(level.max_points * 100) : '∞'}`;
 
 export function NivelesContent() {
-  const [levels, setLevels] = useState<Level[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [editingLevel, setEditingLevel] = useState<Level | null>(null);
-  const [deletingLevel, setDeletingLevel] = useState<Level | null>(null);
+  const { data: levels = [], isLoading } = useCustomerLevels();
+  const { createLevel, updateLevel, toggleActive, deleteLevel } = useLevelMutations();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingLevel, setEditingLevel] = useState<LevelWithCount | null>(null);
+  const [deletingLevel, setDeletingLevel] = useState<LevelWithCount | null>(null);
+  const [detailLevel, setDetailLevel] = useState<LevelWithCount | null>(null);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    level_code: '',
-    level_name: '',
-    level_order: 0,
-    min_points: 0,
-    max_points: '',
-    points_cost: 0,
-    icon: 'Star',
-    color: 'text-gray-500',
-    description: '',
-    benefits: [''],
-    is_active: true,
-  });
 
-  useEffect(() => {
-    loadLevels();
-  }, []);
+  const savingAny =
+    saving || createLevel.isPending || updateLevel.isPending || deleteLevel.isPending;
 
-  const loadLevels = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('customer_level_definitions')
-        .select('*')
-        .order('level_order', { ascending: true });
-
-      if (error) throw error;
-      setLevels((data || []) as Level[]);
-    } catch (error: any) {
-      toast.error('Error', { description: error.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openCreateDialog = () => {
+  const openCreate = () => {
     setEditingLevel(null);
-    setFormData({
-      level_code: '',
-      level_name: '',
-      level_order: levels.length + 1,
-      min_points: 0,
-      max_points: '',
-      points_cost: 0,
-      icon: 'Star',
-      color: 'text-gray-500',
-      description: '',
-      benefits: [''],
-      is_active: true,
-    });
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
-  const openEditDialog = (level: Level) => {
+  const openEdit = (level: LevelWithCount) => {
     setEditingLevel(level);
-    const benefitsArray = Array.isArray(level.benefits) ? level.benefits as string[] : [''];
-    setFormData({
-      level_code: level.level_code,
-      level_name: level.level_name,
-      level_order: level.level_order,
-      min_points: level.min_points,
-      max_points: level.max_points?.toString() || '',
-      points_cost: level.points_cost || 0,
-      icon: level.icon,
-      color: level.color,
-      description: level.description || '',
-      benefits: benefitsArray.length > 0 ? benefitsArray : [''],
-      is_active: level.is_active,
-    });
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (input: LevelInput, id?: string) => {
+    setSaving(true);
     try {
-      setSaving(true);
-
-      const levelData = {
-        level_code: formData.level_code.toLowerCase().trim(),
-        level_name: formData.level_name.trim(),
-        level_order: formData.level_order,
-        min_points: formData.min_points,
-        max_points: formData.max_points ? parseInt(formData.max_points) : null,
-        points_cost: formData.points_cost,
-        icon: formData.icon,
-        color: formData.color,
-        description: formData.description.trim() || null,
-        benefits: formData.benefits.filter(b => b.trim() !== ''),
-        is_active: formData.is_active,
-      };
-
-      if (editingLevel) {
-        const { error } = await supabase
-          .from('customer_level_definitions')
-          .update(levelData)
-          .eq('id', editingLevel.id);
-
-        if (error) throw error;
-
-        toast.success('Nivel actualizado', { description: `${levelData.level_name} ha sido actualizado correctamente.` });
+      if (id) {
+        await updateLevel.mutateAsync({ id, ...input });
+        toast.success('Nivel actualizado', { description: `${input.level_name} ha sido actualizado correctamente.` });
       } else {
-        const { error } = await supabase
-          .from('customer_level_definitions')
-          .insert(levelData);
-
-        if (error) throw error;
-
-        toast.success('Nivel creado', { description: `${levelData.level_name} ha sido creado correctamente.` });
+        await createLevel.mutateAsync(input);
+        toast.success('Nivel creado', { description: `${input.level_name} ha sido creado correctamente.` });
       }
-
-      setDialogOpen(false);
-      loadLevels();
+      setFormOpen(false);
     } catch (error: any) {
       toast.error('Error', { description: error.message });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggle = async (level: LevelWithCount, active: boolean) => {
+    try {
+      await toggleActive.mutateAsync({ id: level.id, is_active: active });
+      toast.success(active ? 'Nivel activado' : 'Nivel desactivado', { description: level.level_name });
+    } catch (error: any) {
+      toast.error('Error', { description: error.message });
     }
   };
 
   const handleDelete = async () => {
     if (!deletingLevel) return;
-
+    if (deletingLevel.customer_count > 0) {
+      toast.error(
+        `No se puede eliminar un nivel con ${deletingLevel.customer_count} clientes activos. Primero reasigna los clientes.`
+      );
+      return;
+    }
     try {
-      setSaving(true);
-      const { error } = await supabase
-        .from('customer_level_definitions')
-        .delete()
-        .eq('id', deletingLevel.id);
-
-      if (error) throw error;
-
+      await deleteLevel.mutateAsync(deletingLevel.id);
       toast.success('Nivel eliminado', { description: `${deletingLevel.level_name} ha sido eliminado.` });
-
-      setDeleteDialogOpen(false);
       setDeletingLevel(null);
-      loadLevels();
     } catch (error: any) {
       toast.error('Error', { description: error.message });
-    } finally {
-      setSaving(false);
     }
   };
 
-  const addBenefitField = () => {
-    setFormData(prev => ({
-      ...prev,
-      benefits: [...prev.benefits, ''],
-    }));
-  };
+  const benefitsOf = (level: LevelWithCount) =>
+    Array.isArray(level.benefits) ? (level.benefits as string[]) : [];
 
-  const removeBenefitField = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      benefits: prev.benefits.filter((_, i) => i !== index),
-    }));
-  };
-
-  const updateBenefit = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      benefits: prev.benefits.map((b, i) => i === index ? value : b),
-    }));
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -233,16 +111,16 @@ export function NivelesContent() {
             Administra los niveles de fidelización y sus beneficios
           </p>
         </div>
-        <Button onClick={openCreateDialog}>
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" />
-          Crear Nivel
+          Agregar nivel
         </Button>
       </div>
 
       <Alert className="mb-6">
         <AlertDescription>
-          Los niveles se asignan según los <strong>puntos</strong> del cliente (1 punto = $100 gastados en ventas reales).
-          Al alcanzar un nivel, se consumen los puntos indicados en "Costo en puntos".
+          Los niveles se asignan automáticamente según los <strong>puntos</strong> del cliente (1 punto = $100 en ventas reales),
+          usando el rango de puntos de cada nivel.
         </AlertDescription>
       </Alert>
 
@@ -258,309 +136,224 @@ export function NivelesContent() {
             <div className="text-center py-12 text-muted-foreground">
               <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No hay niveles configurados</p>
-              <Button variant="outline" className="mt-4" onClick={openCreateDialog}>
+              <Button variant="outline" className="mt-4" onClick={openCreate}>
                 Crear primer nivel
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Orden</TableHead>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Rango Puntos</TableHead>
-                  <TableHead>Costo</TableHead>
-                  <TableHead>Beneficios</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {levels.map((level) => (
-                  <TableRow key={level.id}>
-                    <TableCell>
-                      <Badge variant="outline">{level.level_order}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-xs bg-muted px-2 py-1 rounded">
-                        {level.level_code}
-                      </code>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Award className={`h-4 w-4 ${level.color}`} />
-                        <span className="font-medium">{level.level_name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <span className="font-medium">{level.min_points}</span>
-                        {' - '}
-                        <span className="font-medium">
-                          {level.max_points ?? '∞'}
-                        </span>
-                        {' puntos'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-medium">{level.points_cost || 0} pts</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs text-muted-foreground">
-                        {Array.isArray(level.benefits) ? level.benefits.length : 0} beneficio{Array.isArray(level.benefits) && level.benefits.length !== 1 ? 's' : ''}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={level.is_active ? 'default' : 'secondary'}>
-                        {level.is_active ? 'Activo' : 'Inactivo'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(level)}
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Orden</TableHead>
+                      <TableHead>Nivel</TableHead>
+                      <TableHead>Rango de puntos</TableHead>
+                      <TableHead>Equivale a</TableHead>
+                      <TableHead>Clientes</TableHead>
+                      <TableHead>Beneficios</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {levels.map((level) => {
+                      const benefits = benefitsOf(level);
+                      return (
+                        <TableRow
+                          key={level.id}
+                          className="cursor-pointer"
+                          onClick={() => setDetailLevel(level)}
                         >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setDeletingLevel(level);
-                            setDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                          <TableCell>
+                            <Badge variant="outline">{level.level_order}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <LevelIcon icon={level.icon} color={level.color} />
+                              <div>
+                                <p className="font-medium leading-tight">{level.level_name}</p>
+                                <code className="text-xs text-muted-foreground">{level.level_code}</code>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm font-medium tabular-nums">{rangeLabel(level)}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm tabular-nums">{clpLabel(level)}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{level.customer_count}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1 max-w-[220px]">
+                              {benefits.slice(0, 3).map((b) => (
+                                <Badge key={b} variant="outline" className="text-xs font-normal">
+                                  {b}
+                                </Badge>
+                              ))}
+                              {benefits.length > 3 && (
+                                <Badge variant="outline" className="text-xs font-normal">
+                                  +{benefits.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Switch
+                              checked={level.is_active ?? false}
+                              onCheckedChange={(checked) => handleToggle(level, checked)}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="sm" className="h-9 w-9" onClick={() => openEdit(level)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-9 w-9"
+                                        disabled={level.customer_count > 0}
+                                        onClick={() => setDeletingLevel(level)}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  {level.customer_count > 0 && (
+                                    <TooltipContent>
+                                      {level.customer_count} clientes activos en este nivel
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-3">
+                {levels.map((level) => {
+                  const benefits = benefitsOf(level);
+                  return (
+                    <div
+                      key={level.id}
+                      className="rounded-lg border border-border p-4 space-y-3 cursor-pointer"
+                      onClick={() => setDetailLevel(level)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <LevelIcon icon={level.icon} color={level.color} className="h-5 w-5" />
+                          <div>
+                            <p className="font-medium leading-tight">{level.level_name}</p>
+                            <code className="text-xs text-muted-foreground">{level.level_code}</code>
+                          </div>
+                        </div>
+                        <Badge variant="outline">#{level.level_order}</Badge>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Puntos</p>
+                          <p className="font-medium tabular-nums">{rangeLabel(level)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Equivale a</p>
+                          <p className="font-medium tabular-nums">{clpLabel(level)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Clientes</p>
+                          <p className="font-medium">{level.customer_count}</p>
+                        </div>
+                      </div>
+                      {benefits.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {benefits.slice(0, 3).map((b) => (
+                            <Badge key={b} variant="outline" className="text-xs font-normal">
+                              {b}
+                            </Badge>
+                          ))}
+                          {benefits.length > 3 && (
+                            <Badge variant="outline" className="text-xs font-normal">
+                              +{benefits.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      <div
+                        className="flex items-center justify-between pt-2 border-t border-border"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={level.is_active ?? false}
+                            onCheckedChange={(checked) => handleToggle(level, checked)}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {level.is_active ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-9 w-9" onClick={() => openEdit(level)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 w-9"
+                            disabled={level.customer_count > 0}
+                            onClick={() => setDeletingLevel(level)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
-      {/* Dialog de Crear/Editar */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingLevel ? 'Editar Nivel' : 'Crear Nuevo Nivel'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingLevel 
-                ? 'Modifica los datos del nivel existente' 
-                : 'Define el nuevo nivel de fidelización'}
-            </DialogDescription>
-          </DialogHeader>
+      <LevelFormModal
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        editingLevel={editingLevel}
+        existingLevels={levels}
+        onSave={handleSave}
+        saving={savingAny}
+      />
 
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="level_code">Código</Label>
-                <Input
-                  id="level_code"
-                  placeholder="ej: iniciado"
-                  value={formData.level_code}
-                  onChange={(e) => setFormData(prev => ({ ...prev, level_code: e.target.value }))}
-                />
-              </div>
+      <LevelDetailSheet level={detailLevel} onClose={() => setDetailLevel(null)} />
 
-              <div className="space-y-2">
-                <Label htmlFor="level_name">Nombre</Label>
-                <Input
-                  id="level_name"
-                  placeholder="ej: Iniciado"
-                  value={formData.level_name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, level_name: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="level_order">Orden</Label>
-                <Input
-                  id="level_order"
-                  type="number"
-                  min="1"
-                  value={formData.level_order}
-                  onChange={(e) => setFormData(prev => ({ ...prev, level_order: parseInt(e.target.value) || 0 }))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="min_points">Puntos Mínimos</Label>
-                <Input
-                  id="min_points"
-                  type="number"
-                  min="0"
-                  value={formData.min_points}
-                  onChange={(e) => setFormData(prev => ({ ...prev, min_points: parseInt(e.target.value) || 0 }))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="max_points">Puntos Máximos</Label>
-                <Input
-                  id="max_points"
-                  type="number"
-                  placeholder="Vacío = ilimitado"
-                  value={formData.max_points}
-                  onChange={(e) => setFormData(prev => ({ ...prev, max_points: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="points_cost">Costo en puntos (se consumen al subir)</Label>
-              <Input
-                id="points_cost"
-                type="number"
-                min="0"
-                value={formData.points_cost}
-                onChange={(e) => setFormData(prev => ({ ...prev, points_cost: parseInt(e.target.value) || 0 }))}
-              />
-              <p className="text-xs text-muted-foreground">
-                Puntos que se descuentan del saldo del cliente al alcanzar este nivel. 0 = gratis.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="icon">Ícono</Label>
-                <select
-                  id="icon"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={formData.icon}
-                  onChange={(e) => setFormData(prev => ({ ...prev, icon: e.target.value }))}
-                >
-                  {ICON_OPTIONS.map(icon => (
-                    <option key={icon} value={icon}>{icon}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="color">Color</Label>
-                <select
-                  id="color"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={formData.color}
-                  onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                >
-                  {COLOR_OPTIONS.map(color => (
-                    <option key={color.value} value={color.value}>{color.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea
-                id="description"
-                placeholder="Descripción del nivel..."
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Beneficios</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addBenefitField}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Agregar
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {formData.benefits.map((benefit, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      placeholder="ej: 5% descuento en productos"
-                      value={benefit}
-                      onChange={(e) => updateBenefit(index, e.target.value)}
-                    />
-                    {formData.benefits.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeBenefitField(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <Label htmlFor="is_active" className="cursor-pointer">
-                Nivel Activo
-              </Label>
-              <Switch
-                id="is_active"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  {editingLevel ? 'Actualizar' : 'Crear'}
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog de Confirmación de Eliminación */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={!!deletingLevel} onOpenChange={(open) => !open && setDeletingLevel(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>¿Eliminar nivel?</DialogTitle>
             <DialogDescription>
-              Esta acción no se puede deshacer. El nivel{' '}
-              <strong>{deletingLevel?.level_name}</strong> será eliminado permanentemente.
+              Esta acción no se puede deshacer. El nivel <strong>{deletingLevel?.level_name}</strong> será
+              eliminado permanentemente.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDeleteDialogOpen(false);
-                setDeletingLevel(null);
-              }}
-            >
+            <Button variant="outline" onClick={() => setDeletingLevel(null)}>
               Cancelar
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={saving}
-            >
-              {saving ? (
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteLevel.isPending}>
+              {deleteLevel.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Eliminando...
