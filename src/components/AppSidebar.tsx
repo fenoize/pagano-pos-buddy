@@ -67,7 +67,7 @@ import {
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 
-type NavItem = { title: string; url: string; icon: any; roles: string[] };
+type NavItem = { title: string; url: string; icon: ElementType; roles: string[] };
 
 // Escritorio (ítem ancla en el tope)
 const sectionMain: NavItem[] = [
