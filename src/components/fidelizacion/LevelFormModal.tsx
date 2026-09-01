@@ -26,6 +26,8 @@ export const LEVEL_COLORS = [
   { value: 'text-yellow-400', label: 'Amarillo' },
 ];
 
+export type BenefitItem = string | Record<string, string>;
+
 interface FormState {
   level_code: string;
   level_name: string;
@@ -37,7 +39,7 @@ interface FormState {
   icon: string;
   color: string;
   description: string;
-  benefits: string[];
+  benefits: BenefitItem[];
   is_active: boolean;
 }
 
