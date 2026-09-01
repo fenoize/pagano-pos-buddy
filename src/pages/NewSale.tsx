@@ -1372,7 +1372,7 @@ export default function NewSale() {
           open={levelBenefitModalOpen}
           onOpenChange={setLevelBenefitModalOpen}
           benefit={levelBenefit}
-          customerName={customer?.nombre || undefined}
+          customerName={customer?.nombres || customer?.name || undefined}
           hasExistingCoupon={appliedCoupons.length > 0}
           existingCouponCode={appliedCoupons[0]?.payload?.coupon_code}
           onApply={(code) => {
