@@ -3,12 +3,29 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.6.0";
- export const APP_BUILD_DATE = "2026-07-27";
+ export const APP_VERSION = "1.6.1";
+ export const APP_BUILD_DATE = "2026-09-01";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.6.1",
+     date: "2026-09-01",
+     changes: [
+       "Notificaciones POS: monitor de conexión con banner rojo ante falla de red/Supabase, alarma persistente cada 8s para pedidos pendientes (AudioContext), badge en el título de la pestaña y notificaciones nativas con requireInteraction",
+       "Pedidos Pendiente de Aceptación: alerta garantizada al cajero ante cualquier transición a PendienteAceptacion (trigger + Edge Function), independientemente del estado de pago",
+       "App Cliente: variantes de combos muestran solo la diferencia de precio respecto a la variante más barata del slot",
+       "KDS: pedidos 'Pendiente de Pago' excluidos del tablero; clientes VIP destacados con glow animado en las tarjetas",
+       "Pagos Pendientes: soporte de pago mixto con Runas en el cobro; al asignar cliente a un pedido se ofrece acreditar las runas automáticamente",
+       "Inicio de sesión staff: chequeo de versión de la app y permisos de notificación/audio al entrar (StaffStartupChecks)",
+       "Configuración: switch 'App activa' ahora se sincroniza automáticamente con el horario del local (Realtime + polling); pantalla TV permite cerrar sesión",
+       "Fidelización: nuevo módulo Niveles con creación/edición (íconos y colores), panel de detalle con top clientes y gráfico",
+       "Beneficios de nivel: cupón de nivel (level_coupon) aplicable en el POS con oferta automática en Nueva Venta",
+       "Menú lateral rediseñado: botón fijo 'Nueva Venta' y secciones agrupadas (Operaciones, Ventas, Catálogo, Clientes, Equipo, Finanzas)",
+       "Fix: modal de vista rápida de cliente con estado de carga (spinner) en Ventas"
+     ]
+   },
    {
      version: "1.6.0",
      date: "2026-07-27",
