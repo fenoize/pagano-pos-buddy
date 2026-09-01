@@ -82,7 +82,7 @@ export function LevelFormModal({ open, onOpenChange, editingLevel, existingLevel
     if (!open) return;
     setErrors([]);
     if (editingLevel) {
-      const benefits = Array.isArray(editingLevel.benefits) ? (editingLevel.benefits as string[]) : [];
+      const benefits = Array.isArray(editingLevel.benefits) ? (editingLevel.benefits as BenefitItem[]) : [];
       setForm({
         level_code: editingLevel.level_code,
         level_name: editingLevel.level_name,
