@@ -72,7 +72,7 @@ const ReadyOrdersTV = lazy(() => import("@/pages/ReadyOrdersTV"));
 const Users = lazy(() => import("@/pages/Users"));
 const Products = lazy(() => import("@/pages/Products"));
 const Categorias = lazy(() => import("@/pages/Categorias"));
-const NivelesManagement = lazy(() => import("@/pages/NivelesManagement"));
+
 const FidelizacionHub = lazy(() => import("@/pages/FidelizacionHub"));
 const ConfiguracionPage = lazy(() => import("@/pages/ConfiguracionPage"));
 const MiConfiguracion = lazy(() => import("@/pages/MiConfiguracion"));
