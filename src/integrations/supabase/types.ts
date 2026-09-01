@@ -8094,6 +8094,10 @@ export type Database = {
           prorated_amount: number
         }[]
       }
+      get_level_benefit_coupon: {
+        Args: { p_customer_id: string }
+        Returns: Json
+      }
       get_mapbox_token: { Args: never; Returns: string }
       get_marketing_alliance_by_slug: {
         Args: { _slug: string }
