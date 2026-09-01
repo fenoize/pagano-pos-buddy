@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ElementType } from "react";
 import { 
   Home, 
   ShoppingCart, 
@@ -40,7 +40,7 @@ import {
   Camera,
   LayoutDashboard
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -52,7 +52,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -67,51 +66,52 @@ import {
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 
-// Section 1: Resumen / Operación principal
-const sectionMain = [
+type NavItem = { title: string; url: string; icon: ElementType; roles: string[] };
+
+// Escritorio (ítem ancla en el tope)
+const sectionMain: NavItem[] = [
   { title: "Escritorio", url: "/pos", icon: Home, roles: ['Administrador', 'Cajero'] },
-  { title: "Nueva Venta", url: "/pos/nueva-venta", icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
-  { title: "Ventas", url: "/pos/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
 ];
 
-// Section 2: Cocina / Despacho (Delivery se inserta como collapsible)
-const sectionKitchen = [
+// OPERACIONES
+const sectionOperations: NavItem[] = [
   { title: "Cocina", url: "/pos/cocina", icon: ChefHat, roles: ['Administrador', 'Cocinero', 'Preparador'] },
   { title: "Pedido Listo", url: "/pos/pedido-listo", icon: Monitor, roles: ['Administrador', 'Cocinero', 'Preparador', 'TV'] },
   { title: "Lector QR", url: "/pos/qr-reader", icon: Camera, roles: ['Administrador', 'Leer QR'] },
 ];
 
-// Section 3: Catálogo (Inventario es collapsible)
-const sectionCatalog = [
+// VENTAS
+const sectionSales: NavItem[] = [
+  { title: "Ventas", url: "/pos/ventas", icon: TrendingUp, roles: ['Administrador', 'Cajero', 'Viewer'] },
+  { title: "Cierres Diarios", url: "/pos/cierres-diarios", icon: FileText, roles: ['Administrador'] },
+];
+
+// CATÁLOGO
+const sectionCatalog: NavItem[] = [
   { title: "Productos", url: "/pos/productos", icon: Package, roles: ['Administrador'] },
   { title: "Categorías", url: "/pos/categorias", icon: Tags, roles: ['Administrador'] },
 ];
 
-// Section 4: Personas (RRHH collapsible)
-const sectionPeople = [
+// CLIENTES
+const sectionCustomers: NavItem[] = [
   { title: "Clientes", url: "/pos/clientes", icon: Users, roles: ['Administrador', 'Cajero'] },
+];
+
+// EQUIPO
+const sectionTeam: NavItem[] = [
   { title: "Usuarios", url: "/pos/usuarios", icon: User, roles: ['Administrador'] },
-];
-
-// Section 5: Finanzas (Finanzas y Reportes son collapsibles)
-const sectionFinanceTop = [
-  { title: "Cierres Diarios", url: "/pos/cierres-diarios", icon: FileText, roles: ['Administrador'] },
-];
-
-// Section 7: Personal del usuario actual
-const sectionPersonal = [
   { title: "Mi Calendario", url: "/pos/mi-calendario", icon: Calendar, roles: ['Administrador', 'Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer'] },
 ];
 
-// Section 8: Configuración
-const sectionConfig = [
+// Configuración (al final, sin label de sección)
+const sectionConfig: NavItem[] = [
   { title: "Configuración", url: "/pos/configuracion", icon: Settings, roles: ['Administrador'] },
   { title: "Locales", url: "/pos/configuracion/locales", icon: Building2, roles: ['Administrador'] },
   { title: "Mi Configuración", url: "/pos/mi-configuracion", icon: Settings, roles: ['Cajero', 'Cocinero', 'Preparador', 'Reparto', 'Caja', 'Cocina', 'Viewer', 'Leer QR'] },
 ];
 
 // Fidelización menu items
-const fidelizacionItems = [
+const fidelizacionItems: NavItem[] = [
   { title: "Runas", url: "/pos/fidelizacion/runas", icon: Star, roles: ['Administrador'] },
   { title: "Niveles", url: "/pos/fidelizacion/niveles", icon: TrendingUpIcon, roles: ['Administrador'] },
   { title: "Insignias", url: "/pos/fidelizacion/insignias", icon: Award, roles: ['Administrador'] },
@@ -120,13 +120,13 @@ const fidelizacionItems = [
 ];
 
 // Delivery menu items
-const deliveryItems = [
+const deliveryItems: NavItem[] = [
   { title: "Pedidos en Curso", url: "/pos/delivery", icon: TruckIcon, roles: ['Administrador', 'Reparto'] },
   { title: "Mis Deliverys", url: "/pos/delivery/historial", icon: History, roles: ['Administrador', 'Reparto'] },
   { title: "Mis Pagos", url: "/pos/delivery/pagos", icon: DollarSign, roles: ['Administrador', 'Reparto'] },
 ];
 
-const inventoryItems = [
+const inventoryItems: NavItem[] = [
   { title: "Hub Inventario", url: "/pos/inventario", icon: Archive, roles: ['Administrador'] },
   { title: "Stock", url: "/pos/inventario/stock", icon: Boxes, roles: ['Administrador'] },
   { title: "Almacenes", url: "/pos/inventario/almacenes", icon: Warehouse, roles: ['Administrador'] },
@@ -142,7 +142,7 @@ const inventoryItems = [
 ];
 
 // Finance menu items with icons
-const financeItems = [
+const financeItems: NavItem[] = [
   { title: "Indicadores (KPIs)", url: "/pos/finanzas/kpis", icon: TrendingUpIcon, roles: ['Administrador', 'Cajero'] },
   { title: "Cuentas", url: "/pos/finanzas/cuentas", icon: DollarSign, roles: ['Administrador'] },
   { title: "Proveedores", url: "/pos/finanzas/proveedores", icon: Building2, roles: ['Administrador'] },
@@ -155,7 +155,7 @@ const financeItems = [
 ];
 
 // Marketing menu items
-const marketingItems = [
+const marketingItems: NavItem[] = [
   { title: "Promos App", url: "/pos/marketing/promos-app", icon: Megaphone, roles: ['Administrador'] },
   { title: "Alianzas", url: "/pos/marketing/alianzas", icon: Building2, roles: ['Administrador'] },
   { title: "Notificaciones", url: "/pos/marketing/notificaciones", icon: Bell, roles: ['Administrador'] },
@@ -163,13 +163,13 @@ const marketingItems = [
 ];
 
 // Reports menu items
-const reportItems = [
+const reportItems: NavItem[] = [
   { title: "Escritorio", url: "/pos/reportes/escritorio", icon: LayoutDashboard, roles: ['Administrador'] },
   { title: "Productos", url: "/pos/reportes/productos", icon: TrendingUpIcon, roles: ['Administrador', 'Cajero'] },
 ];
 
 // RRHH menu items
-const rrhhItems = [
+const rrhhItems: NavItem[] = [
   { title: "Resumen", url: "/pos/rrhh/resumen", icon: BarChart3, roles: ['Administrador'] },
   { title: "Turnos", url: "/pos/rrhh/turnos", icon: Users, roles: ['Administrador'] },
   { title: "Liquidaciones", url: "/pos/rrhh/liquidaciones", icon: DollarSign, roles: ['Administrador'] },
@@ -180,6 +180,7 @@ const rrhhItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuthContext();
   const currentPath = location.pathname;
   const [deliveryOpen, setDeliveryOpen] = useState(
@@ -235,7 +236,7 @@ export function AppSidebar() {
 
           <SidebarGroupContent>
             {(() => {
-              const renderLinks = (items: typeof sectionMain) =>
+              const renderLinks = (items: NavItem[]) =>
                 items
                   .filter(item => canAccessRoute(item.roles as AppRole[]))
                   .map((item) => (
@@ -258,11 +259,11 @@ export function AppSidebar() {
               const renderCollapsible = (
                 key: string,
                 label: string,
-                Icon: any,
+                Icon: ElementType,
                 pathPrefix: string,
                 open: boolean,
                 setOpen: (v: boolean) => void,
-                items: { title: string; url: string; icon: any; roles: string[] }[],
+                items: NavItem[],
                 allowedRoles: AppRole[],
               ) => {
                 if (!canAccessRoute(allowedRoles)) return null;
@@ -322,6 +323,13 @@ export function AppSidebar() {
                 );
               };
 
+              const sectionLabel = (label: string) =>
+                !isCollapsed ? (
+                  <div className="px-3 pt-5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {label}
+                  </div>
+                ) : null;
+
               const sep = (k: string) => (
                 <SidebarSeparator key={k} className="my-0.5" />
               );
@@ -364,33 +372,48 @@ export function AppSidebar() {
 
               return (
                 <SidebarMenu>
+                  {/* Botón prominente Nueva Venta */}
+                  {!isCollapsed && canAccessRoute(['Administrador', 'Cajero']) && (
+                    <SidebarMenuItem>
+                      <div className="px-2 py-2">
+                        <Button
+                          onClick={() => navigate('/pos/nueva-venta')}
+                          className="w-full justify-start gap-2 bg-[#E11D2C] text-white hover:bg-[#c41926] shadow-sm"
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                          <span className="font-semibold">Nueva Venta</span>
+                        </Button>
+                      </div>
+                    </SidebarMenuItem>
+                  )}
+
                   {renderLinks(sectionMain)}
 
-                  {sep('s1')}
+                  {sectionLabel('Operaciones')}
+                  {renderLinks(sectionOperations)}
+
+                  {sectionLabel('Ventas')}
+                  {renderLinks(sectionSales)}
+                  {deliveryGroup}
+
+                  {sectionLabel('Catálogo')}
                   {renderLinks(sectionCatalog)}
                   {inventoryGroup}
 
-                  {sep('s2')}
-                  {renderLinks(sectionPeople)}
+                  {sectionLabel('Clientes')}
+                  {renderLinks(sectionCustomers)}
+                  {fidelizacionGroup}
+                  {marketingGroup}
+
+                  {sectionLabel('Equipo')}
                   {rrhhGroup}
+                  {renderLinks(sectionTeam)}
 
-                  {sep('s3')}
-                  {renderLinks(sectionKitchen)}
-                  {deliveryGroup}
-
-                  {sep('s4')}
-                  {renderLinks(sectionFinanceTop)}
+                  {sectionLabel('Finanzas')}
                   {financeGroup}
                   {reportsGroup}
 
-                  {sep('s5')}
-                  {marketingGroup}
-                  {fidelizacionGroup}
-
-                  {sep('s6')}
-                  {renderLinks(sectionPersonal)}
-
-                  {sep('s7')}
+                  {sep('final')}
                   {renderLinks(sectionConfig)}
                 </SidebarMenu>
               );
