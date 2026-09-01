@@ -149,7 +149,7 @@ export function LevelFormModal({ open, onOpenChange, editingLevel, existingLevel
       icon: form.icon,
       color: form.color,
       description: form.description.trim() || null,
-      benefits: form.benefits.filter((b) => b.trim() !== ''),
+      benefits: form.benefits.filter((b) => (typeof b === 'string' ? b.trim() !== '' : true)),
       is_active: form.is_active,
     };
     await onSave(input, editingLevel?.id);
