@@ -775,9 +775,13 @@ const ComboSelector: React.FC<ComboSelectorProps> = ({
           const slot = selection.comboSlot;
           const allVariants = selection.selectedProduct ? variantsData[selection.selectedProduct.id!] || [] : [];
           const availableVariants = allVariants.filter((v) => v.variant?.category_id === slot.category_id);
-          const defaultVariant = slot.default_variant_id ?
+          const explicitDefaultVariant = slot.default_variant_id ?
             availableVariants.find((v) => v.category_variant_id === slot.default_variant_id) :
             availableVariants.find((v) => v.is_default);
+          const defaultVariant = explicitDefaultVariant
+            || (availableVariants.length > 0
+              ? availableVariants.reduce((min, v) => ((v.price || 0) < (min.price || 0) ? v : min), availableVariants[0])
+              : undefined);
           if (isPerUnitVariantMode(slot) && selection.selectedVariants && selection.selectedVariants.length > 0) {
             selection.selectedVariants.forEach(v => {
               if (defaultVariant && v.id !== defaultVariant.id) {
