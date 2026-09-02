@@ -444,9 +444,14 @@ const CustomerComboSelector: React.FC<CustomerComboSelectorProps> = ({
         sels.forEach(sel => {
           const allVars = sel.selectedProduct ? variantsMap[sel.selectedProduct.id!] || [] : [];
           const catVars = allVars.filter(v => v.variant?.category_id === sel.comboSlot.category_id);
-          const defVar = sel.comboSlot.default_variant_id
+          const explicitDefVar = sel.comboSlot.default_variant_id
             ? catVars.find(v => v.category_variant_id === sel.comboSlot.default_variant_id)
             : catVars.find(v => v.is_default);
+          // Si el slot no tiene variante por defecto, la línea base es la variante más barata
+          const defVar = explicitDefVar
+            || (catVars.length > 0
+              ? catVars.reduce((min, v) => ((v.price || 0) < (min.price || 0) ? v : min), catVars[0])
+              : undefined);
           if (isPerUnitVariantMode(sel.comboSlot) && sel.selectedVariants && sel.selectedVariants.length > 0) {
             sel.selectedVariants.forEach(v => {
               if (defVar && v.id !== defVar.id) {
