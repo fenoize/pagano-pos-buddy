@@ -12,7 +12,7 @@ interface Msg { role: 'user' | 'assistant'; content: string; }
 
 export function AteneaWidget() {
   const { user } = useAuthContext();
-  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<'closed' | 'minimized' | 'open'>('closed');
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
