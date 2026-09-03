@@ -76,12 +76,33 @@ export function AteneaWidget() {
     }
   };
 
+  const headerButtons = (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => setMode('minimized')}
+        className="text-zinc-400 hover:text-white p-1"
+        aria-label="Minimizar ATENEA"
+        title="Minimizar"
+      >
+        <Minus className="h-5 w-5" />
+      </button>
+      <button
+        onClick={() => setMode('closed')}
+        className="text-zinc-400 hover:text-white p-1"
+        aria-label="Cerrar ATENEA"
+        title="Cerrar"
+      >
+        <X className="h-5 w-5" />
+      </button>
+    </div>
+  );
+
   return (
     <>
       {/* Floating button */}
-      {!open && (
+      {mode === 'closed' && (
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => setMode('open')}
           className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center text-white transition-transform hover:scale-110 active:scale-95"
           style={{ background: 'linear-gradient(135deg, #E11D2C, #b81825)' }}
           aria-label="Abrir ATENEA"
@@ -91,15 +112,22 @@ export function AteneaWidget() {
       )}
 
       {/* Chat panel */}
-      {open && (
+      {mode !== 'closed' && (
         <div
           className={cn(
             "fixed z-50 bg-zinc-900 text-zinc-100 border border-zinc-800 shadow-2xl flex flex-col",
-            "bottom-0 right-0 left-0 h-[80vh] rounded-t-2xl",
-            "md:bottom-6 md:right-6 md:left-auto md:h-[600px] md:w-[400px] md:rounded-2xl"
+            "bottom-0 right-0 left-0 rounded-t-2xl",
+            "md:bottom-6 md:right-6 md:left-auto md:w-[400px] md:rounded-2xl",
+            mode === 'minimized' ? 'h-auto' : 'h-[80vh] md:h-[600px]'
           )}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+          <div
+            className={cn(
+              "flex items-center justify-between px-4 py-3 border-b border-zinc-800",
+              mode === 'minimized' && "cursor-pointer"
+            )}
+            onClick={mode === 'minimized' ? () => setMode('open') : undefined}
+          >
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ background: '#E11D2C' }}>
                 <Sparkles className="h-4 w-4 text-white" />
@@ -109,64 +137,66 @@ export function AteneaWidget() {
                 <div className="text-xs text-zinc-400">Consulta el oráculo de datos</div>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-white p-1">
-              <X className="h-5 w-5" />
-            </button>
+            {headerButtons}
           </div>
 
-          <ScrollArea className="flex-1 px-4 py-3" ref={scrollRef as any}>
-            <div className="space-y-3">
-              {messages.map((m, i) => (
-                <div key={i} className={cn("flex", m.role === 'user' ? 'justify-end' : 'justify-start')}>
-                  <div
-                    className={cn(
-                      "max-w-[85%] rounded-2xl px-3 py-2 text-sm break-words",
-                      m.role === 'user' ? 'text-white whitespace-pre-wrap' : 'bg-zinc-800 text-zinc-100'
-                    )}
-                    style={m.role === 'user' ? { background: '#E11D2C' } : undefined}
-                  >
-                    {m.role === 'user' ? (
-                      m.content
-                    ) : (
-                      <div className="lia-markdown space-y-2 [&_p]:leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:space-y-1 [&_li]:marker:text-zinc-400 [&_code]:bg-zinc-900 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_a]:underline [&_a]:text-red-400 [&_h1]:text-base [&_h1]:font-bold [&_h2]:text-sm [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-semibold">
-                        <ReactMarkdown>{m.content}</ReactMarkdown>
+          {mode === 'open' && (
+            <>
+              <ScrollArea className="flex-1 px-4 py-3" ref={scrollRef as any}>
+                <div className="space-y-3">
+                  {messages.map((m, i) => (
+                    <div key={i} className={cn("flex", m.role === 'user' ? 'justify-end' : 'justify-start')}>
+                      <div
+                        className={cn(
+                          "max-w-[85%] rounded-2xl px-3 py-2 text-sm break-words",
+                          m.role === 'user' ? 'text-white whitespace-pre-wrap' : 'bg-zinc-800 text-zinc-100'
+                        )}
+                        style={m.role === 'user' ? { background: '#E11D2C' } : undefined}
+                      >
+                        {m.role === 'user' ? (
+                          m.content
+                        ) : (
+                          <div className="lia-markdown space-y-2 [&_p]:leading-relaxed [&_strong]:font-bold [&_strong]:text-white [&_em]:italic [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:space-y-1 [&_li]:marker:text-zinc-400 [&_code]:bg-zinc-900 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_a]:underline [&_a]:text-red-400 [&_h1]:text-base [&_h1]:font-bold [&_h2]:text-sm [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-semibold">
+                            <ReactMarkdown>{m.content}</ReactMarkdown>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
+                  {loading && (
+                    <div className="flex justify-start">
+                      <div className="bg-zinc-800 rounded-2xl px-3 py-2 text-sm flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Consultando...
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-zinc-800 rounded-2xl px-3 py-2 text-sm flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Consultando...
-                  </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+              </ScrollArea>
 
-          <div className="p-3 border-t border-zinc-800 flex gap-2">
-            <Input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-              placeholder="¿Cuánto vendimos hoy?"
-              disabled={loading}
-              className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus-visible:ring-1"
-              style={{ fontSize: '16px' }}
-            />
-            <Button
-              onClick={send}
-              disabled={loading || !input.trim()}
-              size="icon"
-              className="shrink-0 h-10 w-10"
-              style={{ background: '#E11D2C' }}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
+              <div className="p-3 border-t border-zinc-800 flex gap-2">
+                <Input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+                  placeholder="¿Cuánto vendimos hoy?"
+                  disabled={loading}
+                  className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus-visible:ring-1"
+                  style={{ fontSize: '16px' }}
+                />
+                <Button
+                  onClick={send}
+                  disabled={loading || !input.trim()}
+                  size="icon"
+                  className="shrink-0 h-10 w-10"
+                  style={{ background: '#E11D2C' }}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </>
