@@ -44,8 +44,8 @@ export function AteneaWidget() {
   }, [messages, loading]);
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 100);
-  }, [open]);
+    if (mode === 'open') setTimeout(() => inputRef.current?.focus(), 100);
+  }, [mode]);
 
   if (!isAdmin || !canUseLia) return null;
 
