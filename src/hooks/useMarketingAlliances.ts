@@ -155,8 +155,9 @@ export const useMarketingAlliances = (range?: { start?: string | null; end?: str
         .update(alliance)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error('No se pudo actualizar la alianza (sin permisos o alianza inexistente)');
       return data;
     },
     onSuccess: () => {
