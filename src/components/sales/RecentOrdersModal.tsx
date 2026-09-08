@@ -252,14 +252,28 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
                                 )}
                                 
                                 {/* Combo items */}
-                                {item.is_combo_item && item.combo_selections?.map((sel: any, i: number) => (
+                                {item.is_combo_item && item.combo_selections?.map((sel: any, i: number) => {
+                                  const variants: any[] = Array.isArray(sel.selectedVariants) && sel.selectedVariants.length > 0
+                                    ? sel.selectedVariants
+                                    : (sel.selectedVariant ? [sel.selectedVariant] : []);
+                                  const grouped = variants.reduce((acc: Record<string, { name: string; qty: number }>, v: any) => {
+                                    const name = v?.variant?.name || v?.name || 'Variante';
+                                    const key = v?.id || name;
+                                    acc[key] = { name, qty: (acc[key]?.qty || 0) + 1 };
+                                    return acc;
+                                  }, {});
+                                  const groups = Object.values(grouped) as { name: string; qty: number }[];
+                                  return (
                                   <div key={i} className="ml-3 text-xs border-l-2 border-primary/30 pl-2 py-1">
                                     <span className="font-medium">
                                       {sel.quantity || 1}x {sel.selectedProduct?.name || 'Producto'}
                                     </span>
-                                    {sel.selectedVariant?.variant?.name && (
-                                      <span className="text-muted-foreground"> - {sel.selectedVariant.variant.name}</span>
+                                    {groups.length > 0 && (
+                                      <span className="text-muted-foreground">
+                                        {' '}- {groups.map((g) => `${g.qty}x ${g.name}`).join(' + ')}
+                                      </span>
                                     )}
+
                                     {/* Extras del combo item */}
                                     {sel.extras && sel.extras.length > 0 && (
                                       <div className="text-muted-foreground">
