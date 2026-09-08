@@ -287,7 +287,9 @@ export function RecentOrdersModal({ isOpen, onClose }: RecentOrdersModalProps) {
                                       </div>
                                     )}
                                   </div>
-                                ))}
+                                  );
+                                })}
+
                                 
                                 {/* Extras normales (no combo) */}
                                 {!item.is_combo_item && item.extras && item.extras.length > 0 && (
