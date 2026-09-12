@@ -17,14 +17,19 @@ interface AlarmOrder {
 export function usePendingOrdersAlarm(orders: AlarmOrder[], enabled: boolean = true) {
   const count = enabled ? orders.length : 0;
   const notifiedIdsRef = useRef<Set<string>>(new Set());
+  const levelRef = useRef(0);
 
-  // Sonido: inmediato + repetición cada 8s
+  // Sonido: inmediato + repetición cada 8s con volumen ascendente
   useEffect(() => {
-    if (count === 0) return;
+    if (count === 0) {
+      levelRef.current = 0;
+      return;
+    }
 
-    playAlarm();
+    playAlarm(levelRef.current);
     const interval = setInterval(() => {
-      playAlarm();
+      levelRef.current += 1;
+      playAlarm(levelRef.current);
     }, 8000);
 
     return () => clearInterval(interval);
