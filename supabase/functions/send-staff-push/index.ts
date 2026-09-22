@@ -69,16 +69,19 @@ serve(async (req) => {
     // Collect target user IDs
     const targetUserIds: string[] = [];
 
-    if (body.user_id) {
+    if (Array.isArray((body as any).user_ids) && (body as any).user_ids.length > 0) {
+      targetUserIds.push(...(body as any).user_ids);
+    } else if (body.user_id) {
       // Specific user
       targetUserIds.push(body.user_id);
     } else if (body.role_target) {
-      // All users with this role
+      // All users with this role (single role or list)
+      const roles = Array.isArray(body.role_target) ? body.role_target : [body.role_target];
       const { data: users, error } = await supabase
         .from('users')
         .select('id')
-        .eq('role', body.role_target)
-        .eq('is_active', true);
+        .in('role', roles)
+        .eq('active', true);
 
       if (error) {
         console.error('Error fetching users by role:', error);
