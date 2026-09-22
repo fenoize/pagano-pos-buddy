@@ -8,7 +8,8 @@ const corsHeaders = {
 
 interface StaffPushRequest {
   user_id?: string;
-  role_target?: string;
+  user_ids?: string[];
+  role_target?: string | string[];
   type: string;
   title: string;
   body: string;
