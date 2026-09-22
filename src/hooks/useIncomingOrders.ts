@@ -96,54 +96,51 @@ import { setIncomingChannelStatus, type IncomingChannelStatus } from '@/lib/inco
      }
    }, []);
  
-   // Fetch pending orders
-   const fetchPendingOrders = useCallback(async () => {
-     if (!canAcceptAppOrders) {
-       setOrders([]);
-       setLoading(false);
-       return;
-     }
- 
-     try {
-       const { data, error } = await supabase
-         .from('orders')
-         .select(`
-           *,
-           customer:customers(
-             id,
-             name,
-             nombres,
-             apellidos,
-             phone
-           )
-         `)
-         .eq('status', 'PendienteAceptacion')
-         .order('created_at', { ascending: true });
- 
-       if (error) throw error;
- 
-       // Map the data to our IncomingOrder type
-       const newOrders: IncomingOrder[] = (data || []).map((order: any) => ({
-         ...order,
-         items: Array.isArray(order.items) ? order.items : [],
-         customer: order.customer || undefined
-       }));
-      
-       setOrders(newOrders);
-       const newCount = newOrders.length;
-       latestOrderCountRef.current = newCount;
-       if (newCount > lastAlertedCountRef.current) {
-         setNewOrderArrived(true);
-       }
-       if (newCount < lastAlertedCountRef.current) {
-         lastAlertedCountRef.current = newCount;
-       }
-     } catch (error) {
-       console.error('Error fetching pending orders:', error);
-     } finally {
-       setLoading(false);
-     }
-   }, [canAcceptAppOrders]);
+  // Fetch pending orders.
+  // IMPORTANTE: se consultan SIEMPRE, incluso si la caja tiene apagado
+  // "aceptar pedidos de app", para que el cajero igual sea alertado.
+  const fetchPendingOrders = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          customer:customers(
+            id,
+            name,
+            nombres,
+            apellidos,
+            phone
+          )
+        `)
+        .eq('status', 'PendienteAceptacion')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      // Map the data to our IncomingOrder type
+      const newOrders: IncomingOrder[] = (data || []).map((order: any) => ({
+        ...order,
+        items: Array.isArray(order.items) ? order.items : [],
+        customer: order.customer || undefined
+      }));
+
+      setOrders(newOrders);
+      markIncomingSync();
+      const newCount = newOrders.length;
+      latestOrderCountRef.current = newCount;
+      if (newCount > lastAlertedCountRef.current) {
+        setNewOrderArrived(true);
+      }
+      if (newCount < lastAlertedCountRef.current) {
+        lastAlertedCountRef.current = newCount;
+      }
+    } catch (error) {
+      console.error('Error fetching pending orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
  
    // Accept an order
    const acceptOrder = useCallback(async (
