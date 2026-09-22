@@ -174,7 +174,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, escalated, recipients: recipients.length }),
+      JSON.stringify({ success: true, escalated, recipients: recipientsFor(null).length }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
