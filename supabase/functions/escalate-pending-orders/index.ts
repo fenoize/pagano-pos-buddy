@@ -109,7 +109,6 @@ serve(async (req) => {
       return Array.from(set);
     };
 
-    const allRecipients = recipientsFor(null);
     if (fixedRecipients.length === 0 && adminEmails.length === 0 && emailByUserId.size === 0) {
       console.warn('⚠️ No hay correos de destino para escalar pedidos pendientes');
       return new Response(
@@ -136,7 +135,7 @@ serve(async (req) => {
 
       const { error: emailError } = await resend.emails.send({
         from: 'Paganos Burger <sistema@paganosburger.cl>',
-        to: recipients,
+        to: recipientsFor(order.branch_id ?? null),
         subject: `⚠️ Pedido #${order.order_number} sin aceptar hace ${minutes} min`,
         html: `
         <div style="font-family:Arial,Helvetica,sans-serif;background:#0d0d0d;padding:32px;">
