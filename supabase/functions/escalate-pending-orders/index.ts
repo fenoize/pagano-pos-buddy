@@ -24,7 +24,7 @@ serve(async (req) => {
 
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('id, order_number, total, fulfillment, status, created_at')
+      .select('id, order_number, total, fulfillment, status, created_at, branch_id')
       .eq('status', 'PendienteAceptacion')
       .is('acceptance_email_sent_at', null)
       .lt('created_at', cutoff)
