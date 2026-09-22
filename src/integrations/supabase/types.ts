@@ -4837,6 +4837,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          acceptance_email_sent_at: string | null
           branch_id: string
           cash_given: number | null
           cash_session_id: string | null
@@ -4890,6 +4891,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          acceptance_email_sent_at?: string | null
           branch_id: string
           cash_given?: number | null
           cash_session_id?: string | null
@@ -4943,6 +4945,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          acceptance_email_sent_at?: string | null
           branch_id?: string
           cash_given?: number | null
           cash_session_id?: string | null

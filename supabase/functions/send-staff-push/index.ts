@@ -8,7 +8,8 @@ const corsHeaders = {
 
 interface StaffPushRequest {
   user_id?: string;
-  role_target?: string;
+  user_ids?: string[];
+  role_target?: string | string[];
   type: string;
   title: string;
   body: string;
@@ -27,14 +28,25 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get OneSignal settings from config
-    const { data: osConfig } = await supabase
+    // Get OneSignal settings from config (keys are stored individually)
+    const { data: configRows } = await supabase
       .from('config')
-      .select('value')
-      .eq('key', 'onesignal')
-      .single();
+      .select('key, value')
+      .in('key', ['onesignal_app_id', 'onesignal_enabled', 'pwa_config']);
 
-    if (!osConfig?.value?.app_id || !osConfig?.value?.enabled) {
+    const cfg: Record<string, any> = {};
+    (configRows ?? []).forEach((row: any) => {
+      let value = row.value;
+      if (typeof value === 'string') {
+        try { value = JSON.parse(value); } catch { /* keep string */ }
+      }
+      cfg[row.key] = value;
+    });
+
+    const oneSignalAppId = cfg['onesignal_app_id'];
+    const oneSignalEnabled = cfg['onesignal_enabled'] === true || cfg['onesignal_enabled'] === 'true';
+
+    if (!oneSignalAppId || !oneSignalEnabled) {
       console.log('OneSignal not configured or disabled');
       return new Response(
         JSON.stringify({ success: false, reason: 'OneSignal not configured' }),
@@ -42,8 +54,7 @@ serve(async (req) => {
       );
     }
 
-    const oneSignalAppId = osConfig.value.app_id;
-    const oneSignalApiKey = Deno.env.get('ONESIGNAL_API_KEY');
+    const oneSignalApiKey = Deno.env.get('ONESIGNAL_REST_API_KEY') ?? Deno.env.get('ONESIGNAL_API_KEY');
 
     if (!oneSignalApiKey) {
       console.log('OneSignal API key not set');
@@ -59,16 +70,19 @@ serve(async (req) => {
     // Collect target user IDs
     const targetUserIds: string[] = [];
 
-    if (body.user_id) {
+    if (Array.isArray((body as any).user_ids) && (body as any).user_ids.length > 0) {
+      targetUserIds.push(...(body as any).user_ids);
+    } else if (body.user_id) {
       // Specific user
       targetUserIds.push(body.user_id);
     } else if (body.role_target) {
-      // All users with this role
+      // All users with this role (single role or list)
+      const roles = Array.isArray(body.role_target) ? body.role_target : [body.role_target];
       const { data: users, error } = await supabase
         .from('users')
         .select('id')
-        .eq('role', body.role_target)
-        .eq('is_active', true);
+        .in('role', roles)
+        .eq('active', true);
 
       if (error) {
         console.error('Error fetching users by role:', error);
