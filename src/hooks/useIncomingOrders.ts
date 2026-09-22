@@ -273,8 +273,22 @@ import { setIncomingChannelStatus, markIncomingSync, type IncomingChannelStatus 
 
      setupChannel();
 
-     // Polling de respaldo cada 10s (SELECT liviano) por si el canal muere
-     const pollInterval = setInterval(fetchPendingOrders, 10000);
+      // Polling de respaldo adaptativo (SELECT liviano):
+      // - 30s cuando el canal Realtime está sano (el aviso real llega instantáneo)
+      // - 10s cuando el canal está caído/con error, para no perder pedidos
+      const HEALTHY_POLL_MS = 30000;
+      const DEGRADED_POLL_MS = 10000;
+      let pollTimeout: ReturnType<typeof setTimeout>;
+
+      const scheduleNextPoll = () => {
+        const state = (channel as any)?.state;
+        const healthy = state === 'joined';
+        pollTimeout = setTimeout(async () => {
+          await fetchPendingOrders();
+          scheduleNextPoll();
+        }, healthy ? HEALTHY_POLL_MS : DEGRADED_POLL_MS);
+      };
+      scheduleNextPoll();
 
      const reconnectIfStale = () => {
        fetchPendingOrders();
@@ -295,16 +309,16 @@ import { setIncomingChannelStatus, markIncomingSync, type IncomingChannelStatus 
      window.addEventListener('focus', reconnectIfStale);
      window.addEventListener('online', reconnectIfStale);
 
-     return () => {
-       setIncomingChannelStatus('IDLE');
-       if (channel) supabase.removeChannel(channel);
-       clearInterval(pollInterval);
-       clearTimeout(reconnectTimeout);
-       document.removeEventListener('visibilitychange', handleVisibility);
-       window.removeEventListener('focus', reconnectIfStale);
-       window.removeEventListener('online', reconnectIfStale);
-     };
-   }, [fetchPendingOrders]);
+      return () => {
+        setIncomingChannelStatus('IDLE');
+        if (channel) supabase.removeChannel(channel);
+        clearTimeout(pollTimeout);
+        clearTimeout(reconnectTimeout);
+        document.removeEventListener('visibilitychange', handleVisibility);
+        window.removeEventListener('focus', reconnectIfStale);
+        window.removeEventListener('online', reconnectIfStale);
+      };
+    }, [fetchPendingOrders]);
  
    return {
      orders,

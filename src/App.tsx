@@ -27,6 +27,8 @@ import { StaffPushBanner } from "@/components/notifications/StaffPushBanner";
 import { StaffStartupChecks } from "@/components/pos/StaffStartupChecks";
 import { IncomingOrderBanner } from "@/components/pos/IncomingOrderBanner";
 import { ConnectionAlarmBanner } from "@/components/pos/ConnectionAlarmBanner";
+import { OrdersHeartbeat } from "@/components/pos/OrdersHeartbeat";
+import { NotificationsGuardBanner } from "@/components/pos/NotificationsGuardBanner";
 import { unlockAudio } from "@/lib/audioManager";
 import { BranchProvider } from "@/contexts/BranchContext";
 import { BranchSelectorModal } from "@/components/branches/BranchSelectorModal";
@@ -209,12 +211,16 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
                 <BranchIndicator />
               </div>
               <div className="flex items-center gap-2">
+                <OrdersHeartbeat />
                 <CashSessionTopBar />
               </div>
             </header>
              
              {/* Alarma de conexión perdida - solo staff con sesión de caja abierta */}
              <ConnectionAlarmBanner />
+
+             {/* Aviso persistente si faltan permisos de notificación o sonido */}
+             <NotificationsGuardBanner />
 
              {/* Banner de pedidos entrantes - solo visible si hay sesión con accept_app_orders */}
              <IncomingOrderBanner />
