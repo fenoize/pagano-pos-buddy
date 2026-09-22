@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { XCircle, RefreshCw } from 'lucide-react';
+import { XCircle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +17,7 @@ export default function CustomerPaymentFailure() {
   const [loading, setLoading] = useState(true);
   const { createPaymentAndRedirect, loading: paymentLoading } = useMercadoPago();
   const { customer } = useCustomerAuth();
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     if (!orderId) {
@@ -67,6 +68,19 @@ export default function CustomerPaymentFailure() {
       return false;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyPayment = async () => {
+    if (!orderId) return;
+    setVerifying(true);
+    try {
+      const pagado = await fetchOrder();
+      if (!pagado) {
+        toast.info('Aún no recibimos la confirmación de Mercado Pago. Si el dinero ya fue descontado de tu cuenta, espera unos segundos y vuelve a presionar Verificar Pago.');
+      }
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -136,9 +150,27 @@ export default function CustomerPaymentFailure() {
           )}
 
           <div className="space-y-3">
+            <Button
+              onClick={handleVerifyPayment}
+              disabled={verifying}
+              className="w-full"
+            >
+              {verifying ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Verificando con el banco...
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Verificar Pago
+                </>
+              )}
+            </Button>
             <Button 
               onClick={handleRetryPayment}
               disabled={paymentLoading}
+              variant="outline"
               className="w-full"
             >
               {paymentLoading ? (
@@ -165,7 +197,7 @@ export default function CustomerPaymentFailure() {
                 }
                 navigate('/menu');
               }}
-              variant="outline"
+              variant="ghost"
               className="w-full"
             >
               Cancelar y Volver al Menú
