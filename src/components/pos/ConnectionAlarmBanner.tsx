@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   getIncomingChannelStatus,
+  getIncomingLastSync,
   subscribeIncomingChannelStatus,
   type IncomingChannelStatus,
 } from '@/lib/incomingOrdersChannelStore';
+import { playAlarm } from '@/lib/audioManager';
 
 const BAD_STATUSES: IncomingChannelStatus[] = ['CLOSED', 'CHANNEL_ERROR', 'TIMED_OUT'];
 const DEBOUNCE_MS = 5000;
+// Si no hay lectura exitosa de pedidos en este lapso, el POS está "ciego".
+const STALE_MS = 60000;
 
 export function ConnectionAlarmBanner() {
   const [isOffline, setIsOffline] = useState(
@@ -36,7 +40,9 @@ export function ConnectionAlarmBanner() {
   // Debounce: solo alertar si el problema se sostiene
   useEffect(() => {
     const evaluate = () => {
-      const unhealthy = isOffline || BAD_STATUSES.includes(channelStatus);
+      const lastSync = getIncomingLastSync();
+      const stale = lastSync !== null && Date.now() - lastSync > STALE_MS;
+      const unhealthy = isOffline || stale || BAD_STATUSES.includes(channelStatus);
 
       if (!unhealthy) {
         unhealthySinceRef.current = null;
@@ -62,6 +68,14 @@ export function ConnectionAlarmBanner() {
     const interval = window.setInterval(evaluate, 1000);
     return () => clearInterval(interval);
   }, [isOffline, channelStatus]);
+
+  // Alarma sonora mientras el POS esté sin conexión a pedidos
+  useEffect(() => {
+    if (!visible) return;
+    playAlarm(2);
+    const interval = window.setInterval(() => playAlarm(2), 15000);
+    return () => clearInterval(interval);
+  }, [visible]);
 
   if (!visible) return null;
 
