@@ -6,7 +6,7 @@
  import { toast } from 'sonner';
  import { triggerOrderAssignedNotification } from '@/lib/staffNotificationTriggers';
  import { useAuthContext } from '@/contexts/AuthContext';
-import { setIncomingChannelStatus, type IncomingChannelStatus } from '@/lib/incomingOrdersChannelStore';
+import { setIncomingChannelStatus, markIncomingSync, type IncomingChannelStatus } from '@/lib/incomingOrdersChannelStore';
  
  // Simplified customer type for incoming orders
  export interface IncomingOrderCustomer {
