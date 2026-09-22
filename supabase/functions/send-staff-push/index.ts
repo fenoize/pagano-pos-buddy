@@ -27,14 +27,25 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get OneSignal settings from config
-    const { data: osConfig } = await supabase
+    // Get OneSignal settings from config (keys are stored individually)
+    const { data: configRows } = await supabase
       .from('config')
-      .select('value')
-      .eq('key', 'onesignal')
-      .single();
+      .select('key, value')
+      .in('key', ['onesignal_app_id', 'onesignal_enabled', 'pwa_config']);
 
-    if (!osConfig?.value?.app_id || !osConfig?.value?.enabled) {
+    const cfg: Record<string, any> = {};
+    (configRows ?? []).forEach((row: any) => {
+      let value = row.value;
+      if (typeof value === 'string') {
+        try { value = JSON.parse(value); } catch { /* keep string */ }
+      }
+      cfg[row.key] = value;
+    });
+
+    const oneSignalAppId = cfg['onesignal_app_id'];
+    const oneSignalEnabled = cfg['onesignal_enabled'] === true || cfg['onesignal_enabled'] === 'true';
+
+    if (!oneSignalAppId || !oneSignalEnabled) {
       console.log('OneSignal not configured or disabled');
       return new Response(
         JSON.stringify({ success: false, reason: 'OneSignal not configured' }),
@@ -42,8 +53,7 @@ serve(async (req) => {
       );
     }
 
-    const oneSignalAppId = osConfig.value.app_id;
-    const oneSignalApiKey = Deno.env.get('ONESIGNAL_API_KEY');
+    const oneSignalApiKey = Deno.env.get('ONESIGNAL_REST_API_KEY') ?? Deno.env.get('ONESIGNAL_API_KEY');
 
     if (!oneSignalApiKey) {
       console.log('OneSignal API key not set');
