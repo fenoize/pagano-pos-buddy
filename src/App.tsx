@@ -209,12 +209,16 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
                 <BranchIndicator />
               </div>
               <div className="flex items-center gap-2">
+                <OrdersHeartbeat />
                 <CashSessionTopBar />
               </div>
             </header>
              
              {/* Alarma de conexión perdida - solo staff con sesión de caja abierta */}
              <ConnectionAlarmBanner />
+
+             {/* Aviso persistente si faltan permisos de notificación o sonido */}
+             <NotificationsGuardBanner />
 
              {/* Banner de pedidos entrantes - solo visible si hay sesión con accept_app_orders */}
              <IncomingOrderBanner />
