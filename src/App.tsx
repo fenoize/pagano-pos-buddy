@@ -27,6 +27,8 @@ import { StaffPushBanner } from "@/components/notifications/StaffPushBanner";
 import { StaffStartupChecks } from "@/components/pos/StaffStartupChecks";
 import { IncomingOrderBanner } from "@/components/pos/IncomingOrderBanner";
 import { ConnectionAlarmBanner } from "@/components/pos/ConnectionAlarmBanner";
+import { OrdersHeartbeat } from "@/components/pos/OrdersHeartbeat";
+import { NotificationsGuardBanner } from "@/components/pos/NotificationsGuardBanner";
 import { unlockAudio } from "@/lib/audioManager";
 import { BranchProvider } from "@/contexts/BranchContext";
 import { BranchSelectorModal } from "@/components/branches/BranchSelectorModal";
