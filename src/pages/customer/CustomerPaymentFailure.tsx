@@ -110,7 +110,7 @@ export default function CustomerPaymentFailure() {
               Pago No Completado
             </h1>
             <p className="text-muted-foreground">
-              No pudimos procesar tu pago. El pedido fue cancelado, pero puedes generar uno nuevo con los mismos productos.
+              No pudimos confirmar tu pago. Si el cobro aparece en tu banco, no vuelvas a pagar: contáctanos y lo revisamos. También puedes reintentar el pago.
             </p>
           </div>
 
