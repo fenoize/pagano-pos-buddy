@@ -309,16 +309,16 @@ import { setIncomingChannelStatus, markIncomingSync, type IncomingChannelStatus 
      window.addEventListener('focus', reconnectIfStale);
      window.addEventListener('online', reconnectIfStale);
 
-     return () => {
-       setIncomingChannelStatus('IDLE');
-       if (channel) supabase.removeChannel(channel);
-       clearInterval(pollInterval);
-       clearTimeout(reconnectTimeout);
-       document.removeEventListener('visibilitychange', handleVisibility);
-       window.removeEventListener('focus', reconnectIfStale);
-       window.removeEventListener('online', reconnectIfStale);
-     };
-   }, [fetchPendingOrders]);
+      return () => {
+        setIncomingChannelStatus('IDLE');
+        if (channel) supabase.removeChannel(channel);
+        clearTimeout(pollTimeout);
+        clearTimeout(reconnectTimeout);
+        document.removeEventListener('visibilitychange', handleVisibility);
+        window.removeEventListener('focus', reconnectIfStale);
+        window.removeEventListener('online', reconnectIfStale);
+      };
+    }, [fetchPendingOrders]);
  
    return {
      orders,
