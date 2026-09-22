@@ -24,7 +24,7 @@ serve(async (req) => {
 
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('id, order_number, total, fulfillment, status, created_at')
+      .select('id, order_number, total, fulfillment, status, created_at, branch_id')
       .eq('status', 'PendienteAceptacion')
       .is('acceptance_email_sent_at', null)
       .lt('created_at', cutoff)
@@ -40,34 +40,76 @@ serve(async (req) => {
       );
     }
 
-    // Destinatarios: config.order_alert_emails o, por defecto, cajeros y administradores activos
+    // Destinatarios: solo administradores activos + responsable(s) de la caja abierta
+    // (config.order_alert_emails, si existe, sigue teniendo prioridad)
     const { data: cfgRow } = await supabase
       .from('config')
       .select('value')
       .eq('key', 'order_alert_emails')
       .maybeSingle();
 
-    let recipients: string[] = [];
+    let fixedRecipients: string[] = [];
     let cfgValue: any = cfgRow?.value;
     if (typeof cfgValue === 'string') {
       try { cfgValue = JSON.parse(cfgValue); } catch { /* ignore */ }
     }
     if (Array.isArray(cfgValue)) {
-      recipients = cfgValue.filter((e: any) => typeof e === 'string' && e.includes('@'));
+      fixedRecipients = cfgValue.filter((e: any) => typeof e === 'string' && e.includes('@'));
     }
 
-    if (recipients.length === 0) {
-      const { data: staff } = await supabase
+    // Administradores activos
+    const { data: admins } = await supabase
+      .from('users')
+      .select('email')
+      .eq('role', 'Administrador')
+      .eq('active', true);
+    const adminEmails = (admins ?? [])
+      .map((u: any) => u.email)
+      .filter((e: any) => typeof e === 'string' && e.includes('@'));
+
+    // Responsables de cajas abiertas, con su sucursal
+    const { data: openSessions } = await supabase
+      .from('cash_sessions')
+      .select('user_id, branch_id')
+      .is('closed_at', null);
+
+    const cashierUserIds = Array.from(new Set((openSessions ?? []).map((s: any) => s.user_id).filter(Boolean)));
+    const emailByUserId = new Map<string, string>();
+    if (cashierUserIds.length > 0) {
+      const { data: cashierUsers } = await supabase
         .from('users')
-        .select('email')
-        .in('role', ['Cajero', 'Administrador'])
+        .select('id, email')
+        .in('id', cashierUserIds)
         .eq('active', true);
-      recipients = Array.from(new Set(
-        (staff ?? []).map((u: any) => u.email).filter((e: any) => typeof e === 'string' && e.includes('@'))
-      ));
+      for (const u of cashierUsers ?? []) {
+        if (u.email && u.email.includes('@')) emailByUserId.set(u.id, u.email);
+      }
     }
 
-    if (recipients.length === 0) {
+    // Correos de cajeros por sucursal (null = sin sucursal asignada)
+    const cashierEmailsByBranch = new Map<string | null, Set<string>>();
+    for (const s of openSessions ?? []) {
+      const email = emailByUserId.get(s.user_id);
+      if (!email) continue;
+      const key = s.branch_id ?? null;
+      if (!cashierEmailsByBranch.has(key)) cashierEmailsByBranch.set(key, new Set());
+      cashierEmailsByBranch.get(key)!.add(email);
+    }
+
+    const recipientsFor = (branchId: string | null): string[] => {
+      if (fixedRecipients.length > 0) return fixedRecipients;
+      const set = new Set<string>(adminEmails);
+      const branchCashiers = cashierEmailsByBranch.get(branchId ?? null);
+      if (branchCashiers && branchCashiers.size > 0) {
+        branchCashiers.forEach((e) => set.add(e));
+      } else {
+        // Sin caja abierta en esa sucursal: incluir a todos los cajeros con caja abierta
+        cashierEmailsByBranch.forEach((emails) => emails.forEach((e) => set.add(e)));
+      }
+      return Array.from(set);
+    };
+
+    if (fixedRecipients.length === 0 && adminEmails.length === 0 && emailByUserId.size === 0) {
       console.warn('⚠️ No hay correos de destino para escalar pedidos pendientes');
       return new Response(
         JSON.stringify({ success: true, escalated: 0, reason: 'no_recipients' }),
@@ -93,7 +135,7 @@ serve(async (req) => {
 
       const { error: emailError } = await resend.emails.send({
         from: 'Paganos Burger <sistema@paganosburger.cl>',
-        to: recipients,
+        to: recipientsFor(order.branch_id ?? null),
         subject: `⚠️ Pedido #${order.order_number} sin aceptar hace ${minutes} min`,
         html: `
         <div style="font-family:Arial,Helvetica,sans-serif;background:#0d0d0d;padding:32px;">
@@ -132,7 +174,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, escalated, recipients: recipients.length }),
+      JSON.stringify({ success: true, escalated, recipients: recipientsFor(null).length }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
