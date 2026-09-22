@@ -49,8 +49,7 @@ serve(async (req) => {
     let sessionsQuery = supabase
       .from('cash_sessions')
       .select('user_id')
-      .is('closed_at', null)
-      .eq('accept_app_orders', true);
+      .is('closed_at', null);
 
     if (order.branch_id) {
       sessionsQuery = sessionsQuery.eq('branch_id', order.branch_id);
@@ -58,8 +57,21 @@ serve(async (req) => {
 
     const { data: activeSessions } = await sessionsQuery;
 
-    if (!activeSessions || activeSessions.length === 0) {
-      console.log('ℹ️ No hay cajeros activos con accept_app_orders=true');
+    // Siempre avisar también a todo el equipo de caja activo (cajeros y administradores),
+    // aunque no tengan una sesión de caja abierta o el switch de app esté apagado.
+    const { data: staffUsers } = await supabase
+      .from('users')
+      .select('id')
+      .in('role', ['Cajero', 'Administrador'])
+      .eq('active', true);
+
+    const recipientIds = Array.from(new Set([
+      ...(activeSessions ?? []).map((s: any) => s.user_id).filter(Boolean),
+      ...(staffUsers ?? []).map((u: any) => u.id),
+    ]));
+
+    if (recipientIds.length === 0) {
+      console.log('ℹ️ No hay destinatarios para el aviso de pedido');
       return new Response(
         JSON.stringify({ success: true, recipients: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -70,22 +82,19 @@ serve(async (req) => {
     const totalFormatted = Number(order.total).toLocaleString('es-CL');
 
     let sent = 0;
-    for (const session of activeSessions) {
-      if (!session.user_id) continue;
-      const { error: pushError } = await supabase.functions.invoke('send-staff-push', {
-        body: {
-          user_id: session.user_id,
-          type: 'new_app_order',
-          title: `⚔️ Nuevo pedido #${order.order_number}`,
-          body: `${orderType} • $${totalFormatted} — requiere aceptación en el POS`,
-          payload: { order_id: order.id, order_number: order.order_number }
-        }
-      });
-      if (pushError) {
-        console.warn(`⚠️ Push error para cajero ${session.user_id}:`, pushError);
-      } else {
-        sent++;
+    const { error: pushError } = await supabase.functions.invoke('send-staff-push', {
+      body: {
+        user_ids: recipientIds,
+        type: 'new_app_order',
+        title: `⚔️ Nuevo pedido #${order.order_number}`,
+        body: `${orderType} • $${totalFormatted} — requiere aceptación en el POS`,
+        payload: { order_id: order.id, order_number: order.order_number }
       }
+    });
+    if (pushError) {
+      console.warn('⚠️ Push error:', pushError);
+    } else {
+      sent = recipientIds.length;
     }
 
     return new Response(
