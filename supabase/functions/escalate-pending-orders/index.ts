@@ -9,6 +9,112 @@ const corsHeaders = {
 
 const ESCALATION_MINUTES = 2;
 
+const escapeHtml = (value: unknown): string => String(value ?? '')
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&#039;');
+
+const paymentLabels: Record<string, string> = {
+  efectivo: 'Efectivo',
+  mp: 'Mercado Pago',
+  pos: 'Tarjeta / POS',
+  aplicacion: 'Aplicación',
+  runas: 'Runas',
+  transferencia: 'Transferencia',
+  mixto: 'Pago mixto',
+  pendiente: 'Pendiente de pago',
+  colacion: 'Colación',
+  canje: 'Canje',
+  pluxee: 'Pluxee',
+  edenred: 'Edenred',
+};
+
+const formatCurrency = (value: unknown): string =>
+  `$${Number(value ?? 0).toLocaleString('es-CL')}`;
+
+const formatPaymentMethod = (order: any): string => {
+  const parts = [
+    ['Efectivo', order.payment_efectivo],
+    ['Mercado Pago', order.payment_mp],
+    ['Tarjeta / POS', order.payment_pos],
+    ['Aplicación', order.payment_aplicacion],
+    ['Runas', order.payment_runas],
+  ]
+    .filter(([, amount]) => Number(amount ?? 0) > 0)
+    .map(([label, amount]) => `${label} (${formatCurrency(amount)})`);
+
+  if (parts.length > 1 || order.payment_method === 'mixto') {
+    return parts.length > 0 ? parts.join(' + ') : 'Pago mixto';
+  }
+
+  return parts[0] ?? paymentLabels[order.payment_method] ?? order.payment_method ?? 'No informado';
+};
+
+const formatSelections = (selections: any[]): string[] => selections.flatMap((selection: any) => {
+  const productName = selection?.selectedProduct?.name || 'Producto';
+  const selectedVariants = Array.isArray(selection?.selectedVariants) ? selection.selectedVariants : [];
+  const variants = selectedVariants.length > 0
+    ? selectedVariants.map((variant: any) => variant?.variant?.name || variant?.name).filter(Boolean)
+    : [selection?.selectedVariant?.variant?.name || selection?.selectedVariant?.name].filter(Boolean);
+  const variantText = variants.length > 0 ? ` — ${variants.join(' + ')}` : '';
+  const quantity = Number(selection?.quantity ?? 1);
+  const lines = [`${quantity}x ${productName}${variantText}`];
+
+  const options = Array.isArray(selection?.variant_group_selections)
+    ? selection.variant_group_selections.map((option: any) => option?.option_name).filter(Boolean)
+    : [];
+  if (options.length > 0) lines.push(`Opciones: ${options.join(', ')}`);
+
+  const extras = Array.isArray(selection?.extras)
+    ? selection.extras.map((extra: any) => `${Number(extra?.quantity ?? 1)}x ${extra?.label || extra?.name || 'Extra'}`)
+    : [];
+  if (extras.length > 0) lines.push(`Extras: ${extras.join(', ')}`);
+
+  const modifiers = Array.isArray(selection?.modifiers)
+    ? selection.modifiers.map((modifier: any) => modifier?.name).filter(Boolean)
+    : [];
+  if (modifiers.length > 0) lines.push(`Indicaciones: ${modifiers.join(', ')}`);
+
+  return lines;
+});
+
+const renderOrderDetails = (items: unknown): string => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return '<p style="margin:0;color:#b8b8b8;">Sin detalle disponible.</p>';
+  }
+
+  return items.map((item: any) => {
+    const title = `${Number(item?.quantity ?? 1)}x ${item?.productName || 'Producto'}`;
+    const variant = item?.variant_name || item?.size;
+    const options = Array.isArray(item?.variant_group_selections)
+      ? item.variant_group_selections.map((option: any) => option?.option_name).filter(Boolean)
+      : [];
+    const extras = Array.isArray(item?.extras)
+      ? item.extras.map((extra: any) => `${Number(extra?.quantity ?? 1)}x ${extra?.label || extra?.name || 'Extra'}`)
+      : [];
+    const modifiers = Array.isArray(item?.modifiers)
+      ? item.modifiers.map((modifier: any) => modifier?.name).filter(Boolean)
+      : [];
+    const comboLines = Array.isArray(item?.combo_selections) ? formatSelections(item.combo_selections) : [];
+    const detailLines = [
+      variant ? `Variante: ${variant}` : '',
+      options.length > 0 ? `Opciones: ${options.join(', ')}` : '',
+      extras.length > 0 ? `Extras: ${extras.join(', ')}` : '',
+      modifiers.length > 0 ? `Indicaciones: ${modifiers.join(', ')}` : '',
+      ...comboLines,
+      item?.notes ? `Nota: ${item.notes}` : '',
+    ].filter(Boolean);
+
+    return `
+      <div style="padding:12px 0;border-top:1px solid #3d0000;">
+        <p style="margin:0;color:#ffffff;font-size:15px;font-weight:bold;">${escapeHtml(title)}</p>
+        ${detailLines.map((line) => `<p style="margin:4px 0 0 16px;color:#b8b8b8;font-size:13px;line-height:1.45;">${escapeHtml(line)}</p>`).join('')}
+      </div>`;
+  }).join('');
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -24,7 +130,7 @@ serve(async (req) => {
 
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('id, order_number, total, fulfillment, status, created_at, branch_id')
+      .select('id, order_number, total, fulfillment, status, created_at, branch_id, customer_id, customer_name, nombre_resumen, payment_method, payment_efectivo, payment_mp, payment_pos, payment_aplicacion, payment_runas, items, customer:customers(name, apellido, nombres, apellidos)')
       .eq('status', 'PendienteAceptacion')
       .is('acceptance_email_sent_at', null)
       .lt('created_at', cutoff)
@@ -132,6 +238,13 @@ serve(async (req) => {
       );
       const orderType = order.fulfillment === 'delivery' ? 'Delivery' : 'Retiro';
       const totalFormatted = Number(order.total ?? 0).toLocaleString('es-CL');
+      const customer = Array.isArray(order.customer) ? order.customer[0] : order.customer;
+      const registeredName = customer
+        ? `${customer.nombres || customer.name || ''} ${customer.apellidos || customer.apellido || ''}`.trim()
+        : '';
+      const customerName = registeredName || order.customer_name || order.nombre_resumen || 'Sin cliente informado';
+      const paymentMethod = formatPaymentMethod(order);
+      const orderDetails = renderOrderDetails(order.items);
 
       const { error: emailError } = await resend.emails.send({
         from: 'Paganos Burger <sistema@paganosburger.cl>',
@@ -147,8 +260,14 @@ serve(async (req) => {
             </p>
             <table style="width:100%;border-collapse:collapse;font-size:15px;color:#ffffff;">
               <tr><td style="padding:6px 0;color:#9a9a9a;">Tipo</td><td style="padding:6px 0;text-align:right;">${orderType}</td></tr>
+              <tr><td style="padding:6px 0;color:#9a9a9a;">Cliente</td><td style="padding:6px 0;text-align:right;">${escapeHtml(customerName)}</td></tr>
+              <tr><td style="padding:6px 0;color:#9a9a9a;">Método de pago</td><td style="padding:6px 0;text-align:right;">${escapeHtml(paymentMethod)}</td></tr>
               <tr><td style="padding:6px 0;color:#9a9a9a;">Total</td><td style="padding:6px 0;text-align:right;">$${totalFormatted}</td></tr>
             </table>
+            <div style="margin-top:24px;">
+              <p style="margin:0 0 8px 0;color:#ff5964;font-size:12px;text-transform:uppercase;font-weight:bold;">Detalle de la orden</p>
+              ${orderDetails}
+            </div>
             <p style="margin:28px 0 0 0;">
               <a href="${siteUrl}/pos/ventas" style="display:inline-block;background:#E11D2C;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:4px;font-weight:bold;">Abrir el POS</a>
             </p>
