@@ -115,12 +115,17 @@ import { usePendingOrdersAlarm } from '@/hooks/usePendingOrdersAlarm';
        >
          {/* Header with collapse toggle */}
          <div className="flex items-center justify-between px-4 py-2">
-           <div className="flex items-center gap-2">
-             <Bell className="h-5 w-5" />
-             <span className="font-semibold">
-               {orders.length} pedido{orders.length > 1 ? 's' : ''} pendiente{orders.length > 1 ? 's' : ''}
-             </span>
-           </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Bell className="h-5 w-5" />
+              <span className="font-semibold">
+                {orders.length} pedido{orders.length > 1 ? 's' : ''} pendiente{orders.length > 1 ? 's' : ''}
+              </span>
+              {!canAcceptAppOrders && (
+                <Badge variant="outline" className="text-xs border-primary-foreground/40">
+                  Recepción de pedidos de la app apagada
+                </Badge>
+              )}
+            </div>
            <div className="flex items-center gap-2">
              <Button
                variant="ghost"
