@@ -51,15 +51,14 @@ import { usePendingOrdersAlarm } from '@/hooks/usePendingOrdersAlarm';
 
   // Auto-open modal whenever there are more pending orders than dismissed
   useEffect(() => {
-    if (!canAcceptAppOrders) return;
     if (orders.length > dismissedCountRef.current && !modalOpen) {
       setSelectedOrder(orders[0]);
       setModalOpen(true);
     }
-  }, [orders, canAcceptAppOrders, modalOpen]);
+  }, [orders, modalOpen]);
 
-  // Don't render if no active session or no orders
-  if (!canAcceptAppOrders || orders.length === 0) {
+  // Solo se oculta si no hay pedidos pendientes de aceptación
+  if (orders.length === 0) {
     return null;
   }
 
@@ -116,12 +115,17 @@ import { usePendingOrdersAlarm } from '@/hooks/usePendingOrdersAlarm';
        >
          {/* Header with collapse toggle */}
          <div className="flex items-center justify-between px-4 py-2">
-           <div className="flex items-center gap-2">
-             <Bell className="h-5 w-5" />
-             <span className="font-semibold">
-               {orders.length} pedido{orders.length > 1 ? 's' : ''} pendiente{orders.length > 1 ? 's' : ''}
-             </span>
-           </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Bell className="h-5 w-5" />
+              <span className="font-semibold">
+                {orders.length} pedido{orders.length > 1 ? 's' : ''} pendiente{orders.length > 1 ? 's' : ''}
+              </span>
+              {!canAcceptAppOrders && (
+                <Badge variant="outline" className="text-xs border-primary-foreground/40">
+                  Recepción de pedidos de la app apagada
+                </Badge>
+              )}
+            </div>
            <div className="flex items-center gap-2">
              <Button
                variant="ghost"

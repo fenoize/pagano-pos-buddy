@@ -6,7 +6,7 @@
  import { toast } from 'sonner';
  import { triggerOrderAssignedNotification } from '@/lib/staffNotificationTriggers';
  import { useAuthContext } from '@/contexts/AuthContext';
-import { setIncomingChannelStatus, type IncomingChannelStatus } from '@/lib/incomingOrdersChannelStore';
+import { setIncomingChannelStatus, markIncomingSync, type IncomingChannelStatus } from '@/lib/incomingOrdersChannelStore';
  
  // Simplified customer type for incoming orders
  export interface IncomingOrderCustomer {
@@ -96,54 +96,51 @@ import { setIncomingChannelStatus, type IncomingChannelStatus } from '@/lib/inco
      }
    }, []);
  
-   // Fetch pending orders
-   const fetchPendingOrders = useCallback(async () => {
-     if (!canAcceptAppOrders) {
-       setOrders([]);
-       setLoading(false);
-       return;
-     }
- 
-     try {
-       const { data, error } = await supabase
-         .from('orders')
-         .select(`
-           *,
-           customer:customers(
-             id,
-             name,
-             nombres,
-             apellidos,
-             phone
-           )
-         `)
-         .eq('status', 'PendienteAceptacion')
-         .order('created_at', { ascending: true });
- 
-       if (error) throw error;
- 
-       // Map the data to our IncomingOrder type
-       const newOrders: IncomingOrder[] = (data || []).map((order: any) => ({
-         ...order,
-         items: Array.isArray(order.items) ? order.items : [],
-         customer: order.customer || undefined
-       }));
-      
-       setOrders(newOrders);
-       const newCount = newOrders.length;
-       latestOrderCountRef.current = newCount;
-       if (newCount > lastAlertedCountRef.current) {
-         setNewOrderArrived(true);
-       }
-       if (newCount < lastAlertedCountRef.current) {
-         lastAlertedCountRef.current = newCount;
-       }
-     } catch (error) {
-       console.error('Error fetching pending orders:', error);
-     } finally {
-       setLoading(false);
-     }
-   }, [canAcceptAppOrders]);
+  // Fetch pending orders.
+  // IMPORTANTE: se consultan SIEMPRE, incluso si la caja tiene apagado
+  // "aceptar pedidos de app", para que el cajero igual sea alertado.
+  const fetchPendingOrders = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          customer:customers(
+            id,
+            name,
+            nombres,
+            apellidos,
+            phone
+          )
+        `)
+        .eq('status', 'PendienteAceptacion')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      // Map the data to our IncomingOrder type
+      const newOrders: IncomingOrder[] = (data || []).map((order: any) => ({
+        ...order,
+        items: Array.isArray(order.items) ? order.items : [],
+        customer: order.customer || undefined
+      }));
+
+      setOrders(newOrders);
+      markIncomingSync();
+      const newCount = newOrders.length;
+      latestOrderCountRef.current = newCount;
+      if (newCount > lastAlertedCountRef.current) {
+        setNewOrderArrived(true);
+      }
+      if (newCount < lastAlertedCountRef.current) {
+        lastAlertedCountRef.current = newCount;
+      }
+    } catch (error) {
+      console.error('Error fetching pending orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
  
    // Accept an order
    const acceptOrder = useCallback(async (
@@ -230,86 +227,84 @@ import { setIncomingChannelStatus, type IncomingChannelStatus } from '@/lib/inco
        lastAlertedCountRef.current = latestOrderCountRef.current;
      }, []);
  
-   // Initial fetch
+  // Initial fetch (siempre, sin depender del toggle de la caja)
+  useEffect(() => {
+    fetchPendingOrders();
+    fetchDeliveryPersons();
+  }, [fetchPendingOrders, fetchDeliveryPersons]);
+
+   // Subscribe to realtime updates with auto-reconnect on failure
    useEffect(() => {
-     if (canAcceptAppOrders) {
+     let channel: ReturnType<typeof supabase.channel> | null = null;
+     let reconnectTimeout: ReturnType<typeof setTimeout>;
+
+     const setupChannel = () => {
+       setChannelStatus('CONNECTING');
+       setIncomingChannelStatus('CONNECTING');
+       if (channel) {
+         supabase.removeChannel(channel);
+       }
+
+       channel = supabase
+         .channel('incoming-orders')
+         .on(
+           'postgres_changes',
+           {
+             event: '*',
+             schema: 'public',
+             table: 'orders',
+             filter: 'status=eq.PendienteAceptacion'
+           },
+           (payload) => {
+             console.log('📬 Incoming order update:', payload.eventType);
+             fetchPendingOrders();
+           }
+         )
+         .subscribe((status) => {
+           setChannelStatus(status as any);
+           setIncomingChannelStatus(status as any);
+           if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+             console.warn('📡 Channel lost, reconnecting in 5s...');
+             clearTimeout(reconnectTimeout);
+             reconnectTimeout = setTimeout(setupChannel, 5000);
+           }
+         });
+     };
+
+     setupChannel();
+
+     // Polling de respaldo cada 10s (SELECT liviano) por si el canal muere
+     const pollInterval = setInterval(fetchPendingOrders, 10000);
+
+     const reconnectIfStale = () => {
        fetchPendingOrders();
-       fetchDeliveryPersons();
-     } else {
-       setOrders([]);
-       setLoading(false);
-     }
-   }, [canAcceptAppOrders, fetchPendingOrders, fetchDeliveryPersons]);
- 
-    // Subscribe to realtime updates with auto-reconnect on failure
-    useEffect(() => {
-      if (!canAcceptAppOrders) return;
+       const state = (channel as any)?.state;
+       if (state !== 'joined' && state !== 'joining') {
+         console.log('📡 Canal caído, reconectando');
+         setupChannel();
+       }
+     };
 
-      let channel: ReturnType<typeof supabase.channel> | null = null;
-      let reconnectTimeout: ReturnType<typeof setTimeout>;
+     const handleVisibility = () => {
+       if (document.visibilityState === 'visible') {
+         lastAlertedCountRef.current = 0;
+         reconnectIfStale();
+       }
+     };
+     document.addEventListener('visibilitychange', handleVisibility);
+     window.addEventListener('focus', reconnectIfStale);
+     window.addEventListener('online', reconnectIfStale);
 
-      const setupChannel = () => {
-        setChannelStatus('CONNECTING');
-        setIncomingChannelStatus('CONNECTING');
-        if (channel) {
-          supabase.removeChannel(channel);
-        }
-
-        channel = supabase
-          .channel('incoming-orders')
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'orders',
-              filter: 'status=eq.PendienteAceptacion'
-            },
-            (payload) => {
-              console.log('📬 Incoming order update:', payload.eventType);
-              fetchPendingOrders();
-            }
-          )
-          .subscribe((status) => {
-            setChannelStatus(status as any);
-            setIncomingChannelStatus(status as any);
-            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-              console.warn('📡 Channel lost, reconnecting in 5s...');
-              reconnectTimeout = setTimeout(setupChannel, 5000);
-            }
-          });
-      };
-
-      setupChannel();
-
-      // Polling backup every 20 seconds (lightweight SELECT, ~1KB response)
-      const pollInterval = setInterval(fetchPendingOrders, 20000);
-
-      // Only reconnect channel when tab returns from background (not on every focus)
-      const handleVisibility = () => {
-        if (document.visibilityState === 'visible') {
-          lastAlertedCountRef.current = 0;
-          fetchPendingOrders();
-          // Only recreate channel if it's not healthy
-          if (channel) {
-            const state = (channel as any).state;
-            if (state !== 'joined' && state !== 'joining') {
-              console.log('📡 Tab visible + channel stale, reconnecting');
-              setupChannel();
-            }
-          }
-        }
-      };
-      document.addEventListener('visibilitychange', handleVisibility);
-
-      return () => {
-        setIncomingChannelStatus('IDLE');
-        if (channel) supabase.removeChannel(channel);
-        clearInterval(pollInterval);
-        clearTimeout(reconnectTimeout);
-        document.removeEventListener('visibilitychange', handleVisibility);
-      };
-    }, [canAcceptAppOrders, fetchPendingOrders]);
+     return () => {
+       setIncomingChannelStatus('IDLE');
+       if (channel) supabase.removeChannel(channel);
+       clearInterval(pollInterval);
+       clearTimeout(reconnectTimeout);
+       document.removeEventListener('visibilitychange', handleVisibility);
+       window.removeEventListener('focus', reconnectIfStale);
+       window.removeEventListener('online', reconnectIfStale);
+     };
+   }, [fetchPendingOrders]);
  
    return {
      orders,
