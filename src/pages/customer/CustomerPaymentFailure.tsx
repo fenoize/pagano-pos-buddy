@@ -155,8 +155,13 @@ export default function CustomerPaymentFailure() {
             </Button>
             <Button 
               onClick={async () => {
+                // Solo cancelar si realmente sigue sin pagarse
                 if (orderId) {
-                  await supabase.from('orders').update({ status: 'Cancelado' }).eq('id', orderId);
+                  await supabase
+                    .from('orders')
+                    .update({ status: 'Cancelado' })
+                    .eq('id', orderId)
+                    .eq('status', 'PendientePago');
                 }
                 navigate('/menu');
               }}
