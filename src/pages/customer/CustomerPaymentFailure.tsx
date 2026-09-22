@@ -129,7 +129,7 @@ export default function CustomerPaymentFailure() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Estado:</span>
                 <span className="font-semibold text-destructive">
-                  Cancelado
+                  {order.status === 'Cancelado' ? 'Cancelado' : 'Pago no confirmado'}
                 </span>
               </div>
             </div>
