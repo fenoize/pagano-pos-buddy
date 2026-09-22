@@ -10,7 +10,8 @@ import { playAlarm } from '@/lib/audioManager';
 const BAD_STATUSES: IncomingChannelStatus[] = ['CLOSED', 'CHANNEL_ERROR', 'TIMED_OUT'];
 const DEBOUNCE_MS = 5000;
 // Si no hay lectura exitosa de pedidos en este lapso, el POS está "ciego".
-const STALE_MS = 60000;
+// El polling de respaldo corre cada 30s, por eso el umbral es de 90s.
+const STALE_MS = 90000;
 
 export function ConnectionAlarmBanner() {
   const [isOffline, setIsOffline] = useState(
