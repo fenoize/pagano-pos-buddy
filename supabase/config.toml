@@ -56,3 +56,6 @@ verify_jwt = false
 
 
 
+
+[functions.escalate-pending-orders]
+verify_jwt = false
