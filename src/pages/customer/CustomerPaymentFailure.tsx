@@ -19,12 +19,27 @@ export default function CustomerPaymentFailure() {
   const { customer } = useCustomerAuth();
 
   useEffect(() => {
-    if (orderId) {
-      fetchOrder();
+    if (!orderId) {
+      setLoading(false);
+      return;
     }
+    let cancelled = false;
+    let attempts = 0;
+
+    const run = async () => {
+      const paid = await fetchOrder();
+      attempts += 1;
+      // Esperar hasta ~12s por si el webhook de MercadoPago aún no confirma el pago
+      if (!paid && !cancelled && attempts < 6) {
+        setTimeout(run, 2000);
+      }
+    };
+    run();
+
+    return () => { cancelled = true; };
   }, [orderId]);
 
-  const fetchOrder = async () => {
+  const fetchOrder = async (): Promise<boolean> => {
     try {
       const { data, error } = await supabase
         .from('orders')
@@ -34,26 +49,22 @@ export default function CustomerPaymentFailure() {
 
       if (error) throw error;
 
-      // Auto-cancelar si la orden sigue en PendientePago (pago fallido/abandonado)
-      if (data.status === 'PendientePago') {
-        const { error: cancelError } = await supabase
-          .from('orders')
-          .update({
-            status: 'Cancelado',
-            notes: `${data.notes || ''}\n\n❌ Pago no completado en MercadoPago - cancelado automáticamente`.trim()
-          })
-          .eq('id', orderId)
-          .eq('status', 'PendientePago');
-        if (cancelError) console.error('Error auto-cancelling order:', cancelError);
-        data.status = 'Cancelado';
-      }
-
       setOrder({
         ...data,
         items: data.items as any
       } as Order);
+
+      // Si el pago sí se acreditó, no mostrar error: llevar al seguimiento
+      const pagado = data.status !== 'PendientePago' && data.status !== 'Cancelado';
+      if (pagado) {
+        toast.success('Tu pago fue confirmado');
+        navigate(`/order-tracking/${orderId}`, { replace: true });
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Error fetching order:', error);
+      return false;
     } finally {
       setLoading(false);
     }
