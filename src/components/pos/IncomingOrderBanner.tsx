@@ -51,15 +51,14 @@ import { usePendingOrdersAlarm } from '@/hooks/usePendingOrdersAlarm';
 
   // Auto-open modal whenever there are more pending orders than dismissed
   useEffect(() => {
-    if (!canAcceptAppOrders) return;
     if (orders.length > dismissedCountRef.current && !modalOpen) {
       setSelectedOrder(orders[0]);
       setModalOpen(true);
     }
-  }, [orders, canAcceptAppOrders, modalOpen]);
+  }, [orders, modalOpen]);
 
-  // Don't render if no active session or no orders
-  if (!canAcceptAppOrders || orders.length === 0) {
+  // Solo se oculta si no hay pedidos pendientes de aceptación
+  if (orders.length === 0) {
     return null;
   }
 
