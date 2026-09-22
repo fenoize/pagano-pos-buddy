@@ -3,12 +3,31 @@
  * Actualizar este archivo en cada release
  */
 
- export const APP_VERSION = "1.6.1";
- export const APP_BUILD_DATE = "2026-09-01";
+ export const APP_VERSION = "1.6.2";
+ export const APP_BUILD_DATE = "2026-09-22";
 export const APP_NAME = "Paganos POS";
 
  // Changelog de versiones
  export const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+   {
+     version: "1.6.2",
+     date: "2026-09-22",
+     changes: [
+       "Pedidos Pendiente de Aceptación: respaldo de consulta cada 30s (10s si falla la conexión en vivo) y consulta inmediata al retomar la pestaña o recuperar internet",
+       "Nuevo indicador 'Pedidos al día HH:MM' en el header y barra roja 'Sin conexión — No se están recibiendo pedidos' a los 90s sin lectura, con alarma sonora",
+       "Alarma sonora rediseñada: sirena de dos tonos con volumen ascendente cada 8s mientras existan pedidos por aceptar",
+       "Franja de advertencia si faltan permisos de notificación o audio en el POS",
+       "Corrección del aviso push al equipo de caja (leía configuración y clave inexistentes): ahora llega a cajeros y administradores activos, con o sin caja abierta",
+       "Nuevo escalamiento por correo: si un pedido lleva más de 2 minutos sin aceptarse, se envía email a administradores activos y al responsable de la caja abierta de la sucursal",
+       "App Cliente: se ocultó el campo 'Notas del pedido' en Finalizar pedido (uso exclusivo del POS)",
+       "App Cliente y POS: combos de precio fijo calculan el recargo desde la variante más barata cuando el slot no tiene predeterminada",
+       "Nueva Venta · Últimas órdenes: se muestran todas las bebidas/variantes de un combo con sus cantidades (1x Kem Piña + 1x Limón Soda)",
+       "KDS: número de pedido en blanco en modo oscuro",
+       "ATENEA: nuevo estado minimizado con botones Minimizar y Cerrar en el encabezado",
+       "Marketing · Alianzas: corregido el error 'Cannot coerce the result to a single JSON object' al actualizar una alianza",
+       "Navegación móvil rediseñada: barra de 5 accesos con botón flotante 'Nueva venta' y hoja inferior con todos los módulos por sección"
+     ]
+   },
    {
      version: "1.6.1",
      date: "2026-09-01",
