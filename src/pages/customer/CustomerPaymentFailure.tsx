@@ -58,7 +58,7 @@ export default function CustomerPaymentFailure() {
       const pagado = data.status !== 'PendientePago' && data.status !== 'Cancelado';
       if (pagado) {
         toast.success('Tu pago fue confirmado');
-        navigate(`/order-tracking/${orderId}`, { replace: true });
+        navigate(`/track/${orderId}`, { replace: true });
         return true;
       }
       return false;
