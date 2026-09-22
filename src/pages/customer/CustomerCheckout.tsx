@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,7 +55,6 @@ export default function CustomerCheckout() {
   const { findZoneByCoordinates } = useDeliveryGeo();
   const { discountPercent: subscriptionDiscount, rules: subscriptionRules } = useCustomerDiscountSubscription(customer?.id);
   
-  const [notes, setNotes] = useState('');
   const [canOrder, setCanOrder] = useState(true);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mercadopago' | 'runas'>('mercadopago');
   const [runasToUse, setRunasToUse] = useState(0);
@@ -303,7 +301,7 @@ export default function CustomerCheckout() {
             notes: item.notes
           })),
           customer_id: customer.id,
-          notes: notes || 'Pedido desde app cliente',
+          notes: 'Pedido desde app cliente',
           fulfillment: fulfillmentType,
           delivery_address: deliveryAddress,
           delivery_fee: fulfillmentType === 'delivery' ? effectiveDeliveryFee : 0,
@@ -325,7 +323,7 @@ export default function CustomerCheckout() {
         const result = await createRunasOrder({
           items,
           customer_id: customer.id,
-          notes: notes || 'Pedido pagado con runas',
+          notes: 'Pedido pagado con runas',
           runas_to_use: runasToUse,
           discount_amount: discountAmount,
           fulfillment: fulfillmentType,
@@ -637,21 +635,6 @@ export default function CustomerCheckout() {
               <Label>Teléfono</Label>
               <Input value={customer?.phone || 'No registrado'} disabled />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Notes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Notas del pedido (opcional)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="Ej: Sin cebolla, sin pepinillos..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-            />
           </CardContent>
         </Card>
 
