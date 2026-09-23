@@ -52,6 +52,11 @@ export function ConnectionAlarmBanner() {
 
   // Debounce: solo alertar si el problema se sostiene
   useEffect(() => {
+    if (!isEligible) {
+      unhealthySinceRef.current = null;
+      setVisible(false);
+      return;
+    }
     const evaluate = () => {
       const lastSync = getIncomingLastSync();
       const stale = lastSync !== null && Date.now() - lastSync > STALE_MS;
