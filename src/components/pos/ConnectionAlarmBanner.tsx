@@ -6,6 +6,8 @@ import {
   type IncomingChannelStatus,
 } from '@/lib/incomingOrdersChannelStore';
 import { playAlarm } from '@/lib/audioManager';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { useCashSession } from '@/hooks/useCashSession';
 
 const BAD_STATUSES: IncomingChannelStatus[] = ['CLOSED', 'CHANNEL_ERROR', 'TIMED_OUT'];
 const DEBOUNCE_MS = 5000;
@@ -14,6 +16,16 @@ const DEBOUNCE_MS = 5000;
 const STALE_MS = 90000;
 
 export function ConnectionAlarmBanner() {
+  const { user } = useAuthContext();
+  const { currentSession } = useCashSession();
+  // Solo alarmar a staff con turno activo (sesión de caja abierta).
+  // Sin turno, el usuario no es responsable de recibir pedidos.
+  const isCustomerRoute =
+    typeof window !== 'undefined' &&
+    (window.location.pathname.startsWith('/cliente') ||
+      window.location.pathname.startsWith('/customer'));
+  const isEligible = !!user?.id && !!currentSession && !isCustomerRoute;
+
   const [isOffline, setIsOffline] = useState(
     typeof navigator !== 'undefined' ? !navigator.onLine : false
   );
@@ -40,6 +52,11 @@ export function ConnectionAlarmBanner() {
 
   // Debounce: solo alertar si el problema se sostiene
   useEffect(() => {
+    if (!isEligible) {
+      unhealthySinceRef.current = null;
+      setVisible(false);
+      return;
+    }
     const evaluate = () => {
       const lastSync = getIncomingLastSync();
       const stale = lastSync !== null && Date.now() - lastSync > STALE_MS;
@@ -68,17 +85,17 @@ export function ConnectionAlarmBanner() {
     evaluate();
     const interval = window.setInterval(evaluate, 1000);
     return () => clearInterval(interval);
-  }, [isOffline, channelStatus]);
+  }, [isOffline, channelStatus, isEligible]);
 
   // Alarma sonora mientras el POS esté sin conexión a pedidos
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !isEligible) return;
     playAlarm(2);
     const interval = window.setInterval(() => playAlarm(2), 15000);
     return () => clearInterval(interval);
-  }, [visible]);
+  }, [visible, isEligible]);
 
-  if (!visible) return null;
+  if (!visible || !isEligible) return null;
 
   return (
     <div
