@@ -16,6 +16,16 @@ const DEBOUNCE_MS = 5000;
 const STALE_MS = 90000;
 
 export function ConnectionAlarmBanner() {
+  const { user } = useAuthContext();
+  const { currentSession } = useCashSession();
+  // Solo alarmar a staff con turno activo (sesión de caja abierta).
+  // Sin turno, el usuario no es responsable de recibir pedidos.
+  const isCustomerRoute =
+    typeof window !== 'undefined' &&
+    (window.location.pathname.startsWith('/cliente') ||
+      window.location.pathname.startsWith('/customer'));
+  const isEligible = !!user?.id && !!currentSession && !isCustomerRoute;
+
   const [isOffline, setIsOffline] = useState(
     typeof navigator !== 'undefined' ? !navigator.onLine : false
   );
