@@ -85,11 +85,11 @@ export function ConnectionAlarmBanner() {
     evaluate();
     const interval = window.setInterval(evaluate, 1000);
     return () => clearInterval(interval);
-  }, [isOffline, channelStatus]);
+  }, [isOffline, channelStatus, isEligible]);
 
   // Alarma sonora mientras el POS esté sin conexión a pedidos
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !isEligible) return;
     playAlarm(2);
     const interval = window.setInterval(() => playAlarm(2), 15000);
     return () => clearInterval(interval);
