@@ -93,9 +93,9 @@ export function ConnectionAlarmBanner() {
     playAlarm(2);
     const interval = window.setInterval(() => playAlarm(2), 15000);
     return () => clearInterval(interval);
-  }, [visible]);
+  }, [visible, isEligible]);
 
-  if (!visible) return null;
+  if (!visible || !isEligible) return null;
 
   return (
     <div
