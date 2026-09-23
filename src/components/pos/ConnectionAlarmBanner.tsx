@@ -6,6 +6,8 @@ import {
   type IncomingChannelStatus,
 } from '@/lib/incomingOrdersChannelStore';
 import { playAlarm } from '@/lib/audioManager';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { useCashSession } from '@/hooks/useCashSession';
 
 const BAD_STATUSES: IncomingChannelStatus[] = ['CLOSED', 'CHANNEL_ERROR', 'TIMED_OUT'];
 const DEBOUNCE_MS = 5000;
