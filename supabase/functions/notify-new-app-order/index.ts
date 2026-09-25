@@ -57,17 +57,16 @@ serve(async (req) => {
 
     const { data: activeSessions } = await sessionsQuery;
 
-    // Siempre avisar también a todo el equipo de caja activo (cajeros y administradores),
-    // aunque no tengan una sesión de caja abierta o el switch de app esté apagado.
-    const { data: staffUsers } = await supabase
+    // Destinatarios: cajeros con turno (caja) abierto en la sucursal + administradores activos.
+    const { data: adminUsers } = await supabase
       .from('users')
       .select('id')
-      .in('role', ['Cajero', 'Administrador'])
+      .eq('role', 'Administrador')
       .eq('active', true);
 
     const recipientIds = Array.from(new Set([
       ...(activeSessions ?? []).map((s: any) => s.user_id).filter(Boolean),
-      ...(staffUsers ?? []).map((u: any) => u.id),
+      ...(adminUsers ?? []).map((u: any) => u.id),
     ]));
 
     if (recipientIds.length === 0) {
